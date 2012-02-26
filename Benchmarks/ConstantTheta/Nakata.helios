@@ -1,0 +1,59 @@
+Grid.Nx = 1
+Grid.Ny = 256
+Grid.Nz = 1
+Grid.Nv = 64
+Grid.Ns = 1
+
+# scale by sqrt(2.)
+Grid.Lx = 1
+Grid.Ly = 128
+Grid.Lz = 1.
+Grid.Lv = 4.
+
+DataOutput.OutputFileName = Nakata.h5
+
+Geometry.Theta = 0.0
+
+
+Vlasov.Equation = EM_2DLinear
+Fields.GyroAvrgModel = Dorland1
+
+DataOutput.Phi            = 99999999
+DataOutput.Moments        = -1
+DataOutput.Statistics.Time     =  5.
+DataOutput.Visualization.Time  = 5.
+DataOutput.Moments.Time  = -1
+DataOutput.XProperty      = -1
+
+Plasma.Beta   = 0.e0
+Plasma.Debye2 = 0.00
+
+
+Plasma.Species0.Name        = Proton
+Plasma.Species0.Charge      = 1.
+Plasma.Species0.Density     = 1. 
+Plasma.Species0.Temperature = 1.
+
+Plasma.Species1.Name        = Electron
+Plasma.Species1.Density     = 1. 
+Plasma.Species1.Temperature = 1.
+Plasma.Species1.Mass        = 1.
+Plasma.Species1.Charge      = -1.
+Plasma.Species1.w_T         = 6.
+Plasma.Species1.w_n         = 1.
+
+Control.MaxElectricEnergy = 1.e3
+
+Helios.useCFL   =  1
+Helios.maxCFLNumber   =  0.03
+Helios.MaxTime     = 100.
+Helios.MaxSteps    = -1
+
+Init.Perturbation = PSFExp
+Init.Epsilon0     = 1.e-18
+
+SuppressModeX=1-100
+# Plot here the magnetic island
+Setup.Constants = {w=0.}
+Init.FixedAp = 0.
+

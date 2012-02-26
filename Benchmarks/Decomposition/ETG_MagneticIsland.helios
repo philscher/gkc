@@ -1,0 +1,63 @@
+Grid.Nx = 64
+Grid.Ny = 64
+Grid.Nz = 32
+Grid.Nv = 64
+Grid.Ns = 1
+#Grid.Nm = 16
+
+# scale by sqrt(2.)
+Grid.Lx = 100.
+Grid.Ly = 62.8318530
+Grid.Lz = 3141.5926535897931
+Grid.Lv = 7.
+
+
+DataOutput.OutputFileName = mETG_setup_4X2Z.h5
+Geometry.Shear = 0.0
+
+DataOutput.Phi            =  10
+DataOutput.Moments        = -1
+DataOutput.Statistics     =  20
+DataOutput.XProperty      = -1
+
+Plasma.Beta   = 1.0
+Plasma.Debye2 = 0.00
+
+
+Plasma.Species0.Charge     = 1. 
+Plasma.Species0.Density     = 1. 
+
+Plasma.Species1.Name        = Electron
+Plasma.Species1.Density     = 1. 
+Plasma.Species1.Temperature = 1.
+Plasma.Species1.Mass        = 1.
+Plasma.Species1.Charge      = -1.
+Plasma.Species1.w_T         = 0.04
+Plasma.Species1.w_n         = 0.00
+
+
+Vlasov.NonLinear = 0
+
+Helios.useCFL   =  1
+Helios.maxCFLNumber   =  0.4
+Helios.MaxTime     = 400000
+Helios.MaxSteps    = 20
+
+Init.Perturbation = PSFExp
+Init.Epsilon0     = 1.e-10
+
+
+#FFTSolver.3D = 1
+#ConvolveModeX  = 1-1000
+#ConvolveModeY  = 0,2-1000
+#ConvolveModeZ  = 1-1000
+
+
+Setup.Constants = {w=1.,shat=0.47}
+#Init.FixedAp = 1.
+#Init.FixedAp = 1.e-4*0.47*x^2/2.*(w^2/16*shat)*cos(pi/Lx*x)*cos(pi/Ly*(y))
+#Init.FixedAp = 1.e2*cos(pi/Lx*x)*cos(0.4*pi/Ly*(y-Ly/2.))
+#Init.FixedAp = (x/Lx)^2/2.+1.e2*cos(pi/Lx*x)
+#Init.FixedAp = 3.*(x/Lx)^2/2.+cos(pi/Ly*(y-Ly/2.))
+#+2.*pi*shat*x*z/Lz))
+

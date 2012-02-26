@@ -1,0 +1,65 @@
+Grid.Nx = 1
+Grid.Ny = 2
+Grid.Nz = 16
+Grid.Nv = 32
+Grid.Ns = 2
+
+# scale by sqrt(2.)
+Grid.Lx = 31.415926535897931
+Grid.Ly =  12.5663706143591
+Grid.Lz =  6.283185307
+Grid.Lv = 7.
+
+DataOutput.OutputFileName =110512_s2_r3_DriftAlfvenDamping.h5
+Geometry.Shear = 0.0
+
+#DataOutput.Phi            = -1
+#DataOutput.Moments        = -1
+DataOutput.Statistics.Time     =  10
+#DataOutput.XProperty      = -1
+
+Plasma.Beta   = .05
+Plasma.Debye2 = 0.00
+Plasma.Global = 0
+Plasma.cs = 2.33e-2
+Geometry.eps_hat = 18360.
+
+Plasma.Species0.Charge      = 1. 
+Plasma.Species0.Density     = 0. 
+
+Plasma.Species1.Name        = Proton
+Plasma.Species1.Density     = 1. 
+Plasma.Species1.Temperature = 1.
+Plasma.Species1.Mass        = 1.
+Plasma.Species1.Charge      = 1.
+Plasma.Species1.w_T         = 0.0
+Plasma.Species1.w_n         = 0.000
+
+Plasma.Species2.Name        = Electron
+Plasma.Species2.Density     = 1. 
+Plasma.Species2.Temperature = 1.
+Plasma.Species2.Mass        = .00057
+Plasma.Species2.Charge      = -1.
+Plasma.Species2.w_T         = 0.0
+Plasma.Species2.w_n         = 0.0
+
+
+Vlasov.NonLinear = 0
+
+Helios.useCFL   =  1
+Helios.maxCFLNumber   =  0.4
+Helios.MaxTime     = 8
+Helios.MaxSteps    = -1
+
+#FFTSolver.3D = 1
+#ConvolveModeX  = 1-1000
+#ConvolveModeY  = 0,2-1000
+#ConvolveModeZ  = 0,2-1000
+
+Init.Perturbation=PSFNoise
+Init.Epsilon0=1.e-15
+
+Setup.Constants ={A=1.e-4,kx=0.,ky=0.5,kz=1.}
+Init.F1 = A*cos(kx*x)*cos(ky*y)*cos(kz*z)
+
+

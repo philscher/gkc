@@ -1,0 +1,54 @@
+Grid.Nx = 32
+Grid.Ny = 32
+Grid.Nz =  8
+Grid.Nv = 24:
+Grid.Ns =  1
+
+# scale by sqrt(2.)
+#Grid.Lx = 2.
+Grid.Lx = 1.2831853
+Grid.Ly = 32.
+Grid.Lz = 8000.
+Grid.Lv = 7.
+
+
+DataOutput.OutputFileName = check_DST_fftw3dst.h5
+Helios.FFTSolver = fftw3_dst
+
+Geometry.Shear = 0.0
+
+
+
+DataOutput.Phi            =  1
+DataOutput.Moments        = -1
+DataOutput.Statistics     = -1
+DataOutput.XProperty      = -1
+
+Plasma.Species0.Name = Electron
+Plasma.Species0.Density   = 0.
+Plasma.Species0.Charge   =  -1.
+#Plasma.Species0.FluxAvrg   =  1
+
+
+Plasma.Species1.Name = Proton
+Plasma.Species1.Density   = 1. 
+Plasma.Species1.Temperature   = 1.
+Plasma.Species1.Mass   = 1.
+Plasma.Species1.Charge   = 1.
+
+#Plasma.Species1.w_T   = 0.02
+#Plasma.Species1.w_n   = 0.0
+
+
+
+
+Helios.useCFL   =  1
+Helios.MaxTime     = 60000
+Helios.MaxSteps    = 2
+
+Init.Perturbation = PSFEqualModePower
+
+
+Setup.Constants={a=0.}
+
+

@@ -1,0 +1,73 @@
+Grid.Nx = 4
+Grid.Ny = 2
+Grid.Nz = 1
+Grid.Nv = 1024
+Grid.Ns = 1
+
+# scale by sqrt(2.)
+Grid.Lx = 31.415926535897931
+Grid.Ly = 31.415926535897931
+Grid.Lz = 31.415926535897931
+#Grid.Lz = 6.2831
+#Grid.Lz = 1570.79632
+Grid.Lv = 7.
+
+#Benchmark.Use = 1
+#Benchmark.FileName = example2.txt
+
+DataOutput.OutputFileName =110512_s2_r3_ShearAlfvenDamping.h5
+Geometry.Theta = 1.0
+#Geometry.eps_hat = 6.25e4
+Geometry.eps_hat = 1.e5
+#Plasma.cs = 1.
+Plasma.cs = 2.33e-2
+
+DataOutput.Statistics.Time     =  1
+
+Plasma.Beta   = .000005
+Plasma.Debye2 = 0.00
+Plasma.Global = 0
+
+
+Plasma.Species0.Charge     = 1. 
+Plasma.Species0.Density     = 0. 
+
+Plasma.Species1.Name        = Electron
+Plasma.Species1.Density     = 1. 
+Plasma.Species1.Temperature = 1.
+Plasma.Species1.Mass        = 1.
+Plasma.Species1.Charge      = 1.
+Plasma.Species1.w_T         = 0.0
+Plasma.Species1.w_n         = 0.000
+
+Plasma.Species2.Name        = Electron
+Plasma.Species2.Density     = 1. 
+Plasma.Species2.Temperature = 1.
+Plasma.Species2.Mass        = .02
+Plasma.Species2.Charge      = -1.
+Plasma.Species2.w_T         = 0.0
+Plasma.Species2.w_n         = 0.0
+
+Vlasov.Solver = Cilk
+Vlasov.Equation = 2D_EM
+Vlasov.NonLinear = 0
+Helios.useCFL   =  1
+Helios.maxCFLNumber   =  0.4
+#Helios.MaxTime     = 300
+Helios.MaxTime     = 120
+Helios.MaxSteps    = -1
+#Helios.CFLEigv = 0
+#Init.Perturbation = PSFEqualModePower
+#Init.Perturbation = PSFExp
+#Init.Perturbation = NoPerturbation
+Init.Perturbation = PSFNoise
+Init.Epsilon0     = 1.e-30
+
+
+ConvolveModeX  = 1-1000
+
+
+Setup.Constants ={A=1.e-5,kx=0.,ky=0.2,kz=2.e-3}
+#
+#Init.Ap = A*cos(kx*x)*cos(ky*y)*cos(kz*z)
+

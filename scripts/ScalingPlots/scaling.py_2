@@ -1,0 +1,60 @@
+#from numpy import *
+#import subprocess
+# set to execute
+import os
+
+sub_exec = 'qsub -g lh10205 -q lh10205'
+script = 'heliosThinScaling.sh'
+
+# check various decomposition stategies
+
+
+# cpu decomposition
+
+
+
+### Large Scale Simulations  5D ###
+
+CPUs = 128,256,512,1024
+
+decomposition = [   \
+             '16:8', '8:16',  '8:8:1:1:1:2', '4:4:1:1:1:2', \
+             '16:16', '8:32',  '8:8:1:1:1:1', '8:8:1:4:1:1', \
+             '32:16', '16:32',  '16:16:1:2:1:1', '16:16:1:1:1:2', \
+             '32:32', '32:16:1:2:1:1', '16:32:1:1:1:2', \
+             '16:16:1:2:1:2', '16:8:1:4:1:2', \
+              ]
+
+
+### Medium Scale Simulations 6D ###
+
+decomposition = [ '1', '4', '2:2', '2:2:1:2' ]
+
+for i in range(len(decomposition)):
+
+    # replace file and fire.
+    run = decomposition[i]
+
+    file = open(script)
+    filestr = file.read()
+    file.close()
+   
+    cpu_number = 1
+    for k in decomposition[i].split(':'): 
+        cpu_number = cpu_number * int(k)
+    filestr = filestr.replace("$cpu_num", str(cpu_number))
+    filestr = filestr.replace("$decomp", decomposition[i])
+        
+    helios_cfg_filename= script + '_%i' % i + '.sh'
+    file = open(helios_cfg_filename, "w")
+    file.write(filestr)
+    file.close()
+
+    #subprocess.call(sub_exec + ' -lP %i' % (max(run[0]/16,1)) + ' -lp %i ' % (min(run[0],16)) + helios_cfg_filename, shell=True)
+    print (sub_exec + ' -lP %i' % (max(cpu_number/16,1)) + ' -lp %i ' % (min(cpu_number,16)) + helios_cfg_filename)
+    os.system(sub_exec + ' -lP %i' % (max(cpu_number/16,1)) + ' -lp %i ' % (min(cpu_number,16)) + helios_cfg_filename)
+    
+
+
+
+

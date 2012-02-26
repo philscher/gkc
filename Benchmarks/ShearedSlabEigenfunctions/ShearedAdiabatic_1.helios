@@ -1,0 +1,49 @@
+Grid.Nx = 64
+Grid.Ny = 64
+Grid.Nz = 32
+Grid.Nv = 72
+Grid.Ns = 1
+
+# scale by sqrt(2.)
+Grid.Lx = 128.
+Grid.Ly = 256.
+Grid.Lz = 8000.
+Grid.Lv = 7.
+
+
+DataOutput.OutputFileName = ShearedAdiabatic.h5
+Geometry.Shear = 0.7
+
+DataOutput.Phi            =  50
+DataOutput.Moments        = -1
+DataOutput.Statistics     =  50
+DataOutput.XProperty      = -1
+
+
+Plasma.Species0.Name     = Electron
+Plasma.Species0.Charge   =  -1.
+Plasma.Species0.Density  =  1.
+Plasma.Species0.Temperature  =  1.
+
+Plasma.Species1.Name        = Proton
+Plasma.Species1.Density     = 1. 
+Plasma.Species1.Temperature = 1.
+Plasma.Species1.w_T         = 0.04
+Plasma.Species1.w_n         = 0.005
+
+Vlasov.NonLinear = 0
+
+Helios.useCFL   =  1
+Helios.maxCFLNumber   =  0.4
+Helios.MaxTime     = 40000
+Helios.MaxSteps    = -1
+
+Init.Perturbation = PSFEqualModePower
+
+#ConvolveModeX = 3 
+#FFTSolver.3D = 1
+#ConvolveModeX  = 0-3,4-1000
+#ConvolveModeZ  = 0-3,4-1000
+#ConvolveModeY  = 0
+
+

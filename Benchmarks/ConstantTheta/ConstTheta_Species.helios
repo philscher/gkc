@@ -1,0 +1,59 @@
+Grid.Nx = 1
+Grid.Ny = 512
+Grid.Nz = 1
+Grid.Nv = 129
+Grid.Ns = 2
+
+
+# scale by sqrt(2.)
+Grid.Lx = 1
+Grid.Ly = 64.
+Grid.Lz = 1.
+Grid.Lv = 4.
+
+DataOutput.OutputFileName = Nakata_Kin.h5
+Geometry.Theta = 0.1
+
+Vlasov.Equation = EM_2DLinear
+Vlasov.CollisionBeta=1.e-4
+Fields.GyroAvrgModel = Dorland1
+DataOutput.Statistics.Time     =  0.5
+
+Plasma.Beta   = 0.e0
+Plasma.Debye2 = 0.00
+
+Plasma.Species0.Name        = Proton
+Plasma.Species0.Charge      = 1.
+Plasma.Species0.Density     = 0. 
+Plasma.Species0.Temperature = 1.
+
+Plasma.Species1.Name        = Proton
+Plasma.Species1.Density     = 1. 
+Plasma.Species1.Temperature = 1.
+Plasma.Species1.Mass        = 1.
+Plasma.Species1.Charge      = 1.
+Plasma.Species1.w_T         = 6.
+Plasma.Species1.w_n         = 1.
+
+Plasma.Species2.Name        = Electron
+Plasma.Species2.Density     = 1. 
+Plasma.Species2.Temperature = 1.
+Plasma.Species2.Mass        = 1.e-3
+Plasma.Species2.Charge      = -1.
+Plasma.Species2.w_T         = 6.
+Plasma.Species2.w_n         = 1.
+
+
+Control.MaxElectricEnergy = 1.e3
+#Control.MaxRunningTime = 58m:30s
+Helios.useCFL   =  1
+Helios.maxCFLNumber   =  0.2
+Helios.MaxTime     = 500.
+Helios.MaxSteps    = -1
+
+Init.Perturbation = PSFEqualModePower
+Init.Epsilon0     = 1.e-60
+
+# Plot here the magnetic island
+Setup.Constants = {w=0.}
+

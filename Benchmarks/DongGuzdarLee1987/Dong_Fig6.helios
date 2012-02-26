@@ -1,0 +1,76 @@
+Grid.Nx = 8
+Grid.Ny = 8
+Grid.Nz = 8
+Grid.Nv = 48
+Grid.Ns = 2
+Grid.Nm = 16
+
+Grid.Lx = 13.711034416945
+Grid.Ly = 6.2519256787856
+Grid.Lz = 6.2831853071795
+Grid.Lv = 7.
+Grid.Lm = 9.
+
+DataOutput.OutputFileName = 110606_s3_r1_ETGMagnIsland.h5
+
+Geometry.Shear = 0.
+Geometry.eps_hat = 40.
+Fields.Filter = 0
+
+DataOutput.Phi            = -1
+DataOutput.Moments        = -1
+DataOutput.Statistics     =  10
+DataOutput.XProperty      = -1
+
+Plasma.Beta   = 0.e0
+Plasma.Debye2 = 0.00
+
+
+Plasma.Species0.Name        = Electron
+Plasma.Species0.Charge      = -1. 
+Plasma.Species0.Density     = 0. 
+Plasma.Species0.Temperature = 1.
+
+Plasma.Species1.Name        = Proton
+Plasma.Species1.Density     = 1. 
+Plasma.Species1.Temperature = 1.
+Plasma.Species1.Mass        = 1.
+Plasma.Species1.Charge      = 1.
+Plasma.Species1.w_T         = 2.
+Plasma.Species1.w_n         = 1.
+
+
+Plasma.Species2.Name        = Electron
+Plasma.Species2.Density     = 1. 
+Plasma.Species2.Temperature = 1.
+Plasma.Species2.Mass        = 5.77e-4
+Plasma.Species2.Charge      = -1.
+Plasma.Species2.w_T         = 2.
+Plasma.Species2.w_n         = 1.
+
+
+Vlasov.NonLinear = 0
+
+Helios.useCFL   =  1
+Helios.maxCFLNumber   =  0.3
+Helios.MaxTime     = -1
+Helios.MaxSteps    = 1500
+
+#Init.Perturbation = PSFExp
+Init.Perturbation = PSFEqualModePower
+Init.Epsilon0     = 1.e-20
+
+
+#Control.MaxRunningTime = 00h:00m:199s
+
+
+#SuppressModeY = 0,2-999
+#SuppressModeX = 0,2-999
+
+FFTSolver.3D = 1
+ConvolveModeX  = 1-999
+ConvolveModeY  = 0,2-999
+ConvolveModeZ  = 0,2-999
+
+
+Setup.Constants = {w=1.,shat=0.47}
