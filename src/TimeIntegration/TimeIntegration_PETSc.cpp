@@ -66,7 +66,7 @@ TimeIntegration_PETSc::~TimeIntegration_PETSc()
 
 
 
-void TimeIntegration_PETSc::solveTimeStep(Vlasov *vlasov, Fields *fields, TestParticles *particles, Timing &timing)
+double TimeIntegration_PETSc::solveTimeStep(Vlasov *vlasov, Fields *fields, TestParticles *particles, Timing &timing)
 {
             if(timeIntegrationScheme == "Implicit_RK4") {
                     PETScMatrixVector pMV(vlasov, fields);
@@ -92,14 +92,14 @@ void TimeIntegration_PETSc::solveTimeStep(Vlasov *vlasov, Fields *fields, TestPa
            
            fields->solve(vlasov->f0,  vlasov->f); 
            VecRestoreArray    (Vec_F1, &x_F1);
+            
+           timing.time += dt;
+            timing.step++;
+            writeTimeStep(timing, maxTiming, dt);
         
             }
             else TimeIntegration::solveTimeStep(vlasov, fields, particles, timing);
 
-            timing.time += dt;
-            timing.step++;
-                
-            writeTimeStep(timing, maxTiming, dt);
 
 }
 

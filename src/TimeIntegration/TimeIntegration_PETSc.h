@@ -38,7 +38,7 @@ class TimeIntegration_PETSc : public TimeIntegration {
 
     public:
         TimeIntegration_PETSc(Setup *setup, Grid *grid, Parallel *parallel, Vlasov *vlasov, Fields *fields, Eigenvalue *eigenvalue);
-        void solveTimeStep(Vlasov *vlasov, Fields *fields, TestParticles *particles, Timing &timing);
+        double solveTimeStep(Vlasov *vlasov, Fields *fields, TestParticles *particles, Timing &timing);
 
         ~TimeIntegration_PETSc();
   private:

@@ -27,7 +27,7 @@ struct Timing {
     int    step;
     double time;
     
-    Timing(int _step=0, double _time=0.) : step(_step), time(_time) {};
+    Timing(int _step=-1, double _time=-1.) : step(_step), time(_time) {};
 
     bool operator<=(Timing &b) ;
     bool operator<=(int step2) ;

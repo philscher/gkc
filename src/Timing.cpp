@@ -20,8 +20,8 @@
 
     bool Timing::operator<=(Timing &b) {
 
-        bool check_step = (step <= b.step) ||  (step == -1) || (b.step == -1);
-        bool check_time = (time <= b.time) ||  (time == -1) || (b.time == -1);
+        bool check_step = (step <= b.step) ||  (step == -1 ) || (b.step == -1 );
+        bool check_time = (time <= b.time) ||  (time == -1.) || (b.time == -1.);
         return (check_step && check_time);
     };
     bool Timing::operator<=(int step2) {

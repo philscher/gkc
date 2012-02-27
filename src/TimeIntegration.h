@@ -73,7 +73,7 @@ class TimeIntegration {
    *  Out Maxumum timestep
    */ 
     double getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv);
-    virtual void solveTimeStep(Vlasov *vlasov, Fields *fields, TestParticles *particles, Timing &timing);
+    virtual double solveTimeStep(Vlasov *vlasov, Fields *fields, TestParticles *particles, Timing &timing);
     
     TimeIntegration(Setup *setup, Grid *grid, Parallel *parallel, Vlasov *vlasov, Fields *fields, Eigenvalue *eigenvalue);
     int writeTimeStep(Timing timing, Timing maxTiming, double dt);

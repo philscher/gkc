@@ -24,7 +24,7 @@ TimeIntegration::TimeIntegration(Setup *setup, Grid *grid, Parallel *_parallel, 
                                                                 : vlasov->getMaxTimeStep(DIR_V, maxCFLNumber);
     
     useCFL         = setup->get("Helios.useCFL", 1);
-    maxCFLNumber   = setup->get("Helios.maxCFLNumber", 0.25);
+    maxCFLNumber   = setup->get("Helios.maxCFLNumber", 0.4);
     
     
     maxTiming.time = setup->get("Helios.MaxTime", -1.);
@@ -49,11 +49,11 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv)
 
 };
 
- void TimeIntegration::solveTimeStep(Vlasov *vlasov, Fields *fields, TestParticles *particles, Timing &timing) 
+ double TimeIntegration::solveTimeStep(Vlasov *vlasov, Fields *fields, TestParticles *particles, Timing &timing) 
 {
   
             // set maximum timestep. We reduce intial timsteps in case  initial condition is violant (for right side take care of overflow)
-        	if(useCFL == true) dt = min(maxLinearTimeStep, vlasov->getMaxTimeStep(DIR_XY, maxCFLNumber) * ((timing.step <= 100) ? min(1., 1.e-3 * (timing.step)) : 1));
+        	if(useCFL == true) dt = min(maxLinearTimeStep, vlasov->getMaxTimeStep(DIR_XY, maxCFLNumber)) ; //* ((timing.step <= 100) ? min(1., 1.e-3 * (timing.step)) : 1));
 
             if     (timeIntegrationScheme == "Explicit_RK4" ) solveTimeStepRK4 (fields, vlasov, particles, timing, dt);
             else if(timeIntegrationScheme == "Explicit_RK3" ) solveTimeStepRK3 (fields, vlasov, particles, timing, dt);
@@ -64,7 +64,8 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv)
             timing.step++;
                 
             writeTimeStep(timing, maxTiming, dt);
-
+    
+            return dt;
  };
 
 
