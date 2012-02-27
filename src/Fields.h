@@ -97,6 +97,11 @@ protected:
   
   /** Solve Equation system */
   int solveEq;
+/*! Performs the gyro-average for variable stored in FFT->r3In
+ *  
+ *
+ */
+  Array1z  phi_yz;
 
 /** 
  *  Calculation of the ITG potential.
@@ -108,7 +113,7 @@ protected:
  **/
 virtual Array1z calcFluxSurfAvrg(Array4z n) = 0;
 
-
+public:
 /** 
  *  Calculates the charge density, by performing gyro-average in Fourier space.
  *  This function works in 3 steps.
@@ -181,12 +186,6 @@ virtual Array3z solveAmpereEquation(Array3z j, Timing timing) = 0;
 virtual Array3z solveBParallelEquation(Array3z j, Timing timing) = 0;
 
 
-/*! Performs the gyro-average for variable stored in FFT->r3In
- *  
- *
- */
-
-  Array1z  phi_yz;
 
 
 public:

@@ -3,15 +3,9 @@
  *
  *       Filename:  Init.cpp
  *
- *    Description:  
+ *    Description: Definition of Initial conditions 
  *
- *        Version:  1.0
- *        Created:  11/19/2009 06:20:20 PM
- *       Revision:  none
- *       Compiler:  gcc
- *
- *         Author:  YOUR NAME (), 
- *        Company:  
+ *         Author:  Paul P. Hilscher (2009-), 
  *
  * =====================================================================================
  */
@@ -22,7 +16,7 @@
 #include "Reader/ReaderXYV.h"
 #include "System.h"
 
-Init::Init(Grid *grid, Setup *setup, Vlasov *vlasov, Fields *fields, Geometry<HELIOS_GEOMETRY> *_geo) : geo(_geo) {
+Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields *fields, Geometry<HELIOS_GEOMETRY> *_geo) : geo(_geo) {
 
    epsilon_0          = setup->get("Init.Epsilon0", 1.e-14); 
    sigma              = setup->get("Init.Sigma"   , 3.e-1); 
@@ -71,6 +65,16 @@ Init::Init(Grid *grid, Setup *setup, Vlasov *vlasov, Fields *fields, Geometry<HE
 
 
    }
+   
+   ////////////////////////////////////////////// Recheck Charge Neutrality for Perturabtion and correct  /////////////////////////
+
+   if(Ns > 1 && setup->get("Init.ChargeNeutral", 1)) {
+        double total_charge = parallel->collect((NkyLlD == 0) ? std::real(sum(fields->calculateChargeDensity(vlasov->f0, vlasov->f)(RxLD, 0, RzLD, Q::rho))) : 0.); 
+
+
+        for(int s = NsLlD; s <= NsLuD; s++) vlasov->f(RxLB, RkyLD, RzLB, RvLB, RmLB, s) *= (1. - total_charge/((double) Ns));
+   }
+
 
    /////////////////////////////////////// Initialize dynamic Fields for Ap (we use Canonical Momentum Method) ////////////////////////////
    if(plasma->nfields >= 2) {
@@ -91,6 +95,12 @@ Init::Init(Grid *grid, Setup *setup, Vlasov *vlasov, Fields *fields, Geometry<HE
     	}}
            
    }
+
+
+
+
+
+
 /*
    /////////////////////////////////////// Initialize dynamic Fields for Bp (we use Canonical Momentum Method) ////////////////////////////
    if(plasma->nfields >= 3) {

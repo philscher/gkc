@@ -31,6 +31,8 @@
 #include "GeometryShear.h"
 #include "Geometry2D.h"
 
+#include "Parallel.h"
+
 #include "Special/HermitePoly.h"
 
 
@@ -43,7 +45,7 @@ private:
     void setFieldFromFunction(Setup *setup, Array4d field, int n , std::string func);
   public :
   std::string PerturbationMethod;
-  Init(Grid *grid, Setup *setup, Vlasov *vlasov, Fields *fields, Geometry<HELIOS_GEOMETRY> *geo);
+  Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields *fields, Geometry<HELIOS_GEOMETRY> *geo);
    ~Init() {};
 
 
