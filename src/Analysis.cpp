@@ -16,15 +16,15 @@
 
 
 Analysis::Analysis(Parallel *_parallel, Vlasov *_vlasov, Fields *_fields, Grid *_grid, Setup *_setup, FFTSolver *_fft, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *_geo) : 
-  scaleXYZ(dx * dy * dz), scaleXYZV(dx * dy * dz * dv * dm), parallel(_parallel),setup(_setup), 
-  vlasov(_vlasov), grid(_grid),
-  fields(_fields),
-  geo(_geo), 
-  fft(_fft), 
+  parallel(_parallel),setup(_setup), vlasov(_vlasov), grid(_grid), fields(_fields), geo(_geo),  fft(_fft),
+
      A4(FortranArray<4>()),
      A4_z(FortranArray<4>())
 
   {
+       scaleXYZ  = dx * dy * dz;
+       scaleXYZV = dx * dy * dz * dv * dm;
+
        // set initial energy
        initialEkin.resize(Range(TOTAL, NsGuD)); initialEkin = 0.e0;
        for(int s=NsLlD; s<= NsLuD; s++)  initialEkin(s) = getKineticEnergy(s);
@@ -35,11 +35,9 @@ Analysis::Analysis(Parallel *_parallel, Vlasov *_vlasov, Fields *_fields, Grid *
 //       if(setup->dirSpectrumAvrg & SPEC_YZ)  spectrumYZ.resize(fft->RkyL, fft->RkzL); spectrumYZ = 0.0;
 //       if(setup->dirSpectrumAvrg & SPEC_XY)  spectrumXY.resize(fft->RkxL, fft->RkyL); spectrumXY = 0.0;
 
-       // pSpec
      pSpec.resize(Range((int) DIR_X, (int) DIR_Y), RFields, Range(0, max(Nky,Nx)));
     
-     A2.resize(RxLD, RsLD);
-     A_xyz.resize(RxLD, RyLD, RzLD); A_xyz = 0.;
+     A_xyz.resize(RxLD, RkyLD, RzLD); A_xyz = 0.;
 
      A4.resize(RxLD, RkyLD, RzLD, RsLD);
      A4_z.resize(RxLD, RkyLD, RzLD, RsLD);
@@ -408,7 +406,6 @@ Array3d Analysis::getHeatFluxKy(int sp)
 double Analysis::getTotalHeatFlux(int s) 
 {
     double heatFlux = 0.e0;
-   
   // for(int s = ((sp == TOTAL) ? NsLlD : sp); s <= NsLuD && ((sp != TOTAL) ? s == sp : true)  ; s++) heatFlux += sum(getHeatFluxKy(sp));
  //   if((s >= NsLlD) && (s <= NsLuD)) {
         heatFlux = sum(getHeatFluxKy(s));
@@ -529,12 +526,12 @@ Array2c Analysis::getSpectrum(unsigned int dir) {
 
 void Analysis::initDataOutput(Setup *setup, FileIO *fileIO) {
         
-        analysisGroup = fileIO->newGroup(fileIO->getFileID(), "/Analysis");
+     analysisGroup = fileIO->newGroup(fileIO->getFileID(), "/Analysis");
         
      hsize_t offset0[] = { 0, 0, 0, 0, 0, 0, 0 };
     
      //###################################### Analysis - Heat fluxes ################################
-//     bool isZVMSMaster = (parallel->Coord(DIR_ZVMS) == 0);
+     
      // Heat Flux ky and Particle FluxKy ( per species) 
      hid_t fluxGroup = fileIO->newGroup(analysisGroup, "Flux");
      
@@ -544,7 +541,6 @@ void Analysis::initDataOutput(Setup *setup, FileIO *fileIO) {
      hsize_t FSky_chunkBdim[] = { plasma->nfields, Nky, Ns, 1 };
      FA_heatKy      = new FileAttr("Heat"   , fluxGroup, 4, FSky_dim, FSky_maxdim, FSky_chunkdim, offset0,  FSky_chunkBdim, offset0, parallel->myRank == 0);
      FA_particleKy  = new FileAttr("Density", fluxGroup, 4, FSky_dim, FSky_maxdim, FSky_chunkdim, offset0,  FSky_chunkBdim, offset0, parallel->myRank == 0);
-//     FA_grow_t  = fileIO->newTiming(fluxGroup);
     
      H5Gclose(fluxGroup);
      
@@ -557,8 +553,6 @@ void Analysis::initDataOutput(Setup *setup, FileIO *fileIO) {
      hsize_t moment_chunkdim[]  =  { NzLD       , NkyLD      , NxLD       , NsLD , 1};
      hsize_t moment_moffset[]   =  { 0, 0, 0, 0, 0 };
      hsize_t moment_offset[]    =  { NzLlD-3, 0     , NxLlD-3, 0     , 0  };
-//     hsize_t moment_offset[]  =  { NzLlD-3, NkyLlD, NxLlD-3, NsLlD-1 };
-     
      
      bool momWrite = (parallel->Coord(DIR_VM) == 0);
      
@@ -569,7 +563,7 @@ void Analysis::initDataOutput(Setup *setup, FileIO *fileIO) {
         
      H5Gclose(momentGroup);
       
-     dataOutputMoments         = Timing(setup->get("DataOutput.Moments.Step", -1)       , setup->get("DataOutput.Moments.Time", -1.));
+     dataOutputMoments   = Timing(setup->get("DataOutput.Moments.Step", -1)       , setup->get("DataOutput.Moments.Time", -1.));
 
 
      //###################################### Power Spectrum  ################################################
@@ -594,35 +588,34 @@ void Analysis::initDataOutput(Setup *setup, FileIO *fileIO) {
 
      H5Gclose(growGroup);
 
-      //////////////////////////////////////////////////////////////// PowerSpectrum Group ////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////// Setup Table for scalar data ////////////////////////////////////////////////////////
               
-         // setup Table for scalarValues
-              ScalarValues scalarValues;
-     size_t SV_offset[] = { HOFFSET( ScalarValues, timestep ) , HOFFSET( ScalarValues, time     ), HOFFSET( ScalarValues, phiEnergy ),
+      ScalarValues scalarValues;
+     
+      size_t SV_offset[] = { HOFFSET( ScalarValues, timestep ) , HOFFSET( ScalarValues, time     ), HOFFSET( ScalarValues, phiEnergy ),
                             HOFFSET( ScalarValues, ApEnergy ),  HOFFSET( ScalarValues, BpEnergy ), HOFFSET( ScalarValues, particle_number    ),
                             HOFFSET( ScalarValues, kinetic_energy ), HOFFSET( ScalarValues, entropy ), HOFFSET( ScalarValues, heat_flux ),
                             HOFFSET( ScalarValues, particle_flux ) };
 
-     size_t SV_sizes[] = { sizeof(scalarValues.timestep), sizeof(scalarValues.time    ), sizeof(scalarValues.phiEnergy), 
+      size_t SV_sizes[] = { sizeof(scalarValues.timestep), sizeof(scalarValues.time    ), sizeof(scalarValues.phiEnergy), 
                            sizeof(scalarValues.ApEnergy), sizeof(scalarValues.BpEnergy), Ns * sizeof(scalarValues.particle_number[0]), Ns * sizeof(scalarValues.kinetic_energy[0]), 
                            Ns * sizeof(scalarValues.entropy[0]), Ns * sizeof(scalarValues.heat_flux[0]), Ns * sizeof(scalarValues.particle_flux[0])};
 
-    hid_t SV_types[] = { H5T_NATIVE_INT, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, 
-                         fileIO->species_tid, fileIO->species_tid, fileIO->species_tid, fileIO->species_tid, fileIO->species_tid } ;
+      hid_t SV_types[] = { H5T_NATIVE_INT, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, 
+                           fileIO->species_tid, fileIO->species_tid, fileIO->species_tid, fileIO->species_tid, fileIO->species_tid } ;
   
-    const char *SV_names[] = { "Timestep", "Time", "phiEnergy", "ApEnergy", "BpEnergy", "ParticleNumber", "KineticEnergy", "Entropy", "HeatFlux", "ParticleFlux" };
+      const char *SV_names[] = { "Timestep", "Time", "phiEnergy", "ApEnergy", "BpEnergy", "ParticleNumber", "KineticEnergy", "Entropy", "HeatFlux", "ParticleFlux" };
 
-    SVTable = new TableAttr(analysisGroup, "scalarValues", 10, SV_names, SV_offset, SV_types, SV_sizes, &scalarValues); 
+      SVTable = new TableAttr(analysisGroup, "scalarValues", 10, SV_names, SV_offset, SV_types, SV_sizes, &scalarValues); 
 
+      dataOutputStatistics  = Timing(setup->get("DataOutput.Statistics.Step", -1), setup->get("DataOutput.Statistics.Time", -1.));
 
-     
-     dataOutputStatistics  = Timing(setup->get("DataOutput.Statistics.Step", -1), setup->get("DataOutput.Statistics.Time", -1.));
 }
   
   
 int Analysis::writeData(Timing timing, double dt)
 
-  {
+{
       if (timing.check(dataOutputMoments, dt)       )   {
 
            FA_Mom_Tp->write(getTemperatureParallel().data());
@@ -742,18 +735,18 @@ int Analysis::writeData(Timing timing, double dt)
 
 
 void Analysis::closeData() {
-delete FA_heatKy; 
-delete FA_particleKy;
-delete FA_grow_x;     
-delete FA_grow_y;     
-delete FA_grow_t;     
+  delete FA_heatKy; 
+  delete FA_particleKy;
+  delete FA_grow_x;     
+  delete FA_grow_y;     
+  delete FA_grow_t;     
        
-delete FA_Mom_Tp;
-delete FA_Mom_HeatFlux;
-delete FA_Mom_Time;
+  delete FA_Mom_Tp;
+  delete FA_Mom_HeatFlux;
+  delete FA_Mom_Time;
 
-delete SVTable;
-     H5Gclose(analysisGroup);
+  delete SVTable;
+  H5Gclose(analysisGroup);
 
 
 }

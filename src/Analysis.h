@@ -58,8 +58,8 @@ double particle_flux  [SPECIES_MAX];
     TableAttr *SVTable;
 
 
-  const double scaleXYZ;
-  const double scaleXYZV;
+  double scaleXYZ, scaleXYZV;
+
   Parallel *parallel;
   Setup *setup;
   Vlasov *vlasov;
@@ -70,7 +70,7 @@ Geometry<HELIOS_GEOMETRY> *geo;
   Array1d  initialEkin, dT;
   Array2c spectrumXZ, spectrumYZ, spectrumXY;
   Array3d pSpec;
-  Array2d A2, heatFluxKy;
+  Array2d heatFluxKy;
   Array3d Temp3D;
   Array3z Temp3Dk, A_xyz;
   Array3z phi_k;
