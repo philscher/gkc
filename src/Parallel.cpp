@@ -216,7 +216,6 @@ Parallel::~Parallel() {
      check(MPI_Comm_free(&Comm[DIR_MS ]   ), DMESG("MPI_Comm_free(Comm_S)"   ));
      check(MPI_Comm_free(&Comm[DIR_V  ]   ), DMESG("MPI_Comm_free(Comm_S)"   ));
      check(MPI_Comm_free(&Comm[DIR_XYZ] ), DMESG("MPI_Comm_free(Comm_XYZ)" ));
-        // #pragma omp parallel (private(NyLlD, NyLuD))
      check(MPI_Comm_free(&Comm[DIR_ALL] ), DMESG("MPI_Comm_free(Comm_XYZ)" ));
 
      check(MPI_Finalize(), DMESG("MPI_Finalize"));
@@ -319,9 +318,9 @@ MPI_Op Parallel::getMPIOp(int op) {
 #ifdef HELIOS_PARALLEL_MPI
 MPI_Datatype Parallel::getMPIDataType(const std::type_info &T) {
     MPI_Datatype type=0;
-    if     (T == typeid(double)) type =  MPI_DOUBLE;
-    else if(T == typeid(int))    type =  MPI_INT;
-    else if(T == typeid(std::complex<double>)) type = MPI_DOUBLE_COMPLEX;
+    if     (T == typeid(double)) type = MPI_DOUBLE;
+    else if(T == typeid(int   )) type = MPI_INT;
+    else if(T == typeid(cmplxd)) type = MPI_DOUBLE_COMPLEX;
     else check(-1, DMESG("Such type is not defined"));
     
    return type;
