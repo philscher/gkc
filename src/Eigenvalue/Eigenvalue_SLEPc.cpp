@@ -25,7 +25,10 @@ Eigenvalue_SLEPc::Eigenvalue_SLEPc(Setup *setup, Grid *grid, Parallel *_parallel
 {
     
       SlepcInitialize(&setup->argc, &setup->argv, (char *) 0,  help);
-      
+     
+      // Don't let PETSc catch signals
+      PetscPopSignalHandler();
+
       // create Matrix Operations
       int subDiv=0;
       MatCreateShell(parallel->Comm[DIR_ALL], grid->getLocalSize(), grid->getLocalSize(), grid->getGlobalSize(), grid->getGlobalSize(), &subDiv, &A_F1);
