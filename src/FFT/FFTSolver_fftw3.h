@@ -1,17 +1,11 @@
 /*
  * =====================================================================================
  *
- *       Filename:  m_FFTSolver_fftw3-mpi.h
+ *       Filename : FFTSolver_fftw3.h
  *
- *    Description:  
- *
- *        Version:  1.0
- *        Created:  08/29/2010 12:52:03 PM
- *       Revision:  none
- *       Compiler:  gcc
- *
- *         Author:  YOUR NAME (), 
- *        Company:  
+ *    Description : Implementation of FFTSolver using fftw-3(+mpi/threads) 
+ *                  from www.fftw.org
+ *        Author  : Paul P. Hilscher (2012), 
  *
  * =====================================================================================
  */
@@ -33,19 +27,25 @@
 
 class FFTSolver_fftw3 : public FFTSolver
 {
-                
-  cmplxd *data_Y_kIn, *data_Y_kOut;
+  /**
+   *   Arrays for real-complex transform
+   */ 
   double *data_Y_rIn, *data_Y_rOut;
+  cmplxd *data_Y_kIn, *data_Y_kOut;
 
-  //cmplxd *data_X_rIn_kOut, *data_X_kIn_rOut;  
+  cmplxd *data_X_rIn , *data_X_rOut;  
+  cmplxd *data_X_kIn , *data_X_kOut; 
+
+  /**
+   *    Anti-Aliased Fourier transform used by
+   *    multiply.
+   *
+   * */
+  Range AA_RkyLD, AA_RyLD;
+  int AA_NyLD, AA_NyLlD, AA_NyLuD, AA_NkyLD, AA_NkyLlD, AA_NkyLuD;
+  Array4d AA_rYIn, AA_rYOut;
+  Array4z AA_kYOut, AA_kYIn;
   
-  cmplxd *data_X_kOut, *data_X_kIn;  
-  cmplxd *data_X_rIn, *data_X_rOut;  
-
-  int perf_flag;
- 
-  Range RkyLD_AA;
-
   public:
     FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry<HELIOS_GEOMETRY> *geo);
     ~FFTSolver_fftw3();
@@ -61,6 +61,8 @@ class FFTSolver_fftw3 : public FFTSolver
 
 
 #endif // __FFTW3_H
+
+
 #endif // FFTW3
 
 
