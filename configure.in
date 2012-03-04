@@ -47,6 +47,21 @@ if test x$hypre = xyes ; then
    AC_DEFINE([HELIOS_HYPRE], [], [enables hypre support])
 fi
 
+AC_ARG_ENABLE([petsc], AC_HELP_STRING([--enable-petsc], [Helios is compiled with PETSc support]), [petsc=yes], [petsc=no])
+if test x$petsc = xyes ; then
+   AC_DEFINE([HELIOS_PETSc], [], [enables PETSc support])
+fi
+
+AC_ARG_ENABLE([slepc], AC_HELP_STRING([--enable-slepc], [Helios is compiled with SLEPc support]), [slepc=yes], [slepc=no])
+if test x$slepc = xyes ; then
+   AC_DEFINE([HELIOS_SLEPc], [], [enables SLEPc support])
+fi
+
+AC_ARG_ENABLE([superlu], AC_HELP_STRING([--enable-superlu], [Helios is compiled with Finite Element Support support]), [superlu=yes], [superlu=no])
+if test x$superlu = xyes ; then
+   AC_DEFINE([HELIOS_SUPERLU], [], [enables superlu support])
+fi
+
 #################
 # Set Paths
 #
@@ -108,12 +123,45 @@ AC_SUBST(DIR_FEM)
 AC_ARG_WITH(hypredir,
   AC_HELP_STRING(
     [--with-hypredir=prefix],
-    [use specified prefix install directory of libmesh library]
+    [use specified prefix install directory of hypre library]
   ),
   DIR_HYPRE="$with_hypredir",
   DIR_HYPRE="$DIR_HYPRE"
 )
 AC_SUBST(DIR_HYPRE)
+
+AC_ARG_WITH(petscdir,
+  AC_HELP_STRING(
+    [--with-petscdir=prefix],
+    [use specified prefix install directory of PETSc library]
+  ),
+  DIR_PETSC="$with_petscdir",
+  DIR_PETSC="$DIR_PETSC"
+)
+AC_SUBST(DIR_PETSC)
+
+AC_ARG_WITH(slepcdir,
+  AC_HELP_STRING(
+    [--with-slepcdir=prefix],
+    [use specified prefix install directory of SLEPc library]
+  ),
+  DIR_SLEPC="$with_slepcdir",
+  DIR_SLEPC="$DIR_SLEPC"
+)
+AC_SUBST(DIR_SLEPC)
+
+
+
+
+AC_ARG_WITH(superludir,
+  AC_HELP_STRING(
+    [--with-superludir=prefix],
+    [use specified prefix install directory of superlu library]
+  ),
+  DIR_SUPERLU="$with_superludir",
+  DIR_SUPERLU="$DIR_SUPERLU"
+)
+AC_SUBST(DIR_SUPERLU)
 
 
 ##########################3333
@@ -131,17 +179,6 @@ AC_ARG_ENABLE(shared, AC_HELP_STRING([--enable-shared], [Build with Helios using
 if test x$shared = xyes ; then
    # echo -e "mpi"
    AM_CONDITIONAL([SHARED], [test x$shared = xyes])
-fi
-
-AC_ARG_ENABLE(eigv_slepc, AC_HELP_STRING([--enable-eigv-slepc], [Enable Eigenvalue Caluclations with slepc]), [eigv_slepc=yes], [eigv_slepc=no])           
-if test x$eigv_slepc = xyes ; then
-   AM_CONDITIONAL([WITH_SLEPC], [test x$eigv_slepc = xyes])
-   AC_DEFINE([HELIOS_PETSC], [], [Defined when compiled parallel version])
-   AC_DEFINE([HELIOS_SLEPC], [], [Defined when compiled parallel version])
-   DIR_PETSC=$PETSC_DIR
-   AC_SUBST(DIR_PETSC)
-   DIR_SLEPC=$SLEPC_DIR
-   AC_SUBST(DIR_SLEPC)
 fi
 
 
@@ -296,7 +333,9 @@ AM_CONDITIONAL([OPENCL], [test x$opencl  = xyes])
 AM_CONDITIONAL([MPIP],   [test x$mpiP    = xyes])
 AM_CONDITIONAL([LIBMESH],[test x$fem     = xyes])
 AM_CONDITIONAL([HYPRE],  [test x$hypre   = xyes])
-AM_CONDITIONAL([WITH_SLEPC], [test x$slepc  = xyes])
+AM_CONDITIONAL([PETSC],  [test x$petsc   = xyes])
+AM_CONDITIONAL([SLEPC],  [test x$slepc   = xyes])
+AM_CONDITIONAL([SUPERLU],  [test x$superlu   = xyes])
 
 
 

@@ -1,10 +1,10 @@
-bin_PROGRAMS = gkc
+bin_PROGRAMS = helios
 
-gkc_SOURCES = main.cpp GKC.cpp FileIO.cpp Fields.cpp Fields/FieldsFFT.cpp Setup.cpp Grid.cpp  \
+gkc_SOURCES = main.cpp Helios.cpp FileIO.cpp Fields.cpp Fields/FieldsFFT.cpp Setup.cpp Grid.cpp  \
                  Parallel.cpp Vlasov.cpp Event.cpp\
                  Collisions.cpp Fourier.cpp  Vlasov/Vlasov_Cilk.cpp Analysis.cpp  Init.cpp Control.cpp\
       		 Plasma.cpp Special/LA.cpp Timing.cpp TestParticle.cpp TimeIntegration.cpp \
-                 TimeIntegration/TimeIntegration_PETSc.cpp Special/PETScMatrixVector.cpp FFTSolver.cpp
+ 	         FFTSolver.cpp
  
 # compile FFT
 gkc_SOURCES += FunctionParser/fparser.cc
@@ -27,14 +27,19 @@ if STATIC
 gkc_LDADD += $(DIR_BLITZ)/lib/liblitz.a   $(DIR_HDF5)/lib/libhdf5_hl.a $(DIR_HDF5)/lib/libhdf5.a  -lz -lgfortran
 endif
 
+if PETSC                 
+AM_CPPFLAGS  +=  -I$(PETSC_DIR)/include
+gkc_SOURCES += TimeIntegration/TimeIntegration_PETSc.cpp Special/PETScMatrixVector.cpp Fields/FieldsPETSc.cpp
+gkc_LDADD   += -L$(PETSC_DIR)/lib -lpetsc 
 
-################# Eigenvalue #######3
-#if WITH_SLEPC
-AM_CPPFLAGS  +=  -I$(PETSC_DIR)/include -I$(SLEPC_DIR)/include
-gkc_SOURCES += Eigenvalue/Eigenvalue_SLEPc.cpp
-gkc_LDADD   += -L$(SLEPC_DIR)/lib  -lslepc   -L$(PETSC_DIR)/lib -lpetsc 
-#-L$(PETSC_DIR)/lib/libpetsc.a
-#endif
+if SLEPC
+################# Eigenvalue calculations #######
+AM_CPPFLAGS    +=  -I$(SLEPC_DIR)/include
+gkc_SOURCES +=  Eigenvalue/Eigenvalue_SLEPc.cpp
+gkc_LDADD   += -L$(SLEPC_DIR)/lib  -lslepc 
+endif
+
+endif
 ############################### Set Various FFT Libraries #########
 
 #
