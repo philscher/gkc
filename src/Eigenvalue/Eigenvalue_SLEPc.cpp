@@ -21,7 +21,7 @@
 static char help[] = "SLEPc help and how to get rid of it ..... ?";
 
 
-Eigenvalue_SLEPc::Eigenvalue_SLEPc(Setup *setup, Grid *grid, Parallel *_parallel) : Eigenvalue(setup,grid,  _parallel)
+Eigenvalue_SLEPc::Eigenvalue_SLEPc(FileIO *fileIO, Setup *setup, Grid *grid, Parallel *_parallel) : Eigenvalue(fileIO, setup,grid,  _parallel)
 {
     
       SlepcInitialize(&setup->argc, &setup->argv, (char *) 0,  help);
@@ -44,6 +44,7 @@ Eigenvalue_SLEPc::Eigenvalue_SLEPc(Setup *setup, Grid *grid, Parallel *_parallel
       // use e.g. -x "-st_shift 0.2" to set more properties
       EPSSetFromOptions(EigvSolver);
 
+      initDataOutput(setup, fileIO);
 }
 
 
@@ -87,7 +88,8 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
 
 
     EPSSetWhichEigenpairs(EigvSolver, EPS_LARGEST_REAL);
-
+    int n_eigv = Nx*Nv;
+    EPSSetDimensions(EigvSolver, n_eigv, n_eigv, n_eigv); 
     // init intial solution vector 
     Vec Vec_init;
     cmplxd *init_x = PETScMatrixVector::getCreateVector(grid, Vec_init);

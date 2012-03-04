@@ -43,7 +43,7 @@ class Eigenvalue_SLEPc : public Eigenvalue {
 protected:
 
 public:
-  Eigenvalue_SLEPc(Setup *setup, Grid *grid, Parallel *_parallel);
+  Eigenvalue_SLEPc(FileIO *fileIO, Setup *setup, Grid *grid, Parallel *_parallel);
   void solve(Vlasov *vlasov, Fields *fields, Visualization *visual, Control *control);
   virtual ~Eigenvalue_SLEPc();
 
