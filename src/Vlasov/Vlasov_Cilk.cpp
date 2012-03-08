@@ -35,7 +35,7 @@ void VlasovCilk::setBoundaryXY(Array3d A, int dir) {
           SendXlR(RB, RyLD, RzLD) = A(Range(NxLlD, NxLlD+1),   RyLD, RzLD);
           SendXuR(RB, RyLD, RzLD) = A(Range(NxLuD-1, NxLuD),   RyLD, RzLD);
    	  
-          parallel->updateNeighbours(SendXlR, SendXuR, RecvXlR, RecvXuR, DIR_X, false);
+          parallel->updateNeighbours(SendXuR, SendXlR, RecvXuR, RecvXlR, DIR_X, false);
           
           A(Range(NxLlB, NxLlB+1), RyLD, RzLD) = RecvXlR(RB, RyLD, RzLD);
           A(Range(NxLuD+1, NxLuB), RyLD, RzLD) = RecvXuR(RB, RyLD, RzLD);
@@ -85,7 +85,7 @@ int VlasovCilk::solve(std::string equation_type, Fields *fields, Array6z _fs, Ar
   else if((equation_type == "2DLandauDamping")) Landau_Damping((A6z) _fs.dataZero(), (A6z) _fss.dataZero(), (A6z) f0.dataZero(), (A6z) f.dataZero(), (A6z) ft.dataZero(), (A5z) fields->phi.dataZero(), (A3z) k2p_phi.dataZero(), (A3z) dphi_dx.dataZero(), 
       X.dataZero(), V.dataZero(), M.dataZero(), fields, dt, rk_step);
   else if((equation_type == "2D_ES_Eigenvalue")) Vlasov_2D_EigenValue((A6z) _fs.dataZero(), (A6z) _fss.dataZero(), (A6z) f0.dataZero(), (A5z) fields->phi.dataZero(), (A3z) k2p_phi.dataZero(), fields);
-
+  else   check(-1, DMESG("No Such Equation"));
   return HELIOS_SUCCESS;
 }
 
@@ -192,12 +192,14 @@ void VlasovCilk::Vlasov_2D(
       const double Temp  = plasma->species(s).T0;
     
       const double sub = (plasma->species(s).doGyro) ? 3./2. : 1./2.;
+        
+      const double v2_rms   = pow2(alpha);
       
       for(int m=NmLlD; m<= NmLuD;m++) { 
   
        // gyro-fluid model
        if(fields->gyroAverageModel == "Gyro-1") k2p_phi(RxLD, RkyLD, RzLD) = fields->gyroAverage(fields->Field0(RxLD, RkyLD, RzLD, Field::phi), 2, s,  Field::phi, true);
-       if(calculate_nonLinear)   calculatePhiNonLinearity(fields->phi, _fs,m, s);
+       if(calculate_nonLinear && (rk_step != 0)) calculatePhiNonLinearity(fields->phi, _fs,m, s);
        
        
 
@@ -226,7 +228,6 @@ void VlasovCilk::Vlasov_2D(
 
 	    const cmplxd dfs_dv   = (8.  *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))/(12.*dv);
         const cmplxd ddfs_dvv = (16. *(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) - 30.*fs[s][m][z][y_k][x][v])/(12.*pow2(dv));
-        const double v2_rms   = 1.;//pow2(alpha)
        
 	    /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
         cmplxd dg_dt = 
@@ -238,7 +239,7 @@ void VlasovCilk::Vlasov_2D(
              + 0.5 * w_T  * k2_phi[z][y_k][x] * F0
       	     // Landau Damping term 
              - alpha  * V[v]* shear  * ( g + sigma * phi_ * F0))
-             // collisional term
+             // collisional term (Lennard-Bernstein)
              + collisionBeta * (g  + V[v] * dfs_dv + v2_rms * ddfs_dvv)
              // nonLinearTerm
 	         + nonLinear[z][y_k][x][v]
@@ -246,26 +247,21 @@ void VlasovCilk::Vlasov_2D(
 
 
         //////////////////////////// Vlasov End ////////////////////////////
+        if(rk_step == 0) {
+            fss[s][m][z][y_k][x][v] = dg_dt;
+        } else {
 
-        //  time-integrate the distribution function     
-        if(rk_step == 1) ft[s][m][z][y_k][x][v] = dg_dt;
-        else if((rk_step == 2) || (rk_step == 3)) ft[s][m][z][y_k][x][v] = ft[s][m][z][y_k][x][v] + 2.0*dg_dt;
-        else    dg_dt = ft[s][m][z][y_k][x][v] + dg_dt;
+            //  time-integrate the distribution function     
+            if(rk_step == 1) ft[s][m][z][y_k][x][v] = dg_dt;
+            else if((rk_step == 2) || (rk_step == 3)) ft[s][m][z][y_k][x][v] = ft[s][m][z][y_k][x][v] + 2.0*dg_dt;
+            else    dg_dt = ft[s][m][z][y_k][x][v] + dg_dt;
         
-        fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v] + dg_dt*dt;
-
+            fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v] + dg_dt*dt;
+       }  
 
       }}} }}
    }
 }
-
-void VlasovCilk::printOn(ostream &output) const
-{
-	Vlasov::printOn(output);
-            output << "Vlasov     |   Spatial : Morinishi        Time : Runge-Kutta 4 " << std::endl;
-            output << "Vlasov     |   Hyper Viscosity : " << hyper_visc << std::endl;
-
-};
 
 
 
@@ -346,7 +342,7 @@ void    VlasovCilk::Vlasov_2D_Global(
   
        // gyro-fluid model
        if(fields->gyroAverageModel == "Gyro-1") k2p_phi(RxLD, RkyLD, RzLD) = fields->gyroAverage(fields->Field0(RxLD, RkyLD, RzLD, Field::phi), 2, s,  Field::phi, true);
-       if(calculate_nonLinear)   calculatePhiNonLinearity(fields->phi, _fs,m, s);
+       if(calculate_nonLinear && (rk_step != 0)) calculatePhiNonLinearity(fields->phi, _fs,m, s);
        //if(nonLinear)   calculatePhiNonLinearity(fields->phi(RxLD, RkyLD, RzLD, m, s), _fs,m, s);
        
        // calculate for estimation of CFL condition
@@ -413,79 +409,21 @@ void    VlasovCilk::Vlasov_2D_Global(
         //////////////////////////// Vlasov End ////////////////////////////
 
         //  time-integrate the distribution function     
-        if(rk_step == 1) ft[s][m][z][y_k][x][v] = dg_dt;
-        else if((rk_step == 2) || (rk_step == 3)) ft[s][m][z][y_k][x][v] = ft[s][m][z][y_k][x][v] + 2.0*dg_dt;
-        else    dg_dt = ft[s][m][z][y_k][x][v] + dg_dt;
-        
-        fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v] + dg_dt*dt;
+        if(rk_step == 0) {
+            fss[s][m][z][y_k][x][v] = dg_dt;
+        } else {
 
+            if(rk_step == 1) ft[s][m][z][y_k][x][v] = dg_dt;
+            else if((rk_step == 2) || (rk_step == 3)) ft[s][m][z][y_k][x][v] = ft[s][m][z][y_k][x][v] + 2.0*dg_dt;
+            else    dg_dt = ft[s][m][z][y_k][x][v] + dg_dt;
+        
+            fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v] + dg_dt*dt;
+        }
 
       }}} }}
    }
 //if(rk_step == 4)        std::cout << sum(pow2(fields->phi(RxLD, RkyLD, RzLD, 1, 1))) << " nl : " << sum(pow2(nonLinearTerms(RxLD, RkyLD, RzLD, RvLD))) << std::endl; 
 }
-
-void VlasovCilk::Vlasov_2D_EigenValue(
-                           cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           cmplxd fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const cmplxd vf0[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const cmplxd phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           cmplxd k2_phi[NzLD][NkyLD][NxLD],
-                           Fields *fields)
-{ 
-
-   /// Enter Cilk Part here
-
-  Xi_max = 0.;
-
-   for(int s = NsLlD; s <= NsLuD; s++) {
-        
-      // small abbrevations
-      const double w_n   = plasma->species(s).w_n;
-      const double w_T   = plasma->species(s).w_T;
-      const double alpha = plasma->species(s).alpha;
-      const double sigma = plasma->species(s).sigma;
-      const double Temp  = plasma->species(s).T0;
-    
-      const double sub = (plasma->species(s).doGyro) ? 3./2. : 1./2.;
-      
-      for(int m=NmLlD; m<= NmLuD;m++) { 
-  
-       // gyro-fluid model
-       if(fields->gyroAverageModel == "Gyro-1") k2p_phi(RxLD, RkyLD, RzLD) = fields->gyroAverage(fields->Field0(RxLD, RkyLD, RzLD, Field::phi), 2, s,  Field::phi, true);
-       
-       for(int z=NzLlD; z<= NzLuD;z++) {
-
-
-        #pragma omp parallel for
-        for(int y_k= NkyLlD; y_k <= NkyLuD; y_k++) {  const cmplxd dky = cmplxd(0.,-fft->ky(y_k));
-        for(int x  = NxLlD ; x   <= NxLuD ; x++  ) {  for(int v=NvLlD; v<= NvLuD;v++) {
-        
-   const cmplxd g    = fs[s][m][z][y_k][x][v];
-   const cmplxd F0   = vf0[s][m][z][y_k][x][v];
-   const cmplxd phi_ = phi[s][m][z][y_k][x];
-
-   // Colliosonal Terms
-   const cmplxd dfs_dv    = (8.  *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))/(12.*dv);
-   const cmplxd ddfs_dvv  = (16. *(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) - 30.*fs[s][m][z][y_k][x][v])/(12.*pow2(dv));
-   const double v2_rms = 1.;//pow2(alpha)
-        
-   /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
-   fss[s][m][z][y_k][x][v] = 
-             
-      // driving term (use dphi_dy instead of dXi_dy, because v * A does not vanish due to numerical errors)
-      dky * (-(w_n + w_T * ((pow2(V(v))+ M(m))/Temp  - sub)) * F0 * phi_
-      // add first order gyro-average term (zero when full-gyro)
-      + 0.5 * w_T  * k2_phi[z][y_k][x] * F0
-      // Landau Damping term and parallel ... ? - alpha  * V(v)* geo->getShear(x)  * ( g + sigma * phi * F0)) 
-      - alpha  * V(v)* geo->getShear(x)  * ( g + sigma * phi_ * F0 ))   
-      // Collisional terms 
-      + collisionBeta * (g  + V(v) * dfs_dv + v2_rms * ddfs_dvv);
-
-      }}} }}
-   }
-}
-
 
 
 void VlasovCilk::Vlasov_EM(
@@ -621,6 +559,15 @@ void VlasovCilk::setupXiAndG(
                              * f0(x,y,z,v,m,s) * plasma->beta * fields->Ap(x,y,z,m,s) : 0.);
                              * */
       }} }}
+
+};
+
+
+void VlasovCilk::printOn(ostream &output) const
+{
+	Vlasov::printOn(output);
+            output << "Vlasov     |   Spatial : Morinishi        Time : Runge-Kutta 4 " << std::endl;
+            output << "Vlasov     |   Hyper Viscosity : " << hyper_visc << std::endl;
 
 };
 
