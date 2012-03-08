@@ -55,6 +55,7 @@ double particle_flux  [SPECIES_MAX];
     // Data Output Stuff
     FileAttr  *FA_heatKy, *FA_particleKy;
     FileAttr  *FA_grow_x, *FA_grow_y, *FA_grow_z, *FA_grow_t;
+    FileAttr  *FA_freq_x, *FA_freq_y, *FA_freq_z, *FA_freq_t;
     TableAttr *SVTable;
 
 
@@ -69,7 +70,8 @@ FFTSolver *fft;
 Geometry<HELIOS_GEOMETRY> *geo;
   Array1d  initialEkin, dT;
   Array2c spectrumXZ, spectrumYZ, spectrumXY;
-  Array3d pSpec;
+  Array3d pSpec, pPhase;
+  Array3z pFreq;
   Array2d heatFluxKy;
   Array3d Temp3D;
   Array3z Temp3Dk, A_xyz;
