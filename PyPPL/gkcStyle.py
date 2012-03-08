@@ -188,5 +188,6 @@ def plotContourWithColorbar(X,Y,data, **kwargs):
 
     
 
-def plotZeroLine(T):
-        plot(T, zeros(len(T)), 'k-', linewidth=1.5, color="#666666")
+def plotZeroLine(x_start, x_end):
+        T = linspace(x_start, x_end, 301)
+        plot(T, zeros(len(T)), '-', linewidth=1.5, color="#666666")

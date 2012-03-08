@@ -1,13 +1,13 @@
-
+import numpy as np
 
 def getTime(timing):
   timing_new = []
   for t in timing:
     timing_new.append((t[0], t[1]))
-  return array(timing_new)
+  return np.array(timing_new)
 
 
-def getDomain(fileh5=fileh[0]):
+def getDomain(fileh5):
   Ny = fileh5.root.Grid._v_attrs.Nky 
   Ly = fileh5.root.Grid._v_attrs.Ly
   Nx = fileh5.root.Grid._v_attrs.Nx 
@@ -33,24 +33,24 @@ def getDomain(fileh5=fileh[0]):
            'Lz' : fileh5.root.Grid._v_attrs.Lz, \
            'Lv' : fileh5.root.Grid._v_attrs.Lv,  \
            'Lm' : fileh5.root.Grid._v_attrs.Lm,  \
-           'Tscale' : sqrt(1837.) / (2. *sqrt(2.) * 1.e-3), \
+           'Tscale' : np.sqrt(1837.) / (2. *np.sqrt(2.) * 1.e-3), \
            'X'     : fileh5.root.Grid._v_attrs.X, \
            'Z'     : fileh5.root.Grid._v_attrs.Z, \
            'V'     : fileh5.root.Grid._v_attrs.V, \
            'M'     : fileh5.root.Grid._v_attrs.M, \
-           'kx'   : arange(1, Nx/2+1) * 2 * pi / Lx,\
-           'ky'   : arange(1, Ny) * 2 * pi / Ly,\
-           'kp'   : arange(1, Nz/2+1) * 2 * pi / Lz,\
+           'kx'   : np.arange(0, Nx/2+1) * 2 * np.pi / Lx,\
+           'ky'   : np.arange(0, Ny    ) * 2 * np.pi / Ly,\
+           'kp'   : np.arange(0, Nz/2+1) * 2 * np.pi / Lz,\
            'species': species,\
            'Debye2' : fileh5.root.Plasma._v_attrs.Debye2[0],\
            }
-  D['Y'] = linspace(0., D['Ly'], D['Ny'])
+  D['Y'] = np.linspace(0., D['Ly'], D['Ny'])
   D['TScale'] =  D['Lv']/D['Lz']
 
   return D
 
 
-def getData(VarID, fileh5, Z=0, frame=-1, species=0):
+def getData(Var, fileh5, Z=0, frame=-1, species=0):
 
     if   Var == "2DPhi" : 
                         data = fileh5.root.Visualization.Phi[Z,:,:,frame]
@@ -81,24 +81,9 @@ def getRealFromXky(fileh5, data, modes=[], interpolate=False):
    # Fourier back transform c2r, renormaliza, not it stored in fftw shape
    Nky = len(data[:,0])
    Nx  = len(D['X'])
-   if(interpolate == True) :
-       
-       new_Ny = max(512, 2*Nky)
-
-       ex_data = zeros((new_Ny, len(D['X'])))
-
-       # note we have no nyquest frequency
-       #bring to fftw shape 
-       #ex_data[0:Ny/2+1,:]   = data[0:Ny/2+1,:]
-       # copy negative frequencyies
-       #ex_data[-Ny/2+1:,:] = data[-Ny/2+1:,:]
-
-       #data = ex_data
-       #Ny   = new_Ny
-  
    
-   Y = linspace(D['Y'].min(), D['Y'].max(), D['Ny'])
-   X,Y = meshgrid(D['X'], Y)
+   Y = np.linspace(D['Y'].min(), D['Y'].max(), D['Ny'])
+   #X,Y = np.meshgrid(D['X'], Y)
 
    if modes != [] :
      for m in range(Nky/2+1):
@@ -109,15 +94,12 @@ def getRealFromXky(fileh5, data, modes=[], interpolate=False):
           # index :
           #print "Index : ", m , "   Ny - m : ", Ny - m
           #if (m != 0) and (m != Ny/2): data[Ny-m,:] = 0.
-   print "Shape data : ", shape(data)
-   data = irfft(data, axis=0)
+   data = np.fft.irfft(data, axis=0)
 
-   print "New shape : " , shape(data.T), " Nx : " , len(X) , " Ny : " , len(Y)
-
-   return X, Y, data
+   return D['X'], Y, data
 
 
-def plotInfo(fileh5=fileh[0]):
+def plotInfo(fileh5):
   
   ##description = fileh5.root.Info._v_attrs.Description
   #info        = fileh5.root.Info._v_attrs.Info
