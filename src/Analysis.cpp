@@ -406,18 +406,24 @@ Array4z Analysis::getHeatFlux(int sp)
 // this should go hand-in-hand with the temperature calculation
 Array3d Analysis::getHeatFluxKy(int sp) 
 {
-    Array3d Q(RFields, RsLD, RkyLD); Q = 0.;
+    Array3d Q(RFields, RkyLD, RsLD); Q = 0.;
       
-    A4_z = getHeatFlux(sp);
     
+    getHeatFlux(sp);
     // sum over x and z
-   //  for(int s = ((sp == TOTAL) ? NsLlD : sp); s <= ((sp == TOTAL) ? NsLuD : sp)  ; s++) { 
-   for(int s = ((sp == TOTAL) ? NsLlD : sp); (s <= ((sp == TOTAL) ? NsLuD : sp)) && ( (sp >= NsLlD) && (sp <= NsLuD))  ; s++) { 
+    //
+    //
+  for(int s = NsLlD; s <= NsLuD; s++) {
+      for(int z=NzLlD; z<= NzLuD;z++){ for(int x=NxLlD; x  <= NxLuD ;  x++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
+//      std::cout << "x : " << x << " y_k : " << y_k << " z : " << z << " --->  : " << A4_z(x,y_k, z, s) << std::endl;
+//      :redo
+//      :redo
+//
+      }}}}
+    for(int s = NsLlD; s <= NsLuD; s++) {
         
-       for(int z=NzLlD; z<= NzLuD;z++) { for(int x=NxLlD; x  <= NxLuD ;  x++) { Q(Field::phi, s, RkyLD) +=  abs(A4_z(x, RkyLD,z,s)) ; }}
+       for(int z=NzLlD; z<= NzLuD;z++) { for(int x=NxLlD; x  <= NxLuD ;  x++) { Q(Field::phi, RkyLD, s) +=  abs(A4_z(x, RkyLD,z,s)) ; }}
                  
-        // we need to map them, what about negative frequencies ? OK, included with -k 
-//        for(int y_k = 1; y_k <  Nky ; y_k++) Q(RFields, s, y_k) +=  Q(RFields, s, y_k); 
     }
    return Q; 
 
@@ -461,17 +467,16 @@ double Analysis::getTotalParticleFlux(int s)
 
 Array3d  Analysis::getParticleFluxKy(int sp) 
 {
-    Array3d G(RFields, RsLD, RkyLD); G = 0.;
+    Array3d G(RFields, RkyLD, RsLD); G = 0.;
     
     Array3z V2(RxLD, RkyLD, RzLD); V2 = 0.;
     Array3z W2(RxLD, RkyLD, RzLD); W2 = 0.;
    
-   //for(int s = ((sp == TOTAL) ? NsLlD : sp); s <= NsLuD && ((sp != TOTAL) ? s == sp : true)  ; s++) {
-   for(int s = ((sp == TOTAL) ? NsLlD : sp); (s <= ((sp == TOTAL) ? NsLuD : sp)) && ( (sp >= NsLlD) && (sp <= NsLuD))  ; s++) { 
+  for(int s = NsLlD; s <= NsLuD; s++) {
       
       const double d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * dm * scaleXYZ;
 
-      for(int z=NzLlD; z<= NzLuD;z++){ for(int m=NmLlD; m<= NmLuD;m++ ) { 
+        for(int m=NmLlD; m<= NmLuD;m++ ) { for(int z=NzLlD; z<= NzLuD;z++){ 
       
         // multiply in real-space 
         for(int x=NxLlD; x  <= NxLuD ;  x++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
@@ -484,23 +489,18 @@ Array3d  Analysis::getParticleFluxKy(int sp)
              W2(x,y_k,z) = sum(vlasov->f(x, y_k, z, RvLD, m, s)) * d6Z;
          }} 
 
-            V2(RxLD, RkyLD, RzLD) = fft->multiply(V2, W2, A_xyz);
+           // V2(RxLD, RkyLD, RzLD) = 
+           fft->multiply(V2, W2, A_xyz);
       
             // sum over x and z
-            for(int z=NzLlD; z<= NzLuD;z++) { for(int x=NxLlD; x  <= NxLuD ;  x++) { G(Field::phi, s, RkyLD) +=  abs(V2(x, RkyLD,z)) ; }}
+            for(int x=NxLlD; x  <= NxLuD ;  x++) { G(Field::phi, RkyLD, s) +=  abs(A_xyz(x, RkyLD,z)) ; }
                  
-        }}
-     
-   
-    // we need to map them, what about negative frequencies ? OK, included with -k 
-//   for(int y_k = 1; y_k <  Nky ; y_k++) G(RFields, s, y_k) +=  G(RFields, s, y_k); 
-   
+        } }
    }
 
 
     
    return parallel->collect(G);
-
 
 };
 
@@ -559,12 +559,19 @@ void Analysis::initDataOutput(Setup *setup, FileIO *fileIO) {
      // Heat Flux ky and Particle FluxKy ( per species) 
      hid_t fluxGroup = fileIO->newGroup(analysisGroup, "Flux");
      
-     hsize_t FSky_dim[]       = { plasma->nfields, Nky, Ns, 1 }; 
-     hsize_t FSky_maxdim[]    = { plasma->nfields, Nky, Ns, H5S_UNLIMITED} ;
-     hsize_t FSky_chunkdim[]  = { plasma->nfields, Nky, Ns, 1 };
-     hsize_t FSky_chunkBdim[] = { plasma->nfields, Nky, Ns, 1 };
-     FA_heatKy      = new FileAttr("Heat"   , fluxGroup, 4, FSky_dim, FSky_maxdim, FSky_chunkdim, offset0,  FSky_chunkBdim, offset0, parallel->myRank == 0);
-     FA_particleKy  = new FileAttr("Density", fluxGroup, 4, FSky_dim, FSky_maxdim, FSky_chunkdim, offset0,  FSky_chunkBdim, offset0, parallel->myRank == 0);
+     hsize_t FSky_dim[]       = { plasma->nfields, Nky, Ns  , 1 }; 
+     hsize_t FSky_maxdim[]    = { plasma->nfields, Nky, Ns  , H5S_UNLIMITED} ;
+     hsize_t FSky_chunkdim[]  = { plasma->nfields, Nky, NsLD, 1 };
+     hsize_t FSky_chunkBdim[] = { plasma->nfields, Nky, NsLD, 1 };
+     hsize_t FSky_offset[]    = { 0, 0  , NsLlD-1, 0  };
+//     std::cout << "NsLD : " << NsLD << std::endl;
+//     std::cout << parallel->Coord(DIR_XYZVM) << std::endl << std::flush;
+//     parallel->barrier();
+     
+//check(-1, DMESG("STOP"));
+
+     FA_heatKy      = new FileAttr("Heat"   , fluxGroup, 4, FSky_dim, FSky_maxdim, FSky_chunkdim, offset0,  FSky_chunkBdim, FSky_offset, parallel->Coord(DIR_XYZVM == 0));
+     FA_particleKy  = new FileAttr("Density", fluxGroup, 4, FSky_dim, FSky_maxdim, FSky_chunkdim, offset0,  FSky_chunkBdim, FSky_offset, parallel->Coord(DIR_XYZVM == 0));
     
      H5Gclose(fluxGroup);
      
@@ -576,13 +583,14 @@ void Analysis::initDataOutput(Setup *setup, FileIO *fileIO) {
      hsize_t moment_chunkBdim[] =  { NzLD       , NkyLD      , NxLD       , NsLD , 1          };
      hsize_t moment_chunkdim[]  =  { NzLD       , NkyLD      , NxLD       , NsLD , 1};
      hsize_t moment_moffset[]   =  { 0, 0, 0, 0, 0 };
-     hsize_t moment_offset[]    =  { NzLlD-3, 0     , NxLlD-3, 0     , 0  };
+     hsize_t moment_offset[]    =  { NzLlD-3, 0     , NxLlD-3, 0     ,  0  };
      
      bool momWrite = (parallel->Coord(DIR_VM) == 0);
      
      
      FA_Mom_Tp        = new FileAttr("Temperature_v", momentGroup, 5, moment_dim , moment_maxdim   , moment_chunkdim   , moment_moffset    ,  moment_chunkBdim  , moment_offset, momWrite, fileIO->complex_tid);
      FA_Mom_HeatFlux  = new FileAttr("HeatFlux"     , momentGroup, 5, moment_dim , moment_maxdim   , moment_chunkdim   , moment_moffset    ,  moment_chunkBdim  , moment_offset, momWrite, fileIO->complex_tid);
+     FA_Mom_Density   = new FileAttr("Density"      , momentGroup, 5, moment_dim , moment_maxdim   , moment_chunkdim   , moment_moffset    ,  moment_chunkBdim  , moment_offset, momWrite, fileIO->complex_tid);
      FA_Mom_Time  = fileIO->newTiming(momentGroup);
         
      H5Gclose(momentGroup);
@@ -651,6 +659,7 @@ int Analysis::writeData(Timing timing, double dt)
 
            FA_Mom_Tp->write(getTemperatureParallel().data());
            FA_Mom_HeatFlux->write(getHeatFlux().data());
+           FA_Mom_Density->write(getNumberDensity().data());
            FA_Mom_Time->write(&timing);
             
            writeMessage("Data I/O : Moments output");
@@ -670,10 +679,10 @@ int Analysis::writeData(Timing timing, double dt)
 
 
       // Heat Flux
-    Array3d heatKy; heatKy.reference(getHeatFluxKy());
-    FA_heatKy->write(heatKy.data());
-    Array3d particleKy; particleKy.reference(getParticleFluxKy());
-    FA_particleKy->write(particleKy.data());
+      Array3d heatKy; heatKy.reference(getHeatFluxKy());
+      FA_heatKy->write(heatKy.data());
+      Array3d particleKy; particleKy.reference(getParticleFluxKy());
+      FA_particleKy->write(particleKy.data());
       
   
       ScalarValues scalarValues;
@@ -774,6 +783,7 @@ void Analysis::closeData() {
        
   delete FA_Mom_Tp;
   delete FA_Mom_HeatFlux;
+  delete FA_Mom_Density;
   delete FA_Mom_Time;
 
   delete SVTable;

@@ -49,7 +49,7 @@ double particle_flux  [SPECIES_MAX];
 } _ScalarValues;
 
   /** Moments Variables */
-  FileAttr *FA_mom_n, *FA_mom_up, *FA_Mom_Tp, *FA_mom_To, *FA_mom_qp, *FA_mom_qo, * FA_mom_QES, *FA_Mom_Time, *FA_Mom_HeatFlux;
+  FileAttr *FA_Mom_Density, *FA_mom_up, *FA_Mom_Tp, *FA_mom_To, *FA_mom_qp, *FA_mom_qo, * FA_mom_QES, *FA_Mom_Time, *FA_Mom_HeatFlux;
   /** Spectrum Variables */  
   FileAttr *FA_spec_yz, *FA_spec_xy, *FA_spec_xz, *FA_spec_time;
     // Data Output Stuff
@@ -73,8 +73,9 @@ Geometry<HELIOS_GEOMETRY> *geo;
   Array3d pSpec, pPhase;
   Array3z pFreq;
   Array2d heatFluxKy;
-  Array3d Temp3D;
-  Array3z Temp3Dk, A_xyz;
+//  Array3d Temp3D;
+//  Array3z Temp3Dk, 
+  Array3z A_xyz;
   Array3z phi_k;
   Array4d A4;
   Array4z A4_z;
