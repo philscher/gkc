@@ -34,7 +34,7 @@ def plotTimeEvolutionModePower(fileh5, **kwargs):
     modes    = kwargs.pop('modes' , range(D['Nky']))
     field    = kwargs.pop('field', 'phi')  
     n_offset = kwargs.pop('offset', 2)  
-    label    = kwargs.pop('label', 'ky')  
+    label    = kwargs.pop('label', 'k')  
     leg_loc  = kwargs.pop('loc', 'best')  
     ncol     = kwargs.pop('ncol', 3)  
     
@@ -47,29 +47,29 @@ def plotTimeEvolutionModePower(fileh5, **kwargs):
     elif field == 'B'   : n_field = 2
     else : raise TypeError("Wrong argument for field : " + str(field))
 
+    legend_list = []
     if(dir == 'X'):
-      pl = semilogy(T, fileh5.root.Analysis.PowerSpectrum.X[n_field,:numModes,2:].T)
-      legend_list = []
-      for i in range(len(fileh5.root.Analysis.PowerSpectrum.X[n_field, :numModes,0])):
-        legend_list.append("kx = %i" % i)
-      leg = pylab.legend(legend_list, loc='lower right', ncol=2)
-      leg.draw_frame(0)
+      
+      for n in modes:
+            pl = pylab.semilogy(T, fileh5.root.Analysis.PowerSpectrum.Y[n_field, n,n_offset:].T)
+            if  (label == 'm' ) : legend_list.append("n = %i" % n)
+            elif(label == 'k')  : legend_list.append("kx = %.1f" % (D['kx'][n])) 
+            else                : print "Name Error"
     
     elif(dir == 'Y'):
 
-      scale = fileh5.root.Grid._v_attrs.Ly/(2. * np.pi)
-      
       legend_list = []
       
       for m in modes:
-            pl = pylab.semilogy(T, (scale*fileh5.root.Analysis.PowerSpectrum.Y[n_field, m,n_offset:]).T)
+            pl = pylab.semilogy(T, fileh5.root.Analysis.PowerSpectrum.Y[n_field, m,n_offset:].T)
             if  (label == 'm' ) : legend_list.append("m = %i" % m)
-            elif(label == 'ky') : legend_list.append("ky = %.1f" % (m / scale)) 
+            elif(label == 'k')  : legend_list.append("ky = %.1f" % (D['ky'][m])) 
             else                : print "Name Error"
     
-      leg = pylab.legend(legend_list, loc=leg_loc, ncol=ncol, mode="expand").draw_frame(0)
  
     else : raise TypeError("Wrong argument for dir : " + str(dir))
+     
+    leg = pylab.legend(legend_list, loc=leg_loc, ncol=ncol, mode="expand").draw_frame(0)
      
     pylab.xlabel("Time")
     pylab.xlim((0.,max(T)))
@@ -267,52 +267,41 @@ def plotInstantGrowthrates(fileh5, **kwargs):
     pylab.ylabel("Instant Mode Growth $\gamma$")
         
 
-def plotCrossCorrelateValues(fileh5, A="Phi",B="Tp",frame=-1, Z=0, species=1):
-    D = gkcData.getDomain(fileh5)
-
-    X, Y, F = getRealFromXky(fileh5, gkcData.gkcData.getData(B, fileh5, Z, frame))
-    A = gkcData.getData(A, fileh5, Z, frame)
-    B = gkcData.getData(B, fileh5, Z, frame)
+def plotCrossCorrelateValues(fileh5, A="2DPhi",B="2DTp",frame=-1, Z=0, species=1):
+    import scipy.signal
     
-    #    A = fileh5.root.Potential.phi[:,:,:,timeStep]
-    #    B = fileh5.root.Potential.phi[:,:,:,timeStep]
 
+    D, T, A = gkcData.getData(A, fileh5, Z, frame)
+    D, T, B = gkcData.getData(B, fileh5, Z, frame)
+    
 
     # first correlate then average
     C = []
-    clf()
-    print "Real : shape : ", shape(B)
-    #for nky in range(len(A[:,0])): C.append(abs(ifftn(fft(A[nky,:])*ifftn(B[nky,:])).imag))
-    for nky in range(len(A[:,0])): C.append(abs(scipy.signal.correlate(A[nky,:], B[nky,:].imag)))
-    Corr = array(C)
+    
+    for nky in np.arange(1,len(A[:,0])): C.append(scipy.signal.correlate(abs(A[nky,:]), abs(B[nky,:])))
+    Corr = np.array(C)
   
-    #Corr = sum(Corr, axis=0)
-    #    x_n  = list(-(D['kx']))
-    #    x_n.reverse()
-    #    x = x_n + list((D['kx'][:]))
-    #    y = [ 0 ] + list((D['ky']))
-    #    print "Shape Ap : ", shape(Corr), " x : " , len(x), "   y : " , len(y)
-    X = np.linspace(-pi, pi, len(Corr[0,:]))
-    Y = (D['ky'])
+    X = np.linspace(-np.pi, np.pi, len(Corr[0,:]))
+    Y = (D['ky'])[1:]
 
-    print " Y : ", len(Y)
-    print " X : ", len(X)
-    print " Shap : " , shape(Corr[:len(Y),:])
 
-    ax = subplot(111)
-
-    ax.contourf(X,Y,Corr[:len(Y),:],100, cmap=cm.hot)
-    #colorbar()
+    ax = pylab.subplot(111)
+    
+    ax.contourf(X,Y,Corr[:,:],100, cmap=pylab.cm.hot)
+    #pylab.colorbar()
+    
     ax.set_yscale("log") 
-    # set ticks and tick labels
-    ax.set_xlim((-pi, pi))
-    ax.set_xticks([-pi,0,pi])
-    pichr = unichr(0x03C0)
-    ax.set_xticklabels(['$\\pi$','0', '$\\pi$'])
+    
+    ax.set_xticks([-np.pi, -np.pi/2., 0, np.pi/2., np.pi])
+    ax.set_xticklabels(['$\\pi$', '$-\\pi/2$', '$0$', '$\\pi/2$', '$\\pi$'])
+    
     ax.plot(np.linspace(0., 0., 101), np.linspace(Y.min(), Y.max(), 101), 'r-')
-    ylim((Y.min(), Y.max()))
-    xlabel("Phase")
-    ylabel("$k_y$")
+    
+    ax.set_xlim((-np.pi, np.pi))
+    pylab.ylim((Y.min(), Y.max()))
+    
+    pylab.xlabel("Phase")
+    pylab.ylabel("$k_y$")
     #xlim((X.min(), X.max()))
     # plot zero phase line
 
@@ -524,10 +513,12 @@ def plotTurbulenceSpectra(fileh5, dir='Y', start=1, end=-1, posT=(1,-1), field=0
          *offset*          Offset due to zeroset to 2 .
 
     """
+    import scipy.optimize
+
     D = gkcData.getDomain(fileh5)
     
     doCFL    = kwargs.pop('doCFL', True)
-    doFit    = kwargs.pop('doFit', True)
+    doFit    = kwargs.pop('doFit', False)
     m        = kwargs.pop('m', 0)
 
     if(dir == 'X'):
@@ -561,22 +552,24 @@ def plotTurbulenceSpectra(fileh5, dir='Y', start=1, end=-1, posT=(1,-1), field=0
       
     pylab.ylabel("$|\\phi_k(k_y)|^2$")
         
-    if doFit == 'True' :
+    if doFit == True :
         pos_a = posT[0]
         pos_b = posT[1]
         fitfunc = lambda p, x: p[0]*x + p[1] # Target function
         errfunc = lambda p, x, y: fitfunc(p, x) - y # Distance to the target function
         p0 = [1.0, 1.0, 1.0] # Initial guess for the parameters
         
-        p1, success = optimize.leastsq(errfunc, p0[:], args=(log(D['ky'][pos_a:pos_b]), log(data[pos_a:pos_b])))
-
+        #p1, success = scipy.optimize.leastsq(errfunc, p0[:], args=(np.log10(D['ky'][pos_a:pos_b]), np.log10(data[pos_a:pos_b])))
+        p1, success = scipy.optimize.leastsq(errfunc, p0[:], args=(D['ky'][pos_a:pos_b], data[pos_a:pos_b]))
 
         # C'mon baby wanna see you again
         print p1
-        loglog(D['ky'][pos_a:pos_b], (D['ky'][pos_a:pos_b]-D['ky'][0])**p1[0],'r', linewidth=9.)
+        pylab.loglog(D['ky'][pos_a:pos_b], p1[1]*(D['ky'][pos_a:pos_b]/D['ky'][pos_a])**p1[0],'k-', linewidth=6.)
         #text(D['ky'][5], data[5], "$\\propto k_y^{%2.f}$" % p1[0], ha="center", family=font, size=14)
-        text(log(D['ky'][5]), log(data[5]), "$\\propto k_y^{%2.1f}$" % p1[0], ha="center", size=14)
-        text(log(D['ky'][5]), log(data[5]), "$\\propto k_y^{%2.1f}$" % p1[0], ha="center", size=14)
+        pos_m = (pos_a + pos_b)/2 + 1
+        pylab.text(D['ky'][pos_m], data[pos_m/3], "$\\propto k_y^{%.1f}$" % p1[0], ha="center", size=14)
+        #pylab.text(np.log(D['ky'][5]), 1., "$\\propto k_y^{%.1f}$" % p1[0], ha="center", size=14)
+        #pylab.text(np.log(D['ky'][5]), np.log(data[5]), "$\\propto k_y^{%2.1f}$" % p1[0], ha="center", size=14)
     
     return mypl
 

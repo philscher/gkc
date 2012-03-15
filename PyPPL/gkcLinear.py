@@ -43,9 +43,10 @@ def fitDampedOscillationFourier(T, Y):
 
 
 def getGrowthrate(T, D, start, stop, dir='Y'):
-  
+
   growth = []
 
+  print "Fitting from T : ", T[start], " - ", T[stop]
 
   def fitExpGrowthOptimize(T,Y):
 
@@ -68,25 +69,39 @@ def getGrowthrate(T, D, start, stop, dir='Y'):
   return np.array(growth)
 
 def getFrequency(T, D, start, stop, dir='Y'):
+  import scipy.ndimage
   
-  freq   = []
+  freq_list   = []
   N      = len(D[:,0]) 
+    
+  print "Fitting from T : ", T[start], " - ", T[stop]
  
   # Note We assume constant time-steps !
   for n in range(N): 
      
     time_series = D[n,start:stop]
-    FS = np.fft.rfft(time_series)
+    FS = np.fft.rfft(time_series) #np.sin(time_series))
     # Get Maximum Frequency
     m     = np.argmax(abs(FS))
     fftfreq = np.fft.fftfreq(len(time_series), d = (T[-10]-T[-11])) 
+    
+    abs_freq =  2.*np.pi*fftfreq[m]
 
     # Needs sqrt(2.) from velocity normalization
-    freq.append(2.*np.pi*fftfreq[m])
+    
+    # Get sign of frequency by taking gradient of phase shift (how to deal with jump?)
+    time_series = scipy.ndimage.gaussian_filter(time_series, 0.01)
+    grad = np.gradient(time_series, T[-10]-T[-11])
+    # remove jump values
+    np.putmask(grad, abs(grad) > 1.05*abs_freq, 0.)
+    np.putmask(grad, abs(grad) < 0.95*abs_freq, 0.)
+    sig = -np.sign(sum(grad))
+
+    freq_list.append(sig * abs_freq)
 
   print "Getting Frequency from T = ", T[start], " to T = " , T[stop]
 
-  return np.array(freq)
+  return np.array(freq_list)
 
 
 
@@ -143,6 +158,8 @@ def plotFrequencyGrowthrates(fileh5, which='b', markline="-", **kwargs):
     if doCFL == True : pylab.clf()
     
     T = gkcData.getTime(fileh5.root.Analysis.PowerSpectrum.Time)[:,1]
+        
+    print "Fitting from T : ", T[start], " - ", T[stop]
     
     if   field == 'phi' : n_field = 0
     elif field == 'A'   : n_field = 1

@@ -58,6 +58,9 @@ def getData(Var, fileh5, Z=0, frame=-1, species=0):
     elif Var == "2DTp"  : 
                         data = fileh5.root.Moments.Temperature_v[Z,:,:,species,frame]
                         T = getTime(fileh5.root.Moments.Time)[frame,:]
+    elif Var == "2Dn"  : 
+                        data = fileh5.root.Moments.Density[Z,:,:,species,frame]
+                        T = getTime(fileh5.root.Moments.Time)[frame,:]
     elif Var == "2DHeatFlux"  : 
                         data = fileh5.root.Moments.HeatFlux[Z,:,:,species,frame]
                         T = getTime(fileh5.root.Moments.Time)[frame,:]

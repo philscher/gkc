@@ -80,15 +80,15 @@ def setPlotOutputPublication():
 # good for presentation, bad for viewing
 def setPlotOutputThesis():
     # open HDF5 File
-    rcParams['axes.labelsize'] = 15.
-    rcParams['axes.labelsize'] = 15.
-    rcParams['xtick.labelsize'] = 'x-large'
-    rcParams['ytick.labelsize'] = 'x-large'
-    rcParams['lines.markersize']  = 9.   
-    rcParams['font.size'] =           9.0
+    rcParams['axes.labelsize'] = 22.
+    rcParams['axes.labelsize'] = 22.
+    rcParams['xtick.labelsize'] = 'xx-large'
+    rcParams['ytick.labelsize'] = 'xx-large'
+    rcParams['lines.markersize']  = 10.   
+    rcParams['font.size'] =           12.0
     rcParams['font.weight'] =           'bold'
     rcParams['lines.linewidth'] = 4.
-    rcParams['legend.fontsize'] = '15'
+    rcParams['legend.fontsize'] = '26'
     #rcParams['axes.color_cycle'] = markers_C
 
 
@@ -188,6 +188,6 @@ def plotContourWithColorbar(X,Y,data, **kwargs):
 
     
 
-def plotZeroLine(x_start, x_end):
+def plotZeroLine(x_start, x_end, color="#666666"):
         T = linspace(x_start, x_end, 301)
-        plot(T, zeros(len(T)), '-', linewidth=1.5, color="#666666")
+        plot(T, zeros(len(T)), '-', linewidth=1.5, color=color)
