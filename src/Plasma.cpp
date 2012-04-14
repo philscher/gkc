@@ -31,6 +31,7 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo, con
       cs      = setup->get("Plasma.cs",   1. );
       
       nfields  = ((beta > 0.e0)  ? 2 : 1);
+      nfields  = (setup->get("Plasma.Bp", 0 ) == 1) ? 3 : nfields;
       
       // adiabatic species
         std::string species_name = setup->get("Plasma.Species0.Name"  , "Unnamed") + " (adiab.)";
@@ -56,7 +57,9 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo, con
         species(s).n0  = setup->get(key + ".Density" , 0. );
         species(s).T0  = setup->get(key + ".Temperature" , 1. );
         species(s).q   = setup->get(key + ".Charge"  , 1. );
-        species(s).doGyro   = do_gyro; 
+        species(s).doGyro = setup->get(key + ".Gyro"  , 1 );
+        species(s).f0_str = setup->get(key + ".F0"  , "n/(pi*T)^1.5*exp(-v^2/T)*exp(-m*B/T)" );
+        species(s).f1_str = setup->get(key + ".F1"  , "0.");
        
         if(species(s).m < 1.e-10) check(-1, DMESG(std::string("Mass for species ") + std::string(species(s).name) + std::string(" choosen too low")));
   
