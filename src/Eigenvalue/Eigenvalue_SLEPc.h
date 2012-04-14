@@ -38,7 +38,8 @@ class Eigenvalue_SLEPc : public Eigenvalue {
     cmplxd tolerance;
     Mat A_F1;
     
-    TableAttr *EigVal_TableAttr;
+    TableAttr *EVTable;
+	hid_t eigvGroupID;
 
 protected:
 
