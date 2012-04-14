@@ -83,6 +83,8 @@ protected:
 virtual Array1z calcFluxSurfAvrg(Array4z rho_kykx);
 
 
+bool screenNyquist;
+
 virtual Array4z solveFieldEquations(Array4z fields, Timing timing);
 /*!
  *
@@ -113,7 +115,7 @@ public:
  *  \f[ \bar{n}(x) = \frac{B_0}{m} \int J_0(\lambda) F dv_\parallel d\mu d\theta \f]
  *
  */
-  Array3z gyroAverage(Array3z fields, int m, int s, int nField, bool gyroField=false);
+  Array4z gyroAverage(Array4z fields, int m, int s, int nField, bool gyroField=false);
     /**
      *   Lets use Dorland Filtering, which means multiplications with exp(-k_p square)
      *
@@ -122,8 +124,8 @@ public:
      *   Gyro-averaging apprximation for \f[ g_{1 sigma} = f(z,\v_\parallel) \cdot f(z, \mu)_M = f(z,v_\parallel) exp(-\frac{\hat{\mu} B}{T}) \f]
      *
      * */
-  Array3z gyroFirst(Array3z fields, int m, int s, int nField, bool gyroField=false);
-  Array3z gyroFull (Array3z fields, int m, int s, int nField, bool gyroField=false);
+  Array4z gyroFirst(Array4z fields, int m, int s, int nField, bool gyroField=false);
+  Array4z gyroFull (Array4z fields, int m, int s, int nField, bool gyroField=false);
  
   
   

@@ -17,9 +17,7 @@
 
 Analysis::Analysis(Parallel *_parallel, Vlasov *_vlasov, Fields *_fields, Grid *_grid, Setup *_setup, FFTSolver *_fft, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *_geo) : 
   parallel(_parallel),setup(_setup), vlasov(_vlasov), grid(_grid), fields(_fields), geo(_geo),  fft(_fft),
-
-     A4(FortranArray<4>()),
-     A4_z(FortranArray<4>())
+     A4(FortranArray<4>()), A4_z(FortranArray<4>())
 
   {
        scaleXYZ  = dx * dy * dz;
@@ -70,7 +68,7 @@ Analysis::~Analysis() {
 
 
             fft->rXIn(RxLD, RkyLD, RzLD, RFields) = fields->Field0(RxLD, RkyLD, RzLD,RFields);
-            fft->solve(FFT_X, FFT_FORWARD, NkyLD * NzLD * plasma->nfields);
+            fft->solve(FFT_X, FFT_FORWARD, FFT_FIELDS);
 
             
              // check if domains are valid
@@ -79,7 +77,8 @@ Analysis::~Analysis() {
             
                 // Power spectrum for X // calculate power of each mode (layout depends on real2complex or complex2complex transf.)
                 for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
-                      pSpec((int) DIR_X, n, x_k) = 
+                      pSpec((int) DIR_X, n, x_k) = sum(pow2*abs(fft->kXOut(x_k, RkyLD, RzLD, n)));
+                       //)) +  sum(pow2(abs(imag(fft->kXOut(x_k, RkyLD, RzLD, n))))))/fft->Norm_X;
                         (sum(pow2(abs(real(fft->kXOut(x_k, RkyLD, RzLD, n))))) +  sum(pow2(abs(imag(fft->kXOut(x_k, RkyLD, RzLD, n))))))/fft->Norm_X;
                       pFreq((int) DIR_X, n, x_k) =  sum(fft->kXOut(x_k, RkyLD, RzLD, n))/fft->Norm_X;
                         
@@ -88,7 +87,8 @@ Analysis::~Analysis() {
                 // Power Spectrum Y
                  for(int y_k = NkyLlD; y_k <=  NkyLuD ; y_k++) { 
                    // simplify this
-                   pSpec((int) DIR_Y, n, y_k) = sum(pow2(abs(real(fields->Field0(RxLD,y_k,RzLD, n))))) + sum(pow2(abs(imag((fields->Field0(RxLD,y_k,RzLD, n)))))); 
+                   //pSpec((int) DIR_Y, n, y_k) = sum(pow2(abs(real(fields->Field0(RxLD,y_k,RzLD, n))))) + sum(pow2(abs(imag((fields->Field0(RxLD,y_k,RzLD, n)))))); 
+                   pSpec((int) DIR_Y, n, y_k) = sum(pow2(abs(fields->Field0(RxLD,y_k,RzLD, n))));
                    pFreq((int) DIR_Y, n, y_k) = sum(fields->Field0(RxLD,y_k,RzLD, n));
                  }
             }
@@ -158,8 +158,8 @@ Analysis::~Analysis() {
       if(parallel->Coord(DIR_VMS) == 0) {
         
 
-        fft->rXIn(RxLD, RkyLD, RzLD, Field::phi) = fields->Field0(RxLD,RkyLD, RzLD, Field::phi);
-        fft->solve(FFT_X, FFT_FORWARD, NkyLD * NzLD);
+        fft->rXIn(RxLD, RkyLD, RzLD, RFields) = fields->Field0(RxLD,RkyLD, RzLD, RFields);
+        fft->solve(FFT_X, FFT_FORWARD, FFT_FIELDS);
 
         // Add only kinetic contributions
         for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int z=NzLlD; z<=NzLuD;z++) { for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {

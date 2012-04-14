@@ -267,7 +267,7 @@ Fields::~Fields() {
   void Fields::initDataOutput(Setup *setup, FileIO *fileIO) {
      
      hsize_t field_dim[]      =  { grid->NzGD, grid->NkyGD, grid->NxGD  ,             1};
-     hsize_t field_chunkBdim[] = { NzLB, grid->NkyGD, NxLB+4,             1};
+     hsize_t field_chunkBdim[] = { NzLB      , grid->NkyGD, NxLB+4      ,             1};
      hsize_t field_chunkdim[] =  { NzLD      , NkyLD      , NxLD        ,             1};
      hsize_t field_maxdim[]   =  { grid->NzGD, grid->NkyGD, grid->NxGD  , H5S_UNLIMITED};
      hsize_t field_moffset[]   = { 2, 0, 4, 0 };
