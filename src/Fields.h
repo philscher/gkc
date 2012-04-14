@@ -124,7 +124,7 @@ public:
  *
  *
  * */
-virtual Array3z calculateChargeDensity         (Array6z f0,  Array6z f);
+virtual Array3z calculateChargeDensity         (Array6z f0,  Array6z f, const int m, const int s);
 
 
 /**
@@ -136,7 +136,7 @@ virtual Array3z calculateChargeDensity         (Array6z f0,  Array6z f);
  *  \f]
  *
  */
-virtual Array3z calculateParallelCurrentDensity(Array6z f0, Array6z f );
+virtual Array3z calculateParallelCurrentDensity(Array6z f0, Array6z f, const int m, const int s );
 
 /**
  *  Calculates the perpendicular current density
@@ -150,7 +150,7 @@ virtual Array3z calculateParallelCurrentDensity(Array6z f0, Array6z f );
  *
  *  Note : Defined virtual, as there may be more effective implementations
  */
-virtual Array3z calculatePerpendicularCurrentDensity(Array6z f0, Array6z f );
+virtual Array3z calculatePerpendicularCurrentDensity(Array6z f0, Array6z f, const int m, const int s );
 
 
 
@@ -200,7 +200,7 @@ public:
    
   
   std::string  ApPerturbationStr;
-  virtual Array3z gyroAverage(Array3z fields, int m, int s, int nField, bool gyroField=false) = 0;
+  virtual Array4z gyroAverage(Array4z fields, int m, int s, int nField, bool gyroField=false) = 0;
   //* Electric potential and Electric fields
   Array4z  Q, Field0;
   Array6z  Field;
@@ -237,7 +237,7 @@ public:
   virtual void writeData(Timing timing, double dt);
   
   void closeData();
-  Timing dataOutputPhi;
+  Timing dataOutputFields;
 
   int getSolveEq() const { return solveEq; };
 protected:
