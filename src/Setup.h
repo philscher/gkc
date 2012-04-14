@@ -14,6 +14,10 @@
 #ifndef SETUP_H__
 #define SETUP_H__
 
+
+// define to compile Fparser with complex number support
+#define FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+
 #include <string>
 #include <cctype>
 #include <fstream>
@@ -72,7 +76,8 @@ static double string_to_double( const std::string s )
     std::string setupFilename, configFileString;
     std::string parser_constants;
 
-    FunctionParser getFParser();
+    FunctionParser    getFParser();
+//    FunctionParser_cd getFParser_cd();
    // Some user function
 
    Setup(const int argc, char **argv, std::string setup_filename = "", std::string setup_decomposition= "1:1:1:1:1:1", std::string setup_Xoptions="", std::string setup_ExArgv="", int process_id=0, int flags=0);
@@ -81,6 +86,7 @@ static double string_to_double( const std::string s )
 
 
 
+   static std::string Setup::eraseCharacter(std::string str, std::string chars);
    static std::string trimLower(std::string str, bool lowerCase=true);
    static std::vector<std::string> split(std::string str, std::string delim);
    int parseOption(std::string line, bool fromFile = true);

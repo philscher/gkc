@@ -4,7 +4,7 @@
 #include<iostream>
 #include <unistd.h>
 
-#include "Helios.h"
+#include "GKC.h"
 
 #include "Global.h"
 
@@ -66,7 +66,7 @@ int main(int argc, char **argv)
             case 'x' : setup_ExArgv        = std::string(optarg);
                        break;
             case 'd' : 
-#ifdef HELIOS_PARALLEL_MPI            
+#ifdef GKC_PARALLEL_MPI            
                        setup_decomposition = std::string(optarg);
 #else
             std::cout <<  "ERROR :  Decompostion only available when compiled with MPI support ... exiting." << std::endl;
@@ -121,7 +121,7 @@ int main(int argc, char **argv)
    
     if((heliosFlags & HELIOS_STATISTICS) && (process_rank == 0)) {
 	int numThreads=1;
-#ifdef HELIOS_PARALLEL_OPENMP
+#ifdef GKC_PARALLEL_OPENMP
 	#pragma omp parallel
 	{
 		numThreads = omp_get_num_threads();

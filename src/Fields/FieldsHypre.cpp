@@ -23,6 +23,12 @@ FieldsHypre::FieldsHypre(Setup *setup, Grid *grid, Parallel *parallel, FileIO *f
      
    HYPRE_StructGridCreate(parallel->Comm[DIR_XYZ], 2, &poisson_grid);
    HYPRE_StructGridSetExtents(poisson_grid, NXky_LlD, NXky_LuD);
+
+
+   //int BD_periodic[] = { NxLuD, 0 };
+   //HYPRE_StructGridSetPeriodic (poisson_grid, BD_periodic);
+
+
    HYPRE_StructGridAssemble(poisson_grid);
    
    // set Matrixes
@@ -38,13 +44,16 @@ FieldsHypre::FieldsHypre(Setup *setup, Grid *grid, Parallel *parallel, FileIO *f
      
    
    // Initialize solver
-   tolerance = setup->get("Hypre.Tolerance", 1.0e-9);
+   tolerance = setup->get("Hypre.Tolerance", 1.0e-12);
    
    HYPRE_StructPCGCreate(parallel->Comm[DIR_XYZ], &solver);
+   //HYPRE_StructGMRESCreate(parallel->Comm[DIR_XYZ], &solver);
    HYPRE_StructPCGSetTol(solver, tolerance);
    HYPRE_StructPCGSetPrintLevel(solver, 1);
    HYPRE_StructPCGSetup(solver, A, vec_b, vec_x);
+   //HYPRE_StructGMRESSetup(solver, A, vec_b, vec_x);
 
+   HYPRE_StructDiagScaleSetup(solver, A,vec_b, vec_x);
    // initialize Arrays
    rho_star.resize(RxLD, RkyLD, RzLD);
 }
@@ -81,15 +90,21 @@ Array3z FieldsHypre::solvePoissonEquation(Array3z rho, Timing timing)
         HYPRE_StructVectorSetBoxValues(vec_b, NXky_LlD, NXky_LuD, values_R);
         HYPRE_StructVectorAssemble(vec_b);
     
+   HYPRE_StructDiagScaleSetup(solver, A,vec_b, vec_x);
+        HYPRE_StructPCGSetup(solver, A, vec_b, vec_x);
         HYPRE_StructPCGSolve(solver, A, vec_b, vec_x);
-        HYPRE_StructVectorGetBoxValues(vec_x, NXky_LlD, NXky_LuD, values_R);
+        //HYPRE_StructGMRESSolve(solver, A, vec_b, vec_x);
+        //HYPRE_StructVectorGetBoxValues(vec_x, NXky_LlD, NXky_LuD, values_R);
     
         // solve Imag
         HYPRE_StructVectorSetBoxValues(vec_b, NXky_LlD, NXky_LuD, values_I);
         HYPRE_StructVectorAssemble(vec_b);
-
+   
+   HYPRE_StructDiagScaleSetup(solver, A,vec_b, vec_x);
+        HYPRE_StructPCGSetup(solver, A, vec_b, vec_x);
         HYPRE_StructPCGSolve(solver, A, vec_b, vec_x);
-        HYPRE_StructVectorGetBoxValues(vec_x, NXky_LlD, NXky_LuD, values_I);
+        //HYPRE_StructGMRESSolve(solver, A, vec_b, vec_x);
+        //HYPRE_StructVectorGetBoxValues(vec_x, NXky_LlD, NXky_LuD, values_I);
         
         // back to real imaginary
         for(int x = NxLlD, k = 0; x <= NxLuD; x++)  { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++, k++) {
@@ -137,13 +152,15 @@ void FieldsHypre::setupMatrixPoissonEquation(int n_points) {
             // 2nd order discretization
             if(n_points == 2) {
                 const double h = dx*dx;
-                values[k++] = plasma->debye2 + 2. + 2./h + ky2 ;
-                values[k++] = ((x+1) <= NxGuD) ? -1./h : 0.;
+                values[k++] = 1. + (2.+plasma->debye2) * (2./h + ky2) ;
+                values[k++] =  - (2.+plasma->debye2)/h ;
+                //values[k++] = ((x+1) >= NxGlD) ?  - (2.+plasma->debye2)/h : 0.;
+                //values[k++] = ((x+1) <= NxGuD) ?  - (2.+plasma->debye2)/h : 0.;
             }
             // 4th order discretization
             else if(n_points == 3) {
                 const double h = 12.*dx*dx;
-                values[k++] = plasma->debye2 + 2. + 2./h + ky2 ;
+                values[k++] = (plasma->debye2 + 2.) + 2./h + ky2 ;
                 values[k++] = ((x+1) <= NxGuD) ? -16./h : 0.;
                 values[k++] = ((x+2) <= NxGuD) ?   1./h : 0.;
             }
@@ -181,6 +198,37 @@ Array4z FieldsHypre::solveFieldEquations(Array4z Q, Timing timing)
 
 void FieldsHypre::calcRhoStar(Array4z Q) 
 {
+    
+    //if(plasma->species(0).doGyro)  phi_yz = calcFluxSurfAvrg(fft->kXOut);
+    
+    fft->rXIn(RxLD, RkyLD, RzLD, RFields) = Q(RxLD, RkyLD, RzLD, RFields);
+    fft->solve(FFT_X, FFT_FORWARD, NkyLD * NzLD * plasma->nfields);
+    const double rho_t2 = plasma->species(1).T0  * plasma->species(1).m / pow2(plasma->species(1).q * plasma->B0);
+    
+    #pragma omp parallel for
+    for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int z=NzLlD; z<=NzLuD;z++) { for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
+
+          if((x_k == 0) && (y_k == 0)) { fft->kXIn(x_k,y_k,z, Field::phi) = (cmplxd) 0.e0 ; continue; }
+          
+          const double b = rho_t2 * fft->k2_p(x_k,y_k,z);
+          
+          //const cmplxd rhs  = (fft->kXOut(x_k,y_k,z, Q::rho) + adiab * phi_yz(x_k))/fft->Norm_X; 
+          const cmplxd rhs  = fft->kXOut(x_k,y_k,z, Q::rho)/fft->Norm_X; 
+          
+          fft->kXIn(x_k,y_k,z, Field::phi) = (1. + b) * rhs; 
+         
+    } } }
+   
+    fft->solve(FFT_X, FFT_BACKWARD, NkyLD * NzLD * plasma->nfields);
+   
+    rho_star(RxLD, RkyLD, RzLD) = fft->rXOut(RxLD, RkyLD, RzLD, Field::phi);
+
+    return;
+}
+
+/* 
+void FieldsHypre::calcRhoStar(Array4z Q) 
+{
 
 
       for(int z = NzLlD; z <= NzLuD; z++) {
@@ -195,3 +243,4 @@ void FieldsHypre::calcRhoStar(Array4z Q)
     }
 
 }
+ * */

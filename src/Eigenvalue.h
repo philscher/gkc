@@ -28,7 +28,7 @@ class Eigenvalue : public IfaceHelios {
 
 struct EigenValue {
     cmplxd EigenValue;
-    cmplxd AbsoluteError;
+    double AbsoluteError;
 };
 
 
@@ -37,7 +37,7 @@ protected:
   Grid     *grid;
 
 public:
-  Eigenvalue(Setup *setup, Grid *_grid, Parallel *_parallel) : parallel(_parallel), grid(_grid) {};
+  Eigenvalue(FileIO *fileIO, Setup *setup, Grid *_grid, Parallel *_parallel) : parallel(_parallel), grid(_grid) {};
   virtual void solve(Vlasov *vlasov, Fields *fields, Visualization *visual, Control *control) = 0;
   virtual ~Eigenvalue() {};
 

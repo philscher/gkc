@@ -85,7 +85,7 @@ typedef struct Complex_t {
     int FileIO::create(Setup *setup) {
      
         hid_t file_plist = H5Pcreate(H5P_FILE_ACCESS);
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
    //       pass some information onto the underlying MPI_File_open call 
           MPI_Info file_info;
           check(MPI_Info_create(&file_info), DMESG("File info"));
@@ -105,7 +105,7 @@ typedef struct Complex_t {
                         H5P_DEFAULT, file_plist ), DMESG("H5FCreate : HDF5 File (File already exists ? use -f to overwrite) : " + outputFileName));
         check( H5Pclose(file_plist),   DMESG("H5Pclose"));
 
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
         MPI_Info_free(&file_info);
 #endif
         
@@ -133,17 +133,22 @@ typedef struct Complex_t {
          /// Wrote setup constants, ugly here ////
          hid_t constantsGroup = check(H5Gcreate(file, "/Constants",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phasespace : H5Gcreate"));
          //
-         std::vector<std::string> const_vec = Setup::split(setup->parser_constants, ",");
-         for(int s = 0; s < const_vec.size(); s++) { 
-            std::vector<std::string> key_value = Setup::split(const_vec[s],"=");
-            double value = Setup::string_to_double(key_value[1]);
-            int dim[] = { 1 };
-   //         check(H5LTmake_dataset_double(constantsGroup, Setup::trimLower(key_value[0], false).c_str(), 1, dim, &value ), DMESG("Write Constants Attributes"));
-            check(H5LTset_attribute_double(constantsGroup, ".", Setup::trimLower(key_value[0], false).c_str(), &value, 1), DMESG("H5LTset_attribute"));
-            //check(H5LTset_attribute_double(constantsGroup, ".", Setup::trimLower(key_value[0], false).c_str(), &(Setup::string_to_double(key_value[1])), 1), DMESG("H5LTset_attribute"));
-         };
+         if (!setup->parser_constants.empty()) { 
+            
+           std::vector<std::string> const_vec = Setup::split(setup->parser_constants, ",");
+
+            for(int s = 0; s < const_vec.size(); s++) { 
+                std::vector<std::string> key_value = Setup::split(const_vec[s],"=");
+                double value = Setup::string_to_double(key_value[1]);
+                int dim[] = { 1 };
+   //           check(H5LTmake_dataset_double(constantsGroup, Setup::trimLower(key_value[0], false).c_str(), 1, dim, &value ), DMESG("Write Constants Attributes"));
+                check(H5LTset_attribute_double(constantsGroup, ".", Setup::trimLower(key_value[0], false).c_str(), &value, 1), DMESG("H5LTset_attribute"));
+                //check(H5LTset_attribute_double(constantsGroup, ".", Setup::trimLower(key_value[0], false).c_str(), &(Setup::string_to_double(key_value[1])), 1), DMESG("H5LTset_attribute"));
+            };
          
-         H5Gclose(constantsGroup);
+         }
+         
+          H5Gclose(constantsGroup);
 
          
          // ********************* setup Table for CFL   *****************88
@@ -209,7 +214,7 @@ typedef struct Complex_t {
            file_in = check(H5Fopen( inputFileName.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT), DMESG("H5Fopen : inputFileName"));
           // E-Potential
           hid_t phi_plist_in = H5P_DEFAULT; 
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
           phi_plist_in = H5Pcreate(H5P_DATASET_XFER);
           H5Pset_dxpl_mpio(phi_plist_in, H5FD_MPIO_COLLECTIVE);
 #endif     
@@ -223,7 +228,7 @@ typedef struct Complex_t {
        
         // Phasespace function
         hid_t psf_plist_in = H5P_DEFAULT;
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
         psf_plist_in = H5Pcreate(H5P_DATASET_XFER);
         H5Pset_dxpl_mpio(psf_plist_in, H5FD_MPIO_COLLECTIVE);
 #endif

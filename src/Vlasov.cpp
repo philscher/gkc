@@ -23,7 +23,7 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
         allocate(RxLB, RkyLD, RzLB, RvLB, RmLD, RsLD, f0, f, fss, fs, f1, ft);
         
         // for electro-static simulations we don"t need this but overhead
-        allocate(RxLD, RkyLD, RzLD, RvLD, G, Xi);
+        allocate(RxLB, RkyLD, RzLB, RvLB, G, Xi);
         
         
         // allocate boundary (mpi) buffers
@@ -57,7 +57,7 @@ int Vlasov::solve(Fields *fields, Array6z  _fs, Array6z  _fss, double dt, int rk
 
 int Vlasov::cleanBoundary(Array6z A)
 {
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
     // now wait until MPI communication finished and arrays are updated
     parallel->updateNeighboursBarrier();
     
@@ -85,7 +85,7 @@ int Vlasov::setBoundary(Array6z  A , int boundary_type) {
   
     // X-Boundary
     if(parallel->decomposition(DIR_X) > 1) {
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
     // We do not need to communicate for M and S as we do not have boundary cells
     SendXl(RB, RkyLD, RzLD, RvLD, RmLD, RsLD) = A(Range(NxLlD  , NxLlD+1), RkyLD, RzLD, RvLD, RmLD, RsLD);
     SendXu(RB, RkyLD, RzLD, RvLD, RmLD, RsLD) = A(Range(NxLuD-1, NxLuD  ), RkyLD, RzLD, RvLD, RmLD, RsLD);
@@ -100,7 +100,7 @@ int Vlasov::setBoundary(Array6z  A , int boundary_type) {
 
   // Z-Boundary 
     if((parallel->decomposition(DIR_Z) > 1) && (Nz > 1)) {
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
 
 	check(-1, DMESG("Boundary not implemented"));
 /*
@@ -144,7 +144,7 @@ int Vlasov::setBoundary(Array6z  A , int boundary_type) {
 */  
 
     if(parallel->decomposition(DIR_V) > 1) {
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
     SendVl(RxLD, RkyLD,  RzLD, RB, RmLD, RsLD) = A(RxLD, RkyLD, RzLD, Range(NvLlD  , NvLlD+1), RmLD, RsLD);
     SendVu(RxLD, RkyLD,  RzLD, RB, RmLD, RsLD) = A(RxLD, RkyLD, RzLD, Range(NvLuD-1, NvLuD  ), RmLD, RsLD);
     parallel->updateNeighbours(SendVu, SendVl, RecvVu, RecvVl, DIR_V);

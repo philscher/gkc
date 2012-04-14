@@ -68,10 +68,12 @@ static inline double BesselI1( double x ) {
 
 
 
+// total simulations 100% slower !
 //static inline  double _1mGamma0(const double b, bool gyro=true) {
 //    if(gyro) return  1. - BesselI0(b)*exp(-b);
 //    else     return  b;
 // };
+
 
 static inline  double _1mGamma0(const double b, bool gyro=true) {
     if(gyro) return  b / ( 1.e0 + b);
@@ -119,7 +121,8 @@ inline  double sum_qqnT_1mG0(const double k2_p) {
         const double qqnT   = plasma->species(s).n0 * pow2(plasma->species(s).q)/plasma->species(s).T0;
         const double rho_t2 = plasma->species(s).T0  * plasma->species(s).m / pow2(plasma->species(s).q * plasma->B0);
         
-        g0 += qqnT * _1mGamma0( rho_t2 * k2_p);
+        if(plasma->species(s).doGyro == true) g0 += qqnT * _1mGamma0( rho_t2 * k2_p);
+        else g0 += qqnT * (rho_t2 * k2_p);
     }
     return g0;
 };
@@ -178,7 +181,6 @@ inline  double sum_sa2qG0(const double kp_2) {
         //if(plasma->species(s).doGyro == true) g0 += sa2q * I0(b)*exp(-b);
         if(plasma->species(s).doGyro == true) g0  += sa2q * (1.e0 - _1mGamma0(b));
         else g0 += sa2q;
-        //g0 += sa2q * (1.e0 - _1mGamma0( rho_t2 * kp_2, plasma->species(s).doGyro));
     }
     return g0;
 };
@@ -253,7 +255,6 @@ double epsilon_0, sigma;
      *   and sets the Fourier mode to zero.
      */
     int suppressModes(Array4z k2Out, const int field=1);
-    int suppress3DMode(Array4d A);
 
 
 };

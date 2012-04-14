@@ -26,7 +26,7 @@
 
 
 enum FFT_DIR    {FFT_NO=0, FFT_FORWARD=1, FFT_BACKWARD=2 };
-enum FFT_FLAGS  {FFT_DUMMY=0, FFT_XYZ=1, FFT_X=2, FFT_XY=4, FFT_Y=16, FFT_AA=32 };
+enum FFT_FLAGS  {FFT_DUMMY=0, FFT_XYZ=1, FFT_X=2, FFT_XY=4, FFT_Y=16, FFT_AA=32, FFT_FIELDS=64};
 
 
 // note we only support r2c, you can add simply suport for c2c as parallelization efficiency

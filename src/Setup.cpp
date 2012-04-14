@@ -46,7 +46,7 @@ template<typename T> void PrintVector(const std::vector<T>& t){
   @2 chars : chatacters to replace
 */
 
-std::string eraseCharacter(std::string str, std::string chars) {
+std::string Setup::eraseCharacter(std::string str, std::string chars) {
 
     for(int p, s = 0; s < chars.length(); s++) { 
     	while((p = str.find(chars[s])) != std::string::npos) str.erase(p,1);
@@ -159,8 +159,7 @@ std::string eraseCharacter(std::string str, std::string chars) {
       file.close();
       
       if(flags & HELIOS_READ_STDIN) {
-       // while(std::getline(file, line)) parseOption(line);
-        
+         while(std::getline(file, line)) parseOption(line);
       }
       // parse options from command line input
       if(setup_Xoptions != "")  {
@@ -174,7 +173,7 @@ std::string eraseCharacter(std::string str, std::string chars) {
 
      // ToDo : check some values
     
-     parser_constants = eraseCharacter(get("Setup.Constants", ""), " {}");
+     parser_constants = eraseCharacter(get("Setup.Constants", ""), "{}");
 
   }
 
@@ -218,14 +217,46 @@ FunctionParser Setup::getFParser() {
 
     // we can define in values as Setup.Parser = { eps = 0.01; sigma = 0.1 }, we need to parse it
     // split in eps = 0.01
-
-    std::vector<std::string> const_vec = split(parser_constants, ",");
-    for(int s = 0; s < const_vec.size(); s++) { 
+    //  BUG : Crashes if parser_constants is empty. Why ?
+    if (!parser_constants.empty()) {
+      std::cout << "----------------------->  Reading Constants " << std::endl << std::flush;
+        std::vector<std::string> const_vec = split(parser_constants, ",");
+        for(int s = 0; s < const_vec.size(); s++) { 
             std::vector<std::string> key_value = split(const_vec[s],"=");
             parser.AddConstant(trimLower(key_value[0], false), string_to_double(key_value[1]));
-    };
-    
+        };
+    }
     return parser;
 
  
 }
+/* 
+FunctionParser_cd Setup::getFParser_cd() {
+
+    FunctionParser_cd parser;
+
+    parser.AddConstant("pi", M_PI);
+    parser.AddConstant("Lx", Lx); parser.AddConstant("Nx", (double) Nx);
+    parser.AddConstant("Ly", Ly); parser.AddConstant("Nky", (double) Nky);
+    parser.AddConstant("Lz", Lz); parser.AddConstant("Nz", (double) Nz);
+    parser.AddConstant("Lv", Lv); parser.AddConstant("Nv", (double) Nv);
+    parser.AddConstant("Lm", Lm); parser.AddConstant("Nm", (double) Nm);
+    parser.AddConstant("Ns", (double) Ns);
+//    parser.AddConstant("shat", geometry->shear);
+
+    // we can define in values as Setup.Parser = { eps = 0.01; sigma = 0.1 }, we need to parse it
+    // split in eps = 0.01
+    //  BUG : Crashes if parser_constants is empty. Why ?
+    if (!parser_constants.empty()) {
+      std::cout << "----------------------->  Reading Constants " << std::endl << std::flush;
+        std::vector<std::string> const_vec = split(parser_constants, ",");
+        for(int s = 0; s < const_vec.size(); s++) { 
+            std::vector<std::string> key_value = split(const_vec[s],"=");
+            parser.AddConstant(trimLower(key_value[0], false), string_to_double(key_value[1]));
+        };
+    }
+    return parser;
+
+ 
+}
+ * */
