@@ -27,6 +27,9 @@ extern int control_triggered_signal;
 
 
 class Control {
+  
+  bool useControlFile;
+
 
   class CntrlID {
     bool ok;
