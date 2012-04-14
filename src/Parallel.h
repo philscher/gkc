@@ -11,9 +11,9 @@
 #include <omp.h>
 #endif
 
-enum Operations {OP_NULL = 0, OP_SUM=1, OP_MAX=2, OP_MIN=3};
+enum Operations {OP_NULL = 0, OP_SUM=1, OP_MAX=2, OP_MIN=3, OP_BOR=4, OP_BAND};
 
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
 
 #include <mpi.h>
 
@@ -57,7 +57,7 @@ class Parallel : public IfaceHelios {
   //! switches if OpenMP, MPI or OpenCL is during compule time
   bool useOpenMP, useMPI, useOpenCL;
 
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
   Array<NeighbourDir, 1> Talk;
    MPI_Status stat; 
 //   int rankMyY0, rankMyX0, rankFFT1DMaster;
@@ -86,7 +86,7 @@ MPI_Datatype getMPIDataType(const std::type_info &T);
    // no periodic boundary conditions. e.g. for velocity.
    template<typename T, int W> int updateNeighbours(Array<T,W>  Sendu,  Array<T,W>  Sendl,  Array<T,W>  Recvu, Array<T,W>  Recvl, int dir) {
         
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
         MPI_Irecv(Recvl.data(), Recvl.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_l, Talk(dir).psf_msg_tag[0], Comm[DIR_ALL], &Talk(dir).psf_msg_request[1]);
         MPI_Isend(Sendu.data(), Sendu.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_u, Talk(dir).psf_msg_tag[0], Comm[DIR_ALL], &Talk(dir).psf_msg_request[0]);
         if(Talk(dir).rank_u == MPI_PROC_NULL)   Recvl = 0.e0;
@@ -94,30 +94,32 @@ MPI_Datatype getMPIDataType(const std::type_info &T);
         MPI_Irecv(Recvu.data(), Recvu.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_u, Talk(dir).psf_msg_tag[1], Comm[DIR_ALL], &Talk(dir).psf_msg_request[3]); 
         MPI_Isend(Sendl.data(), Sendl.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_l, Talk(dir).psf_msg_tag[1], Comm[DIR_ALL], &Talk(dir).psf_msg_request[2]);
         if(Talk(dir).rank_l == MPI_PROC_NULL)   Recvu = 0.e0;
-#endif // HELIOS_PARALLEL_MPI
+#endif // GKC_PARALLEL_MPI
       return HELIOS_SUCCESS;
 
    };
    int updateNeighboursBarrier();
    
    template<typename T, int W> int updateNeighbours(Array<T,W>  Sendu,  Array<T,W>  Sendl,  Array<T,W>  Recvu, Array<T,W>  Recvl, int dir, bool nonBlocking) {
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
         int msg_tag[] = { 4998 , 4999};
         MPI_Status  msg_status[2];
 
         MPI_Sendrecv(Sendu.data(), Sendu.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_u, msg_tag[1], 
-                     Recvl.data(), Recvl.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_l, msg_tag[1], Comm[dir],  &msg_status[0]);
+                     //Recvl.data(), Recvl.umElements(), getMPIDataType(typeid(T)), Talk(dir).rank_l, msg_tag[1], Comm[dir],  &msg_status[0]);
+                     Recvl.data(), Recvl.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_l, msg_tag[1], Comm[DIR_ALL],  &msg_status[0]);
         MPI_Sendrecv(Sendl.data(), Sendl.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_l, msg_tag[0], 
-                     Recvu.data(), Recvu.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_u, msg_tag[0], Comm[dir], &msg_status[1]);
+                     //Recvu.data(), Recvu.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_u, msg_tag[0], Comm[dir], &msg_status[1]);
+                     Recvu.data(), Recvu.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_u, msg_tag[0], Comm[DIR_ALL], &msg_status[1]);
  
-#endif // HELIOS_PARALLEL_MPI
+#endif // GKC_PARALLEL_MPI
       return HELIOS_SUCCESS;
 
    };
    
  
 template<typename T, int W> int send(Array<T,W> A, int dir=DIR_ALL) {
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
      if(dir <= DIR_S) if(decomposition(dir) == 1) return HELIOS_SUCCESS;
     // rank differ between communicators, so we should take care of rankFFTMaster
      check(MPI_Bcast(A.data(), A.numElements(), getMPIDataType(typeid(T)), dirMaster[dir], Comm[dir]), DMESG("MPI_Bcast")); 
@@ -132,7 +134,7 @@ template<class T> int send(T &x, bool isRoot, int dir=DIR_ALL) {
     int master_rank = collect(isRoot ? myRank : 0, OP_SUM, dir);
     master_rank = 0;
 
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
      if(dir <= DIR_S) if(decomposition(dir) == 1) return HELIOS_SUCCESS;
     // rank differ between communicators, so we should take care of rankFFTMaster
      check(MPI_Bcast(&x, 1, getMPIDataType(typeid(T)), master_rank, Comm[dir]), DMESG("MPI_Bcast")); 
@@ -143,7 +145,7 @@ template<class T> int send(T &x, bool isRoot, int dir=DIR_ALL) {
 
 template<class T>  T  collect(T x, int op = OP_SUM, int dir=DIR_ALL, bool allreduce=true)
 {
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
         T global_dValue;
        // we need allreduce instead of reduce because H5TB need all process to have the same value
        check(MPI_Allreduce(&x, &global_dValue, 1, getMPIDataType(typeid(T)), getMPIOp(op), Comm[dir]), DMESG("MPI_Reduce")); 
@@ -153,7 +155,7 @@ template<class T>  T  collect(T x, int op = OP_SUM, int dir=DIR_ALL, bool allred
 }
 
 template<typename T, int W> Array<T,W> collect(Array<T,W> A, int op=OP_SUM, int dir=DIR_ALL, bool allreduce=true) {
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
      // Return immediately if we don't decompose in this direction
      if(dir <= DIR_S) if(decomposition(dir) == 1) return A;
     
@@ -202,7 +204,7 @@ template<typename T, int W> Array<T,W> collect(Array<T,W> A, int op=OP_SUM, int 
       } else output << std::endl;
      
 
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
 /* 
 //if(setup->flags & HELIOS_VERBOSE) {
                 for(int rank = 0; rank < parallel.numProcesses; rank++) {
@@ -221,7 +223,7 @@ template<typename T, int W> Array<T,W> collect(Array<T,W> A, int op=OP_SUM, int 
 //                }
 }
  * */
-#endif // HELIOS_PARALLEL_MPI
+#endif // GKC_PARALLEL_MPI
     };
      virtual void initDataOutput(FileIO *fileIO) {};
      virtual void writeData(Timing *timing) {};
