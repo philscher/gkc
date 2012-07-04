@@ -28,7 +28,9 @@
 
 static inline double BesselI0( const double x )
 /* ------------------------------------------------------------
- *  PURPOSE: Evaluate modified Bessel function In(x) and n=0.  
+ *  PURPOSE: Evaluate modified Bessel function In(x) and n=0.
+ *
+ *   Anychange to get beeter implementations ?
  * ------------------------------------------------------------*/
 {
      double ax,ans;
@@ -69,22 +71,17 @@ static inline double BesselI1( double x ) {
 
 
 // total simulations 100% slower !
-//static inline  double _1mGamma0(const double b, bool gyro=true) {
-//    if(gyro) return  1. - BesselI0(b)*exp(-b);
-//    else     return  b;
-// };
-
-
 static inline  double _1mGamma0(const double b, bool gyro=true) {
-    if(gyro) return  b / ( 1.e0 + b);
+    if(gyro) return  1. - BesselI0(b)*exp(-b);
     else     return  b;
  };
 
-//__declspec(vector) static inline  double _1mGamma0(const double b) {
-static inline  double _21mGamma0(const double b) {
-    return  b / ( 1.e0 + b);
-   // return  1. - BesselI0(b)*exp(-b);
- };
+
+//static inline  double _1mGamma0(const double b, bool gyro=true) {
+//    if(gyro) return  b / ( 1.e0 + b);
+//    else     return  b;
+// };
+
 
 static inline  double Gamma0(const double b, bool gyro=true) {
     if(gyro) return  BesselI0(b)*exp(-b);
@@ -120,9 +117,12 @@ inline  double sum_qqnT_1mG0(const double k2_p) {
     for(int s = NsGlD; s <= NsGuD; s++) {
         const double qqnT   = plasma->species(s).n0 * pow2(plasma->species(s).q)/plasma->species(s).T0;
         const double rho_t2 = plasma->species(s).T0  * plasma->species(s).m / pow2(plasma->species(s).q * plasma->B0);
-        
+       
+        // doGyro = true
         if(plasma->species(s).doGyro == true) g0 += qqnT * _1mGamma0( rho_t2 * k2_p);
         else g0 += qqnT * (rho_t2 * k2_p);
+        
+        //g0 += qqnT * _1mGamma0( rho_t2 * k2_p, plasma->species(s).doGyro);
     }
     return g0;
 };

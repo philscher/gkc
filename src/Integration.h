@@ -1,18 +1,39 @@
+/*
+ * =====================================================================================
+ *
+ *       Filename: Integration.h
+ *
+ *    Description: Helper file for Gaussian-Integration. 
+ *
+ *                 However should be 
+ *                 done as an interface with proper Gauss-Hermite/Tanh-Sinh or
+ *                 Linear intergration.
+ *
+ *         Author: Paul P. Hilscher (2010-), 
+ *
+ *        License: GPLv3+
+ *
+ *
+ *        Notes  : Improve implementation, looks quite ugly.
+ *
+ *
+ * =====================================================================================
+ */
 
 
 #ifndef __INTEGRATE_H_
 #define __INTEGRATE_H_
 
 
-#include "Special/GaussWeights.h"
+#include "Special/GaussLegendreWeights.h"
 
-class Integrate {
+class Integration {
 Array1d points;
 Array1d weights;
   
   public:
 
-    Integrate(Range RLocal, int N, double L, bool useGauss) {
+    Integration(Range RLocal, int N, double L, bool useGauss) {
       weights.resize(RLocal);
       points.resize(RLocal);
 
@@ -39,9 +60,12 @@ Array1d weights;
         weights(i+1) = L/2. * weights_arr[pos];
       }
     } else {
+      // skip over 0 ? 
+      //for(int i = RLocal.first(); i <= RLocal.last(); i++) points (i) = (i-1) * L/((double) N);
       for(int i = RLocal.first(); i <= RLocal.last(); i++) points (i) = (i-1) * L/((double) N);
        weights = L/((double) N);
     }
+
 };
 Array1d getPoints() {
     return points;

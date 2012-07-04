@@ -109,6 +109,7 @@ std::string Setup::eraseCharacter(std::string str, std::string chars) {
    flags(_flags)
   {
     commandLineOptions = setup_Xoptions;
+    extraLineOptions   = setup_ExArgv;
       setupFilename = setup_filename;
       ///////////////////////////////////////////////////////////////////////////////////////
       // Create own, see http://stackoverflow.com/questions/1511797/convert-string-to-argv-in-c
@@ -219,7 +220,6 @@ FunctionParser Setup::getFParser() {
     // split in eps = 0.01
     //  BUG : Crashes if parser_constants is empty. Why ?
     if (!parser_constants.empty()) {
-      std::cout << "----------------------->  Reading Constants " << std::endl << std::flush;
         std::vector<std::string> const_vec = split(parser_constants, ",");
         for(int s = 0; s < const_vec.size(); s++) { 
             std::vector<std::string> key_value = split(const_vec[s],"=");

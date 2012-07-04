@@ -26,26 +26,68 @@
 
 enum Boundary  { BOUNDARY_DIRTY=0,  BOUNDARY_CLEAN=1};
 class Event;
+class PETScMatrixVector;
 //! class for solving the Vlasov equation
 /*! We solve the 6 dimensional Vlasov equation (X, Y, Z, Vp), m, s 
  *
  */
 class Vlasov : public IfaceHelios {
 
+  /**
+   *    Please Document Me !
+   *
+   **/
   friend class Event;
+
+  /**
+   *    Please Document Me !
+   *
+   **/
+  friend class PETScMatrixVector;
+
   protected:
+  /**
+   *    Please Document Me !
+   *
+   **/
         double collisionBeta;
   private:
-		
+  /**
+   *    Please Document Me !
+   *
+   **/
+        std::string useBoundary;
+
         Array6z f_boundary;
         
-        // Array for boundary
+        /**
+         *
+         *    Temperary buffer for boundary exchange using message passing for
+         *    X,Y,Z,V
+         *
+         *    Note : Add also M, (later S) 
+         *
+         *    which will be needed for neo-classical collisions
+         *
+         */ 
         Array6z  SendYu, SendXu, SendYl, SendXl, SendVl, SendVu, SendZl, SendZu; 
         Array6z  RecvYu, RecvXu, RecvYl, RecvXl, RecvVl, RecvVu, RecvZl, RecvZu;
       
+  /**
+   *    Please Document Me !
+   *
+   **/
         bool boundary_isclean;
+  /**
+   *    Please Document Me !
+   *
+   **/
         int cleanBoundary(Array6z A);
   protected:
+  /**
+   *    Please Document Me !
+   *
+   **/
         bool useAntiAliasing;
         FFTSolver *fft;
         Parallel *parallel;
@@ -53,9 +95,46 @@ class Vlasov : public IfaceHelios {
         Collisions     *collisions;
         Setup *setup;
         Geometry<HELIOS_GEOMETRY> *geo;
-        double hyper_visc;        
+
+        /**
+         *   Stabilize simulation by adding a small amount of hyper-viscosity.
+         *   Especially needed in x-direction to avoid odd-even decoupling.
+         *
+         *   Is this similar effect as mentioned in 
+         *    JJ. Quirk , A contribution to the great Riemann solver debate, 1994 ?
+         *
+         *   Values between 1.e-5 - 1.e-3 are OK, otherwise it will have impact on
+         *   physical results.
+         *
+         **/
+        double hyper_visc[DIR_ALL];        
+  /**
+   *    Please Document Me !
+   *
+   **/
         std::string equation_type;
+  /**
+   *    Please Document Me !
+   *
+   **/
         bool calculate_nonLinear;
+    
+        /**
+         *
+         *  Set the Krook operator 
+         *
+         *  \frac{\partial g_{1sigma}}{\partial t} = \dots - \nu(x) g_{1\sigma}
+         *
+         * Is used to damp oscillations close to the simulation boundary.
+         *
+         *  Note : 
+         *          * Is this the no-slip boundary condition ?
+         *          * Violates conservation of particles, energy and momentum and
+         *            needs to be fixed by modifing the fields. See Lapillone.
+         *
+         *
+         * */
+        double krook_nu;
 
         /**
          *   
@@ -84,23 +163,75 @@ class Vlasov : public IfaceHelios {
          *
          *
          * */
+        
+        /**
+         *
+         *
+         *
+         *  Solve Vlasov equation for the current integration step. This is just a wrapper to 
+         *  Unfortunatelty right now this is hard-wired. 
+         *
+         *
+         *
+         **/
+        virtual int solve(std::string equation_type, Fields *fields, Array6z fs, Array6z fss, double dt, int rk_step, int user_boundary_type=BOUNDARY_CLEAN) = 0;
   public:
+  /**
+   *    Please Document Me !
+   *
+   **/
 	    Array1d  Xi_max;
+  /**
+   *    Please Document Me !
+   *
+   **/
         Array6z f0, f, fs, fss, ft, f1;
+  /**
+   *    Please Document Me !
+   *
+   **/
         Array4z G, Xi;
 
+  /**
+   *    Please Document Me !
+   *
+   **/
         Vlasov(Grid *grid, Parallel *parallel, Setup *setup, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo, FFTSolver *fft);
-        virtual ~Vlasov() {};
+        /**
+         *  Destructor
+         *  Free Arrays
+         *
+         **/
+        virtual ~Vlasov();
 
-        // ! Solve Vlasov equation for current timestep
+        /**
+         *
+         *  Calls Vlasov::solve(equation type ...)
+         *  Handles boundary conditions
+         *
+         **/
         int solve(Fields *fields, Array6z fs, Array6z fss, double dt, int rk_step, int user_boundary_type=BOUNDARY_CLEAN);
-        virtual int solve(std::string equation_type, Fields *fields, Array6z fs, Array6z fss, double dt, int rk_step, int user_boundary_type=BOUNDARY_CLEAN) = 0;
+
+  /**
+   *    Please Document Me !
+   *
+   **/
         int setBoundary(Array6z  A, int boundary_type=BOUNDARY_CLEAN);
 
 
-        std::string getEquationType() { return equation_type;};
+  /**
+   *    Please Document Me !
+   *
+   **/
+        std::string getEquationType() const { return equation_type;};
 
-        // for global f simulation we update f
+        /**
+         *    for global f simulation we update f
+         *
+         *
+         *   ToDo : Skeleton, update new Naxwellian background
+         *
+         */ 
         int updateMaxwellian() { return HELIOS_SUCCESS;};
 
         /**
@@ -118,7 +249,20 @@ class Vlasov : public IfaceHelios {
         double getMaxTimeStep(int dir, const double maxCFL);
 
 
-
+        /**
+         *
+         *
+         *   Updated the CFL (Courant-Friedrich-Levy number). For explicit time-stepening
+         *   the CFL value has to be always < 1 to ensure stability of the system
+         *   (practically < 0.4).
+         *   
+         *   Note : Stability is still not guranteed. As the system is unstable. Thus the
+         *          time-steppening scheme needs to allows imaginary values e.g.
+         *          (RK-3, RK-4, Heun method).
+         *
+         *   Calculated using ....
+         *
+         * */
         inline void updateCFL(const cmplxd dphi_dx, const cmplxd dphi_dy, const cmplxd dphi_dz) {
 
              Xi_max(DIR_X) = max(Xi_max(DIR_X), abs(dphi_dx));
@@ -128,40 +272,26 @@ class Vlasov : public IfaceHelios {
         };
   protected :
 
-        void printOn(ostream &output) const;
+  /**
+   *    Please Document Me !
+   *
+   **/
+     void printOn(ostream &output) const;
 
-
-     virtual void initDataOutput(hid_t groupID, FileIO *fileIO) = 0;
-     virtual void initDataOutput(FileIO *fileIO) {
-
-        // Data Output
-        //
-     //##########################     // For the phase space function //###########################
-     
-          //////////////////////////////////////////////////////////////// Phasespace Group ////////////////////////////////////////////////////////
-          hid_t psfGroup = check(H5Gcreate(fileIO->getFileID(), "/Vlasov",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phasespace : H5Gcreate"));
-          initDataOutput(psfGroup, fileIO);
-     /*
-          hsize_t psf_offset[7] =  { NsLlB-1, NmLlB-1, NvLlB-1, NzLlB-1, NyLlB-1, NxLlB-1, 0 };
-        
-         // FA_psf->create(psfGroup, "Data", psf_offset);
-         // FA_psfTime->create(psfGroup, "Timing", offset0);
-        
-        
-        
-        hsize_t psf_dim[]       = { grid->NsGD, grid->NmGD, grid->NvGD, grid->NzGD, grid->NyGD, grid->NxGD,  1 };
-     hsize_t psf_maxdim[]    = { grid->NsGD, grid->NmGD, grid->NvGD, grid->NzGD, grid->NyGD, grid->NxGD, H5S_UNLIMITED};
-     hsize_t psf_moffset[]   = { 0, 0, 2, 2, 2, 2, 0 };
-     hsize_t psf_chunkBdim[] = { grid->NsGD, grid->NmGD, grid->NvLB, grid->NzLB,  grid->NyLB, grid->NxLB, 1};
-     hsize_t psf_chunkdim[]  = {NsLD, NmLD, NvLD, NzLD, NyLD, NxLD, 1};
-     
-    // FA_psf      = new FileAttr("Unnamed",7, psf_dim, psf_maxdim, psf_chunkdim, psf_moffset,  psf_chunkBdim, true);
-    // FA_psfTime  = new FileAttr("Unnamed",1, time_dim, timing_maxdim, timing_chunkdim, offset0,  timing_chunkdim, parallel->myRank == 0, timing_tid);
-     */
-          
-          H5Gclose(psfGroup);
-     };
+  /**
+   *    Please Document Me !
+   *
+   **/
+     virtual void initDataOutput(FileIO *fileIO);
+  /**
+   *    Please Document Me !
+   *
+   **/
      virtual void writeData(Timing *timing) {};
+  /**
+   *    Please Document Me !
+   *
+   **/
      virtual void closeData() {};
 
 };

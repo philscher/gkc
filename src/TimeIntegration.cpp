@@ -23,8 +23,7 @@ TimeIntegration::TimeIntegration(Setup *setup, Grid *grid, Parallel *_parallel, 
     
     linearSafetyFactor  = setup->get("Helios.LinearSafetyFactor", 0.8);
 
-     maxLinearTimeStep = (setup->get("Helios.CFLEigv", 1) == 1) ? getMaxTimeStepFromEigenvalue(eigenvalue->getMaxAbsEigenvalue(vlasov, fields))
-                                                                : vlasov->getMaxTimeStep(DIR_V, maxCFLNumber);
+     linearTimeStep = setup->get("Helios.LinearTimeStep", "Eigenvalue");
     
     useCFL         = setup->get("Helios.useCFL", 1);
     maxCFLNumber   = setup->get("Helios.maxCFLNumber", 0.4);
@@ -39,7 +38,17 @@ TimeIntegration::TimeIntegration(Setup *setup, Grid *grid, Parallel *_parallel, 
 };
 
 
+void TimeIntegration::setMaxLinearTimeStep(Eigenvalue *eigenvalue, Vlasov *vlasov, Fields *fields, const double lin_dt)
+{
+  if(lin_dt <= 0.) {
+    if     (linearTimeStep == "CFL"       ) maxLinearTimeStep = vlasov->getMaxTimeStep(DIR_V, maxCFLNumber);
+    else if(linearTimeStep == "Eigenvalue") maxLinearTimeStep = getMaxTimeStepFromEigenvalue(eigenvalue->getMaxAbsEigenvalue(vlasov, fields));
+    else if(linearTimeStep == "Fixed"     ) maxLinearTimeStep = dt;
+    else                                   maxLinearTimeStep = atof(linearTimeStep.c_str());
+  } 
+  else maxLinearTimeStep = lin_dt;
 
+}
 
 double TimeIntegration::getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv)
 {
@@ -53,6 +62,7 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv)
 
  double TimeIntegration::solveTimeStep(Vlasov *vlasov, Fields *fields, TestParticles *particles, Timing &timing) 
 {
+            // OK, we assume only posiitive timesteps ffor now
   
             // set maximum timestep. We reduce intial timsteps in case  initial condition is violant (for right side take care of overflow)
         	if(useCFL == true) dt = min(maxLinearTimeStep, vlasov->getMaxTimeStep(DIR_XY, maxCFLNumber)) ; //* ((timing.step <= 100) ? min(1., 1.e-3 * (timing.step)) : 1));
@@ -182,12 +192,13 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv)
 
 
 int TimeIntegration::writeTimeStep(Timing timing, Timing maxTiming, double dt) {
-         
+        
+//         TerminalIO::print(
          if(parallel->myRank == 0) {
                    std::cout << "\r"   << "Steps  : " << timing.step  << "/" << maxTiming.step 
                    << "       Time : " << timing.time << "/" << maxTiming.time << "  dt  : " << dt 
                    << std::flush;
-                  if(timing.step % 50 == 0)  std::cout << Timing::getRemainingTimeString(timing, maxTiming, start_time);
+                  if(timing.step % 20 == 0)  std::cout << Timing::getRemainingTimeString(timing, maxTiming, start_time);
          }
 
          return 0;

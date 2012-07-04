@@ -1,3 +1,18 @@
+/*
+ * =====================================================================================
+ *
+ *       Filename: Parallel.cpp
+ *
+ *    Description: Implementation of Parallelization options. Now mainly uses
+ *                 OpenMPI
+ *
+ *         Author: Paul P. Hilscher (2010), 
+ *
+ *        License: GPLv3+
+ * =====================================================================================
+ */
+
+
 
 #include "Global.h"
 #include "Parallel.h"
@@ -172,6 +187,14 @@ Parallel::Parallel(Setup *setup)
     int remain_dim_XYZVM[6] = {true, true, true, true, true ,false};
     MPI_Cart_sub(Comm[DIR_ALL], remain_dim_XYZVM, &Comm[DIR_XYZVM]);
     MPI_Cart_rank  (Comm[DIR_XYZVM], coord_master, &dirMaster[DIR_XYZVM]);
+    
+    int remain_dim_XMS[6] = {true, false, false, false, true , true};
+    MPI_Cart_sub(Comm[DIR_ALL], remain_dim_XMS, &Comm[DIR_XMS]);
+    MPI_Cart_rank  (Comm[DIR_XMS], coord_master, &dirMaster[DIR_XMS]);
+    
+    int remain_dim_XM[6] = {true, false, false, false, true ,false};
+    MPI_Cart_sub(Comm[DIR_ALL], remain_dim_XM, &Comm[DIR_XM]);
+    MPI_Cart_rank  (Comm[DIR_XM], coord_master, &dirMaster[DIR_XM]);
 
 
    // because ranks changed withing groups, we need to translate them between the communicators

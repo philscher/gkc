@@ -28,6 +28,7 @@
 #include "Fields.h"
 
 class TimeIntegration {
+  std::string linearTimeStep;
   protected:
        std::string timeIntegrationScheme;
        Parallel *parallel;
@@ -78,6 +79,8 @@ class TimeIntegration {
     
     TimeIntegration(Setup *setup, Grid *grid, Parallel *parallel, Vlasov *vlasov, Fields *fields, Eigenvalue *eigenvalue);
     int writeTimeStep(Timing timing, Timing maxTiming, double dt);
+
+    void setMaxLinearTimeStep(Eigenvalue *eigenvalue, Vlasov *vlasov, Fields *fields, const double lin_dt = 0.);
    
     
   private:

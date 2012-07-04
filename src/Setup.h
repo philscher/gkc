@@ -43,7 +43,7 @@ class Setup : public IfaceHelios {
     map   <std::string, std::string> config;
     vector<std::string> config_check;
 
-    std::string commandLineOptions;
+    std::string commandLineOptions, extraLineOptions;
 public:
  
  /** create a stringstream
@@ -86,7 +86,7 @@ static double string_to_double( const std::string s )
 
 
 
-   static std::string Setup::eraseCharacter(std::string str, std::string chars);
+   static std::string eraseCharacter(std::string str, std::string chars);
    static std::string trimLower(std::string str, bool lowerCase=true);
    static std::vector<std::string> split(std::string str, std::string delim);
    int parseOption(std::string line, bool fromFile = true);
@@ -171,6 +171,7 @@ protected:
    virtual void printOn(ostream &output) const {
          output << "Parser     | Parsing Config  File" << std::endl;
          if(commandLineOptions != "")   output << "Parser   | with " << commandLineOptions << std::endl;
+         if(extraLineOptions != "")   output << "Extra   | with " << commandLineOptions << std::endl;
 	 if(parser_constants != "")   output <<   "         | FParser Constants : " << parser_constants << std::endl; 
     
  }

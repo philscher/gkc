@@ -94,12 +94,12 @@ public:
    *
    *   \f[ \gamma_1 = g_{xx} g_{yy} - g_{xy} g_{yx} \f]
    */ 
-  inline  double g1(const int x, const int y, const int z) { return g_xx(x,y,z) * g_yy(x,y,z) - pow2(g_xy(x,y,z))          ; };
+  inline  double g_1(const int x, const int y, const int z) { return g_xx(x,y,z) * g_yy(x,y,z) - pow2(g_xy(x,y,z))          ; };
   /**  Helper function
    *
    *   \f[ \gamma_2 = g_{xx} g_{yz} - g_{xy} g_{xz} \f]
    */ 
-  inline  double g2(const int x, const int y, const int z) { return g_xx(x,y,z) * g_yz(x,y,z) - g_xy(x,y,z) * g_xz(x,y,z)  ; };
+  inline  double g_2(const int x, const int y, const int z) { return g_xx(x,y,z) * g_yz(x,y,z) - g_xy(x,y,z) * g_xz(x,y,z)  ; };
   /**  Helper function
    *
    *   \f[ \gamma_3 = g_{xy} g_{yz} - g_{yy} g_{xz} \f]
@@ -141,13 +141,6 @@ public:
   inline  double dB_dz  (const int x, const int y, const int z) { return static_cast<T*>(this)->dB_dz(x,y,z); };
 
 
-  // Virtual Friend Function Idiom.
-//   friend ostream& operator<<(ostream& output, Geometry const& g) {
-//       g.printOn(output);  
-//       return output;  // for multiple << operators.
-///  };
-
-
   // for sheared magnetic fields, we have special boundary conditions
   inline  ShearB getYPos(const int x, const int y) { return static_cast<T*>(this)->getYPos(x,y); };
   
@@ -167,7 +160,6 @@ public:
    } ;
         
 
-//     };
      virtual void writeData(Timing *timing) {};
      virtual void closeData() {};
 
@@ -175,6 +167,5 @@ public:
 };
 
 
-        //static_cast<T*>(this)->initDataOutput(fileIO, geometryGroup); 
 
 #endif // GEOMETRY_H

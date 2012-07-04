@@ -32,6 +32,7 @@
     sigma   = 0.;
     T.resize(RxLB); T = 0.;
     n.resize(RxLB); n = 0.;
+    gyroModel = "";
   };
     double q;
     double m;
@@ -50,6 +51,7 @@
     char name[64];
     char n_name[64];
     char T_name[64];
+    std::string gyroModel;
     std::string f0_str;
     std::string f1_str;
     // stupid fix, but we have to otherwise all stuff is private

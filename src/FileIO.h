@@ -45,6 +45,7 @@ class FileIO : public IfaceHelios
 {
 private:
 Timing dataFileFlushTiming;
+
 typedef struct CFLTable
 {
 //  CFLTable(int _timeStep, double _time, double _Fx, double _Fy, double _Fz, double _total) : 

@@ -22,8 +22,13 @@
 #include "FieldsFFT.h"
 //##include "FieldsDST.h"
 //#include "FieldsFEM.h"
+
+#ifdef GKC_HYPRE
 #include "FieldsHypre.h"
+#endif
+
 #include "FieldsPETSc.h"
+#include "FieldsHermite.h"
 
 #include "TimeIntegration.h"
 #include "TimeIntegration_PETSc.h"
@@ -49,6 +54,10 @@ Plasma *plasma;
 GeneralArrayStorage<6> HeliosStorage;
 GeneralArrayStorage<4> HeliosStorage4;
 
+
+
+// TODO : Linux uses UTF-8 encoding for chars per default, Windows not, how to deal with unicode ?
+
 Helios::Helios(Setup *_setup) : setup(_setup)  {
 
     // define Storage for helios (used by blitz++ arrays)
@@ -61,6 +70,9 @@ Helios::Helios(Setup *_setup) : setup(_setup)  {
 
 	// *************** Load subsystems ************** //
     parallel  = new Parallel(setup);
+
+    parallel->print("Intializing GKC");
+
     fileIO    = new FileIO(parallel, setup);
     grid      = new Grid(setup, parallel, fileIO);
     geometry  = new HELIOS_GEOMETRY(setup, fileIO);
@@ -84,16 +96,19 @@ Helios::Helios(Setup *_setup) : setup(_setup)  {
   
   
 
-    std::string psolver_type = setup->get("Helios.FieldsSolver", "DFT");
+
+
+    std::string psolver_type = setup->get("Fields.Solver", "DFT");
     if     (psolver_type == "DFT"  ) fields   = new FieldsFFT(setup, grid, parallel, fileIO, geometry, fftsolver);
 //    else if(psolver_type == "DST"  ) fields   = new FieldsDST(setup, grid, parallel, fileIO, geometry, fftsolver);
 #ifdef LIBMESH
 //    else if(psolver_type == "FEM"  ) fields   = new FieldsFEM(setup, grid, parallel, geometry, femsolver);
 #endif
-#ifdef HELIOS_HYPRE
-    else if(psolver_type == "Hypre") fields   = new FieldsHypre(setup, grid, parallel, fileIO,geometry, fftsolver);
+#ifdef GKC_HYPRE
+    else if(psolver_type == "Hypre"  ) fields   = new FieldsHypre(setup, grid, parallel, fileIO,geometry, fftsolver);
 #endif
-    else if(psolver_type == "PETSc") fields   = new FieldsPETSc(setup, grid, parallel, fileIO,geometry, fftsolver);
+    else if(psolver_type == "PETSc"  ) fields   = new FieldsPETSc(setup, grid, parallel, fileIO,geometry, fftsolver);
+    else if(psolver_type == "Hermite") fields   = new FieldsHermite(setup, grid, parallel, fileIO,geometry, fftsolver);
     else    check(-1, DMESG("No such Fields Solver"));
 
     std::string vlasov_type = setup->get("Vlasov.Solver", "Cilk");
@@ -132,7 +147,7 @@ Helios::Helios(Setup *_setup) : setup(_setup)  {
    
  
     particles = new TestParticles(fileIO, setup, parallel);
-    Helios_Type = setup->get("Helios.Type", "IVP");
+    Helios_Type = setup->get("GKC.Type", "IVP");
    
 
     // call before time integration (due to eigenvalue solver)
@@ -147,41 +162,6 @@ Helios::Helios(Setup *_setup) : setup(_setup)  {
     setup->check_config();
 
 
-    
-    /// test
-    //
-    //
-    //
-    //  Test FFT multiply
-    /*
-
-     Array3z A(RxLD, RkyLD, RzLD); A = 1.;
-     Array3z B(RxLD, RkyLD, RzLD); B = 1.;
-     Array3z C(RxLD, RkyLD, RzLD); C = 1.;
-     
-     for(int z=NzLlD; z<=NzLuD;z++) { for(int y_k=NkyLlD; y_k<=NkyLuD;y_k++) { for(int x= NxLlD; x <= NxLuD; x++) {
-       //A(x,y,z) = x + y + z;
-       A(x,y_k,z) = 2;
-       B(x,y_k,z) = 3;
-    }}}
-     fftsolver->kYIn(RxLD, RkyLD, RzLD, Field::phi)  = A(RxLD,RkyLD,RzLD);
-     fftsolver->solve(FFT_Y, FFT_BACKWARD, NxLD * NzLD);
-	        
-     for(int z=NzLlD; z<=NzLuD;z++) { for(int y=NyLlD; y<=NyLuD;y++) { for(int x= NxLlD; x <= NxLuD; x++) {
-
-        fftsolver->rYIn(x,y,z, Field::phi) = fftsolver->rYOut(x,y,z,Field::phi)/fftsolver->Norm_Y;
-
-     }}}
-     
-     fftsolver->solve(FFT_Y, FFT_FORWARD, NxLD * NzLD);
-     C(RxLD,RkyLD,RzLD) = fftsolver->kYOut(RxLD, RkyLD, RzLD, Field::phi); 
-     C(RxLD, RkyLD, RzLD) = fftsolver->multiply(A,B,C);
-        std::cout << " A : " << A << std::endl << " B : " << B << "  C : " << C << std::endl << std::endl << std::flush;
-  //   }
-        sleep(5);
-     check(-1, DMESG("FFT Multiply"));
-//
-*/
 
     
     }
@@ -192,7 +172,9 @@ int Helios::mainLoop()   {
    if (Helios_Type == "IVP") {
  
             Timing timing(0,0.) ;
-  
+            // this is ugly here ...
+            timeIntegration->setMaxLinearTimeStep(eigenvalue, vlasov, fields);
+
             for(; control->checkOK(timing, timeIntegration->maxTiming);){
         
         	    double dt = timeIntegration->solveTimeStep(vlasov, fields, particles, timing);        

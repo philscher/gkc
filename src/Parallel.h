@@ -1,3 +1,17 @@
+/*
+ * =====================================================================================
+ *
+ *       Filename: Parallel.h
+ *
+ *    Description: Parallelization functions declaration.
+ *
+ *         Author: Paul P. Hilscher (2010), 
+ *
+ *        License: GPLv3+
+ * =====================================================================================
+ */
+
+
 #ifndef __PARALELL_H
 #define __PARALELL_H
 
@@ -142,6 +156,17 @@ template<class T> int send(T &x, bool isRoot, int dir=DIR_ALL) {
        return HELIOS_SUCCESS; 
 }
    
+// Fix this
+template<class T>  T  collect2(T x, int numElements=1, int op = OP_SUM, int dir=DIR_ALL, bool allreduce=true)
+{
+#ifdef GKC_PARALLEL_MPI
+        T global_dValue;
+       // we need allreduce instead of reduce because H5TB need all process to have the same value
+       check(MPI_Allreduce(&x, &global_dValue, numElements, getMPIDataType(typeid(T)), getMPIOp(op), Comm[dir]), DMESG("MPI_Reduce")); 
+       return global_dValue; 
+#endif
+       return x; 
+}
 
 template<class T>  T  collect(T x, int op = OP_SUM, int dir=DIR_ALL, bool allreduce=true)
 {
@@ -160,7 +185,8 @@ template<typename T, int W> Array<T,W> collect(Array<T,W> A, int op=OP_SUM, int 
      if(dir <= DIR_S) if(decomposition(dir) == 1) return A;
     
      if(allreduce == true)
-        check(MPI_Allreduce(MPI_IN_PLACE, A.data(), A.numElements(), getMPIDataType(typeid(T)), getMPIOp(op),                Comm[dir]), DMESG("MPI_Allreduce")); 
+        MPI_Allreduce(MPI_IN_PLACE, A.data(), A.numElements(), getMPIDataType(typeid(T)), getMPIOp(op),                Comm[dir]), DMESG("MPI_Allreduce");
+ //       check(MPI_Allreduce(MPI_IN_PLACE, A.data(), A.numElements(), getMPIDataType(typeid(T)), getMPIOp(op),                Comm[dir]), DMESG("MPI_Allreduce")); 
      else    // note, for MPI_Reduce only root process can specify MPI_IN_PLACE
         check(MPI_Reduce   ((myRank == dirMaster[dir]) ? MPI_IN_PLACE : A.data(), A.data(), A.numElements(), getMPIDataType(typeid(T)), getMPIOp(op), dirMaster[dir], Comm[dir]), DMESG("MPI_Reduce"   )); 
 #endif
@@ -187,7 +213,20 @@ template<typename T, int W> Array<T,W> collect(Array<T,W> A, int op=OP_SUM, int 
        std::string msg_str = message.str();
        print(msg_str); 
      }; 
-     
+
+
+    int getNumberOfWorkers(int dir) {
+        int numWorkers = 0;
+        MPI_Comm_size(Comm[dir],&numWorkers);
+        return numWorkers;
+    };
+    
+    int getWorkerID(int dir) {
+        int rankWorker = 0;
+        MPI_Comm_rank(Comm[dir],&rankWorker);
+        return rankWorker;
+    };
+
   // friend ostream& operator<<(ostream& output, const Parallel& parallel) {
    virtual void printOn(ostream &output) const {
        output << "Parallel   | ";

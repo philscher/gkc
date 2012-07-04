@@ -27,12 +27,9 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    
      // Initialize Form of f, Ap, phi, and g, we need superposition between genereal f1 pertubration and species dependent
    std::string perturb_f1s_str = setup->get("Plasma.Species" + Setup::number2string(s) + ".InitF1", "0.");
-
-   FunctionParser f0s_parser = setup->getFParser();
+   std::string perturb_f1_str  = setup->get("Init.F1", "0.");
    FunctionParser f1s_parser = setup->getFParser();
-
-   check(((f0s_parser.Parse(plasma->species(s).f0_str        ,     "n,T,B,x,z,v,m") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
-   check(((f1s_parser.Parse(plasma->species(s).f1_str        ,     "n,T,B,x,z,v,m") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
+   check(((f1s_parser.Parse(perturb_f1s_str + "+" +  perturb_f1_str, "x,y,z,v,m") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
                                  
    	const double VOff = setup->get("Plasma.Species" + Setup::number2string(s) + ".VelocityOffset", 0.);
    
@@ -43,16 +40,14 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
                     const double T = plasma->species(s).T(x);
 
                     // included rotation, not additionally the flux surfacedensity is also scaled withing n = n_0 exp(e/t) 
-                   
-                    double f0_const[] = {n, T, plasma->B0, X(x), Z(z), V(v), M(m)};
-                    vlasov->f0(x,y_k,z,v,m,s) = f0s_parser.Eval(f0_const) * ((plasma->species(s).doGyro == true) ?  1. :  T/(plasma->B0));
+                    const double w = 0., r = 0;
 
 		            // although only F0(x,k_y=0,...) is not equal zero, we perturb all modes, as F0 in Fourier space "acts" like a nonlinearity, which couples modes together
-                    //vlasov->f0(x, y_k, z, v, m, s)  =  (n / pow( M_PI*T, 1.5) * exp(-pow2(V(v) - w*r + VOff)/T) * ((plasma->species(s).doGyro == true) ?   exp(- M(m)    * plasma->B0/T) :  T/(plasma->B0)));
+                    vlasov->f0(x, y_k, z, v, m, s)  =  (n / pow( M_PI*T, 1.5) * exp(-pow2(V(v) - w*r + VOff)/T) * ((plasma->species(s).doGyro == true) ?   exp(- M(m)    * plasma->B0/T) :  T/(plasma->B0)));
 
                    // for df
-                   //double pos[] = {X(x), 0., Z(z), V(v), M(m) };
-                   vlasov->f (x,y_k,z,v,m,s) = f1s_parser.Eval(f0_const);//*vlasov->f0(x,y_k,z,v,m,s);
+                   double pos[] = {X(x), 0., Z(z), V(v), M(m) };
+                   vlasov->f (x,y_k,z,v,m,s) = f1s_parser.Eval(pos)*vlasov->f0(x,y_k,z,v,m,s);
 
    }}} }}
 
@@ -84,10 +79,8 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
 
    /////////////////////////////////////// Initialize dynamic Fields for Ap (we use Canonical Momentum Method) ////////////////////////////
    if(plasma->nfields >= 2) {
-   	//FunctionParser_cd phi_parser = setup->getFParser_cd();
-   	//FunctionParser_cd Ap_parser = setup->getFParser_cd();
-   	FunctionParser phi_parser = setup->getFParser();
    	FunctionParser Ap_parser = setup->getFParser();
+   	FunctionParser phi_parser = setup->getFParser();
    	check(((phi_parser.Parse(setup->get("Init.phi", "0."), "x,ky,z") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
    	check(((Ap_parser.Parse(setup->get("Init.Ap", "0."), "x,ky,z") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
 
@@ -97,15 +90,13 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
 
          	//const cmplxd pos[3] = { X(x), Y(y_k), Z(z) };
          	const double pos[3] = { X(x), 2.*M_PI / Ly * y_k, Z(z) };
-         	fields->Field0 (x,y_k,z,Field::Ap ) = (y_k == 1) ? cmplxd(sqrt(2.),sqrt(2.)) * Ap_parser.Eval(pos) : 0.;
-         	fields->Field0(x,y_k,z, Field::phi) = cmplxd(sqrt(2.), sqrt(2.)) * phi_parser.Eval(pos);
+         //	fields->Field0 (x,y_k,z,Field::Ap ) = (y_k == 1) ? cmplxd(sqrt(2.),sqrt(2.)) * Ap_parser.Eval(pos) : 0.;
+         //	fields->Field0(x,y_k,z, Field::phi) = cmplxd(sqrt(2.), sqrt(2.)) * phi_parser.Eval(pos);
   
      	} } }
 
         fields->Field (RxLD, RkyLD, RzLD, m, s, RFields) = fields->gyroAverage(fields->Field0(RxLD,RkyLD, RzLD, RFields), m, s, Field::phi);
 
-        //        fields->phi(RxLD, RkyLD, RzLD, m, s) = fields->gyroAverage(fields->phi(RxLD,RkyLD, RzLD,  m, s), m, s, Field::phi);
-   
     	} }
            
    }
@@ -140,6 +131,7 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
 
    //////////////////////////////// construct g from f : g = f + .... .//////////////////////////////////////////////////// 
    // we defined g = f + sigma_j * alpha_j * vp * F_j0 eps * berta * Ap
+   
    for(int s = NsLlD; s <= NsLuD; s++) { for(int m   = NmLlD ; m   <= NmLuD ; m++  ) {  for(int v = NvLlD; v <= NvLuD; v++) { 
    for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  for(int x = NxLlD; x <= NxLuD; x++) {
  
@@ -158,7 +150,6 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    if (setup->get("Init.FixedPhi", "0.").substr(0,4) == "File") setFieldFromDataFile(setup, fields->Field0, Field::phi, setup->get("Init.FixedPhi", "0."));
    else if (plasma->nfields >= 1) setFieldFromFunction(setup, fields->Field0, Field::phi, setup->get("Init.FixedPhi", "0."));
 
-   std::cout << "SubString : " << setup->get("Init.FixedAp" , "0.").substr(0,4) << std::endl;
    if (setup->get("Init.FixedAp" , "0.").substr(0,4) == "File") setFieldFromDataFile(setup, fields->Field0, Field::Ap, setup->get("Init.FixedAp", "0."));
    else if (plasma->nfields >= 2) setFieldFromFunction(setup, fields->Field0, Field::Ap, setup->get("Init.FixedAp", "0."));
 
@@ -171,25 +162,24 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) {
         
         //Perform gyroaverage
-    //    if(plasma->nfields >= 1) fields->phi(RxLD, RkyLD, RzLD, m, s) = fields->gyroAverage(fields->Field0(RxLD,RkyLD, RzLD, Field::phi), m, s, Field::phi);
-   //     if(plasma->nfields >= 2) fields->Ap (RxLD, RkyLD, RzLD, m, s) = fields->gyroAverage(fields->Field0(RxLD,RkyLD, RzLD, Field::Ap ), m, s, Field::phi );
-   //     if(plasma->nfields >= 3) fields->Bp (RxLD, RkyLD, RzLD, m, s) = fields->gyroAverage(fields->Field0(RxLD,RkyLD, RzLD, Field::Bp ), m, s, Field::phi );
         fields->Field(RxLD, RkyLD, RzLD, m, s, RFields) = fields->gyroAverage(fields->Field0(RxLD,RkyLD, RzLD, RFields ), m, s, Field::phi );
    
    }}
    
    //////////////////////////////////////// Done ///////////////
    // Boundaries and Done   
-   vlasov ->setBoundary( vlasov->f0   );
-   vlasov ->setBoundary( vlasov->f    );
-   fields->setBoundary ( fields->Field);
+   vlasov->setBoundary( vlasov->f0   );
+   vlasov->setBoundary( vlasov->f    );
+   fields->setBoundary( fields->Field);
 
 };
 
 
 int Init::PerturbationPSFNoise(Vlasov *vlasov, int s, double pre) {
+    
+    // add s to initialization of RNG due to fast iteration over s (which time is not resolved)
     ranlib::UniformClosed<double> wNoise;
-    wNoise.seed(System::getTime() + System::getProcessID());
+    wNoise.seed(System::getTime() + System::getProcessID() + s);
 
    
     for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { for(int v = NvLlD; v<=NvLuD; v++) {

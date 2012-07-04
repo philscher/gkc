@@ -226,8 +226,6 @@ public:
   //* Destructor
   virtual ~Fields();
    
-  std::string gyroAverageModel;
-  
   int solve(Array6z f0, Array6z  f, Timing timing=0, int rk_step=0);
 
   FileAttr *FA_phi, *FA_Ap, *FA_Bp, *FA_phiTime;
@@ -247,7 +245,6 @@ protected:
          output   << "Ampere     |  " << ((plasma->nfields >= 2) ? "beta :  " + Num2String(plasma->beta) : " --- no electromagnetic effects ---") << std::endl;
          output   << "B_parallel |  " << ((plasma->nfields >= 3) ? "beta :  " + Num2String(plasma->beta) : " --- no electromagnetic effects ---") << std::endl;
          output   << "           |  Pert. : " << ((!(solveEq & Field::Ap) && (plasma->nfields >= 2))     ? ApPerturbationStr  : " ") << std::endl;
-         output   << "           | Gyro-Average model : " << gyroAverageModel << std::endl;
         }
 };
 

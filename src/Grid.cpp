@@ -195,10 +195,10 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
     RB.setRange(0,1);
     RB4.setRange(0,3);
 
-   // Init Grid variables
-    X.resize(RxGB);
+   // Init Grid variables (-2, 2) extra points
+    X.resize(Range(NxGlB-2, NxGuB+2));
     bool includeX0Point = setup->get("Grid.IncludeX0Point", 0);
-    for(int x = NxGlB; x <= NxGuB; x++) X(x) = -  Lx/2. + dx * ( x - NxGC - 1) + ((includeX0Point) ? dx/2. : 0.);
+    for(int x = NxGlB-2; x <= NxGuB+2; x++) X(x) = -  Lx/2. + dx * ( x - NxGC - 1) + ((includeX0Point) ? dx/2. : 0.);
     
     Y.resize(RyGB);
     for(int y = NyGlB; y <= NyGuB; y++) Y(y) = dy * ( y - NyGC - 1);
@@ -209,7 +209,7 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
     for(int v = NvGlB; v <= NvGuB; v++) V(v) = -  Lv + dv * ( v - NvGlD);
 
    bool useGauss = setup->get("Grid.GaussIntegration", 1);
-   M.resize(RmGB); Ipol_M = new Integrate(RmGB, Nm, Lm, useGauss);
+   M.resize(RmGB); Ipol_M = new Integration(RmGB, Nm, Lm, useGauss);
    M = Ipol_M->getPoints();
 
    //check(count(M == 0.) > 0, DMESG("We need at least one M==0 value"));
@@ -219,3 +219,57 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
 }
 
 
+void Grid::printOn(ostream &output) const {
+         output   << " Domain    |  Lx : " << Lx << "  Ly : " << Ly << "  Lz : " << Lz << "  Lv : " << Lv << ((do_gyro) ? std::string("  Lm : ") + Num2String(Lm) : "") << std::endl
+                  << " Grid      |  Nx : " << Nx << "  Nky : " << Nky << "  Nz : " << Nz << "  Nv : " << Nv << ((do_gyro) ? std::string("  Nμ : ") + Num2String(Nm) : "") << std::endl;
+     
+            
+ #ifdef _DEBUG
+            output << 
+              "Domain     | " <<
+            
+                        "X(" << Nx << " " << NxGlD << "-" << NxGuD << ") "  
+                        "Y(" << Ny << " " << NyGlD << "-" << NyGuD << ") "  
+                        "Z(" << Nz << " " << NzGlD << "-" << NzGuD << ") "  
+                        "V(" << Nv << " " << NvGlD << "-" << NvGuD << ") "  
+                        "M(" << Nm << " " << NmGlD << "-" << NmGuD << ") "  
+                        "S(" << Ns << " " << NsGlD << "-" << NsGuD << ") "  
+                                                                            << std::endl
+                        << "          | " << std::endl ;
+#endif
+           
+    }
+    
+void Grid::initDataOutput(FileIO *fileIO) {
+          
+      hid_t gridGroup = check(H5Gcreate(fileIO->getFileID(), "/Grid",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phasespace : H5Gcreate"));
+          
+
+         
+          // Length scale
+         check(H5LTset_attribute_double(gridGroup, ".", "Lx", &Lx, 1), DMESG("Attribute"));
+         check(H5LTset_attribute_double(gridGroup, ".", "Ly", &Ly, 1), DMESG("Attribute"));
+         check(H5LTset_attribute_double(gridGroup, ".", "Lz", &Lz, 1), DMESG("Attribute"));
+         check(H5LTset_attribute_double(gridGroup, ".", "Lv", &Lv, 1), DMESG("Attribute"));
+         check(H5LTset_attribute_double(gridGroup, ".", "Lm", &Lm, 1), DMESG("Attribute"));
+         
+         // Grid point number
+         check(H5LTset_attribute_int(gridGroup, ".", "Nx", &Nx, 1), DMESG("Attribute"));
+         check(H5LTset_attribute_int(gridGroup, ".", "Nky", &Nky, 1), DMESG("Attribute"));
+         check(H5LTset_attribute_int(gridGroup, ".", "Nz", &Nz, 1), DMESG("Attribute"));
+         check(H5LTset_attribute_int(gridGroup, ".", "Nv", &Nv, 1), DMESG("Attribite"));
+         check(H5LTset_attribute_int(gridGroup, ".", "Nm", &Nm, 1), DMESG("Attribute"));
+         check(H5LTset_attribute_int(gridGroup, ".", "Ns", &Ns, 1), DMESG("Attribute"));
+         
+
+ 	// set Lengths
+	check(H5LTset_attribute_double(gridGroup, ".", "X", &X(NxGlD), Nx), DMESG("Attribute"));
+//	check(H5LTset_attribute_double(gridGroup, ".", "Y", &Y(NyGlD), Ny), DMESG("Attribute"));
+	check(H5LTset_attribute_double(gridGroup, ".", "Z", &Z(NzGlD), Nz), DMESG("Attribute"));
+	check(H5LTset_attribute_double(gridGroup, ".", "V", &V(NvGlD), Nv), DMESG("Attribute"));
+	check(H5LTset_attribute_double(gridGroup, ".", "M", &M(NmGlD), Nm), DMESG("Attribute"));
+         
+    H5Gclose(gridGroup);
+
+          
+    }

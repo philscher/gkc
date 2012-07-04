@@ -63,8 +63,8 @@ void FFTSolver::checkNormalization() {
         parallel->send(Norm_Y_Forward, parallel->Coord(DIR_ALL) == 0); parallel->send(Norm_Y_Backward, parallel->Coord(DIR_ALL) == 0);
         parallel->send(Norm_X_Forward, parallel->Coord(DIR_ALL) == 0); parallel->send(Norm_X_Backward, parallel->Coord(DIR_ALL) == 0);
         parallel->barrier();
-        std::cout << parallel->myRank << "  Normalization is X : " << Norm_X_Forward << " " << Norm_X_Backward << " Full : " << Norm_X << std::endl;     	
-		std::cout << parallel->myRank << "  Normalization is Y : " << Norm_Y_Forward << " " << Norm_Y_Backward << " Full : " << Norm_Y << std::endl;     	
+        //std::cout << parallel->myRank << "  Normalization is X : " << Norm_X_Forward << " " << Norm_X_Backward << " Full : " << Norm_X << std::endl;     	
+		//std::cout << parallel->myRank << "  Normalization is Y : " << Norm_Y_Forward << " " << Norm_Y_Backward << " Full : " << Norm_Y << std::endl;     	
         parallel->barrier();
 
 		//check(-1, DMESG("Normalization"));

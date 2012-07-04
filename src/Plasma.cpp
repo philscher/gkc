@@ -34,7 +34,7 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo, con
       nfields  = (setup->get("Plasma.Bp", 0 ) == 1) ? 3 : nfields;
       
       // adiabatic species
-        std::string species_name = setup->get("Plasma.Species0.Name"  , "Unnamed") + " (adiab.)";
+      std::string species_name = setup->get("Plasma.Species0.Name"  , "Unnamed") + " (adiab.)";
       snprintf(species(0).name, sizeof(species_name.c_str()), "%s", species_name.c_str());
       
       species(0).n0   = setup->get("Plasma.Species0.Density" , 0. );
@@ -42,25 +42,26 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo, con
       species(0).q    = setup->get("Plasma.Species0.Charge" , 1. );
       species(0).m = 0.;
       // this is dummy for flux average
-      species(0).doGyro  = setup->get("Plasma.Species0.FluxAverage" , 0 );
-      // this is dummy for phase shift in the adiabatic response
-      species(0).w_n = setup->get("Plasma.Species0.Phase", 0.0 );
-      species(0).w_T = 0.;//
+      species(0).doGyro  = setup->get("Plasma.Species0.FluxAverage", 0 );
+      species(0).w_n     = setup->get("Plasma.Species0.Phase"      , 0.0 );
+      species(0).w_T     = 0.;
       
-      // kinetic species
+      // Parse Kinetic species
       for(int s = 1; s <= SPECIES_MAX; s++) { 
 
-        std::string key = "Plasma.Species" + Num2String(s); 
+        std::string key          = "Plasma.Species" + Num2String(s); 
         std::string species_name = setup->get(key + ".Name"  , "Unnamed");
         snprintf(species(s).name, sizeof(species_name.c_str()), "%s", species_name.c_str());
-        species(s).m   = setup->get(key + ".Mass"  , 1. );
-        species(s).n0  = setup->get(key + ".Density" , 0. );
-        species(s).T0  = setup->get(key + ".Temperature" , 1. );
-        species(s).q   = setup->get(key + ".Charge"  , 1. );
-        species(s).doGyro = setup->get(key + ".Gyro"  , 1 );
-        species(s).f0_str = setup->get(key + ".F0"  , "n/(pi*T)^1.5*exp(-v^2/T)*exp(-m*B/T)" );
-        species(s).f1_str = setup->get(key + ".F1"  , "0.");
-       
+        species(s).m   = setup->get(key + ".Mass"       , 1. );
+        species(s).n0  = setup->get(key + ".Density"    , 0. );
+        species(s).T0  = setup->get(key + ".Temperature", 1. );
+        species(s).q   = setup->get(key + ".Charge"     , 1. );
+        species(s).gyroModel  = setup->get(key + ".gyroModel", (Nm > 1) ? "Gyro" : "Gyro-1" );
+        species(s).f0_str = setup->get(key + ".F0"      , "n/(pi*T)^1.5*exp(-v^2/T)*exp(-m*B/T)" );
+        species(s).f1_str = setup->get(key + ".F1"      , "0.");
+        
+        species(s).doGyro = (Nm > 1) ? 1 : 0;//(species(s).gyroModel == "Drift") ? 0 : 1;
+
         if(species(s).m < 1.e-10) check(-1, DMESG(std::string("Mass for species ") + std::string(species(s).name) + std::string(" choosen too low")));
   
         
@@ -83,8 +84,8 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo, con
             } else {
                 species(s).w_T = setup->get(key + ".w_T", 0.0 );
                 species(s).w_n = setup->get(key + ".w_n", 0.0 );
-                species(s).n = species(s).n0;
-                species(s).T = species(s).T0;
+                species(s).n   = species(s).n0;
+                species(s).T   = species(s).T0;
                 snprintf(species(s).n_name, 64, "%f", species(s).n0);
                 snprintf(species(s).T_name, 64, "%f", species(s).n0);
             }
@@ -98,7 +99,7 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo, con
         //Total charge density
         double rho0_tot = 0.;
         for(int s = 0; s <= NsGuD; s++) rho0_tot += species(s).q * species(s).n0;
-        //if(rho0_tot != 0.) check(-1, DMESG("VIOLATING charge neutrality, check species q * n ! Exciting...")); 
+        if(rho0_tot != 0.) check(setup->get("Plasma.checkTotalCharge", -1), DMESG("VIOLATING charge neutrality, check species q * n ! Exciting...")); 
 
       initDataOutput(fileIO);
 
@@ -123,7 +124,7 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo, con
              output << " T : " << species(s).T_name << " n0 : " << species(s).n_name  <<  std::endl;
             } else {
              output << " T0 : " << species(s).T0 << " n0 : " << species(s).n0 <<
-             "  w_n : " << species(s).w_n << "  w_T : " << species(s).w_T << " Gyro : " << (species(s).doGyro ? "Yes" : "No") << std::endl;
+             "  w_n : " << species(s).w_n << "  w_T : " << species(s).w_T << " Model : " << species(s).gyroModel << " doGyro : " << species(s).doGyro << std::endl;
             }
  }
             output <<  "           |  Debye Length^2 : " << debye2 << "   B0 : " << B0 << "  beta : " << beta << "  w_p : " << w_p << std::endl; 

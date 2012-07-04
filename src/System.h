@@ -20,6 +20,7 @@
 #include <time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <iostream>
 
 class System 
 {
@@ -29,9 +30,13 @@ class System
     };
 
 
+    static void doSleep(int seconds) {
+    
+        unsigned int s = sleep((unsigned int) seconds);
+
+    };
     
     unsigned int static getTime() {
-
 
         return time(0);
 
