@@ -100,7 +100,7 @@ double TimeIntegration_PETSc::solveTimeStep(Vlasov *vlasov, Fields *fields, Test
             }
             else TimeIntegration::solveTimeStep(vlasov, fields, particles, timing);
 
-
+      return dt;
 }
 
 

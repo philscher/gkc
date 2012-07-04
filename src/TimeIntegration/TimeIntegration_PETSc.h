@@ -25,7 +25,6 @@
 /**
  *
  *    Implicit Time Integration Interface for PETSc.
- *    Uses SLEPc Interface.
  *
  *
  *
@@ -33,13 +32,33 @@
  **/
 class TimeIntegration_PETSc : public TimeIntegration {
     
+  /**
+   *    Please Document Me !
+   *
+   **/
     TS ts;
+  /**
+   *    Please Document Me !
+   *
+   **/
     Mat A_F1;
 
     public:
+  /**
+   *    Please Document Me !
+   *
+   **/
         TimeIntegration_PETSc(Setup *setup, Grid *grid, Parallel *parallel, Vlasov *vlasov, Fields *fields, Eigenvalue *eigenvalue);
+  /**
+   *    Please Document Me !
+   *
+   **/
         double solveTimeStep(Vlasov *vlasov, Fields *fields, TestParticles *particles, Timing &timing);
 
+  /**
+   *    Please Document Me !
+   *
+   **/
         ~TimeIntegration_PETSc();
   private:
 
