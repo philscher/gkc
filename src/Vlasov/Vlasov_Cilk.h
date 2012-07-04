@@ -22,32 +22,74 @@
 #include<iostream>
 #include<fstream>
 
+
+#include "Vlasov.h"
 #include "Global.h"
-#include "Vlasov_LenardBernstein.h"
 
 class Event;
 
-//class VlasovCilk : public Vlasov_Lorentz {
-class VlasovCilk : public Vlasov_LenardBernstein {
+
+/**
+ *
+ *  Making extensively use of Intel's Cilk Plus Array Notation to faciliate
+ *  array operations (especially vectorization). (http://software.intel.com/en-us/articles/intel-cilk-plus/)
+ *  Supported by Intel(12.1)  and GCC (svn side branch)
+ *
+ *
+ *
+ **/
+class VlasovCilk : public Vlasov {
   friend class Event;
         
+  /**
+   *    Please Document Me !
+   *
+   **/
         void setBoundaryXY(Array3d A, int dir=DIR_XY) ;
         
 	    Array3d transform2Real(Array5z A, const int m, const int s);
+  /**
+   *    Please Document Me !
+   *
+   **/
         Array3d transform2Real(Array6z A, const int v, const int m, const int s);
         // Some temporary arrays (not all are necesserally intialized !)
         Array3z dphi_dy, dphi_dx, dAp_dx, dAp_dy;
+  /**
+   *    Please Document Me !
+   *
+   **/
         Array4z k2p_phi;
-        Array4z calculatePhiNonLinearity(Array5z phi, Array6z fs, const int m, const int s);
+  /**
+   *    Please Document Me !
+   *
+   **/
+        Array4z calculatePoissonBracket(Array5z A, Array6z B, const int m, const int s);
 
         // needed for nonLinear transforms
+  /**
+   *    Please Document Me !
+   *
+   **/
         Array4z nonLinearTerms; 
+  /**
+   *    Please Document Me !
+   *
+   **/
         Array3d xy_dphi_dx, xy_dphi_dy, xy_df1_dy, xy_df1_dx, xy_phi, xy_f1;
 
+  /**
+   *    Please Document Me !
+   *
+   **/
         Array3d  SendXuR, SendXlR, RecvXuR, RecvXlR;
 
         
         
+  /**
+   *    Please Document Me !
+   *
+   **/
         void    Vlasov_2D(
                            cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplxd fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
@@ -55,12 +97,15 @@ class VlasovCilk : public Vlasov_LenardBernstein {
                            const cmplxd f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplxd ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplxd phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           //cmplxd k2_phi[NzLD][NkyLD][NxLD],
-                           cmplxd k2_phi[NzLD][NkyLD][NxLD],
+                           cmplxd k2_phi[plasma->nfields][NzLD][NkyLD][NxLD],
                            cmplxd nonLinear[NzLD][NkyLD][NxLD][NvLD],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            Fields *fields,
                            const double dt, const int rk_step, Array6z _fs);
+  /**
+   *    Please Document Me !
+   *
+   **/
        void    Vlasov_2D_Global(
                            cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplxd fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
@@ -68,26 +113,10 @@ class VlasovCilk : public Vlasov_LenardBernstein {
                            const cmplxd f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplxd ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplxd phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           //cmplxd k2_phi[NzLD][NkyLD][NxLD],
-                           cmplxd k2_phi[NzLD][NkyLD][NxLD],
+                           cmplxd k2_phi[plasma->nfields][NzLD][NkyLD][NxLD],
                            Fields *fields,
                            const double dt, const int rk_step, Array6z _fs);
 
-
-void  Vlasov_2D_Island(
-                           cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           cmplxd fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const cmplxd vf0[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const cmplxd f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           cmplxd ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const cmplxd phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           //cmplxd k2_phi[NzLD][NkyLD][NxLD],
-                           cmplxd k2_phi[NzLD][NkyLD][NxLD],
-                           cmplxd nonLinear[NzLD][NkyLD][NxLD][NvLD],
-                           cmplxd dphi_dx[NzLB][NkyLD][NxLB],
-                           const double X[NxGB], const double V[NvGB], const double M[NmGB],
-                           Fields *fields,
-                           const double dt, const int rk_step, Array6z _fs);
 
 void  Landau_Damping(
                            cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
@@ -97,12 +126,16 @@ void  Landau_Damping(
                            cmplxd ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplxd phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                            //cmplxd k2_phi[NzLD][NkyLD][NxLD],
-                           cmplxd k2_phi[NzLD][NkyLD][NxLD],
+                           cmplxd k2_phi[plasma->nfields][NzLD][NkyLD][NxLD],
                            cmplxd dphi_dx[NzLB][NkyLD][NxLB],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            Fields *fields,
                            const double dt, const int rk_step);
 
+  /**
+   *    Please Document Me !
+   *
+   **/
 void setupXiAndG(
                            const cmplxd g       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplxd f0       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
@@ -115,6 +148,10 @@ void setupXiAndG(
                            const int m, const int s);
 
 
+  /**
+   *    Please Document Me !
+   *
+   **/
 void Vlasov_EM(
                            cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplxd fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
@@ -125,7 +162,7 @@ void Vlasov_EM(
                            const cmplxd Ap [NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                            const cmplxd Bp [NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                            //cmplxd k2_phi[NzLD][NkyLD][NxLD],
-                           cmplxd k2_phi[NzLD][NkyLD][NxLD],
+                           cmplxd k2_phi[plasma->nfields][NzLD][NkyLD][NxLD],
                            cmplxd dphi_dx[NzLB][NkyLD][NxLB],
                            cmplxd Xi       [NzLD][NkyLD][NxLD  ][NvLD],
                            cmplxd G        [NzLD][NkyLD][NxLD  ][NvLD],
@@ -135,20 +172,6 @@ void Vlasov_EM(
 
 
 
-        //void Vlasov_2D(A6z fs, A6z fss, A6z ft);
-
-       /* 
-        void Vlasov_2D(cmplxd fs [NsLlB,NsLB][NmLlB,NmLB][NvLlB,NvLB][NzLlB,NzLB][NkyLlD,NkyLB][NxLlB,NxLB],
-                       cmplxd fss[NsLlB,NsLB][NmLlB,NmLB][NvLlB,NvLB][NzLlB,NzLB][NkyLlD,NkyLB][NxLlB,NxLB],
-                       cmplxd vf0[NsLlB,NsLB][NmLlB,NmLB][NvLlB,NvLB][NzLlB,NzLB][NkyLlD,NkyLB][NxLlB,NxLB],
-                       cmplxd f [NsLlB,NsLB][NmLlB,NmLB][NvLlB,NvLB][NzLlB,NzLB][NkyLlD,NkyLB][NxLlB,NxLB],
-                       cmplxd ft [NsLlB,NsLB][NmLlB,NmLB][NvLlB,NvLB][NzLlB,NzLB][NkyLlD,NkyLB][NxLlB,NxLB], Fields *fields,
-                       const double dt, const int rk_step);
-
-        * */ 
-        
-//        void Vlasov_2D_Linear_FixedAp(Array6z fs, Array6z fss, Array6z ft, Fields *fields, double dt, int rk_step);
-//        void Vlasov_2D_NonLinear_FixedAp(Array6z fs, Array6z fss, Array6z ft, Fields *fields, double dt, int rk_step);
         /**
          *   Note from Goerles PhD Thesis:
          *
@@ -171,20 +194,29 @@ void Vlasov_EM(
          *
          */
   public:
+  /**
+   *    Please Document Me !
+   *
+   **/
         VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO * fileIO, Geometry<HELIOS_GEOMETRY> *_geo, FFTSolver *fft); 
         
+  /**
+   *    Please Document Me !
+   *
+   **/
         int solve(std::string equation_tyoe, Fields *fields, Array6z fs, Array6z fss, double dt, int rk_step, int user_boundary_type=BOUNDARY_CLEAN);
  
-        double L_RF, RF0;
   protected :
-
-        void initDataOutput(hid_t vlasovGroup, FileIO *fileIO) {
-             
-                check(H5LTset_attribute_string(vlasovGroup, ".", "CollisionModel","LennardBernstein"), DMESG("H5LTset_attribute"));
-               check(H5LTset_attribute_double(vlasovGroup, ".", "CollisionBeta"   ,  &collisionBeta, 1), DMESG("H5LTset_attribute"));
-        
-        };
-        void printOn(ostream &output) const;
+  /**
+   *    Please Document Me !
+   *
+   **/
+     void printOn(ostream &output) const;
+  /**
+   *    Please Document Me !
+   *
+   **/
+        void initDataOutput(FileIO *fileIO);
 
 };
 
