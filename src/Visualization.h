@@ -94,8 +94,8 @@ class Visualization {
     
      hid_t visualGroup = check(H5Gcreate(fileIO->getFileID(), "/Visualization",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
      FA_slphi      = new FileAttr("Phi", visualGroup,       4, A3_dim, A3_maxdim, A3_chunkdim, A3_moffset,  A3_chunkBdim, A3_offset, phiWrite && plasma->nfields >= 1,fileIO->complex_tid );
-     FA_slAp       = new FileAttr("Ap",  visualGroup,      4, A3_dim, A3_maxdim, A3_chunkdim, A3_moffset,  A3_chunkBdim, A3_offset, phiWrite && plasma->nfields >= 2);
-     FA_slBp       = new FileAttr("Bp",  visualGroup,      4, A3_dim, A3_maxdim, A3_chunkdim, A3_moffset,  A3_chunkBdim, A3_offset, phiWrite && plasma->nfields >= 3);
+     FA_slAp       = new FileAttr("Ap",  visualGroup,      4, A3_dim, A3_maxdim, A3_chunkdim, A3_moffset,  A3_chunkBdim, A3_offset, phiWrite && plasma->nfields >= 2, fileIO->complex_tid);
+     FA_slBp       = new FileAttr("Bp",  visualGroup,      4, A3_dim, A3_maxdim, A3_chunkdim, A3_moffset,  A3_chunkBdim, A3_offset, phiWrite && plasma->nfields >= 3 , fileIO->complex_tid);
 
 //     FA_sln        = new FileAttr("Density",  visualGroup,     5, A4_dim, A4_maxdim, A4_chunkdim, A4_moffset, A4_chunkBdim, A4_offset, phiWrite);
 //     FA_slT        = new FileAttr("Temperature",visualGroup,   5, A4_dim, A4_maxdim, A4_chunkdim, A4_moffset, A4_chunkBdim, A4_offset, phiWrite);
