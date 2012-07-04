@@ -142,3 +142,41 @@ def getGrowthEnergy(fileh5, pos=(-1,-10)):
 
 
 
+def getFrequency(fileh5, pos=(-10,-1), dir='Y'):
+  #import FitFunction  
+  Z = 0
+  frame=-1
+
+  D = HeliosPlot.getDomain(fileh5)
+  
+  frequency = []
+    
+
+  def fitFrequency(T,Y,offset=0):
+
+       phase = atan2(np.imag(Y[0,-10])/np.real(Y[0,-10]))
+       dT   = (T[0,-10]/T[0,-10])
+
+       fitfunc = lambda p, x: p[0]*x + p[1] 
+       errfunc = lambda p, x, y: fitfunc(p, x) - y
+       
+       p, success = optimize.leastsq(errfunc, [-1.0e-5, 0.0001], args=(T[offset:], log(abs(Y[offset:]))))
+       return p[0]
+
+
+
+
+  for nky in range(len(D['ky'])): 
+
+    if   dir == 'Y': phi = fileh5.root.Visualization.Phi[Z,nky,:,frame]
+    else : print "No Suck direction"
+    
+    T   = gkcData.getTime(fileh5.root.Analysis.PowerSpectrum.Time[pos[0]:pos[1]])[:,1]
+    
+    frequency.append(fitfrequency(T,Phi[nky,:]))
+
+    print "Fitting from T = ", fileh5.root.Analysis.PowerSpectrum.Time[pos[0]][1], \
+                   " to T = " , fileh5.root.Analysis.PowerSpectrum.Time[pos[1]][1]
+
+  return (D['ky'], frequency)
+

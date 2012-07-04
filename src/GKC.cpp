@@ -96,7 +96,7 @@ Helios::Helios(Setup *_setup) : setup(_setup)  {
     visual   = new Visualization(grid, parallel, setup, fileIO, vlasov, fields);
     event    = new Event(setup, grid, parallel, fileIO, geometry);
     
-    eigenvalue = new Eigenvalue_SLEPc(setup, grid, parallel); 
+    eigenvalue = new Eigenvalue_SLEPc(fileIO, setup, grid, parallel); 
     // *******************************************   //
 
    
