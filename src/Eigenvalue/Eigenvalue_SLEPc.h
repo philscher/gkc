@@ -33,29 +33,72 @@
 class Eigenvalue_SLEPc : public Eigenvalue {
 
 
+  /**
+   *    Please Document Me !
+   *
+   **/
     EPS EigvSolver;
 
+  /**
+   *    Please Document Me !
+   *
+   **/
     cmplxd tolerance;
+  /**
+   *    Please Document Me !
+   *
+   **/
     Mat A_F1;
     
+  /**
+   *    Please Document Me !
+   *
+   **/
     TableAttr *EVTable;
+  /**
+   *    Please Document Me !
+   *
+   **/
 	hid_t eigvGroupID;
 
 protected:
 
 public:
+  /**
+   *    Please Document Me !
+   *
+   **/
   Eigenvalue_SLEPc(FileIO *fileIO, Setup *setup, Grid *grid, Parallel *_parallel);
+  /**
+   *    Please Document Me !
+   *
+   **/
   void solve(Vlasov *vlasov, Fields *fields, Visualization *visual, Control *control);
+  /**
+   *    Please Document Me !
+   *
+   **/
   virtual ~Eigenvalue_SLEPc();
 
-  /** Get Maximum Absolute Eigenvalue */
+  /**
+   *    Please Document Me !
+   * Get Maximum Absolute Eigenvalue 
+   *
+   **/
   cmplxd getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields);
 protected :
+  /**
+   *    Please Document Me !
+   *
+   **/
    void print2On(ostream &output);
 
 private:
+  /**
+   *    Please Document Me !
+   *
+   **/
    void initDataOutput(Setup *setup, FileIO *fileIO);
-   //void write();
 };
 
 

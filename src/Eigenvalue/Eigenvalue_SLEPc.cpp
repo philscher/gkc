@@ -26,12 +26,19 @@ Eigenvalue_SLEPc::Eigenvalue_SLEPc(FileIO *fileIO, Setup *setup, Grid *grid, Par
     
       SlepcInitialize(&setup->argc, &setup->argv, (char *) 0,  help);
      
-      // Don't let PETSc catch signals
+      // Don't let PETSc catch signals, We handle signals ourselved in Control.cpp
       PetscPopSignalHandler();
+      //PetscPushSignalHandler(petc_signal_handler, NULL);
 
       // create Matrix Operations
       int subDiv=0;
-      MatCreateShell(parallel->Comm[DIR_ALL], grid->getLocalSize(), grid->getLocalSize(), grid->getGlobalSize(), grid->getGlobalSize(), &subDiv, &A_F1);
+
+      // Note : We do not include Zonal Flow (ZF)
+      int local_size  = NxLD       * (NkyLD-1) * NzLD       * NvLD       * NmLD       * NsLD;
+      int global_size = grid->NxGD * (NkyLD-1) * grid->NzGD * grid->NvGD * grid->NmGD * grid->NsGD;
+
+      //MatCreateShell(parallel->Comm[DIR_ALL], grid->getLocalSize(), grid->getLocalSize(), grid->getGlobalSize(), grid->getGlobalSize(), &subDiv, &A_F1);
+      MatCreateShell(parallel->Comm[DIR_ALL], local_size, local_size, global_size, global_size, &subDiv, &A_F1);
       MatSetFromOptions(A_F1);
 
       MatShellSetOperation(A_F1, MATOP_MULT, (void(*)()) PETScMatrixVector::MatrixVectorProduct);
@@ -40,6 +47,9 @@ Eigenvalue_SLEPc::Eigenvalue_SLEPc(FileIO *fileIO, Setup *setup, Grid *grid, Par
       EPSCreate(parallel->Comm[DIR_ALL], &EigvSolver);
       EPSSetProblemType(EigvSolver, EPS_NHEP);
       EPSSetOperators(EigvSolver, A_F1, PETSC_NULL);
+    
+    // Krylov-Schur most promising one, Power does not converge
+      EPSSetType(EigvSolver, EPSKRYLOVSCHUR);
       
       // use e.g. -x "-st_shift 0.2" to set more properties
       EPSSetFromOptions(EigvSolver);
@@ -54,12 +64,13 @@ cmplxd Eigenvalue_SLEPc::getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields)
     
     EPSSetWhichEigenpairs(EigvSolver, EPS_LARGEST_MAGNITUDE);
 
-    // Krylov-Schur most promising one, Power does not converge
-    EPSSetType(EigvSolver, EPSKRYLOVSCHUR);
-
     // Solve Eigenvalues
     PETScMatrixVector pMV(vlasov, fields);
+    
+    
+    //control->signalForceExit(true);
     EPSSolve(EigvSolver);
+    //control->signalForceExit(false);
 
 
     // Get Eigenvalues
@@ -67,7 +78,7 @@ cmplxd Eigenvalue_SLEPc::getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields)
     EPSGetConverged(EigvSolver, &nconv);
 
     Vec    Vec_F1;   
-    cmplxd *x_Vec_F1 = PETScMatrixVector::getCreateVector(grid, Vec_F1);
+    cmplxd *x_Vec_F1 = PETScMatrixVector::getCreateVector(grid, Vec_F1);//, DIR_ALL);
    
     cmplxd eigv, eigv_dummy;
     if(nconv > 0) MatGetVecs(A_F1, PETSC_NULL, &Vec_F1);
@@ -86,18 +97,19 @@ cmplxd Eigenvalue_SLEPc::getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields)
 void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visual, Control *control) 
 {
 
-    EPSSetType(EigvSolver, EPSKRYLOVSCHUR);
 
     //EPSSetWhichEigenpairs(EigvSolver, EPS_LARGEST_REAL);
-    int n_eigv = Nx*Nky*Nz*Nv*Nm*Ns;
-    EPSSetDimensions(EigvSolver, n_eigv, n_eigv, 100); 
+    
+    //int n_eigv = 2000;//Nx*Nky*Nz*Nv*Nm*Ns;
+    int n_eigv = grid->NxGD * (NkyLD-1) * grid->NzGD * grid->NvGD * grid->NmGD * grid->NsGD;
+    EPSSetDimensions(EigvSolver, n_eigv, PETSC_DECIDE, PETSC_DECIDE); 
     // init intial solution vector 
-    if(0 == 1) {
+    if(1 == 0) {
         Vec Vec_init;
         cmplxd *init_x = PETScMatrixVector::getCreateVector(grid, Vec_init);
     
-        for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
-        for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD ; m   <= NmLuD ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
+        for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
+        for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD   ; m   <= NmLuD ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
 
                 init_x[n++] = 1.e-5 * vlasov->f1(x,y_k,z,v,m,s);
 
@@ -110,8 +122,13 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
 
     //////// Solve ////////
     PETScMatrixVector pMV(vlasov, fields);
-    EPSSolve(EigvSolver);
 
+    control->signalForceExit(true);
+    EPSSolve(EigvSolver);
+    control->signalForceExit(false);
+
+    
+//EPSSetBalance(EigvSolver, EPS_BALANCE_ONESIDE, 16, 1.e-13);
 
     int nconv = 0;
     EPSGetConverged(EigvSolver, &nconv);
@@ -150,8 +167,8 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
 
             // copy whole phase space function (waste but starting point) (important due to bounday conditions
            // we can built wrapper around this and directly pass it
-   for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
-   for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD ; m   <= NmLuD ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
+   for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
+   for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD   ; m   <= NmLuD ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
 
                 vlasov->fs(x,y_k,z,v,m,s) = x_F1[n++];
 
