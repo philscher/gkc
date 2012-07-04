@@ -64,6 +64,7 @@ public:
     std::string cntrl_file_name;
 
     Control(Setup *setup, Parallel *_parallel, Analysis *_analysis);
+    void signalForceExit(bool val);
 
     ~Control();
      

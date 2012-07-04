@@ -16,7 +16,9 @@
 
 
 extern Helios *helios;
-    
+   
+bool force_exit = false;
+
 Control::Control(Setup *setup, Parallel *_parallel, Analysis *_analysis) : parallel(_parallel), analysis(_analysis) {
 
         // set our control file, this is same for all processes and set to mpi root process id 
@@ -39,7 +41,10 @@ Control::Control(Setup *setup, Parallel *_parallel, Analysis *_analysis) : paral
 
      setSignalHandler();
 };
-    
+   
+void Control::signalForceExit(bool val) { force_exit = val; }
+
+
 Control::~Control() {
         // clean up stop file
         if(cntrl_file_name != "") remove(cntrl_file_name.c_str());
@@ -66,6 +71,7 @@ void signal_handler(int sig)
                        // of seconds and then exists, (we should take care that this time is enough to finish the job)
       case(SIGINT)   : std::cerr << "SIGINT received, raising SIGTERM" << std::endl;
                        control_triggered_signal |= SIGINT;
+                 //      signal(SIGINT, SIG_IGN);
                  //      raise(SIGTERM); 
                        break;
       case(SIGTERM)  : //helios->runningException(HELIOS_EXIT); 
@@ -80,8 +86,10 @@ void signal_handler(int sig)
                        break;
       default       :  std::cerr << "Unkown signal .... Ignoring\n";
     }
-	
-    }
+
+
+    if(force_exit == true) check(-1, DMESG("Signal received and \"force exit\" set"));
+}
 	
 #ifdef OS_DARWIN
 #include <Accelerate/Accelerate.h>
@@ -111,7 +119,7 @@ void Control::setSignalHandler() {
 //#endif
 
 #ifdef OS_DARWIN 
-	    _mm_setcsr( _MM_MASK_MASK &~  (_MM_MASK_OVERFLOW|_MM_MASK_INVALID|_MM_MASK_DIV_ZERO) );
+	    _mm_setcsr( _MM_MASK_MASK &~  (_MM_MASK_OVERFLOW | _MM_MASK_INVALID | _MM_MASK_DIV_ZERO) );
 #endif
 
 

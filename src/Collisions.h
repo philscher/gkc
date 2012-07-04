@@ -28,7 +28,19 @@ class Collisions {
  Collisional frequency 
 */
 public:   
-    
+
+     Collisions(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *_geo, FFTSolver *(_fft)) 
+     {
+
+
+     };
+
+     virtual int solve(std::string equation_type, Fields *fields, Array6z fs, Array6z fss, double dt, int rk_step) 
+     {
+            // we have collisionless system
+            return 0;
+
+     };
 
     /**
 	 * Derivative of the error function 

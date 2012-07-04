@@ -77,7 +77,8 @@ Analysis::~Analysis() {
             
                 // Power spectrum for X // calculate power of each mode (layout depends on real2complex or complex2complex transf.)
                 for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
-                      pSpec((int) DIR_X, n, x_k) = sum(pow2*abs(fft->kXOut(x_k, RkyLD, RzLD, n)));
+                      pSpec((int) DIR_X, n, x_k) = 
+                        //sum(pow2(abs(fft->kXOut(x_k, RkyLD, RzLD, n))));
                        //)) +  sum(pow2(abs(imag(fft->kXOut(x_k, RkyLD, RzLD, n))))))/fft->Norm_X;
                         (sum(pow2(abs(real(fft->kXOut(x_k, RkyLD, RzLD, n))))) +  sum(pow2(abs(imag(fft->kXOut(x_k, RkyLD, RzLD, n))))))/fft->Norm_X;
                       pFreq((int) DIR_X, n, x_k) =  sum(fft->kXOut(x_k, RkyLD, RzLD, n))/fft->Norm_X;
@@ -87,8 +88,8 @@ Analysis::~Analysis() {
                 // Power Spectrum Y
                  for(int y_k = NkyLlD; y_k <=  NkyLuD ; y_k++) { 
                    // simplify this
-                   //pSpec((int) DIR_Y, n, y_k) = sum(pow2(abs(real(fields->Field0(RxLD,y_k,RzLD, n))))) + sum(pow2(abs(imag((fields->Field0(RxLD,y_k,RzLD, n)))))); 
-                   pSpec((int) DIR_Y, n, y_k) = sum(pow2(abs(fields->Field0(RxLD,y_k,RzLD, n))));
+                   pSpec((int) DIR_Y, n, y_k) = sum(pow2(abs(real(fields->Field0(RxLD,y_k,RzLD, n))))) + sum(pow2(abs(imag((fields->Field0(RxLD,y_k,RzLD, n)))))); 
+                   //pSpec((int) DIR_Y, n, y_k) = sum(pow2(abs(fields->Field0(RxLD,y_k,RzLD, n))));
                    pFreq((int) DIR_Y, n, y_k) = sum(fields->Field0(RxLD,y_k,RzLD, n));
                  }
             }
@@ -199,8 +200,8 @@ Analysis::~Analysis() {
        //phiEnergy =  parallel->collect(4. * M_PI * phiEnergy * scaleXYZ / (8.e0 * M_PI), OP_SUM, DIR_XYZ);
        //ApEnergy  =  parallel->collect(4. * M_PI *  ApEnergy * scaleXYZ / (8.e0 * M_PI), OP_SUM, DIR_XYZ);
        //
-       phiEnergy =  parallel->collect(4. * M_PI * phiEnergy * scaleXYZ / (8.e0 * M_PI), OP_SUM, DIR_ALL);
-       ApEnergy  =  parallel->collect(4. * M_PI *  ApEnergy * scaleXYZ / (8.e0 * M_PI), OP_SUM, DIR_ALL);
+       phiEnergy =  abs( parallel->collect(4. * M_PI * phiEnergy * scaleXYZ / (8.e0 * M_PI), OP_SUM, DIR_ALL) ); 
+       ApEnergy  =  abs( parallel->collect(4. * M_PI *  ApEnergy * scaleXYZ / (8.e0 * M_PI), OP_SUM, DIR_ALL) );
        BpEnergy  = 0.;
       
       return; 
