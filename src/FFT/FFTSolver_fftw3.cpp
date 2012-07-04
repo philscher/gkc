@@ -24,17 +24,18 @@ fftw_plan plan_AA_YForward, plan_AA_YBackward;
 FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry<HELIOS_GEOMETRY> *geo) : FFTSolver(setup, parallel, geo, Nx*(2*Nky-2)*Nz, Nx*(2*Nky-2), Nx,  (2*Nky-2)) {
    
 
-   const int nfields = plasma->nfields;
    if(parallel->Coord(DIR_FFT) == 0) {
 
       int perf_flag = (setup->get("FFTW3.Measure", 1) == 1) ? FFTW_MEASURE :  FFTW_ESTIMATE; 
+
+      const int nfields = plasma->nfields;
 
 #ifdef PARALLEL_OPENMP
       fftw_init_threads();
       fftw_plan_with_nthreads(parallel->numThreads);
 #endif
 
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
       fftw_mpi_init();
 #endif
            
@@ -46,12 +47,12 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry<HELI
          long X_NxLD, X_NxLlD, X_NkxL, X_NkxLlD, X_numElements, X_Nx = Nx; 
          X_numElements = fftw_mpi_local_size_1d(Nx, parallel->Comm[DIR_X], FFTW_FORWARD, 0, &X_NxLD, &X_NxLlD, &X_NkxL, &X_NkxLlD);
         
-         // allocate arrays
-         data_X_kIn  = (cmplxd *) fftw_alloc_complex(X_numElements*NkyLD*NzLD*nfields);
-         data_X_kOut = (cmplxd *) fftw_alloc_complex(X_numElements*NkyLD*NzLD*nfields);
+         // allocate arrays (factor 2 for saferty (hides BUGS)
+         data_X_kIn  = (cmplxd *) fftw_alloc_complex(2*X_numElements*NyLD*NzLD*nfields);
+         data_X_kOut = (cmplxd *) fftw_alloc_complex(2*X_numElements*NyLD*NzLD*nfields);
          
-         data_X_rOut = (cmplxd *) fftw_alloc_complex(X_numElements*NkyLD*NzLD*nfields);
-         data_X_rIn  = (cmplxd *) fftw_alloc_complex(X_numElements*NkyLD*NzLD*nfields);
+         data_X_rOut = (cmplxd *) fftw_alloc_complex(X_numElements*NyLD*NzLD*nfields);
+         data_X_rIn  = (cmplxd *) fftw_alloc_complex(X_numElements*NyLD*NzLD*nfields);
                
          // set and check bounds 
          K1xLlD = X_NkxLlD;       K1xLuD = X_NkxLlD + X_NkxL - 1;
@@ -69,7 +70,6 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry<HELI
          Array4z kXIn_t   ((cmplxd *) data_X_kIn , shape(X_NkxL, NkyLD, NzLD, nfields), neverDeleteData, storage_cX); kXIn .reference(kXIn_t  ) ; kXIn  = 0.;
     
 
-         // BUG multiply with NzLD
          plan_XForward   = fftw_mpi_plan_many_dft(1, &X_Nx, (long) NkyLD * NzLD,  NxLD * nfields, X_NkxL * nfields, (fftw_complex *) rXIn.data(), (fftw_complex *) kXOut.data(), parallel->Comm[DIR_X], FFT_FORWARD, perf_flag);
          plan_XBackward  = fftw_mpi_plan_many_dft(1, &X_Nx, (long) NkyLD * NzLD,  NxLD * nfields, X_NkxL * nfields, (fftw_complex *) kXIn.data(), (fftw_complex *) rXOut.data(), parallel->Comm[DIR_X], FFT_BACKWARD, perf_flag);
          
@@ -212,6 +212,8 @@ FFTSolver_fftw3::~FFTSolver_fftw3() {
     if(flags & FFT_X) {
         fftw_destroy_plan(plan_XForward);
 	    fftw_destroy_plan(plan_XBackward);
+        fftw_destroy_plan(plan_XForward_Fields);
+	    fftw_destroy_plan(plan_XBackward_Fields);
     }
     if(flags & FFT_Y) {
         fftw_destroy_plan(plan_YForward);
@@ -278,7 +280,8 @@ Array3z FFTSolver_fftw3::multiply(Array3z &A, Array3z &B, Array3z  &R)
 
     
 void FFTSolver_fftw3::printOn(ostream &output) const {
+
          FFTSolver::printOn(output);
          output   << "FFTSolver  |  using fftw-3 interface for (" << std::string(fftw_version) << ")" << std::endl;
          
-        }
+}
