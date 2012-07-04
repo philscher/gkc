@@ -28,6 +28,12 @@
 
 PetscErrorCode MatrixVectorProduct(Mat A, Vec x, Vec y);
 
+
+int petc_signal_handler(int sig, void *ctx);
+
+
+
+
 class PETScMatrixVector
 {
   public:
