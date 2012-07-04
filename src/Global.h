@@ -33,12 +33,21 @@
 #include<cstdlib>
 
 #include<blitz/array.h>
-//#include<blitz/types.h>
+#include<blitz/types.h>
+#include<blitz/allocate.h>
+
+/**
+ *   Implicit OpenMP parallelization. Take care, it does not 
+ *   handle any private or shared variables , or reduces or ...!!
+ *
+ *   HANDLE WITH CARE !
+ * */
+#define omp_for _Pragma("omp parallel for") for
 
 using namespace blitz;
 
 // DIR_SIZE has to be the number of elements, excluding DIR_SIZE
-enum Direction {DIR_X=0, DIR_Y, DIR_Z, DIR_V, DIR_M, DIR_S, DIR_ALL, DIR_XYZ, DIR_VMS, DIR_MS, DIR_FFT, DIR_YZVMS, DIR_VM, DIR_YZ, DIR_XYZVM, DIR_XY, DIR_SIZE};
+enum Direction : int {DIR_X=0, DIR_Y, DIR_Z, DIR_V, DIR_M, DIR_S, DIR_ALL, DIR_XYZ, DIR_VMS, DIR_MS, DIR_FFT, DIR_YZVMS, DIR_VM, DIR_YZ, DIR_XYZVM, DIR_XY, DIR_XMS, DIR_XM, DIR_SIZE};
 
       
     inline int check( int status, std::string file, int line, std::string error_text, bool segfault=false) {
@@ -196,19 +205,6 @@ extern GeneralArrayStorage<4> HeliosStorage4;
 
 class HELIOS_GEOMETRY;
 
-
-
-#ifdef FFTW3 
-#define FFT_DECOMP DECOMP_NO
-#endif
-
-#ifdef FFTW2MPI
-#define FFT_DECOMP DECOMP_X
-#endif
-
-#ifdef P3DFFT
-#define FFT_DECOMP DECOMP_X
-#endif
 
 
 #endif // __GLOBAL_H

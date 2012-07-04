@@ -14,7 +14,8 @@
 #include "FieldsFFT.h"
 
 
-FieldsFFT::FieldsFFT(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo, FFTSolver *fft) : Fields(setup, grid, parallel, fileIO,  geo), Fourier3D(setup, grid, fft)
+FieldsFFT::FieldsFFT(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo, FFTSolver *fft) 
+: Fields(setup, grid, parallel, fileIO,  geo), Fourier3D(setup, grid, fft)
 {
 	phi_yz.resize(fft->Rk1xL); phi_yz = 0.;
 
@@ -42,9 +43,9 @@ Array4z FieldsFFT::solveFieldEquations(Array4z Q, Timing timing) {
    fft->solve(FFT_X, FFT_FORWARD, FFT_FIELDS);
     
    // for 3 fields phi and B_perp are coupled and need to be solved differently
-   if     ( solveEq & Field::phi & Field::Bpp) solveBParallelEquation(Q(RxLD, RkyLD, RzLD, Field::Bp ), timing);
-   else if( solveEq & Field::phi             ) solvePoissonEquation  (Q(RxLD, RkyLD, RzLD, Field::phi), timing);
-   if     ( solveEq & Field::Ap              ) solveAmpereEquation   (Q(RxLD, RkyLD, RzLD, Field::Ap ), timing);
+   if     ( solveEq &  Field::phi & Field::Bpp ) solveBParallelEquation(Q(RxLD, RkyLD, RzLD, Field::Bp ), timing);
+   else if( solveEq &  Field::phi              ) solvePoissonEquation  (Q(RxLD, RkyLD, RzLD, Field::phi), timing);
+   if     ( solveEq &  Field::Ap               ) solveAmpereEquation   (Q(RxLD, RkyLD, RzLD, Field::Ap ), timing);
 
     
    // suppresses modes in all fields
@@ -52,10 +53,10 @@ Array4z FieldsFFT::solveFieldEquations(Array4z Q, Timing timing) {
 
    fft->solve(FFT_X, FFT_BACKWARD, FFT_FIELDS);
   
-   // for 3 fields phi and B_perp are coupled and need to be solved differently, numerical errors ?!
-   if(!(solveEq & Field::phi) && (plasma->nfields >= 1)) fft->rXOut(RxLD, RkyLD, RzLD, Field::phi) = Field0(RxLD, RkyLD, RzLD, Field::phi);
-   if(!(solveEq & Field::Ap ) && (plasma->nfields >= 2)) fft->rXOut(RxLD, RkyLD, RzLD, Field::Ap ) = Field0(RxLD, RkyLD, RzLD, Field::Ap );
-   if(!(solveEq & Field::Bpp) && (plasma->nfields >= 3)) fft->rXOut(RxLD, RkyLD, RzLD, Field::Bp ) = Field0(RxLD, RkyLD, RzLD, Field::Bp );
+   // replace calcultated field with fixed one if option is set Don't need - or ?
+   //if(!(solveEq & Field::phi) && (plasma->nfields >= 1)) fft->rXOut(RxLD, RkyLD, RzLD, Field::phi) = Field0(RxLD, RkyLD, RzLD, Field::phi);
+   //if(!(solveEq & Field::Ap ) && (plasma->nfields >= 2)) fft->rXOut(RxLD, RkyLD, RzLD, Field::Ap ) = Field0(RxLD, RkyLD, RzLD, Field::Ap );
+   //if(!(solveEq & Field::Bpp) && (plasma->nfields >= 3)) fft->rXOut(RxLD, RkyLD, RzLD, Field::Bp ) = Field0(RxLD, RkyLD, RzLD, Field::Bp );
 
     
    return fft->rXOut(RxLD, RkyLD, RzLD, RFields);
@@ -76,8 +77,7 @@ Array3z FieldsFFT::solvePoissonEquation(Array3z rho, Timing timing)
     const double adiab = plasma->species(0).n0 * pow2(plasma->species(0).q)/plasma->species(0).T0;
     
     // solve PoissonEq. in Fourier space, using periodic boundary conditions
-    #pragma omp parallel for
-    for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int z=NzLlD; z<=NzLuD;z++) { for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
+    for(int z=NzLlD; z<=NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
 
           if((x_k == 0) && (y_k == 0)) { fft->kXIn(x_k,y_k,z, Field::phi) = (cmplxd) 0.e0 ; continue; }
           
@@ -99,8 +99,7 @@ Array3z FieldsFFT::solveAmpereEquation(Array3z j, Timing timing)
 {
     // NOTE : Only x,y is transformed to 2-d Fourier space, z is still spatial dimension
     // we also need to suprress the x_k=0 y_k=0 component as this is zero
-    #pragma omp parallel for
-    for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int z=NzLlD; z<=NzLuD;z++) { for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
+    omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int z=NzLlD; z<=NzLuD;z++) { for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
  
           if((x_k == 0) && (y_k == 0)) { fft->kXIn(x_k,y_k,z, Field::Ap) = (cmplxd) 0.e0; continue; }
           
@@ -120,20 +119,15 @@ Array3z FieldsFFT::solveAmpereEquation(Array3z j, Timing timing)
 // Reference ?!!! only needed for high beta plasmas
 Array3z FieldsFFT::solveBParallelEquation(Array3z phi, Timing timing) {
 
-    // NOTE : Only x,y is transformed to 2-d Fourier space, z is still spatial dimension
-    // we also need to suprress the x_k=0 y_k=0 component as this is zero
-    #pragma omp parallel for
-    for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int z=NzLlD; z<=NzLuD;z++) { for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
+    const double adiab = plasma->species(0).n0 * pow2(plasma->species(0).q)/plasma->species(0).T0;
+    
+    omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int z=NzLlD; z<=NzLuD;z++) { for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
  
           if((x_k == 0) && (y_k == 0)) { fft->kXIn(x_k,y_k,z, Field::Bp) = (cmplxd) 0.e0; continue; }
          
           const double k2_p = fft->k2_p(x_k,y_k,z);
 
-          //const cmplxd C_1 = plasma->debye2 * k2_p + sum_qqnT_1mG0(k2_p);// + adiab;
-          //const cmplxd C_2 = - sum_qnB_Delta(k2_p);
-          //const cmplxd C_3 = 2./plasma->beta + sum_2TnBB_Delta(k2_p);
-
-          const double C_1 = plasma->debye2 * k2_p + sum_qqnT_1mG0(k2_p);// + adiab;
+          const double C_1 = plasma->debye2 * k2_p + sum_qqnT_1mG0(k2_p) + adiab;
           const double C_2 = - sum_qnB_Delta(k2_p);
           const double C_3 = 2./plasma->beta - sum_2TnBB_Delta(k2_p);
           
@@ -254,9 +248,9 @@ Array4z FieldsFFT::gyroFirst(Array4z A4, int m, int s, const int nField2, bool g
 Array4z FieldsFFT::gyroAverage(Array4z A4, int m, int s, const int nField, bool gyroField) 
 {
      // check if we should do gyroAvearge
-     if     (gyroAverageModel == "Drift" ) return A4;
-     else if(gyroAverageModel == "Gyro"  ) return gyroFull (A4, m, s, nField, gyroField);  
-     else if(gyroAverageModel == "Gyro-1") return gyroFirst(A4, m, s, nField, gyroField); 
+     if     (plasma->species(s).gyroModel == "Drift" ) return A4;
+     else if(plasma->species(s).gyroModel == "Gyro"  ) return gyroFull (A4, m, s, nField, gyroField);  
+     else if(plasma->species(s).gyroModel == "Gyro-1") return gyroFirst(A4, m, s, nField, gyroField); 
      else   check(-1, DMESG("No such gyro-average Model"));
 
 
