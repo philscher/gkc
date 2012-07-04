@@ -25,7 +25,7 @@ FieldsHypre::FieldsHypre(Setup *setup, Grid *grid, Parallel *parallel, FileIO *f
    HYPRE_StructGridSetExtents(poisson_grid, NXky_LlD, NXky_LuD);
 
 
-   //int BD_periodic[] = { NxLuD, 0 };
+   //int BD_periodic[] = { NxGuD, 0 };
    //HYPRE_StructGridSetPeriodic (poisson_grid, BD_periodic);
 
 
@@ -90,21 +90,19 @@ Array3z FieldsHypre::solvePoissonEquation(Array3z rho, Timing timing)
         HYPRE_StructVectorSetBoxValues(vec_b, NXky_LlD, NXky_LuD, values_R);
         HYPRE_StructVectorAssemble(vec_b);
     
-   HYPRE_StructDiagScaleSetup(solver, A,vec_b, vec_x);
+        HYPRE_StructDiagScaleSetup(solver, A,vec_b, vec_x);
         HYPRE_StructPCGSetup(solver, A, vec_b, vec_x);
         HYPRE_StructPCGSolve(solver, A, vec_b, vec_x);
-        //HYPRE_StructGMRESSolve(solver, A, vec_b, vec_x);
-        //HYPRE_StructVectorGetBoxValues(vec_x, NXky_LlD, NXky_LuD, values_R);
+        HYPRE_StructVectorGetBoxValues(vec_x, NXky_LlD, NXky_LuD, values_R);
     
         // solve Imag
         HYPRE_StructVectorSetBoxValues(vec_b, NXky_LlD, NXky_LuD, values_I);
         HYPRE_StructVectorAssemble(vec_b);
    
-   HYPRE_StructDiagScaleSetup(solver, A,vec_b, vec_x);
+        HYPRE_StructDiagScaleSetup(solver, A,vec_b, vec_x);
         HYPRE_StructPCGSetup(solver, A, vec_b, vec_x);
         HYPRE_StructPCGSolve(solver, A, vec_b, vec_x);
-        //HYPRE_StructGMRESSolve(solver, A, vec_b, vec_x);
-        //HYPRE_StructVectorGetBoxValues(vec_x, NXky_LlD, NXky_LuD, values_I);
+        HYPRE_StructVectorGetBoxValues(vec_x, NXky_LlD, NXky_LuD, values_I);
         
         // back to real imaginary
         for(int x = NxLlD, k = 0; x <= NxLuD; x++)  { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++, k++) {
@@ -152,10 +150,10 @@ void FieldsHypre::setupMatrixPoissonEquation(int n_points) {
             // 2nd order discretization
             if(n_points == 2) {
                 const double h = dx*dx;
-                values[k++] = 1. + (2.+plasma->debye2) * (2./h + ky2) ;
-                values[k++] =  - (2.+plasma->debye2)/h ;
-                //values[k++] = ((x+1) >= NxGlD) ?  - (2.+plasma->debye2)/h : 0.;
-                //values[k++] = ((x+1) <= NxGuD) ?  - (2.+plasma->debye2)/h : 0.;
+                //values[k++] = ((x+1) >= NxGlD) ? 1. + (2.+plasma->debye2) * (  -2./h + ky2) : 0.;
+                //values[k++] = ((x+1) <= NxGuD) ?      (2.+plasma->debye2)/h                  : 0.;
+                values[k++] = (1) ? 1. + (2.+plasma->debye2) * ( 2./h - ky2) : 0.;
+                values[k++] = (1) ?      -(2.+plasma->debye2)/h                  : 0.;
             }
             // 4th order discretization
             else if(n_points == 3) {
@@ -200,9 +198,14 @@ void FieldsHypre::calcRhoStar(Array4z Q)
 {
     
     //if(plasma->species(0).doGyro)  phi_yz = calcFluxSurfAvrg(fft->kXOut);
+
     
+//    rho_star(RxLD, RkyLD, RzLD) = Q(RxLD, RkyLD, RzLD, Field::phi);
+//    return;
+
     fft->rXIn(RxLD, RkyLD, RzLD, RFields) = Q(RxLD, RkyLD, RzLD, RFields);
-    fft->solve(FFT_X, FFT_FORWARD, NkyLD * NzLD * plasma->nfields);
+    fft->solve(FFT_X, FFT_FORWARD, FFT_FIELDS);
+
     const double rho_t2 = plasma->species(1).T0  * plasma->species(1).m / pow2(plasma->species(1).q * plasma->B0);
     
     #pragma omp parallel for
