@@ -6973,7 +6973,7 @@ cD2
 plist_p[index]);}
 }
 #ifdef FP_SUPPORT_OPTIMIZER
-#include <stdio.h>
+#include <cstdio.h>
 #include <algorithm>
 #include <map>
 #include <sstream>
