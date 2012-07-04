@@ -36,7 +36,8 @@ class VlasovCilk : public Vlasov_LenardBernstein {
 	    Array3d transform2Real(Array5z A, const int m, const int s);
         Array3d transform2Real(Array6z A, const int v, const int m, const int s);
         // Some temporary arrays (not all are necesserally intialized !)
-        Array3z k2p_phi, dphi_dy, dphi_dx, dAp_dx, dAp_dy;
+        Array3z dphi_dy, dphi_dx, dAp_dx, dAp_dy;
+        Array4z k2p_phi;
         Array4z calculatePhiNonLinearity(Array5z phi, Array6z fs, const int m, const int s);
 
         // needed for nonLinear transforms
@@ -54,11 +55,12 @@ class VlasovCilk : public Vlasov_LenardBernstein {
                            const cmplxd f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplxd ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplxd phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           //cmplxd k2_phi[NzLD][NkyLD][NxLD],
                            cmplxd k2_phi[NzLD][NkyLD][NxLD],
                            cmplxd nonLinear[NzLD][NkyLD][NxLD][NvLD],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            Fields *fields,
-                           const double dt, const int rk_step, Array6z fs);
+                           const double dt, const int rk_step, Array6z _fs);
        void    Vlasov_2D_Global(
                            cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplxd fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
@@ -66,22 +68,10 @@ class VlasovCilk : public Vlasov_LenardBernstein {
                            const cmplxd f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplxd ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplxd phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           //cmplxd k2_phi[NzLD][NkyLD][NxLD],
                            cmplxd k2_phi[NzLD][NkyLD][NxLD],
                            Fields *fields,
-                           const double dt, const int rk_step, Array6z fs);
-/* 
-void VlasovCilk::Vlasov_2D_Island(cmplxd fs [NsLlD,NsLD][NmLlD,NmLD][NvLlB,NvLB][NzLlB,NzLB][NkyLlD,NkyLD][NxLlB,NxLB],
-                           cmplxd fss[NsLlD,NsLD][NmLlD,NmLD][NvLlB,NvLB][NzLlB,NzLB][NkyLlD,NkyLD][NxLlB,NxLB],
-                           const cmplxd vf0[NsLlD,NsLD][NmLlD,NmLD][NvLlB,NvLB][NzLlB,NzLB][NkyLlD,NkyLD][NxLlB,NxLB],
-                           const cmplxd f1 [NsLlD,NsLD][NmLlD,NmLD][NvLlB,NvLB][NzLlB,NzLB][NkyLlD,NkyLD][NxLlB,NxLB],
-                           cmplxd ft [NsLlD,NsLD][NmLlD,NmLD][NvLlB,NvLB][NzLlB,NzLB][NkyLlD,NkyLD][NxLlB,NxLB],
-                           const cmplxd phi[NsLlD,NsLD][NmLlD,NmLD][NzLlB,NzLB][NkyLlD,NkyLD][NxLlB-2,NxLB+2],
-                           cmplxd k2_phi[NzLlB,NzLB][NkyLlD,NkyLD][NxLlD,NxLD],
-                           cmplxd dphi_dx[NzLlB,NzLB][NkyLlD,NkyLD][NxLlB,NxLB],
-                           const double X[NxLB], const double V[NvLB], const double M[NmLB],
-                           Fields *fields,
-                           const double dt, const int rk_step);
- * */
+                           const double dt, const int rk_step, Array6z _fs);
 
 
 void  Vlasov_2D_Island(
@@ -91,11 +81,13 @@ void  Vlasov_2D_Island(
                            const cmplxd f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplxd ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplxd phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           //cmplxd k2_phi[NzLD][NkyLD][NxLD],
                            cmplxd k2_phi[NzLD][NkyLD][NxLD],
+                           cmplxd nonLinear[NzLD][NkyLD][NxLD][NvLD],
                            cmplxd dphi_dx[NzLB][NkyLD][NxLB],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            Fields *fields,
-                           const double dt, const int rk_step, Array6z fs);
+                           const double dt, const int rk_step, Array6z _fs);
 
 void  Landau_Damping(
                            cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
@@ -104,36 +96,19 @@ void  Landau_Damping(
                            const cmplxd f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplxd ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplxd phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           //cmplxd k2_phi[NzLD][NkyLD][NxLD],
                            cmplxd k2_phi[NzLD][NkyLD][NxLD],
                            cmplxd dphi_dx[NzLB][NkyLD][NxLB],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            Fields *fields,
                            const double dt, const int rk_step);
 
-void    Vlasov_2D_EigenValue(
-                           cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           cmplxd fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const cmplxd vf0[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const cmplxd phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           cmplxd k2_phi[NzLD][NkyLD][NxLD],
-                           Fields *fields);
-
-void    Vlasov_2D_EigenValueIsland(
-                           cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           cmplxd fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const cmplxd vf0[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const cmplxd phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           cmplxd k2_phi[NzLD][NkyLD][NxLD],
-                           cmplxd dphi_dx[NzLB][NkyLD][NxLB],
-                           const double X[NxGB], const double V[NvGB], const double M[NmGB],
-                           Fields *fields);
-
 void setupXiAndG(
-                           cmplxd g       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           cmplxd f0       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           cmplxd phi       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           cmplxd Ap       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           cmplxd Bp       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplxd g       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplxd f0       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplxd phi       [NsLD][NmLD][NzLB][NkyLD][NxLB+4  ],
+                           const cmplxd Ap       [NsLD][NmLD][NzLB][NkyLD][NxLB+4  ],
+                           const cmplxd Bp       [NsLD][NmLD][NzLB][NkyLD][NxLB+4  ],
                            cmplxd Xi       [NzLB][NkyLD][NxLB  ][NvLB],
                            cmplxd G        [NzLB][NkyLD][NxLB  ][NvLB],
                            const double V[NvGB], const double M[NmGB],
@@ -147,10 +122,13 @@ void Vlasov_EM(
                            const cmplxd f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplxd ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplxd phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           const cmplxd Ap [NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           const cmplxd Bp [NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           //cmplxd k2_phi[NzLD][NkyLD][NxLD],
                            cmplxd k2_phi[NzLD][NkyLD][NxLD],
                            cmplxd dphi_dx[NzLB][NkyLD][NxLB],
-                           cmplxd Xi       [NzLB][NkyLD][NxLB  ][NvLB],
-                           cmplxd G        [NzLB][NkyLD][NxLB  ][NvLB],
+                           cmplxd Xi       [NzLD][NkyLD][NxLD  ][NvLD],
+                           cmplxd G        [NzLD][NkyLD][NxLD  ][NvLD],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            Fields *fields,
                            const double dt, const int rk_step);

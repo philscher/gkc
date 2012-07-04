@@ -41,8 +41,8 @@ double epsilon_0, sigma;
   Geometry<HELIOS_GEOMETRY> *geo;
 private:
   static double Phase(const int q, const int N) { return 2.*M_PI*((double) (q-1)/N); };
-  void    setFieldFromDataFile(Setup *setup, Array4d field, int n, std::string path);
-    void setFieldFromFunction(Setup *setup, Array4d field, int n , std::string func);
+  void    setFieldFromDataFile(Setup *setup, Array4z field, int n, std::string path);
+    void setFieldFromFunction(Setup *setup, Array4z field, int n , std::string func);
   public :
   std::string PerturbationMethod;
   Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields *fields, Geometry<HELIOS_GEOMETRY> *geo);

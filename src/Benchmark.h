@@ -44,17 +44,12 @@ class Benchmark {
         if(!useBenchmark) return;
 
         if((plasma->nfields >= 2)) {
-          cmplxd dB=0;
-          for(int z=NzLlD; z<= NzLuD;z++){ for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {  for(int x=NxLlD; x<= NxLuD;x++) { 
-
-//          const double dAp_dy     = (8. *(fields->Field(x, y+1, z  , 1,1, Field::Ap) - Field(x  , y-1, z  , 1,1,Field::Ap))  -1. *(Field(x  , y+2, z  , 1,1,Field::Ap) - Field(x  , y-2, z  , 1,1,Field::Ap)))/(12.*dy)  ;  
-   //       const double dAp_dx     = (8. *(Field(x+1, y, z  , 1,1, Field::Ap) - Field(x-1  , y, z  , 1,1,Field::Ap))  -1. *(Field(x+2  , y, z  , 1,1,Field::Ap) - Field(x-2, y  , z  , 1,1,Field::Ap)))/(12.*dx)  ;  
-
-            dB += fields->Field(x,y_k,z,1,1,Field::Ap);
-  //          std::cout << - dAp_dx;
-          }}}
- 
-             dBFile << timing.time << " "<<  dB << " " << fields->Field(5,5,5,1,1,Field::Ap) << " " <<  fields->Field(3,4,5,1,1,Field::Ap) << std::endl;
+             dBFile << timing.time << " "<< 
+               real(fields->Field0(NxLlD,NkyLlD+1,NzLlD,Field::Ap )) << "  " <<
+               imag(fields->Field0(NxLlD,NkyLlD+1,NzLlD,Field::Ap )) << "  " <<
+               real(fields->Field0(NxLlD,NkyLlD+1,NzLlD,Field::phi)) << "  " <<
+               imag(fields->Field0(NxLlD,NkyLlD+1,NzLlD,Field::phi)) <<  std::endl;
+               
     }
 
 

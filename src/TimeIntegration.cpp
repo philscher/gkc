@@ -20,6 +20,9 @@ TimeIntegration::TimeIntegration(Setup *setup, Grid *grid, Parallel *_parallel, 
     timeIntegrationScheme = setup->get("Helios.TimeIntegration", "Explicit_RK4");
 
 
+    
+    linearSafetyFactor  = setup->get("Helios.LinearSafetyFactor", 0.8);
+
      maxLinearTimeStep = (setup->get("Helios.CFLEigv", 1) == 1) ? getMaxTimeStepFromEigenvalue(eigenvalue->getMaxAbsEigenvalue(vlasov, fields))
                                                                 : vlasov->getMaxTimeStep(DIR_V, maxCFLNumber);
     
@@ -31,7 +34,7 @@ TimeIntegration::TimeIntegration(Setup *setup, Grid *grid, Parallel *_parallel, 
     maxTiming.step = setup->get("Helios.MaxSteps", -1);
     
     dt             = maxTiming.time / maxTiming.step;
-
+    if (dt <= 0.) dt = maxLinearTimeStep;
 
 };
 
@@ -44,8 +47,7 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv)
         parallel->print("Using maximum absolute eigenvaue for timestep calulcations");
 
         // simple assume simple RK-4
-        const double savety_factor = 0.8;
-	    return (2.96 * savety_factor /  abs(max_abs_eigv));
+	    return (2.96 * linearSafetyFactor /  abs(max_abs_eigv));
 
 };
 

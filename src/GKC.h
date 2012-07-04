@@ -11,8 +11,8 @@
  * =====================================================================================
  */
 
-#ifndef __HELIOS_H_
-#define __HELIOS_H_
+#ifndef __GKC_H_
+#define __GKC_H_
 
 #include "config.h"
 
@@ -36,6 +36,13 @@
 #include "Eigenvalue.h"
 #include "TestParticle.h"
 #include "TimeIntegration.h"
+#include "Transport.h"
+
+
+//#include "MagneticIsland.h"
+/// Include necessary fftw3 headers
+
+
 
 #include "Geometry.h"
 #include "GeometryShear.h"
@@ -46,7 +53,6 @@
  *    Helios - The main class handles all initializations and
  *             time step iterations
  */
-class FEMSolver;
 
 class Helios
 {
@@ -60,7 +66,7 @@ private:
     Fields        *fields;   
     Control       *control;
     FFTSolver     *fftsolver;
-    FEMSolver     *femsolver;
+//    FEMSolver     *femsolver;
     TestParticles  *particles;
     Eigenvalue     *eigenvalue;
     Geometry<HELIOS_GEOMETRY> *geometry;
@@ -70,7 +76,7 @@ private:
     Visualization *visual;
     TimeIntegration *timeIntegration;
     // Plugin
-    MagneticIsland *island;
+//    MagneticIsland *island;
 
 
     std::string Helios_Type; 

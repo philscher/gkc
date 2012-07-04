@@ -28,7 +28,7 @@ class Eigenvalue : public IfaceHelios {
 
 struct EigenValue {
     cmplxd EigenValue;
-    cmplxd AbsoluteError;
+    double AbsoluteError;
 };
 
 

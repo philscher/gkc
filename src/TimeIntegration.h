@@ -34,6 +34,7 @@ class TimeIntegration {
     public:
          bool useCFL;
          double maxCFLNumber;
+         double linearSafetyFactor;
          double dt;
     time_t start_time;
     Timing maxTiming;

@@ -34,7 +34,8 @@ class Geometry2D : public Geometry<Geometry2D>
   Array1d By;
   std::string shear_str;
   std::string By_str;
-  double theta, shear;
+  double theta, shear, kz;
+
 
  public:
 
@@ -50,7 +51,9 @@ class Geometry2D : public Geometry<Geometry2D>
     theta               = setup->get("Geometry.Theta"   , 0.);
     shear               = setup->get("Geometry.Shear"   , 0.);
     By_str              = setup->get("Geometry.By"   , "shear*x+theta");
-    
+    kz                  = setup->get("Geometry.kz"   ,  0.);
+   
+
    //std::cout << "SubString : " << setup->get("Geometry.By" , "0.").substr(0,4) << std::endl;
   // if (setup->get("Geometry.By" , "0.").substr(0,4) == "File") setFieldFromDataFile(setup, fields->Field0, Field::Ap, setup->get("Init.FixedAp", "0."));
   // else if (plasma->nfields >= 2) setFieldFromFunction(setup, fields->Field0, Field::Ap, setup->get("Init.FixedAp", "0."));
@@ -96,7 +99,7 @@ class Geometry2D : public Geometry<Geometry2D>
    *   Get the value of shear at position x, which is constant for sheared slab geometry 
    *
    */
-  inline double getShear(const int x)  { return By(x); };
+  inline cmplxd get_kp(const int x, const cmplxd ky, const int z)  { return ky * By(x) + cmplxd(0., kz); };
   
 
 
@@ -116,6 +119,7 @@ class Geometry2D : public Geometry<Geometry2D>
 //          check(H5LTset_attribute_double(geometryGroup, ".", "By"   ,  By.data(), Nx), DMESG("H5LTset_attribute"));
           check(H5LTset_attribute_double(geometryGroup, ".", "Shear"   ,  &shear, 1), DMESG("H5LTset_attribute"));
           check(H5LTset_attribute_double(geometryGroup, ".", "Theta"   ,  &theta, 1), DMESG("H5LTset_attribute"));
+          check(H5LTset_attribute_double(geometryGroup, ".", "kz"   ,  &kz, 1), DMESG("H5LTset_attribute"));
     }
 
 

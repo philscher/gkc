@@ -86,36 +86,41 @@ cmplxd Eigenvalue_SLEPc::getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields)
 void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visual, Control *control) 
 {
 
+    EPSSetType(EigvSolver, EPSKRYLOVSCHUR);
 
-    EPSSetWhichEigenpairs(EigvSolver, EPS_LARGEST_REAL);
-    int n_eigv = Nx*Nv;
-    EPSSetDimensions(EigvSolver, n_eigv, n_eigv, n_eigv); 
+    //EPSSetWhichEigenpairs(EigvSolver, EPS_LARGEST_REAL);
+    int n_eigv = Nx*Nky*Nz*Nv*Nm*Ns;
+    EPSSetDimensions(EigvSolver, n_eigv, n_eigv, 100); 
     // init intial solution vector 
-    Vec Vec_init;
-    cmplxd *init_x = PETScMatrixVector::getCreateVector(grid, Vec_init);
+    if(0 == 1) {
+        Vec Vec_init;
+        cmplxd *init_x = PETScMatrixVector::getCreateVector(grid, Vec_init);
     
-   for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
-   for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD ; m   <= NmLuD ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
+        for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
+        for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD ; m   <= NmLuD ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
 
-                init_x[n++] = 1.e-5 * vlasov->f0(x,y_k,z,v,m,s);
+                init_x[n++] = 1.e-5 * vlasov->f1(x,y_k,z,v,m,s);
 
-     }}} }}}
+        }}} }}}
 
      VecRestoreArray    (Vec_init, &init_x);
      EPSSetInitialSpace(EigvSolver, 0, &Vec_init);
-    //////// Solve ////////
-    EPSSolve(EigvSolver);
      VecDestroy(&Vec_init);
+    }
+
+    //////// Solve ////////
+    PETScMatrixVector pMV(vlasov, fields);
+    EPSSolve(EigvSolver);
+
+
     int nconv = 0;
     EPSGetConverged(EigvSolver, &nconv);
 
-    EigenValue eigvTable[nconv];
+    EigenValue eigvTable;
 
-    // get Eigensolver type
-    const EPSType type;
-    EPSGetType(EigvSolver, &type);
+    
 
-    EPSPrintSolution(EigvSolver, PETSC_NULL);
+    //EPSPrintSolution(EigvSolver, PETSC_NULL);
 
     Vec    Vec_F1, Vec_F1_dummy;   
 
@@ -130,14 +135,15 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
           
             cmplxd eigv, eigv_dummy;
             EPSGetEigenpair(EigvSolver, m, &eigv, &eigv_dummy, Vec_F1, Vec_F1_dummy);
-            std::cout << "Eigenvalue : " << eigv << " " << std::endl;
 
-            double error = 0.;
 
-            eigvTable[m].EigenValue     = eigv;
-            EPSComputeRelativeError(EigvSolver,m, &error);
-            eigvTable[m].AbsoluteError  = error;
+            eigvTable.EigenValue     = eigv;
+            //double error = 0.;
+            //EPSComputeRelativeError(EigvSolver,m, &error);
+            //eigvTable.AbsoluteError  = error;
+            EPSComputeRelativeError(EigvSolver,m, &eigvTable.AbsoluteError);
             
+    	   EVTable->append(&eigvTable);
             
             // Get EigenVector (Phase Space function) and calculate corresponding potentials
   	    VecGetArray(Vec_F1, &x_F1);
@@ -156,9 +162,6 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
            VecRestoreArray    (Vec_F1, &x_F1);
         
            visual->writeData(Timing(m,0.), 0., true);
-  //  	   EigVal_TableAttr->append(&eigvTable[m], 1); 
-//    void *ctx; MatShellGetContext(A, &ctx);
-//    int N =  *(int *) ctx;
     }
 
 
@@ -176,7 +179,8 @@ Eigenvalue_SLEPc::~Eigenvalue_SLEPc() {
 
       // check error code of slepc finalize
       SlepcFinalize();  
-    delete EigVal_TableAttr;
+    H5Gclose(eigvGroupID);
+    delete EVTable;
 };
 
 void Eigenvalue_SLEPc::print2On(ostream &output) {
@@ -192,7 +196,7 @@ void Eigenvalue_SLEPc::print2On(ostream &output) {
 void Eigenvalue_SLEPc::initDataOutput(Setup *setup, FileIO *fileIO) 
 {
 //	auto groupID = fileIO->newGroup(bla, fileIO);
-	hid_t eigvGroupID = fileIO->newGroup(fileIO->getFileID(), "Eigenvalue");
+	eigvGroupID = fileIO->newGroup(fileIO->getFileID(), "Eigenvalue");
 
     // ********************* setup Table for EigenValues *****************
     EigenValue EigVal_table;
@@ -202,10 +206,9 @@ void Eigenvalue_SLEPc::initDataOutput(Setup *setup, FileIO *fileIO)
     hid_t  EigVal_types  [] = { fileIO->complex_tid , H5T_NATIVE_DOUBLE };
     const char * EigVal_names  [] = {"Eigenvalue", "Absolute Error"};
 
-    EigVal_TableAttr = new TableAttr(eigvGroupID, "EigenValues", 2, EigVal_names, EigVal_offsets, EigVal_types, EigVal_sizes, &EigVal_table);
+    EVTable = new TableAttr(eigvGroupID, "EigenValues", 2, EigVal_names, EigVal_offsets, EigVal_types, EigVal_sizes, &EigVal_table);
 
 
-    H5Gclose(eigvGroupID);
 
 
 

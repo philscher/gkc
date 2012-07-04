@@ -32,7 +32,7 @@ Fields::Fields(Setup *setup, Grid *_grid, Parallel *_parallel, FileIO *fileIO, G
 
 
     // for phi terms
-    Field .resize(RxLB4,RkyLD ,RzLB,RmLB, RsLB, RFields); Field  = 0.; 
+    Field.resize(RxLB4,RkyLD,RzLB,RmLB, RsLB, RFields); Field  = 0.; 
     allocate(RxLD,RkyLD,RzLD, RFields, Q, Field0);
       
 
@@ -62,11 +62,24 @@ Fields::Fields(Setup *setup, Grid *_grid, Parallel *_parallel, FileIO *fileIO, G
    // calculare sources terms
 int Fields::solve(Array6z f0, Array6z  f, Timing timing, int rk_step)
 {
-   // calculate source terms
-   if(solveEq & Field::phi) calculateChargeDensity               (f0, f);
-   if(solveEq & Field::Ap ) calculateParallelCurrentDensity      (f0, f);
-   if(solveEq & Field::Bpp) calculatePerpendicularCurrentDensity (f0, f);
    
+  // calculate source terms
+   Q = 0.;
+   for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) {
+
+        if(solveEq & Field::phi) calculateChargeDensity               (f0, f, m, s);
+        if(solveEq & Field::Ap ) calculateParallelCurrentDensity      (f0, f, m, s);
+        if(solveEq & Field::Bpp) calculatePerpendicularCurrentDensity (f0, f, m, s);
+     
+        parallel->collect(Field0, OP_SUM, DIR_V, true); //parallel->collect(rho, OP_SUM, DIR_V, false);
+        // perform gyroAverage (note, gyorAvearge gives input array if in drift kinetic mode)
+        // first test, skip electrons
+        if (parallel->Coord(DIR_V) == 0) Q(RxLD, RkyLD, RzLD, RFields) += gyroAverage(Field0(RxLD, RkyLD, RzLD, RFields), m,s, Q::rho);
+    
+   } } // for m, for s
+    
+
+
    if(parallel->Coord(DIR_V) == 0) {
 
      // integrate over mu-space and over species
@@ -78,9 +91,7 @@ int Fields::solve(Array6z f0, Array6z  f, Timing timing, int rk_step)
      // gyro-averaging procedure for each species and magnetic moment
      for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) {
 
-       if((solveEq & Field::phi) && (plasma->nfields >= 1)) Field(RxLD,RkyLD,RzLD,m, s, Field::phi) = gyroAverage(Field0(RxLD, RkyLD, RzLD, Field::phi), m, s, Field::phi, true);
-       if((solveEq & Field::Ap ) && (plasma->nfields >= 2)) Field(RxLD,RkyLD,RzLD,m, s, Field::Ap ) = gyroAverage(Field0(RxLD, RkyLD, RzLD, Field::Ap ), m, s, Field::phi, true);
-       if((solveEq & Field::Bpp) && (plasma->nfields >= 3)) Field(RxLD,RkyLD,RzLD,m, s, Field::Bp ) = gyroAverage(Field0(RxLD, RkyLD, RzLD, Field::Bp ), m, s, Field::phi, true);
+            Field(RxLD,RkyLD,RzLD,m, s, RFields ) = gyroAverage(Field0(RxLD, RkyLD, RzLD, RFields ), m, s, Field::phi, true);
         
 	 } }
    
@@ -96,13 +107,9 @@ int Fields::solve(Array6z f0, Array6z  f, Timing timing, int rk_step)
 
 
 // integrate Phasespace function to get number density / charge density!
-Array3z Fields::calculateChargeDensity(Array6z f0, Array6z f) {
+Array3z Fields::calculateChargeDensity(Array6z f0, Array6z f, const int m, const int s) {
 
-   Array3z rho; rho.reference(Field0(RxLD, RkyLD, RzLD, Field::phi)); rho = 0;
-   Q(RxLD, RkyLD, RzLD, Q::rho) = 0.;
    
-   for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) {
-         
      // re-normalize with \f[ \hat{v}^3
      const double pqnB_d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).q   * plasma->B0 * dv * grid->Ipol_M->d(m) ;
     
@@ -111,75 +118,42 @@ Array3z Fields::calculateChargeDensity(Array6z f0, Array6z f) {
        #pragma omp parallel for
        for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
-              rho(x, y_k, z) =  ( sum(f(x, y_k, z, RvLD, m, s) - (plasma->global ? sum(f0(x,y_k,z,RvLD,m,s)) : 0. ) ) ) * pqnB_d6Z;
+              Field0(x, y_k, z, Q::rho) =  ( sum(f(x, y_k, z, RvLD, m, s) - (plasma->global ? sum(f0(x,y_k,z,RvLD,m,s)) : 0. ) ) ) * pqnB_d6Z;
      
      } } }
-     
-     parallel->collect(rho, OP_SUM, DIR_V, true); //parallel->collect(rho, OP_SUM, DIR_V, false);
-     
-     // perform gyroAverage (note, gyorAvearge gives input array if in drift kinetic mode)
-
-
-// first test, skip electrons
-     if (parallel->Coord(DIR_V) == 0) Q(RxLD, RkyLD, RzLD, Q::rho) += gyroAverage(rho, m,s, Q::rho);
-    } } // for m, for s
     
+
    return Q(RxLD, RkyLD, RzLD, Q::rho); 
 }
 
 // integrate Phasespace function to get number density / charge density!
-Array3z Fields::calculateParallelCurrentDensity(Array6z f0, Array6z f) {
+Array3z Fields::calculateParallelCurrentDensity(Array6z f0, Array6z f, const int m, const int s) {
   
-   Array3z jp; jp.reference(Field0(RxLD, RkyLD, RzLD, Field::Ap)); jp = 0.;
-   Q(RxLD, RkyLD, RzLD, Q::jp) = 0.;
-
-   for(int s = NsLlD; s <= NsLuD; s++) {  for(int m = NmLlD; (m <= NmLuD); m++) {
-         
      // re-normalize with \f[ \hat{v}^3
      const double qa_d6Z = plasma->species(s).alpha * plasma->species(s).q   * plasma->B0 * M_PI * dv * grid->Ipol_M->d(m) ;
    
      // int_v  v_\parallel * g_j dv
      for(int z=NzLlD; z<= NzLuD;z++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++){
 
-                jp(x, y_k, z) = sum(V(RvLD) * f(x, y_k, z, RvLD, m, s)) * qa_d6Z;
-     }}}
+                Field0(x, y_k, z, Q::jp) = - sum(V(RvLD) * f(x, y_k, z, RvLD, m, s)) * qa_d6Z;
 
+     } } }
 
-     parallel->collect(jp, OP_SUM, DIR_V, true);
-     // perform gyroAverage (note, gyorAvearge gives input array if in drift kinetic mode)
-     // Note, we have Q::rho because it is working sequentially until now. needs imrpovement
-     if (parallel->Coord(DIR_V) == 0) Q(RxLD, RkyLD, RzLD, Q::jp) += gyroAverage(jp, m,s, Q::rho);
-
-    } } // for m, for s
-     
-   return Q(RxLD, RkyLD, RzLD, Q::jp); 
+    return Q(RxLD, RkyLD, RzLD, Q::jp); 
 }
 
    
-// integrate Phasespace function to get number density / charge density!
-Array3z Fields::calculatePerpendicularCurrentDensity(Array6z f0, Array6z f) {
-  
-   check(-1, DMESG("Not implemented yet"));
-   Array3z j1; j1.reference(Field0(RxLD, RkyLD, RzLD, Field::Ap));
-
-   for(int s = NsLlD; s <= NsLuD; s++) {  for(int m = NmLlD; m <= NmLuD; m++) {
-         
+Array3z Fields::calculatePerpendicularCurrentDensity(Array6z f0, Array6z f, const int m, const int s) {
+   
      // re-normalize with \f[ \hat{v}^3
      const double qn_d6Z = -plasma->species(s).alpha * plasma->species(s).q   * plasma->B0 * M_PI * dv * grid->Ipol_M->d(m) ;
    
      // int_v  v_\parallel * g_j dv
      for(int z=NzLlD; z<= NzLuD;z++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++){
 
-                j1(x, y_k, z) = M(m) * sum(f(x, y_k, z, RvLD, m, s)) * qn_d6Z;
+                Field0(x, y_k, z, Q::jo) = M(m) * sum(f(x, y_k, z, RvLD, m, s)) * qn_d6Z;
             
-     }}}
-
-     parallel->collect(j1, OP_SUM, DIR_V);
-     // perform gyroAverage (note, gyorAvearge gives input array if in drift kinetic mode)
-     // wrong gyroaverage !
-     if (parallel->Coord(DIR_V) == 0) Q(RxLD, RkyLD, RzLD, Q::jo) += gyroAverage(j1, m,s, Q::jo);
-
-    } } // for m, for s
+     } } }
 
      return Q(RxLD, RkyLD, RzLD, Q::jo); 
 }
@@ -189,7 +163,7 @@ Array3z Fields::calculatePerpendicularCurrentDensity(Array6z f0, Array6z f) {
    
 int Fields::setBoundary(Array6z  A) {
 
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
 
         SendXl(RB4  , RkyLD, RzLD, RmLD, RsLD, Range::all()) = A(Range(NxLlD  , NxLlD+3), RkyLD, RzLD, RmLD, RsLD, Range::all());
         SendXu(RB4  , RkyLD, RzLD, RmLD, RsLD, Range::all()) = A(Range(NxLuD-3, NxLuD  ), RkyLD, RzLD, RmLD, RsLD, Range::all());
@@ -267,7 +241,7 @@ Fields::~Fields() {
   void Fields::initDataOutput(Setup *setup, FileIO *fileIO) {
      
      hsize_t field_dim[]      =  { grid->NzGD, grid->NkyGD, grid->NxGD  ,             1};
-     hsize_t field_chunkBdim[] = { NzLB, grid->NkyGD, NxLB+4,             1};
+     hsize_t field_chunkBdim[] = { NzLB      , grid->NkyGD, NxLB+4      ,             1};
      hsize_t field_chunkdim[] =  { NzLD      , NkyLD      , NxLD        ,             1};
      hsize_t field_maxdim[]   =  { grid->NzGD, grid->NkyGD, grid->NxGD  , H5S_UNLIMITED};
      hsize_t field_moffset[]   = { 2, 0, 4, 0 };
@@ -287,13 +261,13 @@ Fields::~Fields() {
      H5Gclose(fieldsGroup);
       
      
-     dataOutputPhi         = Timing(setup->get("DataOutput.Phi.Step", -1)       , setup->get("DataOutput.Phi.Time", -1.));
+     dataOutputFields        = Timing(setup->get("DataOutput.Phi.Step", -1)       , setup->get("DataOutput.Phi.Time", -1.));
 
   }   
      
   void Fields::writeData(Timing timing, double dt) 
 {
-      if (timing.check(dataOutputPhi, dt)       )   {
+      if (timing.check(dataOutputFields, dt)       )   {
          FA_phi->write(phi);
          FA_Ap->write(Ap);
          FA_Bp->write(Bp);

@@ -3,7 +3,7 @@
 #include "Parallel.h"
 
 
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
 // MPI_ERror handler so we can use check and backtrace
 void check_mpi(MPI_Comm *comm, int *err_code, ...) {
 
@@ -13,7 +13,7 @@ void check_mpi(MPI_Comm *comm, int *err_code, ...) {
   if (*err_code != MPI_SUCCESS) check(-1, DMESG(std::string(string)), true);
 
 }
-#endif // HELIOS_PARALLEL_MPI
+#endif // GKC_PARALLEL_MPI
 
 
 
@@ -42,7 +42,7 @@ Parallel::Parallel(Setup *setup)
     decomposition.resize(Range(DIR_X,DIR_S)); decomposition = 1;
      /////////////////////////////////////////////////////////////////////////////////////////////
 
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
    useMPI = true;
    for(int d=DIR_X;d<DIR_SIZE;d++) Comm[d] = MPI_COMM_NULL;
    Talk.resize(Range(DIR_X,DIR_S));
@@ -68,7 +68,20 @@ Parallel::Parallel(Setup *setup)
   std::vector<std::string> decomp = Setup::split(setup->get("Parallel.Decomposition","Auto"), ":");
   if(decomp[0] == "Auto")                              decomposition      = getAutoDecomposition(numProcesses);
   else for(unsigned int dir=DIR_X; dir < decomp.size(); dir++)  decomposition(dir) =  atoi(decomp[dir].c_str());
-  
+ 
+  // Not if OpenMP is enabled OpenMP, we decompose in Y in OpenMP threads (not clean solution tough)
+#ifdef PARALLEL_OPENMP
+      numThreads = decomposition(DIR_Y); 
+      #pragma omp parallel
+      {
+        omp_set_num_threads(numThreads);
+      } 
+      // need to set to 1 for MPI
+      decomposition(DIR_Y) = 1; 
+#endif
+
+
+
   checkValidDecomposition(setup, decomposition);
 
    
@@ -90,6 +103,7 @@ Parallel::Parallel(Setup *setup)
    Coord(DIR_VM )   = ((Coord(DIR_V) == 0) && (Coord(DIR_M) == 0))                        ? 0 : -1;
    Coord(DIR_MS )   = ((Coord(DIR_M) == 0) && (Coord(DIR_S) == 0))                        ? 0 : -1;
    Coord(DIR_YZVMS) = sum(Coord(Range(DIR_Y, DIR_S))        == 0)                         ? 0 : -1;
+   Coord(DIR_XYZVM) = sum(Coord(Range(DIR_X, DIR_M))        == 0)                         ? 0 : -1;
 
    ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -196,7 +210,7 @@ Parallel::Parallel(Setup *setup)
   // distributed unified id to all processes
   master_process_id = (int) collect((double) (myRank == 0) ? master_process_id : 0, OP_SUM, DIR_ALL);
 
-#endif // HELIOS_PARALLEL_MPI
+#endif // GKC_PARALLEL_MPI
 
 
 }
@@ -205,7 +219,7 @@ Parallel::Parallel(Setup *setup)
 
 Parallel::~Parallel() {
 
-#ifdef HELIOS_PARALLEL_MPI 
+#ifdef GKC_PARALLEL_MPI 
 
 
      
@@ -219,7 +233,7 @@ Parallel::~Parallel() {
      check(MPI_Comm_free(&Comm[DIR_ALL] ), DMESG("MPI_Comm_free(Comm_XYZ)" ));
 
      check(MPI_Finalize(), DMESG("MPI_Finalize"));
-#endif // HELIOS_PARALLEL_MPI
+#endif // GKC_PARALLEL_MPI
  }
 
 /* 
@@ -228,7 +242,7 @@ Parallel::~Parallel() {
 // but teplate arguments are different ... :(, if the border is reached we send recv value to zero !
 int Parallel::updateNeighbours(Array6z  Sendu, Array6z  Sendl, Array6z  Recvu, Array6z  Recvl, int dir, bool nonBlocking)
 {
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
     if(nonBlocking) { 
         MPI_Irecv(Recvl.data(), Recvl.numElements(), MPI_DOUBLE_COMPLEX, Talk(dir).rank_l, Talk(dir).psf_msg_tag[0], Comm[DIR_ALL], &Talk(dir).psf_msg_request[1]);
         MPI_Isend(Sendu.data(), Sendu.numElements(), MPI_DOUBLE_COMPLEX, Talk(dir).rank_u, Talk(dir).psf_msg_tag[0], Comm[DIR_ALL], &Talk(dir).psf_msg_request[0]);
@@ -250,14 +264,14 @@ int Parallel::updateNeighbours(Array6z  Sendu, Array6z  Sendl, Array6z  Recvu, A
 
 int Parallel::updateNeighboursBarrier() {
     // BUG what happen if we never sent a message, what does Waitall
-#ifdef HELIOS_PARALLEL_MPI 
+#ifdef GKC_PARALLEL_MPI 
      if(decomposition(DIR_X) > 1) MPI_Waitall(4, Talk(DIR_X).psf_msg_request, Talk(DIR_X).msg_status);
      if(decomposition(DIR_Y) > 1) MPI_Waitall(4, Talk(DIR_Y).psf_msg_request, Talk(DIR_Y).msg_status);
      if(decomposition(DIR_Z) > 1) MPI_Waitall(4, Talk(DIR_Z).psf_msg_request, Talk(DIR_Z).msg_status);
      if(decomposition(DIR_V) > 1) MPI_Waitall(4, Talk(DIR_V).psf_msg_request, Talk(DIR_V).msg_status);
 //     if(decomposition & DECOMP_M) MPI_Waitall(4, Talk(DIR_M).psf_msg_request, Talk(DIR_M).msg_status);
 //     if(decomposition & DECOMP_S) MPI_Waitall(4, Talk(DIR_S).psf_msg_request, Talk(DIR_S).msg_status);
-#endif // HELIOS_PARALLEL_MPI
+#endif // GKC_PARALLEL_MPI
       return HELIOS_SUCCESS;
 
 }
@@ -268,7 +282,7 @@ int Parallel::updateNeighboursBarrier() {
 int Parallel::updateNeighbours(Array6z  SendXl, Array6z  SendXu, Array6z  SendYl, Array6z  SendYu, Array6z SendZl, Array6z SendZu, 
                                Array6z  RecvXl, Array6z  RecvXu, Array6z  RecvYl, Array6z  RecvYu, Array6z RecvZl, Array6z RecvZu) 
 {
-#ifdef HELIOS_PARALLEL_MPI 
+#ifdef GKC_PARALLEL_MPI 
       MPI_Status  msg_status[12];
       MPI_Request msg_request[12];
       
@@ -296,11 +310,11 @@ int Parallel::updateNeighbours(Array6z  SendXl, Array6z  SendXu, Array6z  SendYl
 
       // Ok let's wait here ....
       MPI_Waitall(12, msg_request, msg_status);
-#endif // HELIOS_PARALLEL_MPI
+#endif // GKC_PARALLEL_MPI
       return HELIOS_SUCCESS;
 }
 
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
 
 MPI_Op Parallel::getMPIOp(int op) {
     MPI_Op mOp = MPI_OP_NULL;
@@ -308,6 +322,8 @@ MPI_Op Parallel::getMPIOp(int op) {
         case(OP_SUM) : mOp = MPI_SUM; break;
         case(OP_MAX) : mOp = MPI_MAX; break;
         case(OP_MIN) : mOp = MPI_MIN; break;
+        case(OP_BOR ) : mOp = MPI_BOR ; break;
+        case(OP_BAND) : mOp = MPI_BAND; break;
         default      : check(-1, DMESG("No such MPI operation defined"));
     }
     return mOp;
@@ -315,12 +331,13 @@ MPI_Op Parallel::getMPIOp(int op) {
 
 #endif
 
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
 MPI_Datatype Parallel::getMPIDataType(const std::type_info &T) {
     MPI_Datatype type=0;
     if     (T == typeid(double)) type = MPI_DOUBLE;
     else if(T == typeid(int   )) type = MPI_INT;
     else if(T == typeid(cmplxd)) type = MPI_DOUBLE_COMPLEX;
+//    else if(T == typeid(bool  )) type = MPI_BOOL;
     else check(-1, DMESG("Such type is not defined"));
     
    return type;
@@ -340,7 +357,7 @@ Array2i Parallel::getProcessDomain(int rank) {
     Array2i domain_out(Range(0,5), Range(0,2));
 
        // cannot use enum type here ... why !! DIR_X,...
-#ifdef HELIOS_PARALLEL_MPI
+#ifdef GKC_PARALLEL_MPI
                     MPI_Sendrecv(domain,  18, MPI_INT, master_rank,   99,   domain_out.data(),   18, MPI_INT, rank, 99, Comm[DIR_ALL], MPI_STATUS_IGNORE);
 #endif
   return domain_out;
@@ -364,6 +381,7 @@ bool Parallel::checkValidDecomposition(Setup *setup, Array1i decomposition) {
 
    // Check basic decomposition sizes
    if( decomposition(DIR_X) > setup->get("Grid.Nx", 1)) check(-1, DMESG("Decomposition in x bigger than Nx"));
+// no need to check y-decomposition (OpenMP parallelization)   
    if( decomposition(DIR_Y) > setup->get("Grid.Ny", 1)) check(-1, DMESG("Decomposition in y bigger than Ny"));
    if( decomposition(DIR_Z) > setup->get("Grid.Nz", 1)) check(-1, DMESG("Decomposition in z bigger than Nz"));
    if( decomposition(DIR_V) > setup->get("Grid.Nv", 1)) check(-1, DMESG("Decomposition in v bigger than Nv"));
@@ -372,6 +390,7 @@ bool Parallel::checkValidDecomposition(Setup *setup, Array1i decomposition) {
    
    // Simple Check if reasonable values are provided for decomposition (only MPI proceeses)
    const int pNs = setup->get("Grid.Ns", 1 );
+   //if((product(decomposition) != numThreads * numProcesses) && (myRank == 0)) check(-1, DMESG("Decomposition and number of processors are not equal"));
    if((product(decomposition) != numProcesses) && (myRank == 0)) check(-1, DMESG("Decomposition and number of processors are not equal"));
    if(((pNs %   decomposition(DIR_S)) != 0    ) && (myRank == 0)) check(-1, DMESG("Decomposition in s have to be modulo of the total number"));
 

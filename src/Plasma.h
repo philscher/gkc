@@ -50,6 +50,8 @@
     char name[64];
     char n_name[64];
     char T_name[64];
+    std::string f0_str;
+    std::string f1_str;
     // stupid fix, but we have to otherwise all stuff is private
     void update(Geometry<HELIOS_GEOMETRY> *geo, double cs) { 
         scale_v = sqrt(2.*T0/m); 

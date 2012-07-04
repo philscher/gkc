@@ -17,12 +17,14 @@
   
 fftw_plan plan_YForward, plan_YBackward;
 fftw_plan plan_XForward, plan_XBackward;
+fftw_plan plan_XForward_Fields, plan_XBackward_Fields;
 
 fftw_plan plan_AA_YForward, plan_AA_YBackward;
 
-FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry<HELIOS_GEOMETRY> *geo) : FFTSolver(setup, parallel, geo, Nx*Nky*Nz, Nx*(2*Nky-2), Nx, 2*Nky-2) {
+FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry<HELIOS_GEOMETRY> *geo) : FFTSolver(setup, parallel, geo, Nx*(2*Nky-2)*Nz, Nx*(2*Nky-2), Nx,  (2*Nky-2)) {
    
 
+   const int nfields = plasma->nfields;
    if(parallel->Coord(DIR_FFT) == 0) {
 
       int perf_flag = (setup->get("FFTW3.Measure", 1) == 1) ? FFTW_MEASURE :  FFTW_ESTIMATE; 
@@ -39,71 +41,99 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry<HELI
 
       // needs for poissons equation
       if(flags & FFT_X) {
-
+         
          // set and check bounds 
          long X_NxLD, X_NxLlD, X_NkxL, X_NkxLlD, X_numElements, X_Nx = Nx; 
          X_numElements = fftw_mpi_local_size_1d(Nx, parallel->Comm[DIR_X], FFTW_FORWARD, 0, &X_NxLD, &X_NxLlD, &X_NkxL, &X_NkxLlD);
         
          // allocate arrays
-         data_X_kIn  = (cmplxd *) fftw_alloc_complex(X_numElements*NyLD*NzLD*plasma->nfields);
-         data_X_kOut = (cmplxd *) fftw_alloc_complex(X_numElements*NyLD*NzLD*plasma->nfields);
+         data_X_kIn  = (cmplxd *) fftw_alloc_complex(X_numElements*NkyLD*NzLD*nfields);
+         data_X_kOut = (cmplxd *) fftw_alloc_complex(X_numElements*NkyLD*NzLD*nfields);
          
-         data_X_rOut = (cmplxd *) fftw_alloc_complex(X_numElements*NyLD*NzLD*plasma->nfields);
-         data_X_rIn  = (cmplxd *) fftw_alloc_complex(X_numElements*NyLD*NzLD*plasma->nfields);
+         data_X_rOut = (cmplxd *) fftw_alloc_complex(X_numElements*NkyLD*NzLD*nfields);
+         data_X_rIn  = (cmplxd *) fftw_alloc_complex(X_numElements*NkyLD*NzLD*nfields);
                
          // set and check bounds 
          K1xLlD = X_NkxLlD;       K1xLuD = X_NkxLlD + X_NkxL - 1;
          Rk1xL.setRange(K1xLlD, K1xLuD);
-                
+         
          // allocate arrays NOTE : 1D MPI fftw-2 are ALWAYS IN-PLACE TRANSFORMS (but not fftw-3 !)
          GeneralArrayStorage<4> storage_rX; storage_rX.ordering() = fourthDim, thirdDim,  secondDim, firstDim; storage_rX.base() = NxLlD , NkyLlD, NzLlD, 1;
          
-         Array4z rXIn_t   ((cmplxd *) data_X_rIn, shape(X_NxLD , NkyLD, NzLD, plasma->nfields), neverDeleteData, storage_rX); rXIn  .reference(rXIn_t ) ; rXIn  = 0.; 
-         Array4z rXOut_t  ((cmplxd *) data_X_rOut, shape(X_NxLD , NkyLD, NzLD, plasma->nfields), neverDeleteData, storage_rX); rXOut .reference(rXOut_t) ; rXOut = 0.;
+         Array4z rXIn_t   ((cmplxd *) data_X_rIn , shape(X_NxLD , NkyLD, NzLD, nfields), neverDeleteData, storage_rX); rXIn  .reference(rXIn_t ) ; rXIn  = 0.; 
+         Array4z rXOut_t  ((cmplxd *) data_X_rOut, shape(X_NxLD , NkyLD, NzLD, nfields), neverDeleteData, storage_rX); rXOut .reference(rXOut_t) ; rXOut = 0.;
 	        
          GeneralArrayStorage<4> storage_cX; storage_cX.ordering() = fourthDim, thirdDim,  secondDim, firstDim; storage_cX.base() = X_NkxLlD, NkyLlD, NzLlD, 1;
          
-         Array4z kXOut_t  ((cmplxd *) data_X_kOut, shape(X_NkxL, NkyLD, NzLD, plasma->nfields), neverDeleteData, storage_cX); kXOut.reference(kXOut_t ) ; kXOut = 0.; 
-         Array4z kXIn_t   ((cmplxd *) data_X_kIn , shape(X_NkxL, NkyLD, NzLD, plasma->nfields), neverDeleteData, storage_cX); kXIn .reference(kXIn_t  ) ; kXIn  = 0.;
+         Array4z kXOut_t  ((cmplxd *) data_X_kOut, shape(X_NkxL, NkyLD, NzLD, nfields), neverDeleteData, storage_cX); kXOut.reference(kXOut_t ) ; kXOut = 0.; 
+         Array4z kXIn_t   ((cmplxd *) data_X_kIn , shape(X_NkxL, NkyLD, NzLD, nfields), neverDeleteData, storage_cX); kXIn .reference(kXIn_t  ) ; kXIn  = 0.;
     
-         plan_XForward   = fftw_mpi_plan_many_dft(1, &X_Nx, (long) NkyLD,  NxLD, X_NkxL, (fftw_complex *) rXIn.data(), (fftw_complex *) kXOut.data(), parallel->Comm[DIR_X], FFT_FORWARD, perf_flag);
-         plan_XBackward  = fftw_mpi_plan_many_dft(1, &X_Nx, (long) NkyLD,  NxLD, X_NkxL, (fftw_complex *) kXIn.data(), (fftw_complex *) rXOut.data(), parallel->Comm[DIR_X], FFT_BACKWARD, perf_flag);
-  
+
+         // BUG multiply with NzLD
+         plan_XForward   = fftw_mpi_plan_many_dft(1, &X_Nx, (long) NkyLD * NzLD,  NxLD * nfields, X_NkxL * nfields, (fftw_complex *) rXIn.data(), (fftw_complex *) kXOut.data(), parallel->Comm[DIR_X], FFT_FORWARD, perf_flag);
+         plan_XBackward  = fftw_mpi_plan_many_dft(1, &X_Nx, (long) NkyLD * NzLD,  NxLD * nfields, X_NkxL * nfields, (fftw_complex *) kXIn.data(), (fftw_complex *) rXOut.data(), parallel->Comm[DIR_X], FFT_BACKWARD, perf_flag);
+         
+         plan_XForward_Fields   = fftw_mpi_plan_many_dft(1, &X_Nx, (long) NkyLD * NzLD * nfields,  NxLD, X_NkxL, (fftw_complex *) rXIn.data(), (fftw_complex *) kXOut.data(), parallel->Comm[DIR_X], FFT_FORWARD , perf_flag);
+         plan_XBackward_Fields  = fftw_mpi_plan_many_dft(1, &X_Nx, (long) NkyLD * NzLD * nfields,  NxLD, X_NkxL, (fftw_complex *) kXIn.data(), (fftw_complex *) rXOut.data(), parallel->Comm[DIR_X], FFT_BACKWARD, perf_flag);
+        
+         
+ /*
+         std::cout << "Nfields : " << nfields << std::endl;
+         rXIn(RxLD, 0, RzLD, 1) = 1.;
+         rXIn(RxLD, 0, RzLD, 2 ) = 2.;
+//         rXIn(RxLD, RkyLD, RzLD, 3 ) = 5.;
+         solve(FFT_X, FFT_FORWARD, FFT_FIELDS);
+         kXIn = kXOut/Norm_X;
+         // check settings !
+         std::cout << " Check this ---> " <<  kXIn(0, RkyLD, RzLD, 1) << std::endl;
+         std::cout << " Check this ---> " <<  kXIn(0, RkyLD, RzLD, 2) << std::endl;
+
+
+         solve(FFT_X, FFT_BACKWARD, FFT_FIELDS);
+         std::cout << "Phi : " << rXOut(RxLD, 0, RzLD, 1) << std::endl;
+         std::cout << "Ap  : " << rXOut(RxLD, 0, RzLD, 2) << std::endl;
+//         std::cout << "Bp  : " << rXOut(RxLD, RkyLD, RzLD, 3) << std::endl;
+         check(-1, DMESG("FFT TEST"));
+*/
+
       }
            
             
       // Needed to calculate non-linearity in real space
       if(flags & FFT_Y) {
                 // array is too big (but for safety, shoukd be 3 but we set 4, maybe there are some roudning errors for AA?!)
-                data_Y_kIn  = (cmplxd *) fftw_alloc_complex(4*(NyLD/2+1)*NxLD*NzLD*plasma->nfields);
-                data_Y_kOut = (cmplxd *) fftw_alloc_complex(4*(NyLD/2+1)*NxLD*NzLD*plasma->nfields);
-                data_Y_rOut = (double *) fftw_alloc_real   (4*NyLD*NxLD*NzLD*plasma->nfields);
-                data_Y_rIn  = (double *) fftw_alloc_real   (4*NyLD*NxLD*NzLD*plasma->nfields);
+                //data_Y_kOut = (cmplxd *) fftw_alloc_complex(4*(NyLD/2+1)*NxLD*NzLD*nfields_Y);
+                const int nfields_Y = 1;
+                data_Y_kIn  = (cmplxd *) fftw_alloc_complex(4*Nky *NxLD*NzLD*nfields_Y);
+                data_Y_kOut = (cmplxd *) fftw_alloc_complex(2*Nky *NxLD*NzLD*nfields_Y);
+                data_Y_rOut = (double *) fftw_alloc_real   (4*NyLD*NxLD*NzLD*nfields_Y);
+                data_Y_rIn  = (double *) fftw_alloc_real   (4*NyLD*NxLD*NzLD*nfields_Y);
                 
                 // allocate arrays NOTE : 1D MPI fftw-2 are ALWAYS IN-PLACE TRANSFORMS
                 GeneralArrayStorage<4> storage_rY; storage_rY.ordering() = fourthDim, thirdDim,  secondDim, firstDim; storage_rY.base() = NxLlD, NyLlD, NzLlD, 1;
-                Array4d rYIn_t   ( data_Y_rIn,  shape(NxLD, NyLD , NzLD, plasma->nfields), neverDeleteData, storage_rY); rYIn .reference(rYIn_t ) ; rYIn  = 0.; 
-                Array4d rYOut_t  ( data_Y_rOut, shape(NxLD, NyLD , NzLD, plasma->nfields), neverDeleteData, storage_rY); rYOut.reference(rYOut_t) ; rYOut = 0.;
+                Array4d rYIn_t   ( data_Y_rIn,  shape(NxLD, NyLD , NzLD, nfields_Y), neverDeleteData, storage_rY); rYIn .reference(rYIn_t ) ; rYIn  = 0.; 
+                Array4d rYOut_t  ( data_Y_rOut, shape(NxLD, NyLD , NzLD, nfields_Y), neverDeleteData, storage_rY); rYOut.reference(rYOut_t) ; rYOut = 0.;
                 
                 GeneralArrayStorage<4> storage_cY; storage_cY.ordering() = fourthDim, thirdDim,  secondDim, firstDim; storage_cY.base() = NxLlD, NkyLlD, NzLlD, 1;
-                Array4z kYOut_t  (data_Y_kOut, shape(NxLD, NkyLD, NzLD, plasma->nfields), neverDeleteData, storage_cY); kYOut.reference(kYOut_t ) ; kYOut = 0.; 
-                Array4z kYIn_t   (data_Y_kIn , shape(NxLD, NkyLD, NzLD, plasma->nfields), neverDeleteData, storage_cY); kYIn .reference(kYIn_t  ) ; kYIn  = 0.;
+                Array4z kYOut_t  (data_Y_kOut, shape(NxLD, NkyLD, NzLD, nfields_Y), neverDeleteData, storage_cY); kYOut.reference(kYOut_t ) ; kYOut = 0.; 
+                Array4z kYIn_t   (data_Y_kIn , shape(NxLD, NkyLD, NzLD, nfields_Y), neverDeleteData, storage_cY); kYIn .reference(kYIn_t  ) ; kYIn  = 0.;
                    
                 //                                                  howmany                                  stride distance,
                 plan_YForward  = fftw_plan_many_dft_r2c(1, &NyLD, NxLD*NzLD,                 rYIn.data(), NULL, 1, NyLD ,  (fftw_complex*) kYOut.data(), NULL, 1, NkyLD, perf_flag);
                 plan_YBackward = fftw_plan_many_dft_c2r(1, &NyLD, NxLD*NzLD, (fftw_complex*) kYIn.data(), NULL, 1, NkyLD,                  rYOut.data(), NULL, 1, NyLD , perf_flag);
+                
 
 
                 ////////////////////////   Define Anti-Aliased Arrays /////////////////////////////////////
                 AA_NkyLD  = 3*Nky/2 ; AA_NyLD   = 2*AA_NkyLD-2;
-                AA_NyLlD  = NyLlD   ; AA_NyLuD  = AA_NyLlD  + AA_NyLD - 1;
+                AA_NyLlD  = NyLlD   ; AA_NyLuD  = AA_NyLlD  + AA_NyLD  - 1;
                 AA_NkyLlD = NkyLlD  ; AA_NkyLuD = AA_NkyLlD + AA_NkyLD - 1;
 
-                Array4d AA_rYIn_t   ( data_Y_rIn , shape(NxLD, AA_NyLD , NzLD, plasma->nfields), neverDeleteData, storage_rY); AA_rYIn .reference(AA_rYIn_t ) ; AA_rYIn  = 0.; 
-                Array4d AA_rYOut_t  ( data_Y_rOut, shape(NxLD, AA_NyLD , NzLD, plasma->nfields), neverDeleteData, storage_rY); AA_rYOut.reference(AA_rYOut_t) ; AA_rYOut = 0.;
+                Array4d AA_rYIn_t   ( data_Y_rIn , shape(NxLD, AA_NyLD , NzLD, nfields_Y), neverDeleteData, storage_rY); AA_rYIn .reference(AA_rYIn_t ) ; AA_rYIn  = 0.; 
+                Array4d AA_rYOut_t  ( data_Y_rOut, shape(NxLD, AA_NyLD , NzLD, nfields_Y), neverDeleteData, storage_rY); AA_rYOut.reference(AA_rYOut_t) ; AA_rYOut = 0.;
                 
-                Array4z AA_kYOut_t  (data_Y_kOut , shape(NxLD, AA_NkyLD, NzLD, plasma->nfields), neverDeleteData, storage_cY); AA_kYOut.reference(AA_kYOut_t ) ; AA_kYOut = 0.; 
-                Array4z AA_kYIn_t   (data_Y_kIn  , shape(NxLD, AA_NkyLD, NzLD, plasma->nfields), neverDeleteData, storage_cY); AA_kYIn .reference(AA_kYIn_t  ) ; AA_kYIn  = 0.;
+                Array4z AA_kYOut_t  (data_Y_kOut , shape(NxLD, AA_NkyLD, NzLD, nfields_Y), neverDeleteData, storage_cY); AA_kYOut.reference(AA_kYOut_t ) ; AA_kYOut = 0.; 
+                Array4z AA_kYIn_t   (data_Y_kIn  , shape(NxLD, AA_NkyLD, NzLD, nfields_Y), neverDeleteData, storage_cY); AA_kYIn .reference(AA_kYIn_t  ) ; AA_kYIn  = 0.;
                    
                 plan_AA_YForward  = fftw_plan_many_dft_r2c(1, &AA_NyLD, NxLD*NzLD,                 AA_rYIn.data(), NULL, 1, AA_NyLD ,  (fftw_complex*) AA_kYOut.data(), NULL, 1, AA_NkyLD, perf_flag);
                 plan_AA_YBackward = fftw_plan_many_dft_c2r(1, &AA_NyLD, NxLD*NzLD, (fftw_complex*) AA_kYIn.data(), NULL, 1, AA_NkyLD,                  AA_rYOut.data(), NULL, 1, AA_NyLD , perf_flag);
@@ -129,9 +159,29 @@ int FFTSolver_fftw3::solve(const int FFTtype, const int direction, const int N) 
         else if(FFTtype & FFT_XY  & flags) check(-1, DMESG("No such FFT direction (did you set : FFTSolver.3D = 1 )"));
 
         else if(FFTtype & FFT_X   & flags) {
+            // fftw3 seems to crash when Nx=1 thus try this
+          if(Nx == 1) {
+             // Norm = 1
+             //if     (direction == FFT_FORWARD )  kXOut = nfields * rXIn; 
+             //if     (direction == FFT_FORWARD )  kXOut = ((double) nfields) * rXIn; 
+             if     (direction == FFT_FORWARD )  kXOut = Norm_X * rXIn; 
+             else if(direction == FFT_BACKWARD)  rXOut = kXIn;
+    
+
+
+          } else {
+           // if (N == FFT_FIELDS) {
+             if     (direction == FFT_FORWARD )  fftw_execute(plan_XForward_Fields ); 
+             else if(direction == FFT_BACKWARD)  fftw_execute(plan_XBackward_Fields); 
+             else   check(-1, DMESG("No such FFT direction"));
+/* 
+            } else {
              if     (direction == FFT_FORWARD )  fftw_execute(plan_XForward ); 
              else if(direction == FFT_BACKWARD)  fftw_execute(plan_XBackward); 
              else   check(-1, DMESG("No such FFT direction"));
+            }
+ * */
+          }
         }
         else if(FFTtype & FFT_Y  & flags) {
             
@@ -210,16 +260,18 @@ Array3z FFTSolver_fftw3::multiply(Array3z &A, Array3z &B, Array3z  &R)
 
    //////////////////////// Real Space (multiply values) /////////////////// 
    
+   const double fft_Norm = 1.5 * Norm_Y_Forward * pow2(Norm_Y_Backward);
+   
    for(int z=NzLlD; z<=NzLuD;z++) { for(int y=AA_NyLlD; y<=AA_NyLuD;y++) { for(int x= NxLlD; x <= NxLuD; x++) {
-    AA_rYIn(x,y,z,1) *= AA_rYOut(x,y,z,1) / (Norm_Y * Norm_Y);
+    AA_rYIn(x,y,z,1) *= AA_rYOut(x,y,z,1) / fft_Norm;
    }}}
    
    //////////////////////// End Real Space (multiply values) /////////////////// 
    
-   fftw_execute(plan_YForward);
+   fftw_execute(plan_AA_YForward);
    
    // Array R : Copy Result back to array
-   for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) R(RxLD, y_k, RzLD) = AA_kYOut(RxLD, y_k, RzLD); 
+   for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) R(RxLD, y_k, RzLD) = AA_kYOut(RxLD, y_k, RzLD,1); 
    return R;
 
 };

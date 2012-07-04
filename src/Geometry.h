@@ -84,7 +84,7 @@ public:
    *   Get the value of shear at position x 
    *
    */
-  inline  double getShear(const int x)  { return static_cast<T*>(this)->getShear(x); };
+  inline  cmplxd get_kp(const int x, cmplxd ky, const int z)  { return static_cast<T*>(this)->get_kp(x, ky, z); };
   
 
   // is metric always symmetric or not ???!!! otherwise modify K3 term g_xy = g_yx
