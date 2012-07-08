@@ -34,7 +34,9 @@ namespace Field {  const int phi=1, Ap=2, Bp=3, Bpp=4; }
 namespace Q     {  const int rho=1, jp=2, jo=3; }
 /**
  *
- *  Poisson base
+ *  @file Fields.h
+ *
+ *  @brief 
  *
  *  Governs the calculation of the gyro-averaged potential, which
  *  should be same to all solution methods
@@ -57,10 +59,10 @@ namespace Q     {  const int rho=1, jp=2, jo=3; }
  * \f[
  *     C_1 = \\
  *     C_2 = \\
- *     C_3 = '' 
+ *     C_3 = 
  *    
- *     \hat{rho}     = \epsilon_\sigma n_{0\sigma} \pi q_sigma B_{0i} \int Gyro<g_j> d\mu dv_\parallel \\ 
- *     \hat{j}_\perp = \epsilon_\sigma n_{0\sigma} \pi q_sigma B_{0i} \int \sqrt{\mu} J_1(\lambda_sigma) g_j d\mu dv_\parallel \\ 
+ *     \hat{rho}     = \epsilon_\sigma n_{0\sigma} \pi q_\sigma B_{0i} \int Gyro<g_j> d\mu dv_\parallel 
+ *     \hat{j}_\perp = \epsilon_\sigma n_{0\sigma} \pi q_\sigma B_{0i} \int \sqrt{\mu} J_1(\lambda_\sigma) g_j d\mu dv_\parallel 
  *
  *  \f]
  *  NOTE: \hat{j} can be more effectively caluclated in Fourier space, see reference there..
@@ -73,15 +75,16 @@ namespace Q     {  const int rho=1, jp=2, jo=3; }
  *   write as, where  
  *
  *   \f[
- * %        \left[  array{ll} { C_1 & C_2 \\ C_2 & C_3  } \right] 
- *         \left[ \array{l}  {\phi \\ B_\parallel  }   \right]
- *      =  \left[ \array{l} { <\rho> \\ <j_\perp>    } \right]
+ *         \left[ \begin{array}{ll}  C_1 & C_2 \\ C_2 & C_3    \end{array} \right] \cdot 
+ *         \left[ \begin{array}{l}  \phi       \\ B_\parallel  \end{array} \right]
+ *      =  \left[ \begin{array}{l}   <\rho>    \\ <j_\perp>    \end{array} \right]
  *   \f]
  *   multiplying the inverse of C we get the following equations, which are now decoupled
  *
  *   \f[
- *      \left[ \array{l} { \phi \\ B_\parallel } \right]  = 
- *      \left[  array{ll} { C_1 & C_2 \\ C_2 & C_3  } \right] \cdot  \left[ \array{ll} { <\rho> \\ <j_\perp>    } \right]
+ *      \left[ \begin{array}{l}   \phi \\ B_\parallel      \end{array} \right]  = 
+ *      \left[ \begin{array}{ll}  C_1 & C_2 \\ C_2 & C_3   \end{array} \right] \cdot
+        \left[ \begin{array}{ll}  <\rho> \\ <j_\perp>      \end{array} \right]
  *   \f]
  *    we can now solve for $\phi$ and $B_\parallel$ subsequently.
  **/
@@ -119,9 +122,12 @@ public:
  *  This function works in 3 steps.
  *
  *
- *  \f[   \left< rho \right>_G = \int_v \sum_\sigma \alpha_sigma \hat{q} \pi \hat{B}  \f]
+ *  \f[   \left< rho \right>_G = \int_v \sum_\sigma \alpha_\sigma \hat{q} \pi \hat{B}  \f]
  *
- *
+ *  @param f0 The Maxwellian phase-space background distribution
+ *  @param f  Currect phase-space distribution
+ *  @param m  index for perpendcular velocity \f[ \mu = M(m)  \f]
+ *  @param s  index for species
  *
  * */
 virtual Array3z calculateChargeDensity         (Array6z f0,  Array6z f, const int m, const int s);
@@ -131,9 +137,14 @@ virtual Array3z calculateChargeDensity         (Array6z f0,  Array6z f, const in
  * Calcultaes the current density
  *
  * Calculates
- *  \f[   \left< j_\parallel \right>_G = \int_v \sum_\sigma \alpha_sigma \hat{q} \pi \hat{B}
- *       int_m \widetilde{ int v_\parallel g_j1 dv_\parallel} d\mu
+ *  \f[   \left< j_\parallel \right> = \int_v \sum_\sigma \alpha_\sigma \hat{q} \pi \hat{B}
+ *        int_m \widetilde{ int v_\parallel g_{j1} dv_\parallel} d\mu
  *  \f]
+ *
+ *  @param f0 The Maxwellian phase-space background distribution
+ *  @param f  Currect phase-space distribution
+ *  @param m  index for perpendcular velocity \f[ \mu = M(m)  \f]
+ *  @param s  index for species
  *
  */
 virtual Array3z calculateParallelCurrentDensity(Array6z f0, Array6z f, const int m, const int s );
@@ -143,24 +154,35 @@ virtual Array3z calculateParallelCurrentDensity(Array6z f0, Array6z f, const int
  *
  *  Calculates
  *  \f[
- *          \left< j_\perp  \right> = \int  \mu I_1(\lambda_\sigma) f_\sigma d^3 v 
+ *      \left< j_\perp \right> = \int  \mu I_1(\lambda_\sigma) f_\sigma d^3 v 
  *  \f]
  *
  *  Reference :
  *
  *  Note : Defined virtual, as there may be more effective implementations
+ *
+ *  @param f0 The Maxwellian phase-space background distribution
+ *  @param f  Currect phase-space distribution
+ *  @param m  index for perpendcular velocity \f[ \mu = M(m)  \f]
+ *  @param s  index for species
  */
 virtual Array3z calculatePerpendicularCurrentDensity(Array6z f0, Array6z f, const int m, const int s );
 
 
 
 
-virtual Array4z solveFieldEquations(Array4z fields, Timing timing) = 0;
+/*!
+ *  @brief Solve the field equation for the current phase-space distribution  
+ *  This is the decoupled version and includes \f[ \beta_\parallel \f] effects if enabled
+ *  for high-beta plasmas.
+ *
+ *  @param Q current quell terms
+ * 
+ */
+virtual Array4z solveFieldEquations(Array4z Q, Timing timing) = 0;
 
 /*!
  *
- *  Solver the gyrokinetic Poisson's equation :
- *  
  *  This is the decoupled version and includes \f[ \beta_\parallel \f] effects if enabled
  *  for high-beta plasmas.
  * 
@@ -168,8 +190,6 @@ virtual Array4z solveFieldEquations(Array4z fields, Timing timing) = 0;
 virtual Array3z solvePoissonEquation(Array3z rho, Timing timing)= 0;
 /*!
  *
- *  Solver the gyrokinetic Poisson's equation :
- *  
  *  This is the decoupled version and includes \f[ \beta_\parallel \f] effects if enabled
  *  for high-beta plasmas.
  * 
@@ -177,8 +197,6 @@ virtual Array3z solvePoissonEquation(Array3z rho, Timing timing)= 0;
 virtual Array3z solveAmpereEquation(Array3z j, Timing timing) = 0;
 /*!
  *
- *  Solver the gyrokinetic Poisson's equation :
- *  
  *  This is the decoupled version and includes \f[ \beta_\parallel \f] effects if enabled
  *  for high-beta plasmas.
  * 
@@ -191,10 +209,9 @@ virtual Array3z solveBParallelEquation(Array3z j, Timing timing) = 0;
 public:
   
   /** Sets the boundary
-   *
-   *
-   *
-   *
+   *  @brief  update boundaries for the gyro-averaged field which arises due to domain
+   *          decomposition
+   *  @param  Current gyro-averaged field  \f[ A(x,y,z,\mu, \sigma) \f] 
    */ 
   int setBoundary(Array6z  A);
    
@@ -205,15 +222,15 @@ public:
   Array4z  Q, Field0;
   Array6z  Field;
   Array5z  phi, Ap, Bp;
-  /** BlabBla
+  /**
    *
    *
-       //  brackets should be 1/2 but due to numerical error we should include calucalte ourselves, see Dannert[2] 
-       Yeb = (1./sqrt(M_PI) * sum(pow2(V) * exp(-pow2(V))) * dv) * geo->eps_hat * plasma->beta; 
+   *    //  brackets should be 1/2 but due to numerical error we should include calucalte ourselves, see Dannert[2] 
+   *    Yeb = (1./sqrt(M_PI) * sum(pow2(V) * exp(-pow2(V))) * dv) * geo->eps_hat * plasma->beta; 
    * 
-   *  \f[ Y_{analyitic} = \frac{1}{\sqrt{pi}} \int_-infty^infty_ v^2 e^{-v^2} dv \equiv \frac{1}{2} \f] 
+   *  \f[ Y = \frac{1}{\sqrt{\pi}} \int_{-\infty}^\infty v_\parallel^2 e^{-v_\parallel^2} dv \equiv \frac{1}{2} \f] 
    *
-   *   but due to discretization errors, this is not exactly
+   *   but due to discretization errors, this is not exact, thus needs to be calculated numerically.
    *
    *   \f Yeb = Y \hat{\eps}_{geo} \beta  \f]
    *
@@ -225,20 +242,27 @@ public:
   Fields(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo);
   //* Destructor
   virtual ~Fields();
-   
+  
+  /**
+   *  @brief solve the field equations
+   *
+   *
+   */
   int solve(Array6z f0, Array6z  f, Timing timing=0, int rk_step=0);
 
-  FileAttr *FA_phi, *FA_Ap, *FA_Bp, *FA_phiTime;
-
-     
-  void initDataOutput(Setup *setup, FileIO *fileIO);
-  virtual void writeData(Timing timing, double dt);
-  
-  void closeData();
-  Timing dataOutputFields;
 
   int getSolveEq() const { return solveEq; };
+  /*
+   *  @brief write field values put to data file
+   * 
+   *  
+   */ 
+  virtual void writeData(Timing timing, double dt);
 protected:
+  	FileAttr *FA_phi, *FA_Ap, *FA_Bp, *FA_phiTime;
+  	Timing dataOutputFields;
+  	void initDataOutput(Setup *setup, FileIO *fileIO);
+        void closeData();
 
         virtual void printOn(ostream &output) const {
          output   << "Poisson    |  " << "Base class" << std::endl;

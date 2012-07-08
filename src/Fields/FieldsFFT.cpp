@@ -12,7 +12,7 @@
  */
 
 #include "FieldsFFT.h"
-
+#include "SpecialMath.h"
 
 FieldsFFT::FieldsFFT(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo, FFTSolver *fft) 
 : Fields(setup, grid, parallel, fileIO,  geo), Fourier3D(setup, grid, fft)
@@ -192,7 +192,7 @@ Array4z FieldsFFT::gyroFull(Array4z A4, int m, int s, const int nField2, bool gy
         for(int z=NzLlD; z<=NzLuD;z++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {  for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
     
            const double k2_p = fft->k2_p(x_k,y_k,z);
-           fft->kXIn(x_k,y_k,z, nField) = fft->kXOut(x_k,y_k,z, nField)/fft->Norm_X *  ((nField != 3) ?  j0(sqrt(lambda2  * k2_p)) : BesselI1(sqrt(lambda2 * k2_p)));
+           fft->kXIn(x_k,y_k,z, nField) = fft->kXOut(x_k,y_k,z, nField)/fft->Norm_X *  ((nField != 3) ?  j0(sqrt(lambda2  * k2_p)) : SpecialMath::BesselI1(sqrt(lambda2 * k2_p)));
            
            // According to GENE code the Nyquiest frequency in x is unphysicall and thus needs to be screened out * geo->B0k(k_x,k_y,z)
            // highest modes explodes in kinetic simulations.

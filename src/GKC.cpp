@@ -12,7 +12,6 @@
  */
 
 #include "GKC.h"
-//#include "FEMSolver.h"
 
 #include "Setup.h"
 #include "config.h"
@@ -20,8 +19,6 @@
 
 #include "Plasma.h"
 #include "FieldsFFT.h"
-//##include "FieldsDST.h"
-//#include "FieldsFEM.h"
 
 #ifdef GKC_HYPRE
 #include "FieldsHypre.h"
@@ -119,9 +116,6 @@ Helios::Helios(Setup *_setup) : setup(_setup)  {
 //#endif
     else   check(-1, DMESG("No such Fields Solver"));
 
-
-
-
     analysis = new Analysis(parallel, vlasov, fields, grid, setup, fftsolver, fileIO, geometry); 
     visual   = new Visualization(grid, parallel, setup, fileIO, vlasov, fields);
     event    = new Event(setup, grid, parallel, fileIO, geometry);
@@ -156,8 +150,6 @@ Helios::Helios(Setup *_setup) : setup(_setup)  {
     //timeIntegration = new TimeIntegration_PETSc(setup, grid, parallel, vlasov, fields, eigenvalue);
     timeIntegration = new TimeIntegration(setup, grid, parallel, vlasov, fields, eigenvalue);
     
-    //island = new MagneticIsland(setup, fileIO);
-
     printSettings();	
     setup->check_config();
 
@@ -215,7 +207,6 @@ Helios::~Helios(){
         delete particles;
         delete eigenvalue;
         delete fileIO;
-       // delete island;
         // no need to delete table ?! Anyway SLEPc/PETSc seems to crash
         // some times FFT crashes, be sude that it is below fileIO (hdf-5 is closed)
         delete fftsolver;

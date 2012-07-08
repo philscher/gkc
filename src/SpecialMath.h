@@ -27,7 +27,7 @@ class SpecialMath
 	public:
 /**
  *  @brief Modified bessel function of zeroth order
- *  @image images Bessel_I0.png
+ *  @image html Bessel_I0.png
  *
  */
 static inline double BesselI0( const double x )
@@ -50,7 +50,7 @@ static inline double BesselI0( const double x )
 
 /**
  *  @brief Modified bessel function of first order
- *  @image images Bessel_I1.png
+ *  @image html Bessel_I1.png
  *
  */
 static inline double BesselI1( double x ) {
@@ -75,7 +75,7 @@ static inline double BesselI1( double x ) {
 
 /**
  *  @brief Modified bessel function of first order
- *  @image images Bessel_I1.png
+ *  @image html Bessel_I1.png
  *
  */
 static inline  double _1mGamma0(const double b, bool gyro=true) {
@@ -86,7 +86,7 @@ static inline  double _1mGamma0(const double b, bool gyro=true) {
 
 /**
  *  @brief Modified bessel function of first order
- *  @image images GK_1mG0_Pade.png
+ *  @image html GK_1mG0_Pade.png
  *
  */
 static inline  double _1mGamma0_Pade(const double b, bool gyro=true) {
@@ -97,7 +97,7 @@ static inline  double _1mGamma0_Pade(const double b, bool gyro=true) {
 
 /**
  *  @brief Modified bessel function of first order
- *  @image images GK_Gamma0.png
+ *  @image html GK_Gamma0.png
  *
  */
 static inline  double Gamma0(const double b, bool gyro=true) {
@@ -107,7 +107,7 @@ static inline  double Gamma0(const double b, bool gyro=true) {
 
 /**
  *  @brief Modified bessel function of first order
- *  @image images GK_Gamma1.png
+ *  @image html GK_Gamma1.png
  *
  */
 static inline  double Gamma1(const double b, bool gyro=true) {
@@ -118,7 +118,7 @@ static inline  double Gamma1(const double b, bool gyro=true) {
 // there should be a simpler epxression for this @!!
 /**
  *  @brief Modified bessel function of first order
- *  @image images G0mG1.png
+ *  @image html G0mG1.png
  *
  */
 static inline  double G0mG1(const double b, bool gyro=true) {
@@ -128,7 +128,7 @@ static inline  double G0mG1(const double b, bool gyro=true) {
 
 /**
  *  @brief Modified bessel function of first order
- *  @image images Bessel_I1.png
+ *  @image html Bessel_I1.png
  *
  */
 static inline  double I1sp(const double b) {
@@ -141,7 +141,7 @@ static inline  double I1sp(const double b) {
 /**
  *  @brief Modified bessel function of first order
  *   \f[     \Delta = \left( I_0(x) - I_1(x) \right) \exp(-x)  \f]
- *  @image images GK_Delta.png
+ *  @image html GK_Delta.png
  *
  */
 static inline  double Delta(const double x) {

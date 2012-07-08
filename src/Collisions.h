@@ -19,14 +19,14 @@
 #include "Geometry.h"
 #include "Grid.h"
 
-	/* Helper function for collisional operator as defined in 
-	*  PhD Thesis of Merz
-	*/
+/** Helper function for collisional operator 
+ * 
+ *  @brief implements various function which are defined in 
+ *         PhD Thesis of Merz
+ *
+ */
 class Collisions {
     
-    /*
- Collisional frequency 
-*/
 public:   
 
      Collisions(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *_geo, FFTSolver *(_fft)) 
@@ -43,9 +43,9 @@ public:
      };
 
     /**
-	 * Derivative of the error function 
-     * By definition
-     *  \f[ Derf(x) = \frac{d erf(x)}{dx} = \frac{2}{\sqrt{\pi}} \exp\left(-x^2 \right)  \f]
+     * @brief Derivative of the error function
+     *  @image  
+     *  \f[ Dert5f(x) = \frac{d erf(x)}{dx} = \frac{2}{\sqrt{\pi}} \exp\left(-x^2 \right)  \f]
      * */
 	inline double Derf(const double x) { return 2./sqrt(M_PI)*exp(-pow2(x)); };
 
@@ -68,9 +68,10 @@ public:
 
     
 /**
- *   The Chandrasekhar function
+ *   @brief The Chandrasekhar function
  *
  *   \f[ Chandra(x) = \frac{erf(x) - x erf'(x)}{2 x^2} \f]
+ *   @image Chandrasekhar.png
  *
  * */
       inline double Chandra(const double x) {

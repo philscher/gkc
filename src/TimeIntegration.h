@@ -45,16 +45,15 @@ class TimeIntegration {
    * The maximum TimeStep is defined from istability consideration of the Time Integration
    * method. Following  Karniadakis(2009), Parallel Scientific Computing in C++, it is defined
    * by the Eigenvalue problem
-   * \f[
-		\frac{dU}{dt} = \lambda U
+   * \f[ \frac{dU}{dt} = \lambda U \f]
    * for Runge-Kutta Time Step we get
    * \f[
-   *    U^{n+1} = U^n + \frac{1}{2} \delta t \left[ X_1 + X_2 + 2 X_3 + X_4  \right] 
+        U^{n+1} = U^n + \frac{1}{2} \delta t \left[ X_1 + X_2 + 2 X_3 + X_4  \right] 
    * \f]
    * with growth factor \f[ G = [ 1 + ... + \frac{\lambda^4 dt^4}{24} ] \f] 
    * thus we get the stability aarea by solving following equation
    * \f[ 
-   *    1 + \mu + \frac{\mu^2}{2}{ + \frac{\mu^3}{6} + \frac{\mu^4}{24} = e^{i \theta}
+        1 + \mu + \frac{\mu^2}{2} + \frac{\mu^3}{6} + \frac{\mu^4}{24} = e^{i \theta}
    * \f]
    *
    * we can apply it also also to other  

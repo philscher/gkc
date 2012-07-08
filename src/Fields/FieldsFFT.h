@@ -69,7 +69,7 @@
 class FieldsFFT : public Fields, public Fourier3D {
 protected:
 /** 
- *  Calculation of the ITG potential.
+ *  @brief Calculation of the ITG potential.
  * \f[
  *      \left< \phi \right>_{yz}(k_x) = \phi_k(k_x, k_y=0, k_z =0)
  *
