@@ -48,8 +48,8 @@ endif
 
 if PETSC                 
 AM_CPPFLAGS    +=  -I$(PETSC_DIR)/include
-gkc_SOURCES += TimeIntegration/TimeIntegration_PETSc.cpp Special/PETScMatrixVector.cpp Fields/FieldsPETSc.cpp \
-	       Fields/FieldsHermite.cpp
+gkc_SOURCES += TimeIntegration/TimeIntegration_PETSc.cpp Special/PETScMatrixVector.cpp Fields/FieldsHermite.cpp
+#Fields/FieldsPETSc.cpp \
 gkc_LDADD   += -L$(PETSC_DIR)/lib -lpetsc 
 #gkc_LDADD   += -L$(PETSC_DIR)/lib -lpetsc -llapack  -lblas
 

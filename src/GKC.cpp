@@ -23,8 +23,6 @@
 #ifdef GKC_HYPRE
 #include "FieldsHypre.h"
 #endif
-
-#include "FieldsPETSc.h"
 #include "FieldsHermite.h"
 
 #include "TimeIntegration.h"
@@ -97,23 +95,22 @@ Helios::Helios(Setup *_setup) : setup(_setup)  {
 
     std::string psolver_type = setup->get("Fields.Solver", "DFT");
     if     (psolver_type == "DFT"  ) fields   = new FieldsFFT(setup, grid, parallel, fileIO, geometry, fftsolver);
-//    else if(psolver_type == "DST"  ) fields   = new FieldsDST(setup, grid, parallel, fileIO, geometry, fftsolver);
 #ifdef LIBMESH
-//    else if(psolver_type == "FEM"  ) fields   = new FieldsFEM(setup, grid, parallel, geometry, femsolver);
+     //    (psolver_type == "FEM"  ) fields   = new FieldsFEM(setup, grid, parallel, geometry, femsolver);
 #endif
 #ifdef GKC_HYPRE
     else if(psolver_type == "Hypre"  ) fields   = new FieldsHypre(setup, grid, parallel, fileIO,geometry, fftsolver);
 #endif
-    else if(psolver_type == "PETSc"  ) fields   = new FieldsPETSc(setup, grid, parallel, fileIO,geometry, fftsolver);
+     //    (psolver_type == "PETSc"  ) fields   = new FieldsPETSc(setup, grid, parallel, fileIO,geometry, fftsolver);
     else if(psolver_type == "Hermite") fields   = new FieldsHermite(setup, grid, parallel, fileIO,geometry, fftsolver);
     else    check(-1, DMESG("No such Fields Solver"));
 
     std::string vlasov_type = setup->get("Vlasov.Solver", "Cilk");
-   if(vlasov_type == "None" ) check(-1, DMESG("No Vlasov Solver Selected"));
-//    if(vlasov_type == "Blitz"  ) vlasov     = new VlasovBlitz  (grid, parallel, setup, fileIO, geometry, fftsolver);
-//#ifdef HELIOS_CILK
+    if(vlasov_type == "None" ) check(-1, DMESG("No Vlasov Solver Selected"));
+    //    (vlasov_type == "Blitz"  ) vlasov     = new VlasovBlitz  (grid, parallel, setup, fileIO, geometry, fftsolver);
+    //#ifdef GKC_CILK
     else if(vlasov_type == "Cilk"  ) vlasov     = new VlasovCilk  (grid, parallel, setup, fileIO, geometry, fftsolver);
-//#endif
+    //#endif
     else   check(-1, DMESG("No such Fields Solver"));
 
     analysis = new Analysis(parallel, vlasov, fields, grid, setup, fftsolver, fileIO, geometry); 
@@ -123,27 +120,23 @@ Helios::Helios(Setup *_setup) : setup(_setup)  {
     eigenvalue = new Eigenvalue_SLEPc(fileIO, setup, grid, parallel); 
     // *******************************************   //
 
-   
     // call Initital conditions
-
-	//if(fileIO->resumeFile == true) fileIO->load(vlasov, fields);
+  
+    //if(fileIO->resumeFile == true) fileIO->load(vlasov, fields);
     //else {
     //    Init::setInitCondition(grid, setup, vlasov);
-//
-//        if(0) fileIO->writeInitialConditions(vlasov, fields, timing);
-//    }
+    //
+    //        if(0) fileIO->writeInitialConditions(vlasov, fields, timing);
+    //    }
     // Apply boundary conditions for variables
-    
     
     control  = new Control(setup, parallel, analysis);
     bench    = new Benchmark(setup);
-    // Read in options
    
  
     particles = new TestParticles(fileIO, setup, parallel);
     Helios_Type = setup->get("GKC.Type", "IVP");
    
-
     // call before time integration (due to eigenvalue solver)
     init      = new  Init(parallel, grid, setup, vlasov, fields, geometry);
 
@@ -153,10 +146,7 @@ Helios::Helios(Setup *_setup) : setup(_setup)  {
     printSettings();	
     setup->check_config();
 
-
-
-    
-    }
+}
 	       
 
 int Helios::mainLoop()   {

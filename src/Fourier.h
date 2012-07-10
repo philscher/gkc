@@ -25,6 +25,7 @@
 #include "Plasma.h"
 #include "SpecialMath.h"
 
+// Move everything to Fourier class
 
 /** Helper function to sum \f[ \sum_\sigma \frac{1}{\lambda_{D\sigma}} \left[ \Gamma_0( k_\perp^2 rho_{t\sigma}^2) - 1 \right] \f] 
  *   note that
@@ -64,12 +65,14 @@ inline  double sum_phiG0mG1(const double k2_p) {
     return g0;
 };
 
-/** Helper function to sum \f[ \sum_\sigma \frac{1}{\lambda_{D\sigma}} \left[ \Gamma_0( k_\perp^2 rho_{t\sigma}^2) - 1 \right] \f] 
- *   note that
- *  \left<  \lambda^2 = -\rho  \nabla_\perp^2 
- *                    = - \rho_t ( k_x^2 + k_y^2 )
- *
- **/
+/** Helper function to sum
+*   \f[
+*      \sum_\sigma \frac{1}{\lambda_{D\sigma}} \left[ \Gamma_0( k_\perp^2 rho_{t\sigma}^2) - 1 \right]
+*   \f] 
+*
+*   @note Is it worth it to precalculate ? Profile
+*
+**/
 inline  double sum_BpaG0mG1(const double k2_p) {
     double g0 = 0.;
     for(int s = NsGlD; s <= NsGuD; s++) {
@@ -83,11 +86,13 @@ inline  double sum_BpaG0mG1(const double k2_p) {
 
 
 /** Helper function to sum \f[ \sum_\sigma \frac{1}{\lambda_{D\sigma}} \left[ \Gamma_0( k_\perp^2 rho_{t\sigma}^2) - 1 \right] \f] 
- *   note that
- *  \left<  \lambda^2 = -\rho  \nabla_\perp^2 
- *                    = - \rho_t ( k_x^2 + k_y^2 )
- *
- **/
+*   note that
+*   \f[
+*     \left<  \lambda^2 = -\rho  \nabla_\perp^2 = - \rho_t ( k_x^2 + k_y^2 )
+*   \f]
+*
+*   @note Is it worth it to precalculate ? Profile
+**/
 inline  double sum_sa2qG0(const double kp_2) {
     double g0 = 0.;
     for(int s = NsGlD; s <= NsGuD; s++) {
@@ -96,8 +101,6 @@ inline  double sum_sa2qG0(const double kp_2) {
 
         const double b = rho_t2 * kp_2;
         //g0 += sa2q * (1.e0 - _1mGamma0( rho_t2 * kp_2, plasma->species(s).doGyro));
-        
-        
         //if(plasma->species(s).doGyro == true) g0 += sa2q * I0(b)*exp(-b);
         if(plasma->species(s).doGyro == true) g0  += sa2q * (1.e0 - SpecialMath::_1mGamma0(b));
         else g0 += sa2q;
@@ -105,6 +108,10 @@ inline  double sum_sa2qG0(const double kp_2) {
     return g0;
 };
 
+/**
+*   @brief document
+*
+**/
 inline  double sum_qnB_Delta(const double k2_p) {
     double g0 = 0.;
     for(int s = NsGlD; s <= NsGuD; s++) {
@@ -129,15 +136,14 @@ inline  double sum_2TnBB_Delta(const double k2_p) {
 
 class Fourier3D {
 
-
-
     std::vector<int> suppressModeX, suppressModeY, suppressModeZ;
     std::vector<int> convolveModeX, convolveModeY, convolveModeZ;
 
 
 double epsilon_0, sigma;
   protected:
- FFTSolver *fft;
+
+  FFTSolver *fft;
 
 
 

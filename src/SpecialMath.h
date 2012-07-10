@@ -19,15 +19,26 @@
 /**
  * 
  *  Some math helper functions
+ *  We can choose between different imlementation.
  *
- *
+ *  @todo cleanup
  */
 class SpecialMath
 {
 	public:
+
+/**
+ *  @brief Bessel function of zeroth order
+ *  @image html Bessel_J0.png
+ *
+ */
+static inline double BesselJ0(const double x) { return j0(x); };
+
 /**
  *  @brief Modified bessel function of zeroth order
  *  @image html Bessel_I0.png
+ *
+ *  @todo any better approach ?
  *
  */
 static inline double BesselI0( const double x )
@@ -52,6 +63,7 @@ static inline double BesselI0( const double x )
  *  @brief Modified bessel function of first order
  *  @image html Bessel_I1.png
  *
+ *  @todo any better approach ?
  */
 static inline double BesselI1( double x ) {
         double I1;

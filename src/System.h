@@ -14,7 +14,6 @@
 #ifndef __SYSTEM_H
 #define __SYSTEM_H
 
-// for portability we export system functions
 
 
 #include <time.h>
@@ -22,32 +21,69 @@
 #include <unistd.h>
 #include <iostream>
 
+/**
+*    @brief Class which provided some system functions which may be
+            not portable.
+*
+*
+*
+*
+*/
 class System 
 {
-  public:
-    unsigned int static getProcessID() {
-             return getpid();
-    };
+   public:
+   /**
+   *    @brief returns the process id
+   *    
+   *    Note : For MPI parallelized version this number is not
+   *           equal among different processes.
+   *
+   *    @return process id of this proccess     
+   */
+   static unsigned int getProcessID() 
+   {
+      return getpid();
+   };
 
 
-    static void doSleep(int seconds) {
+   /**
+   *    @brief returns the process id
+   *    @param amount of seconds to wait
+   *
+   */
+   static void doSleep(int seconds) 
+   {
     
-        unsigned int s = sleep((unsigned int) seconds);
+      unsigned int s = sleep((unsigned int) seconds);
 
-    };
+   };
     
-    unsigned int static getTime() {
+   /**
+   *    @brief Get the number of seconds after 1st January 1970
+   *
+   *    @return number of seconds after 1st January 1970
+   */
+   static unsigned int getTime() {
 
-        return time(0);
+      return time(0);
 
-    };
+   };
 
+   /**
+   *    @brief Get current time as string
+   *
+   *    @return Current time as string e.g. "1st January 1996"
+   */
+   std::string getTimeString()
+   {
 
+      time_t start_time = std::time(0); 
+      std::string currentTime(std::ctime(&start_time));
+	
+      return currentTime;
+   }
 
 };
 
-
-
 #endif // __SYSTEM_H
-
 
