@@ -33,9 +33,9 @@
 /**
 *  @brief defined offset to access field variables
 *
-*         \f$ \phi        \f$ electric potential
-*         \f$ A_\parallel \f$ parallel magnetic vector potential 
-*         \f$ B_\parallel \f$ parallel magnetic field
+*         \f$ \phi          \f$ electric potential
+*         \f$ A_{1\parallel}\f$ parallel magnetic vector potential 
+*         \f$ B_{1\parallel}\f$ parallel magnetic field
 */
 namespace Field { const int phi=1, Ap=2, Bp=3, Bpp=4; }
 
@@ -56,7 +56,7 @@ namespace Q     { const int rho=1, jp=2, jo=3; }
 *  @brief 
 *
 *  Governs the calculation of the gyro-averaged potentials 
-*  \f$ <\phi> \f$, \f$<A_\paralle>\f$, \f$ \left<B_\perp\right> \f$
+*  \f$ <\phi> \f$, \f$<A_\parallel>\f$, \f$ \left<B_\perp\right> \f$
 *  from the phase space function \f[ f_{1\sigma} \f].
 *
 *  The calculation is split up into 4 steps.
@@ -131,9 +131,9 @@ public:
    *  The charge density is caluclated according to
    *
    *  \f[   
-   *   \rho(x,y_k,z;\mu,\sigma) = q_\sigma \int_{v_\parallel}  g_{1\sigma}(x,y_k,z,v_\parallel,\mu, \sigma) \textrm{d}alpha 
+   *   \rho(x,y_k,z;\mu,\sigma) = q_\sigma \int_{v_\parallel}  g_{1\sigma}(x,y_k,z,v_\parallel,\mu,\sigma) \textrm{d}alpha 
    *  \f]
-   *  with $\textrm{d}\alpha=n_{0;\sigma} \pi \hat{B}_0 \textrm{d}v_\parallel \textrm{d}\mu$.
+   *  with \f$\textrm{d}\alpha=n_{0;\sigma} \pi \hat{B}_0 \textrm{d}v_\parallel \textrm{d}\mu\f$.
    *
    *  @param f0 The Maxwellian phase-space background distribution
    *  @param f  Currect phase-space distribution
@@ -149,15 +149,15 @@ public:
    * The parallel current density is calculated according to 
    *
    *  \f[   
-   *       j_\parallel(x,y_k,z;\mu,\sigma) = q_\sigma \int_{v_\parallel} g_{1\sigma}{x,y_k,z;\mu,\sigma) \textrm{d}\beta
+   *       j_\parallel(x,y_k,z;\mu,\sigma) = q_\sigma \int_{v_\parallel} g_{1\sigma}(x,y_k,z;\mu,\sigma) \textrm{d}\beta
    *  \f]
-   *  with $\textrm{d}\beta=n_{0;\sigma} \alpha_\sigma \pi \hat{B}_0 \textrm{d}v_\parallel \textrm{d}\mu$.
+   *  with \f$\textrm{d}\beta=n_{0;\sigma} \alpha_\sigma \pi \hat{B}_0 \textrm{d}v_\parallel \textrm{d}\mu\f$.
    * 
    *  Reference : 
    *  
    *  @param f0 The Maxwellian phase-space background distribution
    *  @param f  Currect phase-space distribution
-   *  @param m  index for perpendcular velocity \f[ \mu = M(m)  \f]
+   *  @param m  index for perpendcular velocity \f$ \mu = M(m)\f$
    *  @param s  index for species
    *
    */
@@ -170,15 +170,15 @@ public:
    *  \f[
    *      j_\perp(x,y_k,z;\mu,\sigma) = q_\sigma \int_{v_\parallel=-\infty}^\infty \mu g_{1\sigma} \textrm{d}\gamma
    *  \f]
-   *  with $\textrm{d}\gamma=n_{0;\sigma} \alpha_\sigma \pi B_0 \textrm{d}v_\parallel \textrm{d}\mu$.
+   *  with \f$\textrm{d}\gamma=n_{0;\sigma} \alpha_\sigma \pi B_0 \textrm{d}v_\parallel \textrm{d}\mu \f$.
    *
    *  See Equation ?? @cite DannertPhD
    *
-   *  Note : Defined virtual, as there may be more effective implementations
+   *  @note Defined virtual, as there may be more effective implementations
    *
    *  @param f0 The Maxwellian phase-space background distribution
    *  @param f  Currect phase-space distribution
-   *  @param m  index for perpendcular velocity \f[ \mu = M(m)  \f]
+   *  @param m  index for perpendcular velocity \f$ \mu = M(m)\f$
    *  @param s  index for species
    */
    virtual Array3z calculatePerpendicularCurrentDensity(Array6z f0, Array6z f, const int m, const int s );
@@ -186,75 +186,27 @@ public:
 
    /**
    *  @brief Solves the field equation from the source terms.
-   *
+   *  
    *  @param Q current source terms
    * 
    */
    virtual Array4z solveFieldEquations(Array4z Q, Timing timing) = 0;
 
    /**
-   *
-   *  This is the decoupled version and includes \f[ \beta_\parallel \f] effects if enabled
-   *  for high-beta plasmas.
-   *
-   *  @item
-   *  It caluclated the corresponding fields by first integrating over velocity space
-   *  Perform gyro-averaging for back-transformation to drift-coordinates
-   *  Solved Equation in drift coordinates
-   *  Perform gyro-averaging forward to gyro-coordiantes
+   *    @brief virtual function to solve the Poisson equation for \f$ \phi \f$
    * 
    */
    virtual Array3z solvePoissonEquation(Array3z rho, Timing timing)= 0;
 
    /**
    *
-   *  This is the decoupled version and includes \f[ \beta_\parallel \f] effects if enabled
-   *  for high-beta plasmas.
-   * 
+   *    @brief virtual function to solve the Ampere equation for \f$ A_{1\parallel} \f$
+   *  
    */
    virtual Array3z solveAmpereEquation(Array3z j, Timing timing) = 0;
 
    /**
-   *
-   *  This is the decoupled version and includes \f[ \beta_\parallel \f] effects if enabled
-   *  for high-beta plasmas.
-   *  Field equations for \f$ \phi \f$ and \f$ B_\parallel \f$ are coupled. We can decouple
-   *  them by the method of 
-   *  Original Reference : Merz, PhD Thesis
-   *
-   * Define : 
-   * \f[
-   *     C_1 = \\
-   *     C_2 = \\
-   *     C_3 = 
-   *    
-   *     \hat{rho}     = \epsilon_\sigma n_{0\sigma} \pi q_\sigma B_{0i} \int Gyro<g_j> d\mu dv_\parallel 
-   *     \hat{j}_\perp = \epsilon_\sigma n_{0\sigma} \pi q_\sigma B_{0i} \int \sqrt{\mu} J_1(\lambda_\sigma) g_j d\mu dv_\parallel 
-   *
-   *  \f]
-   *  NOTE: \hat{j} can be more effectively caluclated in Fourier space, see reference there..
-   *  and 
-   *  \f[
-   *      \phi          = ... \\
-   *      B_\parallel  = ...
-   *   \f]
-   *
-   *   write as, where  
-   *
-   *   \f[
-   *         \left[ \begin{array}{ll}  C_1 & C_2 \\ C_2 & C_3    \end{array} \right] \cdot 
-   *         \left[ \begin{array}{l}  \phi       \\ B_\parallel  \end{array} \right]
-   *      =  \left[ \begin{array}{l}   <\rho>    \\ <j_\perp>    \end{array} \right]
-   *   \f]
-   *   multiplying the inverse of C we get the following equations, which are now decoupled
-   *
-   *   \f[
-   *      \left[ \begin{array}{l}   \phi \\ B_\parallel      \end{array} \right]  = 
-   *      \left[ \begin{array}{ll}  C_1 & C_2 \\ C_2 & C_3   \end{array} \right] \cdot
-   *       \left[ \begin{array}{ll}  <\rho> \\ <j_\perp>      \end{array} \right]
-   *   \f]
-   *    we can now solve for $\phi$ and $B_\parallel$ subsequently.
-   * 
+   *    @brief virtual function to solve the Ampere equation for \f$ B_{1\parallel} \f$
    */
    virtual Array3z solveBParallelEquation(Array3z j, Timing timing) = 0;
 
@@ -305,7 +257,7 @@ public:
    /**
    *  @brief four-dimensional array hold the source terms in drift-coordinates.
    *
-   *  Note : Q stand for the German Quellterme (translated : source terms).
+   *  @Note  Q stand for the German Quellterme (translated : source terms).
    */
    Array4z  Q;
    /**
