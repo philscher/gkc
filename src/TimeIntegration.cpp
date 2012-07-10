@@ -205,3 +205,12 @@ int TimeIntegration::writeTimeStep(Timing timing, Timing maxTiming, double dt) {
  };
 
  
+ void TimeIntegration::printOn(ostream &output) const {
+
+
+            output << "CFL        |  maxCFL Number : " << maxCFLNumber   << std::endl;
+            output << "Max Timing |  " << maxTiming << std::endl;
+        
+         }
+
+   
