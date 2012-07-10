@@ -83,7 +83,7 @@ int Fields::solve(Array6z f0, Array6z  f, Timing timing, int rk_step)
 
       // integrate over mu-space and over species
       parallel->collect(Q, OP_SUM, DIR_MS);
-      if((parallel->Coord(DIR_MS) == 0)) Field0(RxLD, RkyLD, RzLD, RFields)  solveFieldEquations(Q, timing);
+      if((parallel->Coord(DIR_MS) == 0)) Field0(RxLD, RkyLD, RzLD, RFields) = solveFieldEquations(Q, timing);
       parallel->send(Field0, DIR_MS);    
 
       // gyro-averaging procedure for each species and magnetic moment
@@ -144,7 +144,7 @@ Array3z Fields::calculatePerpendicularCurrentDensity(Array6z f0, Array6z f, cons
    
    for(int z=NzLlD; z<= NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++){
 
-      Field0(x, y_k, z, Q::jo) = M(m) * sum(f(x, y_k, z, RvLD, m, s)) * qn_dV;
+      Field0(x, y_k, z, Q::jo) = M(m) * sum(f(x, y_k, z, RvLD, m, s)) * qan_dV;
             
    } } }
 
@@ -181,7 +181,8 @@ int Fields::setBoundary(Array6z  A) {
    }  }
 
    // Parallized version is using SendRecv call
-   parallel->updateNeighbours(  SendXl,   SendXu,   SendZl,  SendZu, RecvXl,   RecvXu,   RecvZl,  RecvZu); 
+   parallel->updateNeighbours(  SendXl,   SendXu,  SendYl, SendYu, SendZl,  SendZu, 
+                                RecvXl,   RecvXu,  RecvYl, RecvYu, RecvZl,  RecvZu); 
         
    A(Range(NxLlB-2, NxLlD-1), RkyLD, RzLD, RmLD, RsLD, RFields) = RecvXl(RB4, RkyLD, RzLD, RmLD, RsLD, RFields);
    A(Range(NxLuD+1, NxLuB+2), RkyLD, RzLD, RmLD, RsLD, RFields) = RecvXu(RB4, RkyLD, RzLD, RmLD, RsLD, RFields);
@@ -280,7 +281,7 @@ void Fields::closeData() {
 
 
 // @todo : how to interact with FieldFFT, FieldHermite ?
-void Fields::printOn(ostream &output) {
+void Fields::printOn(ostream &output) const {
 
          output   << "Poisson    |  " << "Base class" << std::endl;
          output   << "Ampere     |  " << ((plasma->nfields >= 2) ? "beta :  " + Num2String(plasma->beta) : " --- no electromagnetic effects ---") << std::endl;
