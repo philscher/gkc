@@ -225,7 +225,6 @@ int Fields::setBoundary(Array6z  A) {
 };
 
 
-
 void Fields::initDataOutput(Setup *setup, FileIO *fileIO) {
     
    // Set sizes : Note, we use fortran ordering for field variables 

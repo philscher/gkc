@@ -213,6 +213,8 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
    M = Ipol_M->getPoints();
 
    //check(count(M == 0.) > 0, DMESG("We need at least one M==0 value"));
+   dXYZ  = dx * dy * dz;
+   dXYZV = dx * dy * dz * dv * dm;
 
     initDataOutput(fileIO);
 

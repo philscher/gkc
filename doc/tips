@@ -1,1 +1,4 @@
 Doxygen stored latex generated files in ../doc/doxygen/html/_formulas.tex
+
+# Spell Check Recursively C++ comments and string (needs aspell)
+find . -name "*.h" -or "*.cpp" -exec aspell --mode=ccpp -c '{}' \;

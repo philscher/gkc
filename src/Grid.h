@@ -45,7 +45,7 @@ int NxGC, NyGC, NzGC, NvGC;
 Range RxGB, RyGB, RzGB, RvGB, RmGB, RsGB; 
 Range RxGD, RyGD, RzGD, RvGD, RmGD, RsGD; 
 
-
+double dXYZ, dXYZV;
 // Local Grid size (for Domain & Boundary)
 
       int NxGD, NyGD, NkyGD, NzGD, NvGD, NmGD, NsGD;

@@ -43,7 +43,7 @@ static char FieldsHermite_help[] = "Help for PETSc Interface not available, plea
  *          (Goerler, PhD, 2008) and (Lapillione, PhD, 2009)
  *          which is also used in the GENE code (http://www.ipp.mpg.de/~fsj/)
  *
- *    Gyro-averagin is done by using an interpolation matrix.
+ *    Gyro-averaging is done by using an interpolation matrix.
  *
  *
  *    A(x_i,ky) = A_{x_i} e^{i k_y y}. Values are only available at the grid points at x_i.
@@ -59,10 +59,10 @@ static char FieldsHermite_help[] = "Help for PETSc Interface not available, plea
  *
  *          \Gamma_0 = \int_0^\infty  J^2 \exp{(-\mu)} d\mu  .
  *
- *    This integral can be calculated accuratley by using high-order Gauss-Laguerre
- *    quadrature (a temporary gyro-averaing matrix is setup for this particular point).
+ *    This integral can be calculated accurately by using high-order Gauss-Laguerre
+ *    quadrature (a temporary gyro-averaging matrix is setup for this particular point).
  *
- *    Geometrical effects are included by linearizing the metric. As discussed by Goerler
+ *    Geometrical effects are included by linearized the metric. As discussed by Goerler
  *    & Lapillone.
  *
  *    More advanced model may be required.
@@ -149,6 +149,12 @@ public:
    *
    **/
  ~FieldsHermite();
+  
+  /**
+  *    @brief calculates the field energy
+  *
+  **/ 
+  void calculateFieldEnergy(Array4z Q, double& phi, double& Ap, double& Bp);
  
 protected:
   /**

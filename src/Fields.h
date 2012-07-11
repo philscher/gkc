@@ -209,6 +209,16 @@ public:
    *    @brief virtual function to solve the Ampere equation for \f$ B_{1\parallel} \f$
    */
    virtual Array3z solveBParallelEquation(Array3z j, Timing timing) = 0;
+   
+
+   /**
+   *    @brief calculate Field energy
+   *
+   *    calculates The field energy
+   *
+   */
+   virtual void calculateFieldEnergy(Array4z Q, double& phi, double& Ap, double& Bp) = 0;
+
 
 public:
   

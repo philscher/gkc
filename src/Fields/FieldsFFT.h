@@ -35,7 +35,7 @@
 *        Q(x,y_k,z) \rightarrow \hat{Q}(k_x,k_y,z)
 *   \f]
 *
-*   @note that this  implictely assumes periodicity in x-direction.
+*   @note that this  implicitly assumes periodicity in x-direction.
 *
 *   By gyro-ordering the contributions of the field in z-direction
 *   can be neglected.
@@ -68,7 +68,7 @@
 *   Fourier transform is implemented by using FFTSolver class.
 *   Recommended version is fftw3-mpi/fftw3. 
 *   But also wrapper to fftw2 or other exists and can be used 
-*   (altough will require some fixed)
+*   (although will require some fixed)
 *
 *
 */ 
@@ -86,13 +86,13 @@ class FieldsFFT : public Fields, public Fourier3D {
   * solve the averaged Fields equation over y-z plane only for FFT
   * n this should be OK. For slab geometry this is k(kx,0,0) !
   * Result is given in Fourier space which is only k_x dependent. For solving
-  * the fields equation, we need to substract it from the adiabatic repsonse, but
+  * the fields equation, we need to subtract it from the adiabatic response, but
   * only for(ky=0, kz=0) modes !!!.
   **/
   virtual Array1z calcFluxSurfAvrg(Array4z rho_kykx);
 
   /**
-  *   @brief Set if Nyquiest frequency is removed from FFT spectra
+  *   @brief Set if Nyquist frequency is removed from FFT spectra
   *   
   *   The Nyquist mode is unphysical and should be removed
   *   @todo explain why ??
@@ -113,18 +113,18 @@ class FieldsFFT : public Fields, public Fourier3D {
 
   /**
   *
-  *  @brief Solves the gyrokinetic poisson equation
+  *  @brief Solves the gyrokinetic Poisson equation
   * 
-  *  The eqution to solve is
+  *  The equation to solve is
   *
   *  \f[
   *      \lambda_D^2 \phi + \sum_\sigma frac{q_\sigma^2 n_\sigma}{T_\sigma}
-  *       left( 1 - \Gamma_0(k_\perp^2\rho_{t\sigma}^2 \right) + \frac{q_0^2 n_0}{T_0} 
+  *       left( 1 - \Gamma_0(k_\perp^2\rho_{t\sigma}^2) \right) + \frac{q_0^2 n_0}{T_0} 
   *       \left(\phi - \left< right>_{yz} \right)
   *       = \rho 
   *  \f]
   *  where \f$ \lambda_D$ is the Debye length. The part latter part on the LHS
-  *  is due to flux-surfvace averaging effect of an electron-species.
+  *  is due to flux-surface averaging effect of an electron-species.
   *
   *  @warning We need to normalize the FFT transform here.
   *
@@ -135,7 +135,7 @@ class FieldsFFT : public Fields, public Fourier3D {
   *
   *  @brief Solves the gyrokinetic Ampere equation for the parallel vector potential \f$ A_{1\parallel} \f$
   *       
-  *  The eqution to solve is
+  *  The equation to solve is
   *
   *  \f[
   *      \left( \nabla_\perp^2 - 
@@ -209,7 +209,7 @@ class FieldsFFT : public Fields, public Fourier3D {
 
   /** 
   *
-  *  @brief perorms the gyro-averaging of the field. 
+  *  @brief performs the gyro-averaging of the field. 
   * 
   *  Performs gyro-average of fields. Depending on the settings, this function
   *  calls :
@@ -228,7 +228,7 @@ class FieldsFFT : public Fields, public Fourier3D {
   *   @brief gyro-averaging for \f$ f_1(v_\parallel,\mu) \propto f_1(v_\parallel) exp(-\mu) \f$
   *          approximation
   *   
-  *   Effectively approximate fintie Larmor radius effects to first order. FLR damping 
+  *   Effectively approximate finite Larmor radius effects to first order. FLR damping 
   *   effects are overestimated, however, with the benefit that we can analytically integrate over
   *   the perpendicular velocity direction and thus reduce dimensionality by one.
   *   However, requires modification of the Vlasov equation.
@@ -240,7 +240,7 @@ class FieldsFFT : public Fields, public Fourier3D {
   *      \left< j_parallel \right> &= exp(-k_\perp^2 \rho_\sigma ) j_\parallel(k_x, k_y, z) \quad, \\
   *  \f}
   *  
-  *  Note : Not sure if this gyro-averaging is valud for \f$ j_\parallel \f$ and how to do for 
+  *  Note : Not sure if this gyro-averaging is valid for \f$ j_\parallel \f$ and how to do for 
   *         \f$ B_{1\parallel} \f$.
   *
   *  @param A         the field or source terms
@@ -284,12 +284,83 @@ class FieldsFFT : public Fields, public Fourier3D {
   */ 
   ~FieldsFFT();
   
+  /**
+  *    @brief calculates the field energy
+  *
+  **/ 
+  void calculateFieldEnergy(Array4z Q, double& phi, double& Ap, double& Bp);
+  
 protected:
 
   /**
   *   @brief Print out some runtime information
   */ 
   virtual void printOn(ostream &output) const;
+
+
+  /**
+  *  @brief helper function for 
+  *  \f[
+  *     r = \sum_\sigma \frac{q_\sigma^2 n_{0\sigma}}{T_{0\sigma}} (1 - \Gamma_0(b_\sigma)) 
+  *  \f]
+  *  
+  *
+  *  @note is it worth to precalculate this values ?
+  *
+  *  @param   \f$ k_\perp^2 \f$ (not normalized) perpendicular wavenumber
+  *  @return  \f$ r \f$
+  *
+  **/
+  inline  double sum_qqnT_1mG0(const double k2_p) ;
+
+  /**
+  *  @brief helper function for 
+  *  
+  *  \f[
+  *     r = \sum_\sigma \sigma_\sigma alpha_\sigma^2 q_\sigma \Gamma_0(b_\sigma) 
+  *  \f]
+  *
+  *  @note is it worth to pre-calculate this values ?
+  *
+  *  @param   \f$ k_\perp^2 \f$ (not normalized) perpendicular wavenumber
+  *  @return  \f$ r \f$
+  *
+  **/
+  inline  double sum_sa2qG0(const double kp_2) ;
+
+  /**
+  *
+  *  @brief helper function for 
+  *  
+  *  \f[
+  *     r = frac{1}{B_0} \sum_\sigma q_\sigma n_{0\sigma} \Delta(b_\sigma) 
+  *  \f]
+  *  where we used \f$ \Delta = I_0 - I_1 \f$
+  *  
+  *  @note is it worth to pre-calculate this values ?
+  *
+  *  @param   \f$ k_\perp^2 \f$ (not normalized) perpendicular wavenumber
+  *  @return  \f$ r \f$
+  **/
+  inline  double sum_qnB_Delta(const double k2_p) ;
+
+  /**
+  *
+  *  @brief helper function for 
+  *  
+  *  \f[
+  *     r = frac{2}{B_0^2} \sum_\sigma T_{0\sigma} n_{0\sigma} \Delta(b_\sigma) 
+  *  \f]
+  *  where we used \f$ \Delta = I_0 - I_1 \f$
+  *  
+  *  @note is it worth to pre-calculate this values ?
+  *
+  *  @param   \f$ k_\perp^2 \f$ (not normalized) perpendicular wavenumber
+  *  @return  \f$ r \f$
+  **/
+  inline  double sum_2TnBB_Delta(const double k2_p) ;
+
+
 };
 
 

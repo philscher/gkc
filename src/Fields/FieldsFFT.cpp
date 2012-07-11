@@ -258,3 +258,125 @@ void FieldsFFT::printOn(ostream &output) const
   Fields::printOn(output);
   output   << "Fields     |  FFT "  << std::endl;
 }
+
+
+void FieldsFFT::calculateFieldEnergy(Array4z Q, double& phiEnergy, double& ApEnergy, double& BpEnergy)
+{
+      phiEnergy = 0.; ApEnergy = 0.; BpEnergy = 0.;
+
+      if(parallel->Coord(DIR_VMS) == 0) {
+        
+
+        fft->rXIn(RxLD, RkyLD, RzLD, RFields) = Field0(RxLD,RkyLD, RzLD, RFields);
+        fft->solve(FFT_X, FFT_FORWARD, FFT_FIELDS);
+
+        // Add only kinetic contributions
+        for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int z=NzLlD; z<=NzLuD;z++) { for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
+              
+              const double k2_p = fft->k2_p(x_k,y_k,z);
+              
+              if(plasma->nfields >= 1) phiEnergy += (plasma->debye2*k2_p + sum_qqnT_1mG0(k2_p)) * pow2(abs(fft->kXOut(x_k,y_k,z,Field::phi)))/fft->Norm_X;
+              if(plasma->nfields >= 2) ApEnergy  += (k2_p - Yeb * sum_sa2qG0(k2_p))     * pow2(abs(fft->kXOut(x_k,y_k,z,Field::Ap )))/fft->Norm_X;
+              if(plasma->nfields >= 3) BpEnergy  += 0.;
+           
+        } } }
+      
+
+
+        // Add Polarization term , see Y.Idomura et al., ...., Kinetic siulations of turnbulence plasmas, Eq. (27)
+     // modify field energy term to add adiabatic contributions
+
+        // short-circuit contribution for ITG mode 
+        Array1z phi_yz(RxLD); phi_yz = 0.;
+       /* 
+        if(plasma->species(0).doGyro) {
+          // muss ich wirklich ueber yz mitteln ? nicht summieren ??
+	    for(int x = NxLlD; x <= NxLuD; x++) phi_yz(x) = sum(fields->phi(x, RyLD, RzLD, 1, 1))/((double) Ny*Nz);
+//	    for(int x = NxLlD; x <= NxLuD; x++) phi_yz(x) = sum(fields->phi(x, RyLD, RzLD, 1, 1));
+            parallel->collect(phi_yz, OP_SUM, DIR_YZ);
+        }
+      
+        * */ 
+        // add Adiabatic contributions
+        const double adiab = plasma->species(0).n0 * pow2(plasma->species(0).q)/plasma->species(0).T0;
+        for(int x = NxLlD; x <= NxLuD; x++)  phiEnergy += adiab * abs(sum(pow2(phi(x,RkyLD,RzLD, 1, 1) - phi_yz(x))));
+     
+      }
+        // still HDF-5 is a bit buggy and we need to distribute the value over all nodes
+       //phiEnergy =  parallel->collect(4. * M_PI * phiEnergy * scaleXYZ / (8.e0 * M_PI) / (initialEkin(TOTAL) == 0. ? 1. : initialEkin(TOTAL)), OP_SUM, DIR_XYZ);
+       //ApEnergy  =  parallel->collect(4. * M_PI *  ApEnergy * scaleXYZ / (8.e0 * M_PI) / (initialEkin(TOTAL) == 0. ? 1. : initialEkin(TOTAL)), OP_SUM, DIR_XYZ);
+       //phiEnergy =  parallel->collect(4. * M_PI * phiEnergy * scaleXYZ / (8.e0 * M_PI), OP_SUM, DIR_XYZ);
+       //ApEnergy  =  parallel->collect(4. * M_PI *  ApEnergy * scaleXYZ / (8.e0 * M_PI), OP_SUM, DIR_XYZ);
+       //
+       phiEnergy =  abs( parallel->collect(4. * M_PI * phiEnergy * grid->dXYZ / (8.e0 * M_PI), OP_SUM, DIR_ALL) ); 
+       ApEnergy  =  abs( parallel->collect(4. * M_PI *  ApEnergy * grid->dXYZ / (8.e0 * M_PI), OP_SUM, DIR_ALL) );
+       BpEnergy  = 0.;
+      
+}
+
+
+//////////////// Some Helper functions ////////////////////
+
+
+double FieldsFFT::sum_qqnT_1mG0(const double k2_p) 
+{
+   double g0 = 0.;
+   for(int s = NsGlD; s <= NsGuD; s++) {
+
+      const double qqnT   = plasma->species(s).n0 * pow2(plasma->species(s).q)/plasma->species(s).T0;
+      const double rho_t2 = plasma->species(s).T0  * plasma->species(s).m / pow2(plasma->species(s).q * plasma->B0);
+       
+      // doGyro = true
+      if(plasma->species(s).doGyro == true) g0 += qqnT * SpecialMath::_1mGamma0( rho_t2 * k2_p);
+      else g0 += qqnT * (rho_t2 * k2_p);
+        
+      //g0 += qqnT * _1mGamma0( rho_t2 * k2_p, plasma->species(s).doGyro);
+   }
+   return g0;
+};
+  
+
+double FieldsFFT::sum_sa2qG0(const double kp_2) 
+{
+    double g0 = 0.;
+    for(int s = NsGlD; s <= NsGuD; s++) {
+       const double sa2q   = plasma->species(s).sigma * pow2(plasma->species(s).alpha) * plasma->species(s).q;
+       const double rho_t2 = plasma->species(s).T0 * plasma->species(s).m / (pow2(plasma->species(s).q) * plasma->B0);
+
+       const double b = rho_t2 * kp_2;
+       //g0 += sa2q * (1.e0 - _1mGamma0( rho_t2 * kp_2, plasma->species(s).doGyro));
+       //if(plasma->species(s).doGyro == true) g0 += sa2q * I0(b)*exp(-b);
+       if(plasma->species(s).doGyro == true) g0  += sa2q * (1.e0 - SpecialMath::_1mGamma0(b));
+       else g0 += sa2q;
+    }
+    return g0;
+};
+
+
+double FieldsFFT::sum_qnB_Delta(const double k2_p) 
+{
+
+   double g0 = 0.;
+   for(int s = NsGlD; s <= NsGuD; s++) {
+
+      const double qn    = plasma->species(s).q * plasma->species(s).n0;
+      const double rho_t2 = plasma->species(s).T0 * plasma->species(s).m / (pow2(plasma->species(s).q) * plasma->B0);
+
+      g0 += qn * SpecialMath::Delta(rho_t2 * k2_p);
+   }
+   return g0/plasma->B0;
+};
+
+double FieldsFFT::sum_2TnBB_Delta(const double k2_p) 
+{
+   double g0 = 0.;
+   for(int s = NsGlD; s <= NsGuD; s++) {
+
+      const double Tn   = plasma->species(s).T0 * plasma->species(s).n0;
+      const double rho_t2 = plasma->species(s).T0 * plasma->species(s).m / (pow2(plasma->species(s).q) * plasma->B0);
+
+      g0 += Tn * SpecialMath::Delta(rho_t2 * k2_p);
+   }
+
+   return 2. * g0 /pow2(plasma->B0) ;
+};
