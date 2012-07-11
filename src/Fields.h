@@ -61,14 +61,14 @@ namespace Q     { const int rho=1, jp=2, jo=3; }
 *
 *  The calculation is split up into 4 steps.
 *
-*  1. caluclates the gyro-averaged source density (integration over v)
+*  1. calculates the gyro-averaged source density (integration over v)
 *  2. Back-transformation
 *  3. Solves the field equation
 *  4. Forward-transformation of the field equation.
 *
 *  Calculating the field terms are provided as pure virtual function.
 *  Thus the solution of the corresponding Laplace type equation needs
-*  to be implmented using the method of choice.
+*  to be implemented using the method of choice.
 *
 */
 class Fields : public IfaceHelios {
@@ -117,7 +117,7 @@ protected:
    * solve the averaged Poisson equation over y-z plane only for FFT
    * n this should be OK. For slab geometry this is k(kx,0,0) !
    * Result is given in Fourier space which is only k_x dependent. For solving
-   * the fields equation, we need to substract it from the adiabatic repsonse, but
+   * the fields equation, we need to subtract it from the adiabatic response, but
    * only for(ky=0, kz=0) modes !!!.
    *
    * @todo : This is implementation dependent. Does need to be as an extra function.
@@ -128,7 +128,7 @@ public:
    /** 
    *  @brief Calculates the charge density for \f$ \rho(x,y_k,z; \mu, \sigma) \f$.
    *
-   *  The charge density is caluclated according to
+   *  The charge density is calculated according to
    *
    *  \f[   
    *   \rho(x,y_k,z;\mu,\sigma) = q_\sigma \int_{v_\parallel}  g_{1\sigma}(x,y_k,z,v_\parallel,\mu,\sigma) \textrm{d}alpha 
@@ -136,8 +136,8 @@ public:
    *  with \f$\textrm{d}\alpha=n_{0;\sigma} \pi \hat{B}_0 \textrm{d}v_\parallel \textrm{d}\mu\f$.
    *
    *  @param f0 The Maxwellian phase-space background distribution
-   *  @param f  Currect phase-space distribution
-   *  @param m  index for perpendcular velocity \f$ \mu = M(m)  \f$
+   *  @param f  Current phase-space distribution
+   *  @param m  index for perpendicular velocity \f$ \mu = M(m)  \f$
    *  @param s  index for species
    *
    */
@@ -157,7 +157,7 @@ public:
    *  
    *  @param f0 The Maxwellian phase-space background distribution
    *  @param f  Currect phase-space distribution
-   *  @param m  index for perpendcular velocity \f$ \mu = M(m)\f$
+   *  @param m  index for perpendicular velocity \f$ \mu = M(m)\f$
    *  @param s  index for species
    *
    */
@@ -177,8 +177,8 @@ public:
    *  @note Defined virtual, as there may be more effective implementations
    *
    *  @param f0 The Maxwellian phase-space background distribution
-   *  @param f  Currect phase-space distribution
-   *  @param m  index for perpendcular velocity \f$ \mu = M(m)\f$
+   *  @param f  Current phase-space distribution
+   *  @param m  index for perpendicular velocity \f$ \mu = M(m)\f$
    *  @param s  index for species
    */
    virtual Array3z calculatePerpendicularCurrentDensity(Array6z f0, Array6z f, const int m, const int s );
@@ -248,7 +248,7 @@ public:
    *        \begin{array}{l}
    *         \phi \\
    *         A_\parallel\\
-   *         B_\perp  
+   *         B_\peep  
    *        \end{array} \right) }
    *  \f]
    *  where \f$ \mathcal{G}_{\mu\sigma} \f$ the gyro-averaging operator, for magnetic
@@ -289,7 +289,7 @@ public:
    * 
    *  @brief \f$ \tfrac{1}{2} \hat{e} \hat{B} \f$ normalization constants 
    *
-   *  Brackets should be 1/2 but due to numerical error we should include calucalte ourselves, see Dannert[2] 
+   *  Brackets should be 1/2 but due to numerical error we should include calculate ourselves, see Dannert[2] 
    *  Yeb = (1./sqrt(M_PI) * sum(pow2(V) * exp(-pow2(V))) * dv) * geo->eps_hat * plasma->beta; 
    * 
    *  \f[ Y = \frac{1}{\sqrt{\pi}} \int_{-\infty}^\infty v_\parallel^2 e^{-v_\parallel^2} dv \equiv \frac{1}{2} \f] 

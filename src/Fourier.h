@@ -49,7 +49,7 @@ double epsilon_0, sigma;
 
   std::string getSolverInfo();
   
-    /*!  We can suppress various modes, this is set in the setupuration fields.
+    /*!  We can suppress various modes, this is set in the setup of the fields.
      *   and sets the Fourier mode to zero. Move to FFT solver.
      */
     int suppressModes(Array4z k2Out, const int field=1);

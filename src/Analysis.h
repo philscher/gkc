@@ -196,8 +196,8 @@ Geometry<HELIOS_GEOMETRY> *geo;
     Array3d getParticleFluxKy ( int species=TOTAL);
     /*!
      *
-     *  Get electro-static field energy, note that the field energy consist of various contributions
-     *  depending on what kind of simualtions are performed. This is
+     *  Get electrostatic-static field energy, note that the field energy consist of various contributions
+     *  depending on what kind of simulations are performed. This is
      *
      *  \f[
      *         \Gamma_{es} = - \left< F_{j1} k_y \phi(x,y_k,z,m,s) d^3 \right> 

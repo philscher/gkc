@@ -60,8 +60,8 @@ Analysis::~Analysis() {
         
    
            pSpec = 0.e0;
-          // We need to take care that the fft output is of for e.g. an 8 numbr sequence [0, 1, 2, 3, 4,-3,-2,-1]
-          // The z-value are complex conjugate to each other, so FFTW does not include them ( but we do need to have a factor of 2 ?!)
+          // We need to take care that the FFT output is of for e.g. an 8 number sequence [0, 1, 2, 3, 4,-3,-2,-1]
+          // The z-value are complex conjugate to each other, so fftw does not include them ( but we do need to have a factor of 2 ?!)
           // Note : Because we take the power, we need to multiply not by 2 but by 4 (for Z)
 
          if(parallel->Coord(DIR_VMS) == 0) {
@@ -640,7 +640,7 @@ int Analysis::writeData(Timing timing, double dt)
       ScalarValues scalarValues;
 
 
-            // calculate kineic Energy first, need for initial_e ! sum over sumdomains
+            // calculate kinetic Energy first, need for initial_e ! sum over domain
             scalarValues.timestep = timing.step;
             scalarValues.time     = timing.time;
               

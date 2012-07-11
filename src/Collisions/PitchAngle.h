@@ -108,7 +108,7 @@ public:
 
 
 
-        // caluclate B's for conservation term
+        // calculate B's for conservation term
      /* 
         double v2 = pow2(V(v)) + M(m); 
  
@@ -124,7 +124,7 @@ public:
         // normalized velocity : double x = v/scale_v;
     };
 
-// will probably be moved to Vlasov soon, why not by multiderivative , so I dont't have to mess
+// will probably be moved to Vlasov soon, why not by multiderivative , so I don't have to mess
 //  up the interface and it is still clean, also need some boundaries ?
     /**
 	 * Derivative of the error function 
@@ -181,7 +181,7 @@ public:
       const double C_m =    ((6. * M(m) * V(v) * F2(xc)) * df_dv  + 4./plasma->B0 * pow2(V(v)) * M(m) * F1(xc)) * df_dv + (4. * pow2(M(m)) * F3(xc)) * df_dm - 2. * F3(xc)/pow3(V(v)) * 2. * M(m) * f;
         
        
-      // BUG : this is wrong, we need to diffrentiate over v
+      // BUG : this is wrong, we need to differentiate over v
       const double Cvm = (C_v + C_m) / dv;
 
        return Cvm;
