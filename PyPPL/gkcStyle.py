@@ -92,7 +92,7 @@ def setPlotOutputThesis():
     #rcParams['axes.color_cycle'] = markers_C
 
 
-def newHeliosFigure(style="Normal", ratio="1.41:1"):
+def newHeliosFigure(style="Normal", ratio="1.41:1", basesize=7):
   rcdefaults()
 
   if   style == "Normal" : pass
@@ -103,7 +103,6 @@ def newHeliosFigure(style="Normal", ratio="1.41:1"):
     print "No such style"
     1./0.
 
-  basesize=7
   if   ratio == ""       : figsize = (1.00*basesize,basesize)
   elif ratio == "2.33:1" : figsize = (2.33*basesize,basesize) 
   elif ratio == "1.85:1" : figsize = (1.85*basesize,basesize) 
