@@ -84,13 +84,34 @@ class VlasovCilk : public Vlasov {
    **/
         Array3d  SendXuR, SendXlR, RecvXuR, RecvXlR;
 
-        
-        
-  /**
-   *    Please Document Me !
+   /**
+   *   
+   *   Solves gyro-kinetic equation in 2-d plane in sheared geometry. For the derivation, the gyro-kinetic equation
+   *   in slab geometry 
+   *    
+   *    \f[ 
+   *          \frac{g_1}{\partial t} = 
+   *          - \frac{B_0}{B_0^\star} \left( \omega_n + \omega_T \left(v^2+\mu B_t \right) \right) 
+   *            \frac{\partial \Xi}{\partial y} F_{0\sigma} - \alpha v_\parallel \frac{\partial G}{\partial z} 
+   *    \f]
+   *
+   *   Sheared geometry is expressed as \f[ B_0 = \left( 0, -x/L_s, 1 \right) \f] with L_s the shearing length. The parallel component
+   *   along the magnetic field line is thus calculated according to 
+   *   \f[ k_\parallel = B_0 * k = \left( 0, -x/L_s, 1 \right) \cdot (k_x, k_y, k_z) = k_z - x \hat{s} k_y \f]
+   *   where in our normalization \\f[ \hat{s} \f]  is defined as \f[ \hat{s} = 1/L_s \f] . 
+   *   As $k_z \ll k_y $ we assumtion $k_\parallel = x \hat{s} k_y$ is valid. So in the Vlasov equation the z-derivative
+   *   is replaced by \f[ \partial_z = \hat{s} x \partial_y \f].
+   *
+   *   Note : Thus is not field lign average, thus k_z corresponds to z-direction which is NOT along the magnetic field line
+   *
+   *  References :
+   *
+   *          Wang, Z. X.; Li, J. Q.; Kishimoto, Y.; Dong, J. Q.;  Magnetic-island-induced ion temperature gradient mode ; PoP (2009)
+   *          Dong, J. Q.; Guzdar, P. N.; Lee, Y. C.            ;  Finite beta effects on ion temperature gradient driven modes ; Phys.of Fluid (1987)
+   *
    *
    **/
-        void    Vlasov_2D(
+    void    Vlasov_2D(
                            cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplxd fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplxd vf0[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
@@ -118,6 +139,29 @@ class VlasovCilk : public Vlasov {
                            const double dt, const int rk_step, Array6z _fs);
 
 
+  /**
+   *    Please Document Me !
+   *
+   **/
+void  Vlasov_2D_Island(
+                           cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           cmplxd fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplxd vf0[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplxd f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           cmplxd ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplxd phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           //cmplxd k2_phi[NzLD][NkyLD][NxLD],
+                           cmplxd k2_phi[plasma->nfields][NzLD][NkyLD][NxLD],
+                           cmplxd nonLinear[NzLD][NkyLD][NxLD][NvLD],
+                           cmplxd dphi_dx[NzLB][NkyLD][NxLB],
+                           const double X[NxGB], const double V[NvGB], const double M[NmGB],
+                           Fields *fields,
+                           const double dt, const int rk_step, Array6z _fs);
+
+  /**
+   *    Please Document Me !
+   *
+   **/
 void  Landau_Damping(
                            cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplxd fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
