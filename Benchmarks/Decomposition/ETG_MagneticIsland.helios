@@ -47,17 +47,7 @@ Init.Perturbation = PSFExp
 Init.Epsilon0     = 1.e-10
 
 
-#FFTSolver.3D = 1
-#ConvolveModeX  = 1-1000
-#ConvolveModeY  = 0,2-1000
-#ConvolveModeZ  = 1-1000
-
 
 Setup.Constants = {w=1.,shat=0.47}
-#Init.FixedAp = 1.
-#Init.FixedAp = 1.e-4*0.47*x^2/2.*(w^2/16*shat)*cos(pi/Lx*x)*cos(pi/Ly*(y))
-#Init.FixedAp = 1.e2*cos(pi/Lx*x)*cos(0.4*pi/Ly*(y-Ly/2.))
-#Init.FixedAp = (x/Lx)^2/2.+1.e2*cos(pi/Lx*x)
-#Init.FixedAp = 3.*(x/Lx)^2/2.+cos(pi/Ly*(y-Ly/2.))
 #+2.*pi*shat*x*z/Lz))
 
