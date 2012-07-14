@@ -13,7 +13,7 @@
 
 #include "Grid.h"
 #include "Parallel.h"
-
+#include "Special/Integrate.h"
 
 // **************** Define Global Variables ************* //
 Range RzLD, RyLD, RkyLD, RxLD, RvLD, RmLD, RsLD; 
@@ -59,7 +59,6 @@ Array2d T, N;
 
 
 Grid::~Grid () {
-delete Ipol_M;
 
 }
 
@@ -158,7 +157,7 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
     NzGB = Nz + 2*NxGC  ; NvGB = Nv + 2*NxGC;
     NmGB = Nm           ; NsGB = Ns;
 
-    // Range vor Local Domain (LD)
+    // Ranges of Local Domain (LD)
     RxLD.setRange(NxLlD,NxLuD);
     RyLD.setRange(NyLlD,NyLuD);
     RzLD.setRange(NzLlD,NzLuD);
@@ -166,7 +165,7 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
     RmLD.setRange(NmLlD,NmLuD);
     RsLD.setRange(NsLlD,NsLuD);
   
-    // Range vor Local Boundary (LB)
+    // Ranges of Local Boundary (LB)
     RxLB.setRange(NxLlB,NxLuB);
     RyLB.setRange(NyLlB,NyLuB);
     RzLB.setRange(NzLlB,NzLuB);
@@ -177,6 +176,7 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
     RxLB4.setRange(NxLlB-2,NxLuB+2);
     RyLB4.setRange(NyLlB-2,NyLuB+2);
   
+    // Ranges of Global Boundary (LB)
     RxGB.setRange(NxGlB, NxGuB);
     RyGB.setRange(NyGlB, NyGuB);
     RzGB.setRange(NzGlB, NzGuB);
@@ -184,6 +184,7 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
     RmGB.setRange(NmGlB, NmGuB);
     RsGB.setRange(NsGlB, NsGuB);
   
+    // Ranges of Global Domain (LD)
     RxGD.setRange(NxGlD, NxGuD);
     RyGD.setRange(NyGlD, NyGuD);
     RzGD.setRange(NzGlD, NzGuD);
@@ -195,26 +196,36 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
     RB.setRange(0,1);
     RB4.setRange(0,3);
 
+
+
    // Init Grid variables (-2, 2) extra points
     X.resize(Range(NxGlB-2, NxGuB+2));
+    
     bool includeX0Point = setup->get("Grid.IncludeX0Point", 0);
     for(int x = NxGlB-2; x <= NxGuB+2; x++) X(x) = -  Lx/2. + dx * ( x - NxGC - 1) + ((includeX0Point) ? dx/2. : 0.);
     
-    Y.resize(RyGB);
-    for(int y = NyGlB; y <= NyGuB; y++) Y(y) = dy * ( y - NyGC - 1);
-    Z.resize(RzGB);
-    for(int z = NzGlB; z <= NzGuB; z++) Z(z) = dz * ( z - NzGC - 1);
+    Y.resize(RyGB); Z.resize(RzGB); V.resize(RvGB);
 
-    V.resize(RvGB);
+    
+    for(int y = NyGlB; y <= NyGuB; y++) Y(y) = dy * ( y - NyGC - 1);
+
+    // Use  equidistant grid for Z and V
+    for(int z = NzGlB; z <= NzGuB; z++) Z(z) = dz * ( z - NzGC - 1);
     for(int v = NvGlB; v <= NvGuB; v++) V(v) = -  Lv + dv * ( v - NvGlD);
 
-   bool useGauss = setup->get("Grid.GaussIntegration", 1);
-   M.resize(RmGB); Ipol_M = new Integration(RmGB, Nm, Lm, useGauss);
-   M = Ipol_M->getPoints();
+    // For mu we can choose between linear and Gaussian integration
+   //bool useGauss = setup->get("Grid.GaussIntegration", 1);
+   M.resize(RmGB); dm.resize(RmGB);
+   Integrate integrate("Gauss-Legendre", Nm, 0., Lm);
+   
+   // copy weights and points
+   for(int m=NmGlD, n=0; NmGuD; m++, n++) { M(m) = integrate.x(n) ; dm(m) = integrate.w(n); }
+
+   //M = Ipol_M->getPoints();
 
    //check(count(M == 0.) > 0, DMESG("We need at least one M==0 value"));
    dXYZ  = dx * dy * dz;
-   dXYZV = dx * dy * dz * dv * dm;
+   dXYZV = dx * dy * dz * dv;
 
     initDataOutput(fileIO);
 

@@ -18,53 +18,68 @@
 #include "config.h"
 #include "Setup.h"
 #include "Parallel.h"
-#include "Integration.h"
+#include "Special/Integrate.h"
 #include "Global.h"
 
 #include "FileIO.h"
-//! Grid - Class setting basic properties and size of the computational domain
-/*! The compuational domain consist basically of..
-*   \image html grid.png
-    For the Parallized these boudaries are transfered between the
-*   CPUs using MPI. We use 2-D decomposition in X and Y. Because the
+/** 
+*    @brief Size of the computational domain for $x,k_y,z, v_\parallel, \mu, \sigma$
+*    @image html grid.png
 *
-*
-*/
-
+**/
 class Grid : public IfaceHelios {
 
-public:
-Array4d  SendYu, SendXu, SendYl, SendXl; 
-Array4d  RecvYu, RecvXu, RecvYl, RecvXl;
+  public:
+   // GhostCell
+   int NxGC, NyGC, NzGC, NvGC;
 
-Integration *Ipol_M;
+   Array1d dm;
 
-// GhostCell
-int NxGC, NyGC, NzGC, NvGC;
+  // The boundary domain
+  Range RxGB, RyGB, RzGB, RvGB, RmGB, RsGB; 
+  // The boundary domain
+  Range RxGD, RyGD, RzGD, RvGD, RmGD, RsGD; 
 
-Range RxGB, RyGB, RzGB, RvGB, RmGB, RsGB; 
-Range RxGD, RyGD, RzGD, RvGD, RmGD, RsGD; 
+   /** \f[ textrm{d}x textrm{d}y textrm{d}z
+   *    \f[ textrm{d}x textrm{d}y textrm{d}z textrm{d}v_\parallel 
+   *
+   *    @note will depend on geometry
+   **/
+   double dXYZ, dXYZV;
+   /// Local Grid size (for Domain & Boundary)
+   int NxGD, NyGD, NkyGD, NzGD, NvGD, NmGD, NsGD;
 
-double dXYZ, dXYZV;
-// Local Grid size (for Domain & Boundary)
+   /// Constructor
+   Grid(Setup *setup, Parallel *parallel, FileIO *fileIO);
 
-      int NxGD, NyGD, NkyGD, NzGD, NvGD, NmGD, NsGD;
+   /// Destructor
+   ~Grid();
 
+  protected:
+   /// Class information
+   virtual void printOn(ostream &output) const;
 
-  Grid(Setup *setup, Parallel *parallel, FileIO *fileIO);
- ~Grid();
-protected:
-     virtual void printOn(ostream &output) const;
+  public: 
+   
+   /**
+   *    @brief saves grid information to output file
+   *
+   *
+   *    @param fileIO class
+   **/
+   void initDataOutput(FileIO *fileIO);
+   
+   /// Class information
+   virtual void writeData(Timing *timing) {};
+   
+   /// Class information
+   virtual void closeData() {};
 
-
-public: 
-    void initDataOutput(FileIO *fileIO);
-     virtual void writeData(Timing *timing) {};
-     virtual void closeData() {};
-
-     int getGlobalSize() const { return Nx * Nky * Nz * Nv * Nm * Ns; };
-     int getLocalSize() const { return NxLD * NkyLD * NzLD * NvLD * NmLD * NsLD;};
-    
+   //**  returns total global domain size (@todo accept DIR)
+   int getGlobalSize() const { return Nx * Nky * Nz * Nv * Nm * Ns; };
+   
+   //**  returns total local domain size (@todo accept DIR)
+   int getLocalSize() const { return NxLD * NkyLD * NzLD * NvLD * NmLD * NsLD;};
 };
 
 

@@ -70,6 +70,24 @@ namespace Q     { const int rho=1, jp=2, jo=3; }
 *  Thus the solution of the corresponding Laplace type equation needs
 *  to be implemented using the method of choice.
 *
+*  Integration
+*          
+*           The integration in \f$ v_\parallel \f$ is performed using
+*           the Trapezoidal rule, which due to 
+*           \f$f_1(-L_v) \approx f_1(L_v) \approx 0 \f$ should give
+*           approximately 2nd order integration. 
+*
+*           @note Alternative modified Simpson rule can also be used, 
+*                 however, no benefit is found. Re-confirm.
+*
+*
+*           The integration in \f$ \mu \f$ is performed using either
+*           Gaussian-Legendre integration or Trapezoidal rule.
+*           @note : is Gauss-Laguerre not the better choice ? Check. 
+*           The perpendicular interation can be setup using 
+*           Integration.cpp (move to grid).
+*   
+*
 */
 class Fields : public IfaceHelios {
   
