@@ -179,7 +179,7 @@ double Analysis::getParticelNumber(int sp)
    for(int s = NsLlD; s <= NsLuD ; s++) { for(int m = NmLlD; m <= NmLuD; m++) { 
    
      //const double d6Z = plasma->B0 * dv * dm * scaleXYZ; 
-     const double pnB_d6Z = M_PI * plasma->species(s).n0 * plasma->B0 * dv * grid->Ipol_M->d(m) ;
+     const double pnB_d6Z = M_PI * plasma->species(s).n0 * plasma->B0 * dv * grid->dm(m) ;
    
    for(int x=NxLlD; x<= NxLuD;x++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int z=NzLlD; z<= NzLuD;z++){
 

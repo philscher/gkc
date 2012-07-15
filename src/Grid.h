@@ -24,7 +24,7 @@
 #include "FileIO.h"
 /** 
 *    @brief Size of the computational domain for $x,k_y,z, v_\parallel, \mu, \sigma$
-*    @image html grid.png
+*    @image html Grid_BoundaryDomain.png
 *
 **/
 class Grid : public IfaceHelios {

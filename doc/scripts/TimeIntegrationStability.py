@@ -1,3 +1,24 @@
+"""
+/*
+ * =====================================================================================
+ *       
+ *        Project: GKC - Gyro-kinetic solver
+ *
+ *       Filename: TimeIntegrationStability.py
+ *
+ *    Description: Main file
+ *
+ *         Author: Paul P. Hilscher (2011)
+ *
+ *        License: GPLv3+
+ * =====================================================================================
+ */
+
+"""
+
+
+
+
 from pylab import *
 from scipy.optimize import *
 from mpmath import *

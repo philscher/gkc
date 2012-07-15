@@ -258,9 +258,9 @@ class Vlasov : public IfaceHelios {
    *          (RK-3, RK-4, Heun method).
    *
    *   Calculated using ....
-   *
+   *  @note get linking error if defined inline. Check Performance !
    **/
-   inline void updateCFL(const cmplxd dphi_dx, const cmplxd dphi_dy, const cmplxd dphi_dz);
+   void updateCFL(const cmplxd dphi_dx, const cmplxd dphi_dy, const cmplxd dphi_dz);
  
  protected :
 

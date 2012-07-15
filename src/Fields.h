@@ -135,7 +135,7 @@ protected:
    * solve the averaged Poisson equation over y-z plane only for FFT
    * n this should be OK. For slab geometry this is k(kx,0,0) !
    * Result is given in Fourier space which is only k_x dependent. For solving
-   * the fields equation, we need to subtract it from the adiabatic response, but
+   * the fields equation, we need to substract it from the adiabatic repsonse, but
    * only for(ky=0, kz=0) modes !!!.
    *
    * @todo : This is implementation dependent. Does need to be as an extra function.
@@ -266,7 +266,7 @@ public:
    *        \begin{array}{l}
    *         \phi \\
    *         A_\parallel\\
-   *         B_\peep  
+   *         B_\perp  
    *        \end{array} \right) }
    *  \f]
    *  where \f$ \mathcal{G}_{\mu\sigma} \f$ the gyro-averaging operator, for magnetic

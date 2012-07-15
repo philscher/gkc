@@ -229,7 +229,7 @@ void VlasovCilk::Vlasov_2D(
         const cmplxd g    = fs [s][m][z][y_k][x][v];
         const cmplxd F0   = vf0[s][m][z][y_k][x][v];
 
-	    const cmplxd dfs_dv   = (8.  *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))/(12.*dv);
+	     const cmplxd dfs_dv   = (8.  *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))/(12.*dv);
         const cmplxd ddfs_dvv = (16. *(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) - 30.*fs[s][m][z][y_k][x][v])/(12.*pow2(dv));
         
        
@@ -442,7 +442,7 @@ void VlasovCilk::Vlasov_EM(
                            const cmplxd phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                            const cmplxd Ap [NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                            const cmplxd Bp [NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           cmplxd    k2_phi[NzLD][NkyLD][NxLD],
+                           cmplxd    k2_phi[plasma->nfields][NzLD][NkyLD][NxLD],
                            cmplxd   dphi_dx[NzLB][NkyLD][NxLB],
                            cmplxd Xi       [NzLB][NkyLD][NxLB][NvLB],
                            cmplxd G        [NzLB][NkyLD][NxLB][NvLB],

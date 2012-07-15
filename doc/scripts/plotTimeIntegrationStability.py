@@ -24,6 +24,10 @@ from scipy.optimize import *
 from mpmath import *
 import pylab
 
+rcParams['lines.linewidth']=4
+font = {'family' : 'normal', 'weight' : 'bold', 'size' : 22 }
+rc('font', **font)
+fig = figure(figsize=(12, 6))
 
 mp.dps = 60;
 
@@ -61,6 +65,7 @@ plotRK(2)
 plotRK(3)
 plotRK(4)
 plotRK(5)
+plotRK(6)
 
 
 """

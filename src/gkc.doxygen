@@ -1354,7 +1354,8 @@ HAVE_DOT               = YES
 # containing the font.
 
 DOT_FONTNAME           = FreeSans
-
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
 # The DOT_FONTSIZE tag can be used to set the size of the font of dot graphs. 
 # The default size is 10pt.
 

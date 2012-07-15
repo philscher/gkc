@@ -109,7 +109,7 @@ Array3z Fields::calculateChargeDensity(Array6z f0, Array6z f, const int m, const
    // In case of a full-f simulation the Maxwellian is subtracted
 
    // re-normalize with \f[ \hat{v}^3
-   const double pqnB_dV = M_PI * plasma->species(s).n0 * plasma->species(s).q   * plasma->B0 * dv * grid->Ipol_M->d(m) ;
+   const double pqnB_dV = M_PI * plasma->species(s).n0 * plasma->species(s).q   * plasma->B0 * dv * grid->dm(m) ;
     
    for(int z=NzLlD; z<= NzLuD;z++) {  omp_for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
@@ -123,7 +123,7 @@ Array3z Fields::calculateChargeDensity(Array6z f0, Array6z f, const int m, const
 Array3z Fields::calculateParallelCurrentDensity(Array6z f0, Array6z f, const int m, const int s) 
 {
   
-   const double qa_dV = plasma->species(s).alpha * plasma->species(s).q   * plasma->B0 * M_PI * dv * grid->Ipol_M->d(m) ;
+   const double qa_dV = plasma->species(s).alpha * plasma->species(s).q   * plasma->B0 * M_PI * dv * grid->dm(m) ;
    
    for(int z=NzLlD; z<= NzLuD;z++) {  omp_for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
@@ -140,7 +140,7 @@ Array3z Fields::calculateParallelCurrentDensity(Array6z f0, Array6z f, const int
 Array3z Fields::calculatePerpendicularCurrentDensity(Array6z f0, Array6z f, const int m, const int s) 
 {
    
-   const double qan_dV = - plasma->species(s).q * plasma->species(s).alpha   * plasma->B0 * M_PI * dv * grid->Ipol_M->d(m) ;
+   const double qan_dV = - plasma->species(s).q * plasma->species(s).alpha   * plasma->B0 * M_PI * dv * grid->dm(m) ;
    
    for(int z=NzLlD; z<= NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++){
 
