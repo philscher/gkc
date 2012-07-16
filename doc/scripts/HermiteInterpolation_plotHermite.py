@@ -28,7 +28,7 @@ plot(x, -3.*x**5 + 8.* x**4 - 6* x**3 + x, label="$H^5_{01} = -3x^5 + 8 x^4 - 6 
 plot(x, -3.*x**5 + 7 * x**4 - 4* x**3    , label="$H^5_{11} =  -3x^5 + 7 x^4 - 4 x^3$"    )
 
 # tfrac is not working, why ? included in preemble
-plot(x, - 0.5 * x**5 + 1.5 * x*4 - 1.5* x**3 + 0.5 * x**2 , \
+plot(x, - 0.5 * x**5 + 1.5 * x**4 - 1.5* x**3 + 0.5 * x**2, \
     label="$H^5_{02} =  -\\frac{1}{2}x^5 + \\frac{3}{2} x^4 - \\frac{3}{2} x^3 + \\frac{1}{2} x^2$")
 plot(x,   0.5 * x**5 - x**4 + 0.5 * x**3, label="$ H^5_{12} =  -\\frac{1}{2}x^5 - x^4 + \\frac{1}{2} x^3$")
 
