@@ -120,7 +120,7 @@ class FieldsFFT : public Fields, public Fourier3D {
   *  \f[
   *      \lambda_D^2 \phi + \sum_\sigma frac{q_\sigma^2 n_\sigma}{T_\sigma}
   *       left( 1 - \Gamma_0(k_\perp^2\rho_{t\sigma}^2) \right) + \frac{q_0^2 n_0}{T_0} 
-  *       \left(\phi - \left< right>_{yz} \right)
+  *       \left(\phi - \left< \phi \right>_{yz} \right)
   *       = \rho 
   *  \f]
   *  where \f$ \lambda_D$ is the Debye length. The part latter part on the LHS
@@ -139,8 +139,7 @@ class FieldsFFT : public Fields, public Fourier3D {
   *
   *  \f[
   *      \left( \nabla_\perp^2 - 
-  *      Y \hat{e} \beta \sum_\sigma sigma_sigma alpha_sigma^2 q_\sigma Gamma_0(b_\sigma)
-  *      \right)
+  *      Y \hat{e} \beta \sum_\sigma \sigma_\sigma \alpha_\sigma^2 q_\sigma \Gamma_0(b_\sigma)  \right)
   *       = j_\parallel 
   *  \f]
   *  where \f$ Y\hat{e} \beta = \tfrac{1}{2}\hat{e} \beta$.
