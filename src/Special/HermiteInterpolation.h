@@ -12,6 +12,9 @@
  */
 
 
+// @defgroup math Mathematics
+// @ingroup math
+
 #include "config.h"
 #include "Global.h"
 
@@ -22,25 +25,30 @@
 *
 *   @brief Hermite interpolation function
 *
-*   HN_nm - N is interpolation order, n is radial function,
+*   @detailed
+*
+*   \f$ H^N_{nm} \f$ - N is interpolation order, n is radial function,
 *   m it's derivative [ 0, 1, 2, ..] -> [ no, first, second, ... ]
 *   
 *   Hermite polynomial interpolation functions of n-th order $H^n$, where
 *   for x is
 *   \f[
-*       x \set )0,1( \eq 0
+*       x \in )0,1( \equiv 0
 *   \f]
 *
 *   @todo add 9th order
 *   @todo add reference
-*   @bug  H_02 is not defined correctly 
 *   
 **/
 class HermiteInterpolation
 {
   
   public:
+    
+    // add 1st order
 
+   //@{
+   // @name Hermite1st
    /**
    *  @brief Basis functions for 3rd-order interpolation
    *  @image html  HermiteInterpolation_3rdOrderFunctions.png
@@ -53,7 +61,10 @@ class HermiteInterpolation
    static double H3_01( const double x) { return  ((x >= 0.) && (x <= 1.)) ?       pow3(x) - 2. * pow2(x) + x  : 0. ; } ; 
    /// 3rd order basis function \f$ H^3_{11}(x) =     x^3 -   x^2     \f$
    static double H3_11( const double x) { return  ((x >= 0.) && (x <= 1.)) ?       pow3(x) -      pow2(x)      : 0. ; } ; 
-    
+   //@}
+   
+   
+   //@{
    /**
    *  @brief Basis functions for 5th-order interpolation
    *  @image html  HermiteInterpolation_5thOrderFunctions.png
@@ -70,7 +81,9 @@ class HermiteInterpolation
    static double H5_02( const double x) { return ((x >= 0.) && (x <= 1.)) ? - 0.5 * pow5(x) +  1.5 * pow4(x) -  1.5 * pow3(x) + 0.5 * pow2(x) : 0. ; };
    /// 5th order basis function \f$ H^5_{12} =  -\tfrac{1}{2}x^5 -              x^4 + \tfrac{1}{2} x^3    \f$
    static double H5_12( const double x) { return ((x >= 0.) && (x <= 1.)) ?   0.5 * pow5(x) -        pow4(x) +  0.5 * pow3(x)                 : 0. ; };
+   // @}
 
+    // add 7th order
     // add 9th order
 };
 

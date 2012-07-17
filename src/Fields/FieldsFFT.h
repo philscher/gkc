@@ -170,20 +170,20 @@ class FieldsFFT : public Fields, public Fourier3D {
   *  The coupled Poisson-Ampere equation takes the form
   *
   *  \f[
-  *      \left( \begin{array}{cc} C_1 & C_2 \\ C_2 & C_3 \right)
+  *      \left( \begin{array}{cc} C_1 & C_2 \\ C_2 & C_3 \end{array} \right)
   *      \cdot
-  *      \left( \begin{array}{c} \phi \\ B_\parallel \right)
+  *      \left( \begin{array}{c} \phi \\ B_\parallel     \end{array} \right)
   *      =
-  *      \left( \begin{array}{c} \rho \\ j_\perp     \right)
+  *      \left( \begin{array}{c} \rho \\ j_\perp         \end{array} \right)
   *  \f]
   * 
   *   It can be decoupled to (see reference for details)
   *
   *  \f[
-  *      \left( \begin{array}{c} \phi \\ B_\parallel \right)
+  *      \left( \begin{array}{c} \phi \\ B_\parallel     \end{array} \right)
   *      =
   *      \frac{1}{C_1 C_3 - C_2^2}
-  *      \left( \begin{array}{c} C_3 \rho - C_2 j_\perp \\ C_1 j_\perp - C_2 \phi \right)
+  *      \left( \begin{array}{c} C_3 \rho - C_2 j_\perp \\ C_1 j_\perp - C_2 \phi \end{array} \right)
   *  \f]
   *
   *
@@ -235,8 +235,8 @@ class FieldsFFT : public Fields, public Fourier3D {
   *   Reference : @cite Dorland_Hammet_1993:GyroFluidwithKineticEffects
   *   
   *  \f{align}{
-  *      \left< \phi       \right> &= exp(-k_\perp^2 \rho_\sigma ) \phi       (k_x, k_y, z) \quad, \\
-  *      \left< j_parallel \right> &= exp(-k_\perp^2 \rho_\sigma ) j_\parallel(k_x, k_y, z) \quad, \\
+  *      \left< \phi       \right> &= exp(-k_\perp^2 \rho_{t\sigma} ) \phi       (k_x, k_y, z) \quad, \\
+  *      \left< j_parallel \right> &= exp(-k_\perp^2 \rho_{t\sigma} ) j_\parallel(k_x, k_y, z) \quad, \\
   *  \f}
   *  
   *  Note : Not sure if this gyro-averaging is valid for \f$ j_\parallel \f$ and how to do for 
