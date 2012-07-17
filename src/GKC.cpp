@@ -131,7 +131,6 @@ Helios::Helios(Setup *_setup) : setup(_setup)  {
     // Apply boundary conditions for variables
     
     control  = new Control(setup, parallel, analysis);
-    bench    = new Benchmark(setup);
    
  
     particles = new TestParticles(fileIO, setup, parallel);
@@ -165,10 +164,7 @@ int Helios::mainLoop()   {
          	    analysis->writeData(timing, dt);
          	    fields->writeData(timing, dt);
          	    visual->writeData(timing, dt);
-        	
-
-                // OK Time Step finished
-       	        bench->benchmark(vlasov, fields, timing);
+                    // OK Time Step finished
  		    }
 
    
@@ -203,7 +199,6 @@ Helios::~Helios(){
         delete control;
         delete parallel;
         delete init;
-        delete bench;
         delete timeIntegration;
 }
 

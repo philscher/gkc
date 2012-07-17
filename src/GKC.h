@@ -30,7 +30,6 @@
 #include "FFTSolver.h"
 #include "Control.h"
 #include "Timing.h"
-#include "Benchmark.h"
 #include "Visualization.h"
 #include "Event.h"
 #include "Eigenvalue.h"
@@ -135,7 +134,6 @@ private:
     Geometry<HELIOS_GEOMETRY> *geometry;
     Event         *event;
     Init          *init;
-    Benchmark *bench;
     Visualization *visual;
     TimeIntegration *timeIntegration;
 
