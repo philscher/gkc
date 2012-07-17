@@ -30,13 +30,17 @@
 class Grid : public IfaceHelios {
 
   public:
-   // GhostCell
-   int NxGC, NyGC, NzGC, NvGC;
+   //@{
+   int NxGC; //< Number of ghost cells in x-directions
+   int NyGC; //< Number of ghost cells in y-direction
+   int NzGC; //< Number of ghost cells in z-direction
+   int NvGC; //< Number of ghost cells in v-direction
+   //@}
+   
+   Array1d dm; //< Weights for \f$ \mu(m) \f$
 
-   Array1d dm;
-
-  // The boundary domain
-  Range RxGB, RyGB, RzGB, RvGB, RmGB, RsGB; 
+  
+  Range RxGB, RyGB, RzGB, RvGB, RmGB, RsGB; //< The boundary domain
   // The boundary domain
   Range RxGD, RyGD, RzGD, RvGD, RmGD, RsGD; 
 

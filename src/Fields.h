@@ -294,7 +294,7 @@ public:
    Array4z  Field0;
    
    /**
-   *  @brief gyro-averaged field quantities as \f$ \left<\phi \right, <A_\parallel>, <B_\perp>)\f$
+   *  @brief gyro-averaged field quantities as \f$ \left( <\phi>, <A_{1\parallel}>, <B_{1\parallel}> \right)\f$
    */
    Array6z  Field;
    

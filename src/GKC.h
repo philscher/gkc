@@ -43,12 +43,10 @@
 #include "Geometry2D.h"
 
 /**
- *    @brief  The main class handles all initializations and
- *            time step iterations
- *    
- *    @file   GKC.h
+ *    @mainpage
  *
- *
+ *         
+ * 
  *    GKC (GyroKinetic Code) is a local, delta-f gyro-kinetic 
  *    code. Currently support is restricted to
  *     
@@ -115,6 +113,8 @@
  *       this code co-authors is NOT required. Alltough depending on your
  *       choice highly appreciated, and will benefit further development.
  *
+ *    @brief  The main class handles all initializations and
+ *            time step iterations
  *
  */
 class Helios

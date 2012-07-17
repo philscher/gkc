@@ -34,8 +34,19 @@
 #include "Fields.h"
 
 
+/**
+*  
+*  @brief support of timed events
+*
+*  checkEvent() is called every timestep. In case of an event, e.g.
+*  suppress zonal-flow from T > 100 , this should be written here.
+*
+*  @todo provide example
+*
+**/
 class Event : public IfaceHelios {
-  bool useEvent;
+
+  bool useEvent; //< Enabled in case events are enabled
 public:
   Event(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo);
 

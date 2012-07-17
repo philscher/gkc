@@ -25,162 +25,173 @@
 #include "Geometry2D.h"
 
 
+
+/**
+*  @enum sign of transform (forward or backward)
+*  @todo avoid global scope 
+**/
 enum FFT_DIR    {FFT_NO=0, FFT_FORWARD=1, FFT_BACKWARD=2 };
+
+/**
+*  @enum type of transform
+*  @todo avoid global scope 
+**/
 enum FFT_FLAGS  {FFT_DUMMY=0, FFT_XYZ=1, FFT_X=2, FFT_XY=4, FFT_Y=16, FFT_AA=32, FFT_FIELDS=64};
 
 
-// note we only support r2c, you can add simply suport for c2c as parallelization efficiency
-// is reduced due to unneccesary data, we don't recommend.
-
-
-
-/** Wrapper to various FFT transform libraries
- * 
- *
- *  NOTE : Rea2COmplex are only supported (due to efficenciy)
- *         in-place transformation are allowed, in this case
- *         set r3In = k2Out and k2In = r3Out to point at the
- *         same memory region.
- *
- *
- */
-
-
+/** 
+*
+*  @brief Interface to various FFT transform libraries
+*
+*  @note  only real-to-complex transforms are supported, as well
+*         as in-place transformation. Take care, that in this
+*         case e.g. rXIn = kXOut and kXIn = rXOut will point
+*         to the same memory region.
+*
+**/
 class FFTSolver : public IfaceHelios {
 
-protected:
-  Geometry<HELIOS_GEOMETRY> *geo;
-  Parallel *parallel;
+  protected:
 
-  int flags;
+   Geometry<HELIOS_GEOMETRY> *geo;
+   Parallel *parallel;
 
-  /**
-   *
-   *    Get Normalization of FFT Solver. Most of the solvers give only normalization
-   *    factors for forward AND backward transformation. However, we require to know
-   *    these terms seperately in case of multiplication of two terms in real space.
-   *    (e.g. due to non-linear term).
-   *
-   *
-   *
-   *
-   *
-   * */
-  void checkNormalization();
+   int flags;
 
-public:
+   /**
+   *  @brief check normalization for forward and backward transform
+   *    
+   *  Get Normalization of FFT Solver. Most of the solvers give only normalization
+   *  factors for forward AND backward transformation. However, we require to know
+   *  these terms seperately in case of multiplication of two terms in real space.
+   *  (e.g. due to non-linear term).
+   *  
+   *  This is simply checked by performing a forward transformation, and
+   *  checking the values, and vice vera.
+   *
+   *  @todo describe how it does it
+   *
+   **/
+   virtual void setNormalizationConstants();
 
-  /**    Get perpendicular gradient in Fourier space. To to non-rectangular 
+  public:
+   /**    Get perpendicular gradient in Fourier space. To to non-rectangular 
    *     coordiantes (shear) we have to include the non-diagonal metric component
    *     g12, g21 too
    *
    *     \f[ k_\perp^2 = k_x^2 + k_y^2 \f]  
-  */
-  inline double k2_p(const int x_k, const int y_k, const int z) 
-  {
+   **/
+   inline double k2_p(const int x_k, const int y_k, const int z) 
+   {
       
       const double kx_ = kx(x_k);
       const double ky_ = ky(y_k);
 
       return geo->g_xx(z) * pow2(kx_) + geo->g_yy(z) * pow2(ky_) + 2. * geo->g_xy(z) * kx_ * ky_;
-  };
+   };
 
-  /**
+   /**
    *  Gives \f[ k_x = \frac{2\pi}{L_x} * x_k \f] Fourier wavenumber.
    *  We use fttw ordering ([k_0, k_1, ..., k_Nyq, -k_{Ny-1}, -k_{Ny-2}, ...., -k_{-1} ]
-   */
-  inline double  kx(const int x_k) { return 2.*M_PI/Lx * ((x_k <= Nx/2) ? x_k : x_k - Nx); }
+   **/
+   inline double  kx(const int x_k) { return 2.*M_PI/Lx * ((x_k <= Nx/2) ? x_k : x_k - Nx); }
 
-  	//else          return ( (x_k <= Nx  ) ? ((double) x_k)*2.e0*M_PI/Lx : ((double) (2*Nx - x_k))*2.e0*M_PI/Lx);
-  
-  /**
+   /**
    *  Gives \f[ k_y = \frac{2\pi}{L_y} * y_k \f] Fourier wavenumber
    *  We use fttw ordering ([k_0, k_1, ..., k_Nyq, -k_{Ny-1}, -k_{Ny-2}, ...., -k_{-1} ]
    *  Half modes in k_y due to hermitian symmetry. We use c2r transform thus only positive
    *  values are reqtuied
    */
- inline double  ky(const int y_k) { return 2.*M_PI/Ly * y_k; };
+   inline double  ky(const int y_k) { return 2.*M_PI/Ly * y_k; };
 
 
-  /**  Input Array for 3 dimensional data  */
-  Array4z r3In, r3Out;
-  Array3z r33In, r33Out;
-
-// 3-Dimensional FFT
-  Range Rk3xL, Rk3yL, Rk3zL;
-  int k3NxL, k3NyL, k3NzL, k3NxG, k3NyG, k3NzG;
-  int K3xLuD, K3yLuD, K3zLuD, K3xLlD, K3yLlD, K3zLlD;
-  Array3z k3In, k3Out;
-
-  /** 2 dimensional FFT needed e.g. for poisson equation \f[ \phi(x,y)  -> \phi(x_k, y_k) \f]
-   * Note : Need also to support stacked transformations
-   *        Arrays can share a common points as only one active FFT is allowed
-   */ 
-  Range Rk2xL, Rk2yL;
-  int K2xLuD, K2yLuD, K2xLlD, K2yLlD;
-  Array4z rXYIn, rXYOut, kXYIn, kXYOut;
-
-  /** Normalization factors in N3(Nx,Ny,Nz), N2(Nx,Ny) and Norm_X(Nx)  */
-  double Norm_XYZ, Norm_XY, Norm_X, Norm_Y;
+   /** Normalization factors in N3(Nx,Ny,Nz), N2(Nx,Ny) and Norm_X(Nx)  */
+   double Norm_XYZ, Norm_XY, Norm_X, Norm_Y;
  
-  double Norm_X_Forward, Norm_X_Backward;
-  double Norm_Y_Forward, Norm_Y_Backward;
+   /** Normalization factors for single-X Forward/Backward transformation
+    *  
+    *  We need to know this, in order to properly rescale a transformation to
+    *  real-space, with a multiplication followed by backtransformation.
+    *  (multiplty)
+    *  
+    * */
+   double Norm_X_Forward, Norm_X_Backward;
+   double Norm_Y_Forward, Norm_Y_Backward;
 
-  int getFlags() const { return flags; };
+   int getFlags() const { return flags; };
   
- /*  FFT in Y - direction */ 
- Array4d rYIn, rYOut;
- Array4z kYOut, kYIn;
- int Y_kyLlD, Y_kyLuD , Y_NyLlD , Y_NyLuD;
- Range Y_RkyL , Y_RyLD;
-
-
-
-
-  Array4z rXIn, rXOut, kXOut, kXIn;
-  Array4z r2In, r2Out, k2In, k2Out;
-  int K1xLlD, K1xLuD;
-  int K1yLlD, K1yLuD;
-  Range Rk1xL, Rk1yL;
-
-
-   FFTSolver(Setup *setup, Parallel *_parallel, Geometry<HELIOS_GEOMETRY> *_geo, double _Norm_XYZ, double _Norm_XY, double _Norm_X, double _Norm_Y) :
-      parallel(_parallel), Norm_XYZ(_Norm_XYZ), Norm_XY(_Norm_XY), Norm_X(_Norm_X), Norm_Y(_Norm_Y), geo(_geo)
-  {
-     flags = FFT_X | FFT_Y;
-     if(setup->get("FFTSolver.XYZ", 0 ) == 1)              flags |= FFT_XYZ; 
-     if(setup->get("Vlasov.useAA", 0) == 1)              flags |= FFT_AA;
-  };
-
-  virtual ~FFTSolver() {};
-
-  // this libray needs to support 1D FFT and XYZ-FFT
-  virtual int solve(const int type, const int direction, const int nstacked=1) = 0;
-
-  virtual string getLibraryName() { return "No"; }; // = 0;
- // virtual int    getDecomposition() { return DECOMP_NO; };
-
-    /**
-     *
-     *  A Input Array 1
-     *  B
-     *  out : R Results
-     *
-     * */
- virtual Array3z multiply(Array3z &A, Array3z &B, Array3z  &R) = 0;
-
-protected :
-     virtual void initDataOutput(FileIO *fileIO) {};
-     virtual void writeData(Timing *timing) {};
-     virtual void closeData() {};
+   // @{
+   /**
+   *  @brief Arrays for FFT in Y-direcction
+   *
+   *  Transforms the field equations \f$ A(x,k_y, z, n) rightarrow A(x, y, z,n) \f$,
+   *  which is needed to calculate the non-linearity in real space.
+   *
+   *  @note that this is uses a real-to-complex and complex-to-real transform
+   **/
+   Array4d rYIn, rYOut;
+   Array4z kYOut, kYIn;
+   int Y_kyLlD, Y_kyLuD , Y_NyLlD , Y_NyLuD;
+   Range Y_RkyL , Y_RyLD;
+   // @}
    
+   // @{
+   /**
+   *  @brief Arrays for FFT in X-direcction
+   *
+   *  Transforms the field equations \f$ A(x,k_y, z, n) rightarrow A(k_x, k_y, z,n) \f$,
+   *  which is needs on e.g. the Poisson's equation.
+   **/
+   Array4z rXIn, rXOut, kXOut, kXIn;
 
+   int K1xLlD, K1xLuD;
+   int K1yLlD, K1yLuD;
+   Range Rk1xL, Rk1yL;
+   // @}
 
- void printOn(ostream &output) const {
-//            output << "Libraries |  FFT : " << getLibraryName() << "      ";
+   /**
+   *   @brief the contstructor
+   *
+   **/
+   FFTSolver(Setup *setup, Parallel *_parallel, Geometry<HELIOS_GEOMETRY> *_geo, double _Norm_XYZ, double _Norm_XY, double _Norm_X, double _Norm_Y); 
 
+   virtual ~FFTSolver() ;
 
-    }
+   /**
+   *
+   *
+   *   
+   *
+   *   @param type       FFT_FLAG enum, e.g. FFT_X, FFT_Y
+   *   @param direction  flag either FFT_FORWARD or FFT_BACKWARD
+   *   @param nstacked   depreceated
+   *
+   **/
+   virtual int solve(const int type, const int direction, const int nstacked=1) = 0;
+
+   /**
+   *   @brief  returns the FFT library name in use
+   *
+   *   @return the name with version of the FFT library used
+   **/
+   virtual string getLibraryName()  = 0;
+
+   /**
+   *  @multiplies 2-arrays by transforming to real space
+   *  A Input Array 1
+   *  B
+   *  out : R Results
+   *  
+   *  The final result is properly rescaled.
+   *
+   *  @param Array A(x,y_k,z)
+   *  @param Array B(x_y_k,z)
+   *
+   *  @returns C(x,y_k,z)
+   *
+   **/
+   virtual Array3z multiply(Array3z &A, Array3z &B, Array3z  &R) = 0;
+  
 };
 
 
