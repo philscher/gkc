@@ -14,8 +14,8 @@
 #include "FieldsFFT.h"
 #include "SpecialMath.h"
 
-FieldsFFT::FieldsFFT(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo, FFTSolver *fft) 
-: Fields(setup, grid, parallel, fileIO,  geo), Fourier3D(setup, grid, fft)
+FieldsFFT::FieldsFFT(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo, FFTSolver *_fft) 
+: Fields(setup, grid, parallel, fileIO,  geo), fft(_fft)
 {
 	phi_yz.resize(fft->Rk1xL); phi_yz = 0.;
 
@@ -45,7 +45,7 @@ Array4z FieldsFFT::solveFieldEquations(Array4z Q, Timing timing) {
 
     
    // suppresses modes in all fields
-   suppressModes(fft->kXIn, Field::phi);
+   //fft->suppressModes(fft->kXIn, Field::phi);
 
    fft->solve(FFT_X, FFT_BACKWARD, FFT_FIELDS);
   

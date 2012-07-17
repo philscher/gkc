@@ -57,8 +57,56 @@ FFTSolver::FFTSolver(Setup *setup, Parallel *_parallel, Geometry<HELIOS_GEOMETRY
      // is this really necessary ?
      flags = FFT_X | FFT_Y;
      if(setup->get("Vlasov.useAA" , 0) == 1)   flags |= FFT_AA;
+       
+     parseSuppressMode(setup->get("SuppressModeX", ""), suppressModeX);  
+     parseSuppressMode(setup->get("SuppressModeY", ""), suppressModeY);  
    };
 
 
 FFTSolver::~FFTSolver() {};
+
+
+void FFTSolver::parseSuppressMode(const std::string &value, std::vector<int> &suppressMode) {
+    if(value == "") return;
+
+
+    std::string sub_str = Setup::eraseCharacter(value, " ") ;
+    std::vector<std::string> result = Setup::split(sub_str, ",");
+                                              
+    vector<std::string>::const_iterator it;
+                                               for(it = result.begin(); it != result.end(); it++) {
+                                                   if((*it).find("-") == string::npos) {
+                                                   //if((*it).find("-") != -1) {
+                                                    std::vector<std::string> res2 = Setup::split(*it, "-");
+                                                    for(int i = atoi(res2[0].c_str()); i < atoi(res2[1].c_str()); i++) {
+                                                        suppressMode.push_back(i);
+                                                    }} else
+                                                    suppressMode.push_back(std::atoi((*it).c_str()));
+                                                }
+              
+              }
+
+
+
+// BUG : Input SuppressModeX = 0 does not work (Crashes)
+int FFTSolver::suppressModes(Array4z A, const int field) 
+{
+
+  // suppress x,y, z - Modes
+  vector<int>::const_iterator mode;
+
+  for(mode = suppressModeX.begin(); (!suppressModeX.empty()) && (mode <= suppressModeX.end()) ; mode++) { 
+	if((*mode < K1xLlD) || (*mode > K1xLuD)) continue;
+    A(*mode, RkyLD, RzLD, RFields) = 1.e-128;
+  }
+//  for(mode = suppressModeY.begin(); mode <= suppressModeY.end(); mode++) {
+  for(mode = suppressModeY.begin(); (!suppressModeY.empty()) && (mode <= suppressModeY.end()) ; mode++) { 
+	    if((*mode < NkyLlD) || (*mode > NkyLuD)) continue;
+        A(Rk1xL, *mode, RzLD, RFields) = 1.e-128;
+  }
+
+
+  return HELIOS_SUCCESS;
+}
+
 

@@ -51,6 +51,14 @@ enum FFT_FLAGS  {FFT_DUMMY=0, FFT_XYZ=1, FFT_X=2, FFT_XY=4, FFT_Y=16, FFT_AA=32,
 **/
 class FFTSolver : public IfaceHelios {
 
+  std::vector<int> suppressModeX, suppressModeY;
+    
+   /**  We can suppress various modes, this is set in the setup of the fields.
+   *   and sets the Fourier mode to zero. Move to FFT solver.
+   */
+   int suppressModes(Array4z k2Out, const int field=1);
+   void parseSuppressMode(const std::string &value, std::vector<int> &suppressMode);
+
   protected:
 
    Geometry<HELIOS_GEOMETRY> *geo;

@@ -12,7 +12,6 @@
  */
 
 #include "Analysis.h"
-#include "Fourier.h"
 
 
 Analysis::Analysis(Parallel *_parallel, Vlasov *_vlasov, Fields *_fields, Grid *_grid, Setup *_setup, FFTSolver *_fft, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *_geo) : 

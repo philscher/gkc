@@ -19,7 +19,7 @@
 #include "Setup.h"
 #include "Parallel.h"
 #include "Grid.h"
-#include "Fourier.h"
+#include "FFTSolver.h"
 #include "Geometry.h"
 #include "Fields.h"
 
@@ -72,9 +72,11 @@
 *
 *
 */ 
-class FieldsFFT : public Fields, public Fourier3D {
+class FieldsFFT : public Fields {
 
   protected:
+   
+  FFTSolver *fft;
 
   /** 
   *  @brief Calculation of the flux-surface average
