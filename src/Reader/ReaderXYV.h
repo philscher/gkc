@@ -26,7 +26,7 @@
 #include "Reader/Reader.h"
 
 
-#include "Interpolate/Interpolate.h"
+#include "Special/Interpolate/Interpolate.h"
 
 
 /**
