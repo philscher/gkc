@@ -1,6 +1,5 @@
 import gkcData
 import gkcStyle
-
 import pylab
 import numpy as np
 import scipy.optimize
@@ -8,45 +7,49 @@ import scipy.optimize
 
 def fitDampedOscillationOptmize(T, Y):
 
-    fitfunc = lambda p, t: p[0]*sin(p[1]*t+p[2]) * exp(+p[3]*t) # Target function
+    fitfunc = lambda p, t: p[0]*np.sin(p[1]*t+p[2]) * np.exp(+p[3]*t) # Target function
     errfunc = lambda p, x, y: fitfunc(p, x) - y # Distance to the target function
     
     p, success = scipy.optimize.leastsq(errfunc, [1.0e-5, -1.0, 0.0, 0.00001], args=(T, Y))
 
-    return (abs(p[1]), p[3])
+    return abs(p[1]) + 1.j* p[3]
 
 def fitDampedOscillationFourier(T, Y):
 
        # get frequency
-       print " Y : " , Y
-       hatY = rfft(Y[20:])
-       print " hatY : " , hatY
-       freq = fftfreq(len(Y[20:]), d=T[21]-T[20])[:len(T[20:])/2+1]
+       hatY = np.fft.rfft(Y)
+       freq = np.fft.fftfreq(len(Y), d=T[21]-T[20])
 
        idx = hatY.argmax()
-       w0  =  freq[idx]
+       w0  =  freq[idx] / (2. * np.pi)
+    
+       #fftfreq = np.fft.fftfreq(len(time_series), d = (T[-10]-T[-11])) 
+       #abs_freq =  2.*np.pi*fftfreq[m]
 
 
        print "freq " , freq, " idx : " , idx, " w0 : ", w0
        #we could caluclated now gamme but this is not accurate enough
        # so we fit the decline
 
+       # Try simple smoothening
+       Y = scipy.ndimage.gaussian_filter(Y,0.5)
        a = abs(Y)
-       a_idx = numpy.r_[True, a[1:] > a[:-1]] & numpy.r_[a[:-1] > a[1:], True]
+       a_idx = np.r_[True, a[1:] > a[:-1]] & np.r_[a[:-1] > a[1:], True]
+       
+       # we ignore first and last value due to errors from initial condition and stop
+       a_idx = a_idx[1:-2]
 
        fitfunc = lambda p, x: p[0]*x + p[1] 
        errfunc = lambda p, x, y: fitfunc(p, x) - y
        
-       if len(log(abs(Y[a_idx]))) > 1: p, success = scipy.optimize.leastsq(errfunc, [-1.0e-5, 0.0001], args=(T[a_idx], log(abs(Y[a_idx]))))
-       else : p = [1.e-6]
-       return (w0, p[0])
+       if len(Y[a_idx]) > 1 : p, success = scipy.optimize.leastsq(errfunc, [-1.0e-5, 0.0], args=(T[a_idx], np.log(a[a_idx])))
+       else : p = [1.e-6, 1.e-1]
+       return w0 + 1.j * p[0], np.exp(p[1])
 
 
-def getGrowthrate(T, D, start, stop, dir='Y'):
+def getGrowthrate(T, D, start, stop):
 
-  growth = []
-
-  print "Fitting from T : ", T[start], " - ", T[stop]
+  print "Fitting growthrates from T : ", T[start], " - ", T[stop]
 
   def fitExpGrowthOptimize(T,Y):
 
@@ -56,33 +59,35 @@ def getGrowthrate(T, D, start, stop, dir='Y'):
        p, success = scipy.optimize.leastsq(errfunc, [-1.0e-5, 0.0001], args=(T, np.log(abs(Y))))
        return p[0]
   
-  
   if D.ndim == 1:
-        growth.append(fitExpGrowthOptimize(T[start:stop],D[start:stop]))
+    return fitExpGrowthOptimize(T[start:stop],D[start:stop])
   elif D.ndim == 2:      
+    growth = []
     N      = len(D[:,0]) 
     for n in range(N): growth.append(fitExpGrowthOptimize(T[start:stop],D[n,start:stop]))
-  else : TypeError("Dimension of Array should be either one or two")
+    return np.array(growth)
+  else : raise TypeError("Dimension of Array should be either one or two")
 
-  print "Getting Mode Growth from T = ", T[start], " to T = " , T[stop]
 
-  return np.array(growth)
 
-def getFrequency(T, D, start, stop, dir='Y'):
+def getFrequency(T, D, start=0, stop=-1):
   import scipy.ndimage
   
   freq_list   = []
-  N      = len(D[:,0]) 
+  
+  if   np.ndim(D) == 1 :  N = 1
+  elif np.ndim(D) == 2 :  N = len(D[:,0]) 
+  else : raise TypeError("Dimension of Array should be either one or two")
     
-  print "Fitting from T : ", T[start], " - ", T[stop]
- 
   # Note We assume constant time-steps !
   for n in range(N): 
-     
-    time_series = D[n,start:stop]
+    time_series = 0 
+    if   N == 1 : time_series = D[start:stop]
+    elif N >  1 : time_series = D[n,start:stop]
+    else : raise TypeError("Dimension of Array should be either one or two")
     FS = np.fft.rfft(time_series) #np.sin(time_series))
-    # Get Maximum Frequency
-    m     = np.argmax(abs(FS))
+    # Get Maximum Frequency (ignore DC component)
+    m     = np.argmax(abs(FS[1:]))+1
     fftfreq = np.fft.fftfreq(len(time_series), d = (T[-10]-T[-11])) 
     
     abs_freq =  2.*np.pi*fftfreq[m]
@@ -101,7 +106,8 @@ def getFrequency(T, D, start, stop, dir='Y'):
 
   print "Getting Frequency from T = ", T[start], " to T = " , T[stop]
 
-  return np.array(freq_list)
+  if   N == 1 : return freq_list[0]
+  elif N >  1 : return np.array(freq_list)
 
 
 
@@ -144,7 +150,7 @@ def plotFrequencyGrowthrates(fileh5, which='b', markline="-", **kwargs):
     """
     D = gkcData.getDomain(fileh5)
     
-    doCFL    = kwargs.pop('doCFL', True)
+    doCLF    = kwargs.pop('doCLF', True)
     dir      = kwargs.pop('dir', 'Y')
     modes    = kwargs.pop('modes' , range(D['Nky']))
     field    = kwargs.pop('field', 'phi')  
@@ -153,21 +159,23 @@ def plotFrequencyGrowthrates(fileh5, which='b', markline="-", **kwargs):
     leg_loc  = kwargs.pop('loc', 'best')  
     start    = kwargs.pop('start', 1)  
     stop     = kwargs.pop('stop', -1)  
-    
+    m        = kwargs.pop('m', 0)  
+    useLog   = kwargs.pop('useLog', True ) 
+   
+    if useLog == True : pf = pylab.semilogx
+    else              : pf = pylab.plot
 
-    if doCFL == True : pylab.clf()
+    if doCLF == True : pylab.clf()
     
     T = gkcData.getTime(fileh5.root.Analysis.PowerSpectrum.Time)[:,1]
         
-    print "Fitting from T : ", T[start], " - ", T[stop]
-    
     if   field == 'phi' : n_field = 0
     elif field == 'A'   : n_field = 1
     elif field == 'B'   : n_field = 2
     else : raise TypeError("Wrong argument for field : " + str(field))
 
     if(dir == 'X'):
-      pl = semilogy(T, fileh5.root.Analysis.PowerSpectrum.X[n_field,:numModes,2:].T)
+      pl = pf(T, fileh5.root.Analysis.PowerSpectrum.X[n_field,:numModes,2:].T)
       legend_list = []
       for i in range(len(fileh5.root.Analysis.PowerSpectrum.X[n_field, :numModes,0])):
         legend_list.append("kx = %i" % i)
@@ -181,12 +189,13 @@ def plotFrequencyGrowthrates(fileh5, which='b', markline="-", **kwargs):
       legend_list = []
       if   which=='i' or which=='b':
         power = fileh5.root.Analysis.PowerSpectrum.Y[n_field, :,:]
-        growthrates = getGrowthrate(T,power, start,stop, dir='Y')
-        pl = pylab.semilogx(D['ky'], growthrates, "s" + markline, label='$\\gamma$')
+        growthrates = getGrowthrate(T,power, start,stop)
+        pl = pf(D['ky'], growthrates, "s" + markline, label='$\\gamma$')
       if which=='r' or which=='b':
         shift = fileh5.root.Analysis.PhaseShift.Y   [n_field, :,:]
-        frequency   = getFrequency(T,shift, start,stop, dir='Y')
-        pl = pylab.semilogx(D['ky'], frequency, "v" + markline, label='$\\omega_r$')
+        frequency   = getFrequency(T,shift, start,stop)
+        print "ky : ", np.shape(D['ky']), " freq : ", np.shape(frequency)
+        pl = pf(D['ky'], frequency, "v" + markline, label='$\\omega_r$')
       #if which !='r' or which != 'i' or which !='b':
       #      raise TypeError("Wrong argument for which (r/i/b) : " + str(dir))
     
@@ -207,3 +216,95 @@ def plotFrequencyGrowthrates(fileh5, which='b', markline="-", **kwargs):
     
     #return pl, leg
 
+
+def plotEigenvalues(fileh5, **kwargs):
+    """
+        Plot the eigenvalues of the phase space function
+
+
+        Optional keyword arguments:
+
+        Keyword           Description
+        ===============   ==============================================
+         *dir*             Direction 'X' (for radial) or 'Y' for poloidal
+         *offset*          Offset due to zeroset to 2 .
+
+    """
+    import gkcStyle
+
+
+    D = gkcData.getDomain(fileh5)
+
+    try:
+        eigv = fileh5.root.Eigenvalue.EigenValues.cols.Eigenvalue[:] 
+    except:
+       print "Problems openning eigenvalues. Not included ?"
+       return
+
+
+    eigv_r = np.real(eigv)
+    eigv_i = np.imag(eigv)
+
+    pylab.plot(eigv_r, eigv_i, '.')
+
+
+    gkcStyle.plotZeroLine(1.1*min(eigv_r), 1.1*max(eigv_r), direction='horizontal', color="#666666", lw=0.8)
+    gkcStyle.plotZeroLine(1.1*min(eigv_i), 1.1*max(eigv_i), direction='vertical'  , color="#666666", lw=0.8)
+
+    pylab.xlim((1.1*min(eigv_r), 1.1*max(eigv_r)))
+    pylab.ylim((1.1*min(eigv_i), 1.1*max(eigv_i)))
+
+
+    pylab.xlabel("$\\omega_r$")
+    pylab.ylabel("$\\omega_i$")
+
+
+def plotEigenfunctions(fileh5, mode=1, n_max=5, **kwargs):
+    """
+        Plot the n largerst eigenfunctions
+
+        Optional keyword arguments:
+
+        Keyword           Description
+        ===============   ==============================================
+         *dir*             Direction 'X' (for radial) or 'Y' for poloidal
+         *offset*          Offset due to zeroset to 2 .
+
+    """
+    import gkcStyle
+    import gkcAnalysis
+
+
+    D = gkcData.getDomain(fileh5)
+
+    try:
+        eigv = fileh5.root.Eigenvalue.EigenValues.cols.Eigenvalue[:] 
+    except:
+       print "Problems openning eigenvalues. Not included ?"
+       return
+
+
+    # Sort eigenvalues (note automatically sorts real values first)
+    eigv     = fileh5.root.Eigenvalue.EigenValues.cols.Eigenvalue[:]
+    # absteigend sort
+    idx_sort = np.argsort(eigv)[::-1]
+            
+    pylab.subplot(121)
+    plotEigenvalues(fileh5, **kwargs)
+
+    # Plot points
+    for n in range(n_max):
+            w = eigv[idx_sort[n]]
+            pylab.plot(np.real(w), np.imag(w), 'o', markersize=7.5, color=gkcStyle.markers_C[n])
+
+    pylab.subplot(122)
+
+    labels = []
+    for n in range(n_max):
+            w = eigv[idx_sort[n]]
+            gkcAnalysis.plotModeStructure(fileh5=fileh5, fied='phi', mode=mode, frame=idx_sort[n], part='a', m=n)
+            labels.append("%.3f+%.3f i" % (np.real(w), np.imag(w)))
+
+    pylab.legend(labels).draw_frame(0)
+
+    

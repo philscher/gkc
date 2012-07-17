@@ -55,6 +55,9 @@ def getData(Var, fileh5, Z=0, frame=-1, species=0):
     if   Var == "2DPhi" : 
                         data = fileh5.root.Visualization.Phi[Z,:,:,frame]
                         T = getTime(fileh5.root.Visualization.Time)[frame,:]
+    elif Var == "2DAp"  : 
+                        data = fileh5.root.Visualization.Ap[Z,:,:,frame]
+                        T    = getTime(fileh5.root.Visualization.Time)[frame,:]
     elif Var == "2DTp"  : 
                         data = fileh5.root.Moments.Temperature_v[Z,:,:,species,frame]
                         T = getTime(fileh5.root.Moments.Time)[frame,:]
@@ -64,6 +67,7 @@ def getData(Var, fileh5, Z=0, frame=-1, species=0):
     elif Var == "2DHeatFlux"  : 
                         data = fileh5.root.Moments.HeatFlux[Z,:,:,species,frame]
                         T = getTime(fileh5.root.Moments.Time)[frame,:]
+    else                : raise TypeError("No such var")
     
     ## One dimensional scalar Data
     """
@@ -78,14 +82,14 @@ def getData(Var, fileh5, Z=0, frame=-1, species=0):
 
 
 
-def getRealFromXky(fileh5, data, modes=[], interpolate=False):
+def getRealFromXky(fileh5, data, modes=[], min_modes=129, interpolate=False):
 
    D = getDomain(fileh5)
    # Fourier back transform c2r, renormaliza, not it stored in fftw shape
    Nky = len(data[:,0])
    Nx  = len(D['X'])
    
-   Y = np.linspace(D['Y'].min(), D['Y'].max(), D['Ny'])
+   
    #X,Y = np.meshgrid(D['X'], Y)
 
    if modes != [] :
@@ -97,7 +101,11 @@ def getRealFromXky(fileh5, data, modes=[], interpolate=False):
           # index :
           #print "Index : ", m , "   Ny - m : ", Ny - m
           #if (m != 0) and (m != Ny/2): data[Ny-m,:] = 0.
-   data = np.fft.irfft(data, axis=0)
+   
+   Ny_mod = 2 * max(len(data[:,0]), min_modes)-2
+   data = np.fft.irfft(data, n=Ny_mod, axis=0)
+   #print "Nkyt Momodmo mod : ", Nky_mod, " --- " , Nky, " --- " , np.shape(data)
+   Y = np.linspace(D['Y'].min(), D['Y'].max(), Ny_mod)
 
    return D['X'], Y, data
 

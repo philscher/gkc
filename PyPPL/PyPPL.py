@@ -1,15 +1,23 @@
-
+import numpy  as np
 import mpmath as mp
-
+import scipy.special
 # ************************ Plasma Dispersion Functions *****************
 
 """
 # Now Plasma Dispersion Function
 # Calculated according to Newberger, Comp. Phys. Comm. (1986)
 """
-def PlasmaDispersion(x) :
+def PlasmaDispersion(z, n=0):
   #if(hasattr(x,'__iter__')):
-  return  1.j * mp.sqrt(mp.pi) * mp.exp(- x**2) * mp.erfc(-1.j * x)
+  # Values from Callen , Fundamentals of Plasma Physics
+
+  Z =  1.j * mp.sqrt(mp.pi) * mp.exp(- z**2) * mp.erfc(-1.j * z)
+
+  if   n == 0 : return  Z
+  elif n == 1 : return  1. + z * Z 
+  elif n == 2 : return  z + z**2 * Z
+  elif n == 3 : return  0.5 * ( 1. + 2. * z**2 * ( 1. + z * Z))
+  else        : raise TypeError("BUG : Plasma Dispersion function only for N <= 3 defined") 
   """  
   if  (x.real >= 0. and x.imag >= 0.)    : Z = W(x)
   elif(x.real > 0.  and x.imag < 0.)      : Z = conj(W(-z)) 
@@ -18,6 +26,9 @@ def PlasmaDispersion(x) :
   print x.imag, " : " , x.imag < 0.
   return Z
   """
+PDF = np.vectorize(PlasmaDispersion, otypes=[np.complex])
+
+
 
 """
     Two Pole Approximation of the Plasma Dispersion Function
@@ -69,8 +80,11 @@ def PlasmaDispersion_Large(z):
 
 # *********************** Gamma Functions **************************
 
-def Gamma0(b) : return mp.besseli(0,b)*mp.exp(-b)
-def Gamma1(b) : return mp.besseli(1,b)*mp.exp(-b)
+#def Gamma0(b) : return    scipy.special.i0e(float(b))  #mp.besseli(0,b)*mp.exp(-b)
+#def Gamma1(b) : return    scipy.special.i1e(float(b))  #mp.besseli(1,b)*mp.exp(-b)
+def Gamma0(b) : return    mp.besseli(0,b)*mp.exp(-b)
+def Gamma1(b) : return    mp.besseli(1,b)*mp.exp(-b)
+#def Gamma1(b) : return    #mp.besseli(1,b)*mp.exp(-b)
 
 
 

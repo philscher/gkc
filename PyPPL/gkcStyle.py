@@ -1,4 +1,6 @@
 from pylab import *
+import pylab
+
 # open HDF5 File
 rcParams['axes.labelsize'] = 18.
 rcParams['axes.labelsize'] = 18.
@@ -103,8 +105,13 @@ def newHeliosFigure(style="Normal", ratio="1.41:1", basesize=7):
     print "No such style"
     1./0.
 
+  #if aspect == 'equal' : subplot(111, aspect='equal')
+  #else : TypeError("Aspect only 'equal' allowed")
+
+
   if   ratio == ""       : figsize = (1.00*basesize,basesize)
   elif ratio == "2.33:1" : figsize = (2.33*basesize,basesize) 
+  elif ratio == "2.11:1" : figsize = (2.11*basesize,basesize) 
   elif ratio == "1.85:1" : figsize = (1.85*basesize,basesize) 
   elif ratio == "1.50:1" : figsize = (1.50*basesize,basesize) 
   elif ratio == "1.41:1" : figsize = (1.41*basesize,basesize) 
@@ -148,45 +155,57 @@ def plotContourWithColorbar(X,Y,data, **kwargs):
    interpolation = kwargs.pop('interpolation', 'bicubic')
    cmap          = kwargs.pop('cmap' , cm.jet)
    clearPlot     = kwargs.pop('clearPlot' , True)
+   CBexp         = kwargs.pop('CBExp' , True)
 
-    
+   if CBexp == True:
+        v_absmax =  max(abs(data.min()), abs(data.max()))
+        exponent = int(log10(v_absmax)-1)
+        data     = data / (10**exponent)
 
    if norm == True:
-            v_minmax =  max(abs(data.min()), abs(data.max()))
-            norm = normalize(vmin = -v_minmax, vmax = v_minmax)
+            v_minmax = abs(data).max()
+            norm = mpl.colors.Normalize(vmin = -v_minmax, vmax = v_minmax)
    else : 
-            norm = normalize(vmin = data.min(), vmax = data.max())
+            norm = mpl.colors.Normalize(vmin = data.min(), vmax = data.max())
    if clearPlot == True  : clf()
 
-   #v = abs(Z).max()
-   #contourf(X,Y,Z, 100, vmin=-v, vmax=v, cmap=cmap, norm=norm, interpolation=interpolation)
-   contourf(X,Y,data, 100, cmap=cmap, norm=norm, interpolation=interpolation)
+   
+   pylab.contourf(X,Y,data, 100, cmap=cmap, norm=norm, interpolation=interpolation, vmin=-v_minmax, vmax=v_minmax)
    
    # Set Colorbar so that in goes from -9.9 - +9.9 x exp
    #sf = ScalarFormatter(useOffset=True)
    #sf._set_data_interval(-10., 10.)
    #sf = FormatStrFormatter(useOffset=True, fmt="%1.1f")
+   #v_norm = 10**int(log10(v_minmax))
+
    class MyStrFormatter(FormatStrFormatter):
          """
            Use a format string (fmt) to format the tick label, other options
            are the same as for ScalarFormatter
          """
          def format_data(self, x):
-            v_exp = int(log(v))
+            #v_exp = int(log(v))
             return super(MyStrFormatter, self).format_data(1.) #x/10.**v_exp)
          def format_data_short(self, x):
-            v_exp = int(log(v))
+            #v_exp = int(log(v))
             return super(MyStrFormatter, self).format_data_short(1.) #x/10.**v_exp)
-   #sf = FormatStrFormatter(fmt="%1.1f")
+   
    sf = MyStrFormatter(fmt="%1.1f")
    
-   colorbar(orientation=orientation, format=sf)
-   #colorbar(norm=norm, orientation=orientation, format=sf)
+   cb = colorbar(orientation=orientation, format=sf, norm=norm)
+   
+   if   CBexp and exponent == 1 : cb.ax.set_ylabel("$10\\times$")
+   elif CBexp and exponent != 0 : cb.ax.set_ylabel("$10^{%i}\\times$" % exponent)
+
    xlim((X.min(), X.max()))
    ylim((Y.min(), Y.max()))
 
     
 
-def plotZeroLine(x_start, x_end, color="#666666"):
+def plotZeroLine(x_start, x_end, direction='horizontal', color="#666666", lw=1.5):
+
         T = linspace(x_start, x_end, 301)
-        plot(T, zeros(len(T)), '-', linewidth=1.5, color=color)
+        if   direction == 'horizontal' : plot(T, zeros(len(T)), '-', linewidth=lw, color=color)
+        elif direction == 'vertical'   : plot(zeros(len(T)), T, '-', linewidth=lw, color=color)
+        else                           : TypeError("No such direction")
+

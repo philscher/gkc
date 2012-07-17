@@ -33,14 +33,14 @@ def plotTimeEvolutionModePower(fileh5, **kwargs):
     dir      = kwargs.pop('dir', 'Y')
     modes    = kwargs.pop('modes' , range(D['Nky']))
     field    = kwargs.pop('field', 'phi')  
-    n_offset = kwargs.pop('offset', 2)  
+    n_offset = kwargs.pop('offset', 3)  
     label    = kwargs.pop('label', 'k')  
     leg_loc  = kwargs.pop('loc', 'best')  
     ncol     = kwargs.pop('ncol', 3)  
     
     if doCFL == True : pylab.clf()
     
-    T = gkcData.getTime(fileh5.root.Analysis.PowerSpectrum.Time)[2:,1]
+    T = gkcData.getTime(fileh5.root.Analysis.PowerSpectrum.Time)[:,1]
     
     if   field == 'phi' : n_field = 0
     elif field == 'A'   : n_field = 1
@@ -51,7 +51,7 @@ def plotTimeEvolutionModePower(fileh5, **kwargs):
     if(dir == 'X'):
       
       for n in modes:
-            pl = pylab.semilogy(T, fileh5.root.Analysis.PowerSpectrum.Y[n_field, n,n_offset:].T)
+            pl = pylab.semilogy(T[n_offset:], fileh5.root.Analysis.PowerSpectrum.X[n_field, n,n_offset:].T)
             if  (label == 'm' ) : legend_list.append("n = %i" % n)
             elif(label == 'k')  : legend_list.append("kx = %.1f" % (D['kx'][n])) 
             else                : print "Name Error"
@@ -61,10 +61,13 @@ def plotTimeEvolutionModePower(fileh5, **kwargs):
       legend_list = []
       
       for m in modes:
-            pl = pylab.semilogy(T, fileh5.root.Analysis.PowerSpectrum.Y[n_field, m,n_offset:].T)
-            if  (label == 'm' ) : legend_list.append("m = %i" % m)
-            elif(label == 'k')  : legend_list.append("ky = %.1f" % (D['ky'][m])) 
-            else                : print "Name Error"
+                #try:
+                pl = pylab.semilogy(T[n_offset:], fileh5.root.Analysis.PowerSpectrum.Y[n_field, m,n_offset:].T)
+                if  (label == 'm' ) : legend_list.append("m = %i" % m)
+                elif(label == 'k')  : legend_list.append("ky = %.1f" % (D['ky'][m])) 
+                else                : print "Name Error"
+                #except:
+                #print "Failed to plot m = ", m , " mode "
     
  
     else : raise TypeError("Wrong argument for dir : " + str(dir))
@@ -309,6 +312,22 @@ def plotCrossCorrelateValues(fileh5, A="2DPhi",B="2DTp",frame=-1, Z=0, species=1
 ################### Ploshed functions
 
 
+def makeMovie(F, fileh5, key, value_list , title="Plot", **kwargs):
+  import string
+
+
+  N = len(value_list)
+
+  for n in range(N):
+    kwargs[key] = value_list[n]
+
+    pylab.clf()
+    F(fileh5, **kwargs)
+
+    pylab.savefig(title + "_" + string.zfill(n,int(np.log10(N))) + ".png", bbox_inches='tight')
+    print "Done :  ", n, " / ", N
+
+
 def plotContour(fileh5, var="2DPhi", **kwargs):
     """
         Plots Scalar Data (2D) in XY  coordinates
@@ -333,13 +352,13 @@ def plotContour(fileh5, var="2DPhi", **kwargs):
     """
     D = gkcData.getDomain(fileh5)
     
-    norm     = kwargs.pop('Normalize', True)
+    #norm     = kwargs.pop('Normalize', True)
     Z        = kwargs.pop('Z', 0)
     modes    = kwargs.pop('modes' , range(D['Nky']))
     doCFL    = kwargs.pop('doCFL' , True)
-    interpolation = kwargs.pop('interpolation' , 'bilinear')
+    #interpolation = kwargs.pop('interpolation' , 'bilinear')
     printTitle    = kwargs.pop('printTitle' , True)
-    orientation   = kwargs.pop('orientation' , 'vertical')
+    #orientation   = kwargs.pop('orientation' , 'horizontal')
     frame         = kwargs.pop('frame' , -1)
     
     
@@ -347,11 +366,12 @@ def plotContour(fileh5, var="2DPhi", **kwargs):
   
     X, Y, data = gkcData.getRealFromXky(fileh5, data, modes)
    
-    gkcStyle.plotContourWithColorbar(X,Y, data, norm=norm, interpolation=interpolation, orientation=orientation)
+    gkcStyle.plotContourWithColorbar(X,Y, data, **kwargs)
    
    
-    pylab.xlabel("Radial Direction")
-    pylab.ylabel("Poloidal Direction")
+    pylab.xlabel(kwargs.pop('xlabel' , 'X'))
+    pylab.ylabel(kwargs.pop('ylabel' , 'Y'))
+
     if printTitle == True : pylab.title("TimeStep : %i   Time : %.3f " % (T[0], T[1]))
 
 
@@ -636,21 +656,37 @@ def plotModeStructure(fileh5, mode, part = "r",  **kwargs):
     Z        = kwargs.pop('Z', 0)  
     frame    = kwargs.pop('frame', -1)  
     label    = kwargs.pop('label', "")  
+    norm     = kwargs.pop('norm', 'sum2')  
     m        = kwargs.pop('m', 0)  
 
     
-    if   field == 'phi' : data_X = fileh5.root.Visualization.Phi[Z,mode,:,frame]
-    elif field == 'A'   : n_field = 1
-    elif field == 'B'   : n_field = 2
+    if   field == 'phi' : 
+      data_X = fileh5.root.Visualization.Phi[Z,mode,:,frame]
+      y_label = '$\\phi(x)$'
+    elif field == 'A'   : 
+      data_X = fileh5.root.Visualization.Ap[Z,mode,:,frame]
+      n_field = 2
+      y_label = '$A_\parallel(x)$'
+    elif field == 'B'   : 
+      n_field = 2
+      data_X = fileh5.root.Visualization.Bp[Z,mode,:,frame]
+      y_label = '$B_\\parallel(x)$'
     else : raise TypeError("Wrong argument for field : " + str(field))
+      
+    print "Mode Structure at T = ", gkcData.getTime(fileh5.root.Visualization.Time)[frame,:]
 
-    # Normaliza
-    if   part == "a" : data_X = abs(data_X) / np.sum(abs(data_X))
-    elif part == "r" : data_X = np.real(data_X) / np.sum(abs(np.real(data_X)))
-    elif part == "i" : data_X = np.imag(data_X) / np.sum(abs(np.imag(data_X)))
+    # Normalization
+    def Normalize(data):
+      if    norm == 'sum2' : return np.sum(abs(data))
+      elif  norm == 'max'  : return abs(data).max()
+      else         : raise TypeError("No such normalization")
+
+    if   part == "a" : data_X = abs(data_X)     / Normalize(data_X)
+    elif part == "r" or part == 'b': data_X = np.real(data_X) / Normalize(np.real(data_X))
+    elif part == "i" or part == 'b' : data_X = np.imag(data_X) / Normalize(np.imag(data_X))
     else : raise TypeError("Wrong argument for part : " + str(part))
 
-    pylab.plot(D['X'], data_X, gkcStyle.markers_C[m], label=label)
+    pylab.plot(D['X'], data_X, color=gkcStyle.markers_C[m], label=label)
 
     if    field == "phi" : pylab.ylabel("Mode Power $|\\phi|^2$")
     elif  field == "A"   : pylab.ylabel("Mode Power $|A_\\parallel|^2$")
@@ -661,3 +697,6 @@ def plotModeStructure(fileh5, mode, part = "r",  **kwargs):
     pylab.xlabel("X")
 
     
+    pylab.ylabel(y_label)
+
+     
