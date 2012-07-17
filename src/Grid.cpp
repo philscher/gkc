@@ -58,9 +58,6 @@ Array2d T, N;
 
 
 
-Grid::~Grid () {
-
-}
 
 
 Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO) 
@@ -214,22 +211,24 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
     for(int v = NvGlB; v <= NvGuB; v++) V(v) = -  Lv + dv * ( v - NvGlD);
 
     // For mu we can choose between linear and Gaussian integration
-   //bool useGauss = setup->get("Grid.GaussIntegration", 1);
    M.resize(RmGB); dm.resize(RmGB);
    Integrate integrate("Gauss-Legendre", Nm, 0., Lm);
    
    // copy weights and points
-   for(int m=NmGlD, n=0; NmGuD; m++, n++) { M(m) = integrate.x(n) ; dm(m) = integrate.w(n); }
+   for(int m=NmGlD, n=0; m <= NmGuD; m++, n++) { M(m) = integrate.x(n) ; dm(m) = integrate.w(n); }
 
-   //M = Ipol_M->getPoints();
-
-   //check(count(M == 0.) > 0, DMESG("We need at least one M==0 value"));
    dXYZ  = dx * dy * dz;
    dXYZV = dx * dy * dz * dv;
 
     initDataOutput(fileIO);
 
 }
+
+Grid::~Grid () {
+
+}
+
+
 
 
 void Grid::printOn(ostream &output) const {
