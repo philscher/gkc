@@ -2,7 +2,7 @@ bin_PROGRAMS = gkc
 
 gkc_SOURCES = main.cpp GKC.cpp FileIO.cpp Fields.cpp Fields/FieldsFFT.cpp Setup.cpp Grid.cpp  \
                  Parallel.cpp Vlasov.cpp Event.cpp\
-                 Collisions.cpp Fourier.cpp  Vlasov/Vlasov_Cilk.cpp Analysis.cpp  Init.cpp Control.cpp\
+                 Collisions.cpp  Vlasov/Vlasov_Cilk.cpp Analysis.cpp  Init.cpp Control.cpp\
          		 Plasma.cpp Special/LA.cpp Timing.cpp TestParticle.cpp TimeIntegration.cpp \
     	         FFTSolver.cpp Transport.cpp
  
