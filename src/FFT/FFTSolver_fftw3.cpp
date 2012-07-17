@@ -14,19 +14,36 @@
 #include "Plasma.h"
 
 #include <fftw3-mpi.h>
-  
+
+
+
+// we have to place plans here to avoid namespace errors
 fftw_plan plan_YForward, plan_YBackward;
 fftw_plan plan_XForward, plan_XBackward;
 fftw_plan plan_XForward_Fields, plan_XBackward_Fields;
 
 fftw_plan plan_AA_YForward, plan_AA_YBackward;
 
+
 FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry<HELIOS_GEOMETRY> *geo) : FFTSolver(setup, parallel, geo, Nx*(2*Nky-2)*Nz, Nx*(2*Nky-2), Nx,  (2*Nky-2)) {
    
 
    if(parallel->Coord(DIR_FFT) == 0) {
 
-      int perf_flag = (setup->get("FFTW3.Measure", 1) == 1) ? FFTW_MEASURE :  FFTW_ESTIMATE; 
+
+      // Setup plans
+      int perf_flag = FFTW_ESTIMATE;
+      plan   = setup->get("FFTW3.Plan", "");
+      if      (plan == "Estimate"   ) perf_flag = FFTW_ESTIMATE;
+      else if (plan == "Measure"    ) perf_flag = FFTW_MEASURE;
+      else if (plan == "Exhaustive" ) perf_flag = FFTW_EXHAUSTIVE;
+
+      // Setup wisedom
+      wisdom = setup->get("FFTW3.Wisdom", "");
+      if     (wisdom == "System") fftw_import_system_wisdom();
+      else if(wisdom != ""      ) fftw_import_wisdom_from_filename(wisdom.c_str());
+   
+
 
       const int nfields = plasma->nfields;
 
@@ -145,8 +162,10 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry<HELI
      if(flags & FFT_XYZ) check(-1, DMESG("3D Fourier transformatio not tested yet"));
    
 
-   checkNormalization();
+   setNormalizationConstants();
      
+   // export it again (only by root job ?!)
+   if(wisdom != "") fftw_export_wisdom_to_filename(wisdom.c_str());
    }
 
 }
@@ -193,12 +212,6 @@ int FFTSolver_fftw3::solve(const int FFTtype, const int direction, const int N) 
 
        return HELIOS_SUCCESS;
 }
-
-int FFTSolver_fftw3::getDecomposition() {
- 
-      return DECOMP_X;
-}
-
 
 
 std::string FFTSolver_fftw3::getLibraryName() {
@@ -281,7 +294,7 @@ Array3z FFTSolver_fftw3::multiply(Array3z &A, Array3z &B, Array3z  &R)
     
 void FFTSolver_fftw3::printOn(ostream &output) const {
 
-         FFTSolver::printOn(output);
          output   << "FFTSolver  |  using fftw-3 interface for (" << std::string(fftw_version) << ")" << std::endl;
+         output   << "           |  Plan : " << plan << " Wisdom : " << ((wisdom=="") ? "None" : wisdom) << std::endl;
          
 }
