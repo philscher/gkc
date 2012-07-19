@@ -21,41 +21,35 @@
 
 #include "FileIO.h"
 
-
-/** 
- *   class Geometry
- *
- *   Base class for the Geometry abstraction. For efficiency, we don't
- *   use virtual inheritance but CRTP. The latter enables to resolve all
- *   inline functions directly and thus should avoid any overhead due to 
- *   Geometry abstraction, see
-     
- *
- *
- *  This part mostly relyies on Gorles, PhD, Eq. (2.51)  and goemetric parts
- *
- * BUG : if u compile and derive and doe not implement one of the function you
- *        will get a self-recursion. Any idea how to fix this  ? 
- *        See
- *        http://stackoverflow.com/questions/4721047/this-is-crtp-usage-for-static-polymorphism-but-without-implementation-of-a-derive
- *
- **/
 struct ShearB {
   ShearB(const int _ly, const int _uy, const double _y0=0.) : ly(_ly),uy(_uy),  y0(_y0) {};
     const int ly, uy;
     const double   y0;
 };
 
-
-
+/** 
+*   @brief Base class for the Geometry abstraction using CRTP
+*
+*   For efficiency, we don't
+*   use virtual inheritance but CRTP. The latter enables to resolve all
+*   inline functions directly and thus should avoid any overhead due to 
+*   Geometry abstraction, see
+*
+*
+*  This part mostly relyies on Gorles, PhD, Eq. (2.51)  and goemetric parts
+*
+* BUG : if u compile and derive and doe not implement one of the function you
+*        will get a self-recursion. Any idea how to fix this  ? 
+*        See
+*        http://stackoverflow.com/questions/4721047/this-is-crtp-usage-for-static-polymorphism-but-without-implementation-of-a-derive
+*  @note Do we really see the overhead from virtual functions ? Test implementation
+*
+*
+**/
 template<typename T> class Geometry : public IfaceHelios
 {
 
 public:
-  // C has remainder modulo operator, we need real one
-  int realmod(double x,double y) { return static_cast<int>(fmod((fmod(x,y) + y), y)); };
-  /** The ratio between the parallel and the perpendicular scales */
-//  void printOn(ostream& o) { static_cast<T*>(this)->printOn (o); } ;
 
   bool isSymmetric;
   double eps_hat;
@@ -73,23 +67,39 @@ public:
   // Jacobian
   inline  double J(const int x, const int y, const int z)  { return static_cast<T*>(this)->J(x,y,z); };
    
-  // BUG missing LB // we should pre-caluclate this value // write defnition of these and reference
-  // Definition
-  inline  double Kx(const int x, const int y, const int z)  { return static_cast<T*>(this)->Kx(x,y,z); };
-  inline  double Ky(const int x, const int y, const int z)  { return static_cast<T*>(this)->Ky(x,y,z); };
-  
+  /**
+  *   @name K values  
+  *   Get the value of shear at position x
+  *   what is the definition of it ?
+  **/
+  ///@{
   
   /**
-   *
-   *   Get the value of shear at position x 
-   *
-   */
+  *    Document me please
+  *
+  **/ 
+  inline  double Kx(const int x, const int y, const int z)  { return static_cast<T*>(this)->Kx(x,y,z); };
+  /**
+  *    Document me please
+  *
+  **/ 
+  inline  double Ky(const int x, const int y, const int z)  { return static_cast<T*>(this)->Ky(x,y,z); };
+  ///@} 
+  
+  /**
+  *   Get the value of shear at position x 
+  **/
   inline  cmplxd get_kp(const int x, cmplxd ky, const int z)  { return static_cast<T*>(this)->get_kp(x, ky, z); };
   
 
-  // is metric always symmetric or not ???!!! otherwise modify K3 term g_xy = g_yx
-  //Define metric helper gterms gamma
-  
+
+
+
+  /**
+  *   @name Metric Gamma helper functions
+  *
+  **/
+  ///@{
   /**  Helper function
    *
    *   \f[ \gamma_1 = g_{xx} g_{yy} - g_{xy} g_{yx} \f]
@@ -105,42 +115,61 @@ public:
    *   \f[ \gamma_3 = g_{xy} g_{yz} - g_{yy} g_{xz} \f]
    */ 
   inline  double g_3(const int x, const int y, const int z) { return g_xy(x,y,z) * g_yz(x,y,z) - g_yy(x,y,z) * g_xz(x,y,z)  ; };
+  ///@}
+  
 
-  // define metric elements
+  /**
+  *   @name Metric elements
+  *
+  *   Defines the metric elements as
+  *   
+  *   \f[
+  *      g = \left( \begin{array}{ccc}
+  *           
+  *           g_{xx} & g_{xy} & g_{xz} \\
+  *                  & g_{yy} & g_{yz} \\
+  *                  &        & g_{zz} \\
+  *          
+  *          \end{array} \right)
+  *   \f]
+  * 
+  *   Note, that the metric is symmetric
+  **/
+  /// @{
   inline  double g_xx(const int x, const int y, const int z) { return static_cast<T*>(this)->g_xx(x,y,z); };
   inline  double g_xy(const int x, const int y, const int z) { return static_cast<T*>(this)->g_xy(x,y,z); };
   inline  double g_xz(const int x, const int y, const int z) { return static_cast<T*>(this)->g_xz(x,y,z); };
   inline  double g_yy(const int x, const int y, const int z) { return static_cast<T*>(this)->g_yy(x,y,z); };
   inline  double g_yz(const int x, const int y, const int z) { return static_cast<T*>(this)->g_yz(x,y,z); };
   inline  double g_zz(const int x, const int y, const int z) { return static_cast<T*>(this)->g_zz(x,y,z); };
+  /// @}
   
-  // minor simplification of k2_p
+  /// @{
   inline  double g_xx(const int z) { return static_cast<T*>(this)->g_xx(-1,-1,z); };
   inline  double g_xy(const int z) { return static_cast<T*>(this)->g_xy(-1,-1,z); };
   inline  double g_yy(const int z) { return static_cast<T*>(this)->g_yy(-1,-1,z); };
- 
-  // define magnetic field and its variations
+  /// @}
   
-  /**  Defined Magnetic field strength \f[ B_0(\vec{x}) \f] at position \f[ \vec{x} = (x,y,z) \f]
-   *
-   */ 
+  
+  /**
+  *   @name Magnetic field variations
+  *
+  **/ 
+  ///@{
+  /// Defined Magnetic field strength \f[ B_0(\vec{x}) \f] at position \f[ \vec{x} = (x,y,z) \f]
   inline  double B   (const int x, const int y, const int z)    { return static_cast<T*>(this)->B(x,y,z); };
   
-  /**  Defined Magnetic field strength \f[ \frac{\partial B_0}{\partial x}(\vec{x}) \f] at position \f[ \vec{x} = (x,y,z) \f]
-   *
-   */ 
+  ///  Defined Magnetic field strength \f[ \frac{\partial B_0}{\partial x}(\vec{x}) \f] at position \f[ \vec{x} = (x,y,z) \f]
   inline  double dB_dx  (const int x, const int y, const int z) { return static_cast<T*>(this)->dB_dx(x,y,z); };
 
-  /**  Defined Magnetic field strength \f[\frac{\partial B_0}{\partial y}(\vec{x}) \f] at position \f[ \vec{x} = (x,y,z) \f]
-   *
-   */ 
+  ///  Defined Magnetic field strength \f[\frac{\partial B_0}{\partial y}(\vec{x}) \f] at position \f[ \vec{x} = (x,y,z) \f]
   inline  double dB_dy  (const int x, const int y, const int z) { return static_cast<T*>(this)->dB_dy(x,y,z); };
-  /**  Defined Magnetic field strength \f[\frac{\partial B_0}{\partial z}(\vec{x}) \f] at position \f[ \vec{x} = (x,y,z) \f]
-   *
-   */ 
+  
+  ///  Defined Magnetic field strength \f[\frac{\partial B_0}{\partial z}(\vec{x}) \f] at position \f[ \vec{x} = (x,y,z) \f]
   inline  double dB_dz  (const int x, const int y, const int z) { return static_cast<T*>(this)->dB_dz(x,y,z); };
-
-
+  ///@}
+  
+  
   // for sheared magnetic fields, we have special boundary conditions
   inline  ShearB getYPos(const int x, const int y) { return static_cast<T*>(this)->getYPos(x,y); };
   
