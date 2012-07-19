@@ -4,7 +4,7 @@ gkc_SOURCES = main.cpp GKC.cpp FileIO.cpp Fields.cpp Fields/FieldsFFT.cpp Setup.
                  Parallel.cpp Vlasov.cpp Event.cpp\
                  Collisions.cpp  Vlasov/Vlasov_Cilk.cpp Analysis.cpp  Init.cpp Control.cpp\
          		 Plasma.cpp Special/LA.cpp Timing.cpp TestParticle.cpp TimeIntegration.cpp \
-    	         FFTSolver.cpp Transport.cpp
+    	         FFTSolver.cpp Transport.cpp Visualization/Visualization_Data.cpp
  
 # compile FFT
 gkc_SOURCES += FunctionParser/fparser.cc
