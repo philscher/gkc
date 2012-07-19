@@ -30,15 +30,18 @@
 
 #include "Vlasov.h"
 
+/**
+ *
+ *   @brief Calculated global transport rates
+ *
+ *   @note Not working
+ */
 class Transport {
 
    Transport(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Analysis *analysis);
 
   
-  void initDataOutput(Setup *setup, FileIO *fileIO) {};
-  virtual void writeData(Timing timing, double dt) {};
-  void closeData() {};
-
+  
   void update(Vlasov *vlasov);
 protected:
 
@@ -49,6 +52,9 @@ protected:
         }
 
 
+  void initDataOutput(Setup *setup, FileIO *fileIO) {};
+  virtual void writeData(Timing timing, double dt) {};
+  void closeData() {};
 
 };
 

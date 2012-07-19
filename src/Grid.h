@@ -23,29 +23,36 @@
 
 #include "FileIO.h"
 /** 
-*    @brief Size of the computational domain for $x,k_y,z, v_\parallel, \mu, \sigma$
+*    @brief Size of the computational domain for \f$x,k_y,z, v_\parallel, \mu, \sigma \f$
 *    @image html Grid_BoundaryDomain.png
 *
 **/
 class Grid : public IfaceHelios {
 
   public:
-   //@{
-   int NxGC; //< Number of ghost cells in x-directions
-   int NyGC; //< Number of ghost cells in y-direction
-   int NzGC; //< Number of ghost cells in z-direction
-   int NvGC; //< Number of ghost cells in v-direction
-   //@}
+   /// @name Number of ghost cells
+   ///@{
+   int NxGC, ///< Number of ghost cells in x-directions
+       NyGC, ///< Number of ghost cells in y-direction
+       NzGC, ///< Number of ghost cells in z-direction
+       NvGC; ///< Number of ghost cells in v-direction
+   ///@}
    
-   Array1d dm; //< Weights for \f$ \mu(m) \f$
+   Array1d dm; ///< Weights for \f$ \mu(m) \f$
 
   
-  Range RxGB, RyGB, RzGB, RvGB, RmGB, RsGB; //< The boundary domain
-  // The boundary domain
-  Range RxGD, RyGD, RzGD, RvGD, RmGD, RsGD; 
+   /// @name Ranges for computational domain
+   ///@{
+   Range RxGB, RyGB, RzGB, RvGB, RmGB, RsGB; ///< The boundary domain
+   ///@}
+   
+   /// @name Ranges for computational domain
+   ///@{
+   Range RxGD, RyGD, RzGD, RvGD, RmGD, RsGD; 
+   ///@}
 
-   /** \f[ textrm{d}x textrm{d}y textrm{d}z
-   *    \f[ textrm{d}x textrm{d}y textrm{d}z textrm{d}v_\parallel 
+   /** \f$ textrm{d}x textrm{d}y textrm{d}z \f$
+   *   \f$ textrm{d}x textrm{d}y textrm{d}z textrm{d}v_\parallel  \f$
    *
    *    @note will depend on geometry
    **/
@@ -79,10 +86,10 @@ class Grid : public IfaceHelios {
    /// Class information
    virtual void closeData() {};
 
-   //**  returns total global domain size (@todo accept DIR)
+   ///  returns total global domain size (@todo accept DIR)
    int getGlobalSize() const { return Nx * Nky * Nz * Nv * Nm * Ns; };
    
-   //**  returns total local domain size (@todo accept DIR)
+   ///  returns total local domain size (@todo accept DIR)
    int getLocalSize() const { return NxLD * NkyLD * NzLD * NvLD * NmLD * NsLD;};
 };
 

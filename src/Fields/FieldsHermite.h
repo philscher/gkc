@@ -35,9 +35,8 @@ static char FieldsHermite_help[] = "Help for PETSc Interface not available, plea
 
 /**
  *
- *    Used implementation according to 
+ *    @brief Solving Fields equations using Hermite interpolation method
  *    
- *    Solving Fields equations using Hermite interpolation method (in x-direction).
  *    Based according to
  *      
  *          (Goerler, PhD, 2008) and (Lapillione, PhD, 2009)
@@ -57,7 +56,7 @@ static char FieldsHermite_help[] = "Help for PETSc Interface not available, plea
  *    To solve for the Poisson equation the double gyro-averaging operator needs to be
  *    approximated by
  *
- *          \Gamma_0 = \int_0^\infty  J^2 \exp{(-\mu)} d\mu  .
+ *      \f[    \Gamma_0 = \int_0^\infty  J^2 \exp{(-\mu)} d\mu  \f]
  *
  *    This integral can be calculated accurately by using high-order Gauss-Laguerre
  *    quadrature (a temporary gyro-averaging matrix is setup for this particular point).

@@ -15,6 +15,14 @@
 #ifndef __TOOLS_H_
 #define __TOOLS_H_
 
+/**
+ *
+ *   @brief collection of various helper functions
+ *
+ *
+ *
+ *
+ **/
 class Tools
 {
   public:

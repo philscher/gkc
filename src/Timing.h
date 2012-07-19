@@ -20,8 +20,12 @@
 #include<ctime>
 
 
-/** Timing class - governs timing etc.
- */
+/**
+*  @brief Timing class - governs timing etc.
+*
+*
+* 
+**/
 struct Timing {
     
   /**

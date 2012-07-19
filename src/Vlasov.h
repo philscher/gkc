@@ -147,9 +147,9 @@ class Vlasov : public IfaceHelios {
    /**
    *
    *  Set the Krook operator 
-   *
-   *  \frac{\partial g_{1sigma}}{\partial t} = \dots - \nu(x) g_{1\sigma}
-   *
+   *  \f[
+   *     \frac{\partial g_{1sigma}}{\partial t} = \dots - \nu(x) g_{1\sigma}
+   *  \f]
    * Is used to damp oscillations close to the simulation boundary.
    *
    *  Note : 
@@ -237,8 +237,9 @@ class Vlasov : public IfaceHelios {
    *   Calculates the timestep according to a defined CFL number. For the Vlasov equation
    *   several terms needs to be calculated for the highest possible timestep. These are
    *
-   *
-   *   \[f \frac{\D \phi} {\phi x} {\frac{\D \phi}{\D y} \f] 
+   *   \f[
+   *       \frac{\D \phi} {\phi x} {\frac{\D \phi}{\D y} 
+   *   \f] 
    *
    *
    *

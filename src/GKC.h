@@ -43,7 +43,7 @@
 
 /**
  *    @mainpage
- *
+ *    @brief The main GKC class which initializaed sub-modules
  *         
  * 
  *    GKC (GyroKinetic Code) is a local, delta-f gyro-kinetic 
@@ -78,7 +78,7 @@
  *    Notes on data output :
  *  
  *       (Parallel) data output is implemented using the HDF-5 library
- *       (www.hdfgroup.org/HDF5). 
+ *       (<www.hdfgroup.org/HDF5>). 
  *    
  *    Notes on Speed :
  * 

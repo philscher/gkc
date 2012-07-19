@@ -125,7 +125,7 @@ class FieldsFFT : public Fields {
   *       \left(\phi - \left< \phi \right>_{yz} \right)
   *       = \rho 
   *  \f]
-  *  where \f$ \lambda_D$ is the Debye length. The part latter part on the LHS
+  *  where \f$ \lambda_D \f$ is the Debye length. The part latter part on the LHS
   *  is due to flux-surface averaging effect of an electron-species.
   *
   *  @warning We need to normalize the FFT transform here.
@@ -140,11 +140,11 @@ class FieldsFFT : public Fields {
   *  The equation to solve is
   *
   *  \f[
-  *      \left( \nabla_\perp^2 - 
+  *       \left( \nabla_\perp^2 - 
   *      Y \hat{e} \beta \sum_\sigma \sigma_\sigma \alpha_\sigma^2 q_\sigma \Gamma_0(b_\sigma)  \right)
   *       = j_\parallel 
   *  \f]
-  *  where \f$ Y\hat{e} \beta = \tfrac{1}{2}\hat{e} \beta$.
+  *  where \f$ Y\hat{e} \beta = \tfrac{1}{2}\hat{e} \beta \f$.
   *
   *  Reference : Eq. (2.40) of @cite Dannert_2006:PhDThesis
   *
@@ -340,8 +340,8 @@ protected:
   *  
   *  @note is it worth to pre-calculate this values ?
   *
-  *  @param   \f$ k_\perp^2 \f$ (not normalized) perpendicular wavenumber
-  *  @return  \f$ r \f$
+  *  @param  k2p  \f$ k_\perp^2 \f$ (not normalized) perpendicular wavenumber
+  *  @return      \f$ r \f$
   **/
   inline  double sum_qnB_Delta(const double k2_p) ;
 

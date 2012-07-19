@@ -347,3 +347,20 @@ void FileIO::flush(Timing timing, double dt)
 	if(timing.check(dataFileFlushTiming, dt)) H5Fflush(file, H5F_SCOPE_GLOBAL);
 
 }
+
+
+void FileIO::printOn(ostream &output) const {
+         output << "            -------------------------------------------------------------------" << std::endl
+                << "Data       |  Input     : " << inputFileName        << " Output    : " <<  outputFileName        << " Resume : " << ((resumeFile)?"yes":"no") << std::endl;
+      };
+
+FileAttr* FileIO::newTiming(hid_t group, hsize_t offset, bool write)
+{
+    
+       hsize_t timing_chunkdim[] = {1}; hsize_t timing_maxdim[] = {H5S_UNLIMITED};
+       hsize_t time_dim[1] = { 1 };
+       FileAttr *Attr =  new FileAttr("Time", group, 1, time_dim, timing_maxdim, timing_chunkdim, &offset,  timing_chunkdim, &offset, parallel->myRank == 0, timing_tid);
+    
+       return Attr;
+
+}

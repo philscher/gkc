@@ -51,9 +51,7 @@ namespace Q     { const int rho=1, jp=2, jo=3; }
 
 /**
 *
-*  @file Fields.h
-*
-*  @brief 
+*  @brief Calculate sources and interface to field solvers
 *
 *  Governs the calculation of the gyro-averaged potentials 
 *  \f$ <\phi> \f$, \f$<A_\parallel>\f$, \f$ \left<B_\perp\right> \f$
@@ -285,7 +283,7 @@ public:
    /**
    *  @brief four-dimensional array hold the source terms in drift-coordinates.
    *
-   *  @Note  Q stand for the German Quellterme (translated : source terms).
+   *  @note  Q stand for the German Quellterme (translated : source terms).
    */
    Array4z  Q;
    /**
@@ -307,14 +305,13 @@ public:
    * 
    *  @brief \f$ \tfrac{1}{2} \hat{e} \hat{B} \f$ normalization constants 
    *
-   *  Brackets should be 1/2 but due to numerical error we should include calculate ourselves, see Dannert[2] 
-   *  Yeb = (1./sqrt(M_PI) * sum(pow2(V) * exp(-pow2(V))) * dv) * geo->eps_hat * plasma->beta; 
-   * 
+   *  Brackets should be 1/2 but due to numerical error we should include calculate ourselves, see Dannert[2]
+   *
    *  \f[ Y = \frac{1}{\sqrt{\pi}} \int_{-\infty}^\infty v_\parallel^2 e^{-v_\parallel^2} dv \equiv \frac{1}{2} \f] 
    *
    *   but due to discretization errors, this is not exact, thus needs to be calculated numerically.
    *
-   *   \f Yeb = Y \hat{\eps}_{geo} \beta  \f]
+   *   \f[ Yeb = Y \hat{\epsilon}_{geo} \beta  \f]
    *
    *   @ref see Dannert (2008), PhD Thesis], where which chapter ... ?
    */

@@ -47,12 +47,12 @@ class HermiteInterpolation
     
     // add 1st order
 
-   //@{
-   // @name Hermite1st
    /**
+   *  @name Hermite third order functions
    *  @brief Basis functions for 3rd-order interpolation
    *  @image html  HermiteInterpolation_3rdOrderFunctions.png
    **/
+   ///@{
    /// 3rd order basis function \f$ H^3_{00}(x) = 2 x^3 - 3 x^2 + 1 \f$
    static double H3_00( const double x) { return  ((x >= 0.) && (x <= 1.)) ?  2. * pow3(x) - 3. * pow2(x) + 1. : 0. ; } ;  
    /// 3rd order basis function \f$ H^3_{10}(x) = - 2 x^3 + 3 x^2     \f$
@@ -61,14 +61,15 @@ class HermiteInterpolation
    static double H3_01( const double x) { return  ((x >= 0.) && (x <= 1.)) ?       pow3(x) - 2. * pow2(x) + x  : 0. ; } ; 
    /// 3rd order basis function \f$ H^3_{11}(x) =     x^3 -   x^2     \f$
    static double H3_11( const double x) { return  ((x >= 0.) && (x <= 1.)) ?       pow3(x) -      pow2(x)      : 0. ; } ; 
-   //@}
+   ///@}
    
    
-   //@{
    /**
+   *  @name  Hermite firth order interpolation functions
    *  @brief Basis functions for 5th-order interpolation
    *  @image html  HermiteInterpolation_5thOrderFunctions.png
    **/
+   ///@{
    /// 5th order basis function \f$ H^5_{00} = -6x^5 + 15 x^4 - 10 x^3 + 1 \f$
    static double H5_00( const double x) { return ((x >= 0.) && (x <= 1.)) ? - 6.  * pow5(x) + 15.  * pow4(x) - 10.  * pow3(x) + 1.            : 0. ; };
    /// 5th order basis function \f$ H^5_{10} =  6x^5 - 15 x^4 + 10 x^3     \f$
@@ -81,10 +82,15 @@ class HermiteInterpolation
    static double H5_02( const double x) { return ((x >= 0.) && (x <= 1.)) ? - 0.5 * pow5(x) +  1.5 * pow4(x) -  1.5 * pow3(x) + 0.5 * pow2(x) : 0. ; };
    /// 5th order basis function \f$ H^5_{12} =  -\tfrac{1}{2}x^5 -              x^4 + \tfrac{1}{2} x^3    \f$
    static double H5_12( const double x) { return ((x >= 0.) && (x <= 1.)) ?   0.5 * pow5(x) -        pow4(x) +  0.5 * pow3(x)                 : 0. ; };
-   // @}
+   ///@}
 
-    // add 7th order
-    // add 9th order
+   /**
+   * @todo add 7th order
+   **/
+
+   /**
+   * @todo add 9th order
+   **/
 };
 
 

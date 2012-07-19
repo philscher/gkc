@@ -120,7 +120,9 @@ class TimeIntegration {
    /**
    *    Solve Gyro-kinetic equation using explicit Runge-Kutta fourth order (RK4) Integration 
    *
-   *    y_{n+1} = y_n + \frac{1}{6} dt \left[ k_1 + 2k_2 + 2 k_3 +k_4 \right]
+   *    \f[
+   *        y_{n+1} = y_n + \frac{1}{6} dt \left[ k_1 + 2k_2 + 2 k_3 +k_4 \right]
+   *    \f]
    * 
    *    \f[
    *        k_1  = f(t_n, y_n)

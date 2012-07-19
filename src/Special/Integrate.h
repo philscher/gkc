@@ -23,7 +23,7 @@
 
 /**
  *
- *   Integration class for various types
+ *   @brief Integration of 1-dimensional functions  
  *
  *
  *
@@ -35,8 +35,9 @@
  *    
  *    int_a^b f(x)
  *     
- *    w_i * (b-a)/2 * int_1^{-1} f((b-a)/2 * x_i + (a+b)/2)
- *
+ *     \f[
+ *         w_i * (b-a)/2 * \int_1^{-1} f((b-a)/2 * x_i + (a+b)/2)
+ *     \f]
  *
  *
  **/
@@ -140,27 +141,29 @@ public:
   
   }
 	
-  /**
-     *      Extracted from wikipedia article 
-     *
-     *      \int_{-1}^1 f(x) dx \approx \sum_k={-\infty}^\infty \omega_k f(x_k)
-     *
-     *      with nodes at
-     *
-     *          x = \tanh\left( \tfrac{1}{2} \pi \sinh t   \right)
-     *
-     *      and weights
-     *         
-     *        w_k = \frac{\tfrac{1}{2} h \pi \cosh (k h)}
-     *                   {\cosh^2 \left(\tfrac{1}{2} \pi \sinh (k h) \right)
-     *
-     *
-     *
-     *
-     *
-     *
+   /**
+   *      Extracted from wikipedia article 
+   *
+   *      \f[
+   *
+   *        \int_{-1}^1 f(x) dx \approx \sum_k={-\infty}^\infty \omega_k f(x_k)
+   *
+   *      \f]
+   *
+   *      with nodes at
+   *      \f[
+   *          x = \tanh\left( \tfrac{1}{2} \pi \sinh t   \right)
+   *      \f]
+   *      and weights
+   *      \f[   
+   *        w_k = \frac{\tfrac{1}{2} h \pi \cosh (k h)}
+   *                   {\cosh^2 \left(\tfrac{1}{2} \pi \sinh (k h) \right)
+   *
+   *      \f]
+   *
+   *
 	*/
-  static cmplxd TanhSinh(std::function<cmplxd (double)> func, double a, double b, int n=9)
+   static cmplxd TanhSinh(std::function<cmplxd (double)> func, double a, double b, int n=9)
     {
 
       const double h = 2./n;

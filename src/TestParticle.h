@@ -25,13 +25,18 @@
 
 #include "Special/Vector3D.h"
 
-// passive tracer particle
-// ressource ?
+/**
+* @brief passive tracer particle
+*
+*
+**/
 class TestParticles : public IfaceHelios 
 {
   Parallel *parallel;
- int Total_Tracer;
-	struct Particle {
+ 
+  int Total_Tracer;
+
+  struct Particle {
 /*
  * Particle() {
             position = velocity =0.;
@@ -47,7 +52,8 @@ class TestParticles : public IfaceHelios
 		double p[3];
 		double v[3];
 	};
- Particle *particles;
+  
+  Particle *particles;
   FileAttr *FA_X, *FA_V, *FA_Time;
   public:
 

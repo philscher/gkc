@@ -1,21 +1,15 @@
 /*
  * =====================================================================================
  *
- *       Filename:  Interpolate.cpp
+ *       Filename: Interpolate.h
  *
- *    Description:  i
+ *    Description: Function to support various interpolation types
  *
- *        Version:  1.0
- *        Created:  07/15/2011 03:15:12 AM
- *       Revision:  none
- *       Compiler:  gcc
+ *         Author: Paul P. Hilscher (2011-), 
  *
- *         Author:  YOUR NAME (), 
- *        Company:  
- *
+ *        License: GPLv3+
  * =====================================================================================
  */
-
 
 #ifndef INTERPOLATION_H
 #define INTERPOLATION_H
@@ -23,8 +17,12 @@
 
 #include "Global.h"
 
-// 2D interpolation
-
+/**
+*   @brief For interpolation of 2-dimensional arrays
+*
+*
+*   @todo cleanup , improve
+**/
 class Interpolate {
     Array2d A;
     Array1d Xa,Ya;

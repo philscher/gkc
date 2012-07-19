@@ -25,69 +25,76 @@
 #include "Visualization.h"
 
 /**
-   *    Please Document Me !
-   *
-   **/
+*    @brief  Interface for eigenvalue calculations
+*
+*    Can be used to calculate the eigenvalues of the
+*    current setup, use is rather limited due to the
+*    problem size - or to calculate the maximum absolute
+*    eigenvalue in order to estimate the time step.
+*
+*    @cite Merz2012:MultiDimensionalGKParameterStudy
+*    @cite Roman2010:FastEigenvalueMassivelyParallel
+*
+**/
 class Eigenvalue : public IfaceHelios {
 
   protected:
-  /**
-   *    Please Document Me !
+   /**
+   *  @brief structu to store the eigenvalue
    *
    **/
-struct EigenValue {
-  /**
-   *    Please Document Me !
-   *
-   **/
-    cmplxd EigenValue;
-  /**
-   *    Please Document Me !
-   *
-   **/
-    double AbsoluteError;
-};
+   struct EigenValue {
+    
+     cmplxd EigenValue   ; ///< the eigenvalue
+     double AbsoluteError; ///< the absolute error
+
+   };
 
 
-  Parallel *parallel;
-  Grid     *grid;
+   Parallel *parallel;
+   Grid     *grid;
 
-public:
-  /**
+  public:
+   /**
    *    Please Document Me !
    *
    **/
-  Eigenvalue(FileIO *fileIO, Setup *setup, Grid *_grid, Parallel *_parallel) : parallel(_parallel), grid(_grid) {};
-  /**
-   *    Please Document Me !
-   *
-   **/
-  virtual void solve(Vlasov *vlasov, Fields *fields, Visualization *visual, Control *control) = 0;
-  /**
-   *    Please Document Me !
-   *
-   **/
-  virtual ~Eigenvalue() {};
+   Eigenvalue(FileIO *fileIO, Setup *setup, Grid *_grid, Parallel *_parallel) : parallel(_parallel), grid(_grid) {};
 
-  /**
+   /**
    *    Please Document Me !
-   * Get Maximum Absolute Eigenvalue 
    *
    **/
-  virtual cmplxd getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields) = 0;
-protected :
-  /**
+   virtual void solve(Vlasov *vlasov, Fields *fields, Visualization *visual, Control *control) = 0;
+  
+   /**
+   *    Please Document Me !
+   *
+   **/
+   virtual ~Eigenvalue() {};
+
+  
+   /**
+   *  @brief Get Maximum Absolute Eigenvalue for determining
+   *         the maximum stable linear timestep
+   *
+   **/
+   virtual cmplxd getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields) = 0;
+
+  protected :
+  
+   /**
    *    Please Document Me !
    *
    **/
    void printOn(ostream &output) const { };
 
-private:
-  /**
+   /**
    *    Please Document Me !
    *
    **/
    void InitDataOutput(Setup *setup, FileIO *fileIO);
+
 };
 
 
