@@ -29,6 +29,7 @@
 *
 *   Implementes interface to the fftw Fast-Fourier Transform
 *   solver, see (<a href="www.fftw.org">fftw homepage</a>).
+*   <www.fftw.org>
 *
 *
 *
