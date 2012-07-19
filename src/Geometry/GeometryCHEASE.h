@@ -21,59 +21,15 @@
 #include "FFTSolver.h"
 
 /**
- *
- *    Gives the Geometric coefficients for a sheared slab geometry with
- *    a magnetic field accroding to.
- *    \f[ \vec{B}_0 / B_0 = \vec{b} = \left(0,-x/L_s,1 \right) \f].
- *
- *    Reference : Jenko, PhD 2001, Section 3.5 Flussschlauchgeometry
- *
- *    where $L_s$ is defined as the connection length. The metric takes
- *    the simple form 
- *
- *    \f[
- *          g^{ij} = 
- *              \left( \begin{array}{lll}
- *                      1     &  z/L_s                 & 0 \\
- *                       z\L_s &  1 + \frac{z^2}{L_s^2} & 0 \\
- *                       0     &  0                     & 1
- *                       \end{array} \right)
- *    \f]
- *
- *    This results in the spatial operators of the form
- *
- *    \f[ \vec{b} \cdot \nabla = \partial_z \f]
- *    \f[ \nabla_\perp^2 = \frac{\partial^2}{\partial x^2} + \left(1 + \frac{z^2}{L_s^2} \right)
- *              \frac{\partial^2}{\partial y^2} + 2 \frac{z}{L_s} \frac{\partial^2}{\partial x \partial y} \f]
- *    \f[ \vec{b} \times \nabla A \cdot \nabla = \frac{\partial A}{\partial x}{\partial}{\partial y} -
- *                  \frac{\partial A}{\partial y}{\partial }{\partial x}  \f]
- *
- *  also, with
- *  L_s = 
- *  L_c = 2 \pi q R
- *  L_s =  \frac{q R}{\hat{s}}
- *
- *  with \hat{s} the shear.
- *  and for the parallel length L_z, we need to choose the connection length L_c. So once L_s and L_z
- *  is given we calculate the shear to
- *  \f[ \hat{s} = \frac{L_z }{2 \pi L_s} \f]
- *  
- *  for consistency  with the perdiocic parallel boundary conditions we ned to fullfill the 
- *  relation
- *  \f[ 2 \pi \hat{s} L_x = n_s L_y  or \frac{L_z}{L_s} = n * L_y \f]
- *  where n_s is an integer number, or an interpolation method needs to be used. 
- *
- *
- *  ToDO : Parallelize the parallel boundary condition.
- *
- *
- * */
-
-
+*  @brief Geometry defintions using numerical MHD equilibrium
+*         from CHEASE code 
+*
+*  @warning not working
+*  @todo  add link to Chease
+*
+**/
 class GeometryCHEASE : public Geometry<GeometryCHEASE>
 {
-  double Ls;
-  double shear;
  public:
 
    void printOn(ostream& output) const {
@@ -81,38 +37,20 @@ class GeometryCHEASE : public Geometry<GeometryCHEASE>
    };
 
 
-
   GeometryCHEASE(Setup *setup) : Geometry<GeometryCHEASE>(setup, true)  {
      
 
     shear    = setup->get("Geometry.Shear"   , 0.);
     chease_file = setup->get("Geometry.MHDFile", "");
-    //shear = Lz / (2. * M_PI * Ls);
-    //
-
-
-
 
   }
 
   inline const double J(const int x, const int y, const int z) { return 1.; };
 
 
-  /**    Get perpendicular gradient in Fourier space. To to non-rectangular 
-   *     coordiantes (shear) we have to include the non-diagonal metric component
-   *     g12, g21 too
-   *
-  */
   inline const double k2_p(const int x_k, const int y_k, const int z) const {
-      
-      const double g11 = 1.;
-      const double g12 = Z(z)/Ls;
-      const double g22 = 1. + pow2(Z(z)/Ls);
-
-      const double kx2 = pow2(k(Nx,Lx,x_k));
-      const double ky2 = pow2(k(Ny,Ly,y_k));
-
-      return g11 * kx2 + g22 * ky2 + 2. * g12 * sqrt(kx2 + ky2);
+  
+    return 0.;
   };
 
 
@@ -141,8 +79,11 @@ class GeometryCHEASE : public Geometry<GeometryCHEASE>
 
 private:
 
+  // check out GS2 -> license GPLv2+ ?
+  // check out GKW -> license GPLv2+ ?
 
  int loadCheaseFile() {
+   /*  
     // 0) some checks
     if (mod(n_s_grid,2).eq.0) then
       call gkw_abort('N_s_grid must be odd for geom_type=chease')
@@ -619,6 +560,6 @@ private:
     & 'for geom_type in the namelist GEOM'
     write(*,*)'Only known options are: s-alpha, chease'
     stop
-
-    }
+*/};
+};
 #endif // GEOMETRY_H
