@@ -427,3 +427,42 @@ void Parallel::print(std::string message) {
     if(myRank == 0) std::cout << message;
 
 }
+
+
+void Parallel::printOn(ostream &output) const {
+       output << "Parallel   | ";
+		
+      if      (useOpenMP) output << " OpenMP (Threads)   : " << Num2String(numThreads)  << std::endl;
+      if      (useOpenCL) output << " OpenCL (Threads)   : " << Num2String(numGPUs   )  << std::endl;
+      if      (useMPI   ) {
+	    output <<  " MPI (processes) : " << Num2String(numProcesses)  << " Decompostion : ";
+            if (decomposition(DIR_X) == 0) output <<  "Automatic" << std::endl;
+	    else
+                     output << "X(" << decomposition(DIR_X) << ")  Y(" << decomposition(DIR_Y) << ") "
+                            << "Z(" << decomposition(DIR_Z) << ")  V(" << decomposition(DIR_V) << ") "
+                            << "M(" << decomposition(DIR_M) << ")  S(" << decomposition(DIR_S) << ") " << std::endl;
+   
+       } else output << std::endl;
+     
+
+#ifdef GKC_PARALLEL_MPI
+/* 
+//if(setup->flags & HELIOS_VERBOSE) {
+                for(int rank = 0; rank < parallel.numProcesses; rank++) {
+                    Array2i domain = parallel.getProcessDomain(rank);
+                    if(parallel.myRank == 0) infoStream << 
+                      
+                      "Rank (" << rank<<")  | " <<
+                        "X(" << domain(0, 0) << " " << domain(0, 1) << "-" << domain(0, 2) << ") " <<  
+                        "Y(" << domain(1, 0) << " " << domain(1, 1) << "-" << domain(1, 2) << ") " <<  
+                        "Z(" << domain(2, 0) << " " << domain(2, 1) << "-" << domain(2, 2) << ") " <<  
+                        "V(" << domain(3, 0) << " " << domain(3, 1) << "-" << domain(3, 2) << ") " <<  
+                        "M(" << domain(4, 0) << " " << domain(4, 1) << "-" << domain(4, 2) << ") " <<  
+                        "S(" << domain(5, 0) << " " << domain(5, 1) << "-" << domain(5, 2) << ") " <<  
+                       std::endl; 
+                      
+//                }
+}
+ * */
+#endif // GKC_PARALLEL_MPI
+    };

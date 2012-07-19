@@ -12,6 +12,7 @@
 
 #include "Init.h"
 #include "Plasma.h"
+#include "Special/HermitePoly.h"
 
 #include "Reader/ReaderXYV.h"
 #include "System.h"
@@ -203,7 +204,9 @@ int Init::PerturbationPSFExp(Vlasov *vlasov, int s, double pert) {
 
 
 int Init::PerturbationPSFMode(Vlasov *vlasov, int s, double pre) {
-  
+ 
+   //  Callculates the phase (of what ??!)
+   auto Phase = [=] (const int q, const int N)  -> double { return 2.*M_PI*((double) (q-1)/N); };
    // check if value is reasonable
    if(!((s >= NsLlD) && (s <= NsLuD))) return HELIOS_SUCCESS; 
        

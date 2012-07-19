@@ -289,8 +289,6 @@ typedef struct Complex_t {
     // Destructor
     FileIO::~FileIO()  {
        // Free all HDF5 resources
-       /* End access to the dataset and release resources used by it. */
-       // if(asciiOutput == true) asciiOutputFile.close();
 
      // close some extra stuff
      check( H5Tclose(complex_tid),   DMESG("H5Tclose"));

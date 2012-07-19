@@ -20,15 +20,10 @@
 #include "Parallel.h"
 
 /**
- *
- *  Solves linear equation system using PETSc (http://www.mcs.anl.gov/petsc/).
- *
- *
- *
- *
- *
- *
- **/
+*
+*  @brief Solves a linear equation system using PETSc (http://www.mcs.anl.gov/petsc/).
+*
+**/
 class MatrixSolver
 {
  
@@ -37,12 +32,13 @@ class MatrixSolver
    Mat     F;
 
   public:
-  /**
+  
+   /**
    *    Please Document Me !
    *
    **/
-    MatrixSolver( Parallel *parallel, Mat Matrix, int dir, bool solverTypeDirect=false, std::string linearSolver="PETSc")
-    {
+   MatrixSolver( Parallel *parallel, Mat Matrix, int dir, bool solverTypeDirect=false, std::string linearSolver="PETSc")
+   {
 
         //Create linear solver context
         //
@@ -92,27 +88,29 @@ class MatrixSolver
         // No Need to call this ?!
     //    KSPSetUp(ksp);
   
-  };
+   };
   
-  /**
+   /**
    *    Please Document Me !
    *
    **/
-  bool solve(Vec &Vec_b, Vec &Vec_x) {
+   bool solve(Vec &Vec_b, Vec &Vec_x) 
+   {
         
         PetscErrorCode ierr = KSPSolve(ksp, Vec_b, Vec_x); 
         return (ierr == PETSC_TRUE) ? true : false;
-  }
+   }
 
-  /**
+   /**
    *    Please Document Me !
    *
    **/
- ~MatrixSolver() {
+   ~MatrixSolver() 
+   {
 
     PetscErrorCode ierr = KSPDestroy(&ksp);
  
-  }
+   }
 
 };
 

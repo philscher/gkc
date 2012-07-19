@@ -19,8 +19,6 @@ Analysis::Analysis(Parallel *_parallel, Vlasov *_vlasov, Fields *_fields, Grid *
      A4(FortranArray<4>()), A4_z(FortranArray<4>())
 
   {
-       scaleXYZ  = dx * dy * dz;
-       scaleXYZV = dx * dy * dz * dv * dm;
 
        // set initial energy
        initialEkin.resize(Range(TOTAL, NsGuD)); initialEkin = 0.e0;
@@ -118,8 +116,8 @@ Analysis::~Analysis() {
      
        for(int s = NsLlD; s <= NsLuD ; s++) { 
         
-            //const double v2_d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * dm * scaleXYZ;
-            const double v2_d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * dm * scaleXYZ * plasma->species(s).scale_v ;
+            //const double v2_d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * dm * dXYZ;
+            const double v2_d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * dm * grid->dXYZ * plasma->species(s).scale_v ;
 
 //            for(int x=NxLlD; x<= NxLuD;x++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int z=NzLlD; z<= NzLuD;z++) {
             for(int x=NxLlD; x<= NxLuD;x++) { for(int z=NzLlD; z<= NzLuD;z++) {
@@ -163,7 +161,7 @@ double Analysis::getEntropy(int sp)
   return 0.; 
    double entropy = 0.e0;
    for(int s = NsLlD; s <= NsLuD ; s++) { 
-                entropy += scaleXYZV * abs(pow2(sum(vlasov->f(RxLD, RkyLD, RzLD, RvLD, RmLD, s) 
+                entropy += grid->dXYZV * abs(pow2(sum(vlasov->f(RxLD, RkyLD, RzLD, RvLD, RmLD, s) 
                                             - vlasov->f0 (RxLD, RkyLD, RzLD, RvLD, RmLD, s)))/ sum(vlasov->f0(RxLD, RkyLD, RzLD, RvLD, RmLD, s)));
    }
         
@@ -177,7 +175,7 @@ double Analysis::getParticelNumber(int sp)
    //for(int s = ((sp == TOTAL) ? NsLlD : sp); s <= NsLuD && ((sp != TOTAL) ? s == sp : true)  ; s++) { 
    for(int s = NsLlD; s <= NsLuD ; s++) { for(int m = NmLlD; m <= NmLuD; m++) { 
    
-     //const double d6Z = plasma->B0 * dv * dm * scaleXYZ; 
+     //const double d6Z = plasma->B0 * dv * dm * dXYZ; 
      const double pnB_d6Z = M_PI * plasma->species(s).n0 * plasma->B0 * dv * grid->dm(m) ;
    
    for(int x=NxLlD; x<= NxLuD;x++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int z=NzLlD; z<= NzLuD;z++){
@@ -195,7 +193,7 @@ Array4d Analysis::getNumberDensity(const bool total) {
 
     for(int s = NsLlD; s <= NsLuD; s++) {
 
-    const double d6Z = scaleXYZV * plasma->B0 * M_PI;
+    const double d6Z = grid->dXYZV * plasma->B0 * M_PI;
 
     for(int x=NxLlD; x<= NxLuD;x++) { for(int y=NkyLlD; y<= NkyLuD;y++) { for(int z=NzLlD; z<= NzLuD;z++){
 
@@ -212,7 +210,7 @@ Array4d Analysis::getMomentumParallel() {
 /* 
     for(int s = NsLlD; s <= NsLuD; s++) {
 
-    const double d6Z = scaleXYZV * plasma->B0 * M_PI;
+    const double d6Z = dXYZV * plasma->B0 * M_PI;
     const double alpha_s = plasma->species(s).q / plasma->species(s).T0;
 
     for(int x=NxLlD; x<= NxLuD;x++) { for(int y=NyLlD; y<= NyLuD;y++) { for(int z=NzLlD; z<= NzLuD;z++){
@@ -234,7 +232,7 @@ Array4z Analysis::getTemperatureParallel() {
     
   for(int s = NsLlD; s <= NsLuD; s++) {
 
-      const double d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * dm * scaleXYZ;
+      const double d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * dm * grid->dXYZ;
 
       for(int m=NmLlD; m<= NmLuD;m++ ) { 
       for(int z=NzLlD; z<= NzLuD;z++){ for(int x=NxLlD; x  <= NxLuD ;  x++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
@@ -260,7 +258,7 @@ Array4d Analysis::getTemperatureOthogonal() {
 /* 
     for(int s = NsLlD; s <= NsLuD; s++) {
 
-    const double d6Z = scaleXYZV * plasma->B0 * M_PI;
+    const double d6Z = dXYZV * plasma->B0 * M_PI;
 
     for(int x=NxLlD; x<= NxLuD;x++) { for(int y=NyLlD; y<= NyLuD;y++) { for(int z=NzLlD; z<= NzLuD;z++){
 
@@ -279,7 +277,7 @@ Array4d Analysis::getHeatFluxParallel() {
 /* 
     for(int s = NsLlD; s <= NsLuD; s++) {
 
-    const double d6Z = scaleXYZV * plasma->B0 * M_PI;
+    const double d6Z = dXYZV * plasma->B0 * M_PI;
     const double alpha_s = plasma->species(s).q / plasma->species(s).T0;
 
     for(int x=NxLlD; x<= NxLuD;x++) { for(int y=NyLlD; y<= NyLuD;y++) { for(int z=NzLlD; z<= NzLuD;z++){
@@ -298,7 +296,7 @@ Array4d Analysis::getHeatFluxOrthogonal() {
     for(int s = NsLlD; s <= NsLuD; s++) {
 
     const double alpha_s = plasma->species(s).q / plasma->species(s).T0;
-    const double d6Z = scaleXYZV * plasma->B0 * M_PI;
+    const double d6Z = dXYZV * plasma->B0 * M_PI;
 
     for(int x=NxLlD; x<= NxLuD;x++) { for(int y=NyLlD; y<= NyLuD;y++) { for(int z=NzLlD; z<= NzLuD;z++){
     for(int v=NvLlD; v<= NvLuD;v++) { for(int m=NmLlD; m<= NmLuD;m++)  {
@@ -325,7 +323,7 @@ Array4z Analysis::getHeatFlux(int sp)
   // for(int s = ((sp == TOTAL) ? NsLlD : sp); (s <= ((sp == TOTAL) ? NsLuD : sp)) && ( (sp >= NsLlD) && (sp <= NsLuD))  ; s++) { 
   for(int s = NsLlD; s <= NsLuD; s++) {
       
-      const double d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * dm * scaleXYZ;
+      const double d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * dm * grid->dXYZ;
 
       for(int m=NmLlD; m<= NmLuD;m++ ) { 
       
@@ -425,7 +423,7 @@ Array3d  Analysis::getParticleFluxKy(int sp)
    
   for(int s = NsLlD; s <= NsLuD; s++) {
       
-      const double d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * dm * scaleXYZ;
+      const double d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * dm * grid->dXYZ;
 
         for(int m=NmLlD; m<= NmLuD;m++ ) { for(int z=NzLlD; z<= NzLuD;z++){ 
       
