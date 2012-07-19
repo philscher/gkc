@@ -34,7 +34,7 @@
 #include "Vlasov/Vlasov_Cilk.h"
 //#endif
 #include "Eigenvalue/Eigenvalue_SLEPc.h"
-
+#include "Visualization/Visualization_Data.h"
 //#include "LA.h"
 
 Plasma *plasma;
@@ -114,7 +114,7 @@ Helios::Helios(Setup *_setup) : setup(_setup)  {
     else   check(-1, DMESG("No such Fields Solver"));
 
     analysis = new Analysis(parallel, vlasov, fields, grid, setup, fftsolver, fileIO, geometry); 
-    visual   = new Visualization(grid, parallel, setup, fileIO, vlasov, fields);
+    visual   = new Visualization_Data(grid, parallel, setup, fileIO, vlasov, fields);
     event    = new Event(setup, grid, parallel, fileIO, geometry);
     
     eigenvalue = new Eigenvalue_SLEPc(fileIO, setup, grid, parallel); 
