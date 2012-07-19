@@ -12,7 +12,7 @@
  */
 
 #include "FieldsFFT.h"
-#include "SpecialMath.h"
+#include "Special/SpecialMath.h"
 
 FieldsFFT::FieldsFFT(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo, FFTSolver *_fft) 
 : Fields(setup, grid, parallel, fileIO,  geo), fft(_fft)
