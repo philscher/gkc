@@ -191,16 +191,16 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
   
 Eigenvalue_SLEPc::~Eigenvalue_SLEPc() {
  	
-      MatDestroy(&A_F1);
-      EPSDestroy(&EigvSolver);
+    MatDestroy(&A_F1);
+    EPSDestroy(&EigvSolver);
 
-      // check error code of slepc finalize
-      SlepcFinalize();  
+    // check error code of slepc finalize
+    SlepcFinalize();  
     H5Gclose(eigvGroupID);
     delete EVTable;
 };
 
-void Eigenvalue_SLEPc::print2On(ostream &output) {
+void Eigenvalue_SLEPc::printOn(ostream &output) {
            output << "Eigenvalue |  using SLEPc interface " << std::endl;
  }
 

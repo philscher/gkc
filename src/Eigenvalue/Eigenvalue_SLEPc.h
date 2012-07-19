@@ -24,44 +24,26 @@
 #include <slepceps.h>
 
 /**
- *    Calculates the eigenvlaues of the system using SLEPc
- *
- *
- *
- *
- * */
+*   @brief Calculates the eigenvalues using SLEPc
+*          
+*   SLEPc  uses Krylov Matrix-Free methods in order
+*   to extract the eigenvalues of the system. 
+*  
+*   See <a href http://www.grycap.upv.es/slepc/>SLEPc Homepage</a>
+*
+**/
 class Eigenvalue_SLEPc : public Eigenvalue {
 
 
-  /**
-   *    Please Document Me !
-   *
-   **/
-    EPS EigvSolver;
+    EPS EigvSolver;  ///< The eigensolver context
 
-  /**
-   *    Please Document Me !
-   *
-   **/
-    cmplxd tolerance;
-  /**
-   *    Please Document Me !
-   *
-   **/
-    Mat A_F1;
+    cmplxd tolerance; ///< Set Tolerence of the solution
     
-  /**
-   *    Please Document Me !
-   *
-   **/
-    TableAttr *EVTable;
-  /**
-   *    Please Document Me !
-   *
-   **/
-	hid_t eigvGroupID;
-
-protected:
+    Mat A_F1;         ///< The Matrix Context
+    
+    TableAttr *EVTable; ///< Eigenvalue Table
+	
+    hid_t eigvGroupID; ///< HDF-5 reference to Eigenvalue group
 
 public:
   /**
@@ -86,14 +68,14 @@ public:
    *
    **/
   cmplxd getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields);
+
 protected :
   /**
    *    Please Document Me !
    *
    **/
-   void print2On(ostream &output);
+   void printOn(ostream &output);
 
-private:
   /**
    *    Please Document Me !
    *
