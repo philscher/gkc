@@ -69,13 +69,13 @@ gplot(0., 10.,  derf_dx, "$erf'(x)$", "Derivative of Error function", "Deriv_Err
 
 ## Collisionality functions
 Coll_F1 = lambda x : x*derf_dx(x) + (2. * x*x -1.) * scipy.special.erf(x)
-gplot(-1., 1.,  Coll_F1, "$F_1$", "Collision F1", "Coll_F1.png", 'loglin')
+gplot(-1., 1.,  Coll_F1, "$F_1$", "Collision F1", "Collision_F1.png", 'loglin')
 	
 Coll_F2 = lambda x : (1.-2./3.*x*x) * scipy.special.erf(x) - x* derf_dx(x)
-gplot(-1., 1.,  Coll_F2, "$F_2$", "Collision F2", "Coll_F2.png", 'loglin')
+gplot(-1., 1.,  Coll_F2, "$F_2$", "Collision F2", "Collision_F2.png", 'loglin')
 
 Coll_F3 = lambda x : Coll_F1(x) + 3. * Coll_F2(x)
-gplot(-1, 1.,  Coll_F3, "$F_3$", "Collision F3", "Coll_F3.png", 'loglin')
+gplot(-1, 1.,  Coll_F3, "$F_3$", "Collision F3", "Collision_F3.png", 'loglin')
 
 # Plot Chandrasekhar function
 clf()
