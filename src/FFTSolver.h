@@ -49,7 +49,7 @@ enum FFT_FLAGS  {FFT_DUMMY=0, FFT_XYZ=1, FFT_X=2, FFT_XY=4, FFT_Y=16, FFT_AA=32,
 *         to the same memory region.
 *
 **/
-class FFTSolver : public IfaceHelios {
+class FFTSolver : public IfaceGKC {
 
   std::vector<int> suppressModeX, suppressModeY;
     
@@ -61,7 +61,7 @@ class FFTSolver : public IfaceHelios {
 
   protected:
 
-   Geometry<HELIOS_GEOMETRY> *geo;
+   Geometry<GKC_GEOMETRY> *geo;
    Parallel *parallel;
 
    int flags;
@@ -161,7 +161,7 @@ class FFTSolver : public IfaceHelios {
    *   @brief the contstructor
    *
    **/
-   FFTSolver(Setup *setup, Parallel *_parallel, Geometry<HELIOS_GEOMETRY> *_geo, double _Norm_XYZ, double _Norm_XY, double _Norm_X, double _Norm_Y); 
+   FFTSolver(Setup *setup, Parallel *_parallel, Geometry<GKC_GEOMETRY> *_geo, double _Norm_XYZ, double _Norm_XY, double _Norm_X, double _Norm_Y); 
 
    virtual ~FFTSolver() ;
 

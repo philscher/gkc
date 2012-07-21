@@ -44,11 +44,11 @@
 *  @todo provide example
 *
 **/
-class Event : public IfaceHelios {
+class Event : public IfaceGKC {
 
   bool useEvent; //< Enabled in case events are enabled
 public:
-  Event(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo);
+  Event(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<GKC_GEOMETRY> *geo);
 
 
   void checkEvent(Timing timing, Vlasov *vlasov, Fields *fields);

@@ -87,7 +87,7 @@ namespace Q     { const int rho=1, jp=2, jo=3; }
 *   
 *
 */
-class Fields : public IfaceHelios {
+class Fields : public IfaceGKC {
   
    /**
    *  @brief buffers for field equations.
@@ -116,7 +116,7 @@ protected:
    /**
    *  @brief Geometry interface
    */
-   Geometry<HELIOS_GEOMETRY> *geo;
+   Geometry<GKC_GEOMETRY> *geo;
   
    /**
    *  @brief please document me
@@ -322,7 +322,7 @@ public:
    * Constructor
    *
    */
-   Fields(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo);
+   Fields(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<GKC_GEOMETRY> *geo);
   
    /**
    *

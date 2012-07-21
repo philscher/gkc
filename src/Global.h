@@ -17,12 +17,12 @@
 #define __GLOBAL_H
 
 
-#define HELIOS_SUCCESS  1
-#define HELIOS_FAILED   -1
-#define HELIOS_STOP     2
-#define HELIOS_WRITE     3
-#define HELIOS_EXIT     4
-#define HELIOS_FINISH     5
+#define GKC_SUCCESS  1
+#define GKC_FAILED   -1
+#define GKC_STOP     2
+#define GKC_WRITE     3
+#define GKC_EXIT     4
+#define GKC_FINISH     5
 
 
 #if defined(__cplusplus)
@@ -50,9 +50,10 @@ using namespace blitz;
 enum Direction : int {DIR_X=0, DIR_Y, DIR_Z, DIR_V, DIR_M, DIR_S, DIR_ALL, DIR_XYZ, DIR_VMS, DIR_MS, DIR_FFT, DIR_YZVMS, DIR_VM, DIR_YZ, DIR_XYZVM, DIR_XY, DIR_XMS, DIR_XM, DIR_SIZE};
 
       
-    inline int check( int status, std::string file, int line, std::string error_text, bool segfault=false) {
+    inline int check( int status, std::string file, int line, std::string error_text, bool doAbort=false) {
         if(status == -1 ) {
-            // check rank from MPI!
+            
+	    // check rank from MPI!
             std::stringstream ss;
             ss << std::endl; 
             ss << "\033[0;m";
@@ -61,19 +62,9 @@ enum Direction : int {DIR_X=0, DIR_Y, DIR_Z, DIR_V, DIR_M, DIR_S, DIR_ALL, DIR_X
 
             std::cout << ss.str();
               
-            //TerminalIO::writeLogMessage(ss.str().c_str());
-            // we produce SIGFPE (floating point exception), so we can backtrace stack
-            if(segfault == true) {
-                int *i = 0; *i = 0;
-            }
-            
-	    abort();
             // exit through abort so we can get stack trace
-#ifndef DEBUG
+	    if(doAbort=true) abort();
             exit(0);
-#else
-            exit(0);
-#endif
         }
         return status;
     }
@@ -171,14 +162,14 @@ template<typename T> std::string Num2String(T number) {
 class FileIO;
 class Timing;
 
-class IfaceHelios {
+class IfaceGKC {
 
     protected:
       virtual void printOn(ostream &output) const = 0;
-      //virtual ~IfaceHelios() { closeData(); };
-      virtual ~IfaceHelios() { };
+      //virtual ~IfaceGKC() { closeData(); };
+      virtual ~IfaceGKC() { };
     public:
-    friend ostream& operator<<(ostream& output, const IfaceHelios& ih) { ih.printOn(output); return output; };
+    friend ostream& operator<<(ostream& output, const IfaceGKC& ih) { ih.printOn(output); return output; };
 
     // Data Output Operation
 };
@@ -196,14 +187,14 @@ extern Plasma *plasma;
 
 
 // needed for signal handling
-extern GeneralArrayStorage<6> HeliosStorage;
-extern GeneralArrayStorage<4> HeliosStorage4;
+extern GeneralArrayStorage<6> GKCStorage;
+extern GeneralArrayStorage<4> GKCStorage4;
 
 
-//#define HELIOS_GEOMETRY GeometrySlab
-#define HELIOS_GEOMETRY Geometry2D
+//#define GKC_GEOMETRY GeometrySlab
+#define GKC_GEOMETRY Geometry2D
 
-class HELIOS_GEOMETRY;
+class GKC_GEOMETRY;
 
 
 

@@ -13,7 +13,7 @@
 
 #include "Event.h"
 
- Event::Event(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo) 
+ Event::Event(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<GKC_GEOMETRY> *geo) 
 {
     useEvent = setup->get("Event.use", 0);
 

@@ -41,7 +41,7 @@ class PETScMatrixVector;
 * We solve the 6 dimensional Vlasov equation (X, Y, Z, Vp), m, s 
 *
 **/
-class Vlasov : public IfaceHelios {
+class Vlasov : public IfaceGKC {
 
    /**
    *    Please Document Me !
@@ -112,7 +112,7 @@ class Vlasov : public IfaceHelios {
    Parallel *parallel;
    Grid *grid;
    Setup *setup;
-   Geometry<HELIOS_GEOMETRY> *geo;
+   Geometry<GKC_GEOMETRY> *geo;
    
    /**
    *    Please Document Me !
@@ -195,7 +195,7 @@ class Vlasov : public IfaceHelios {
    *    Please Document Me !
    *
    **/
-   Vlasov(Grid *grid, Parallel *parallel, Setup *setup, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo, FFTSolver *fft);
+   Vlasov(Grid *grid, Parallel *parallel, Setup *setup, FileIO *fileIO, Geometry<GKC_GEOMETRY> *geo, FFTSolver *fft);
 
    /**
    *
@@ -231,7 +231,7 @@ class Vlasov : public IfaceHelios {
    *   ToDo : Skeleton, update new Naxwellian background
    *   this is a dummy functions only
    */ 
-   int updateMaxwellian() { return HELIOS_SUCCESS;};
+   int updateMaxwellian() { return GKC_SUCCESS;};
 
    /**
    *   Calculates the timestep according to a defined CFL number. For the Vlasov equation

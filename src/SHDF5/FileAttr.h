@@ -76,7 +76,7 @@ class FileAttr
           check(  H5Dwrite(dset, type_id, mspace, dspace, plist, data)  , DMESG(name + " : H5DWrite Dataset"));
           H5Sclose(dspace);
         
-          return HELIOS_SUCCESS;
+          return GKC_SUCCESS;
     };
 
 

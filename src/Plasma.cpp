@@ -16,7 +16,11 @@
 #include "Plasma.h"
 
 
-Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo, const int _nfields) : nfields(_nfields) {
+// plasma defined global
+Plasma *plasma;
+
+
+Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry<GKC_GEOMETRY> *geo, const int _nfields) : nfields(_nfields) {
       
       species.resize(Range(0, SPECIES_MAX));
       species(0).n0 = 0.;

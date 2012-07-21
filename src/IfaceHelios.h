@@ -1,7 +1,7 @@
 /*
  * =====================================================================================
  *
- *       Filename: IfaceHelios.h
+ *       Filename: IfaceGKC.h
  *
  *    Description: Defined common interface for gkc classes
  *
@@ -11,14 +11,14 @@
  * =====================================================================================
  */
 
-class IfaceHelios {
+class IfaceGKC {
 
     protected:
       virtual void printOn(ostream &output) const = 0;
-      //virtual ~IfaceHelios() { closeData(); };
-      virtual ~IfaceHelios() { };
+      //virtual ~IfaceGKC() { closeData(); };
+      virtual ~IfaceGKC() { };
     public:
-    friend ostream& operator<<(ostream& output, const IfaceHelios& ih) { ih.printOn(output); return output; };
+    friend ostream& operator<<(ostream& output, const IfaceGKC& ih) { ih.printOn(output); return output; };
 
     // Data Output Operation
 };

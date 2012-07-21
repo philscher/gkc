@@ -26,7 +26,7 @@
 
 #include "petscmat.h" 
 
-FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo, FFTSolver *fft) 
+FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<GKC_GEOMETRY> *geo, FFTSolver *fft) 
 : FieldsFFT(setup, grid, parallel,fileIO, geo, fft)
 {
         // Move to Master PETSc class (create one ...) 

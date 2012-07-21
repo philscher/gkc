@@ -42,7 +42,7 @@ class Visualization;
 *  Data conversion is performed during write operation.  
 *  
 **/
-class FileIO : public IfaceHelios 
+class FileIO : public IfaceGKC 
 {
 
   private:

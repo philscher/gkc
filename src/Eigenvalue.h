@@ -36,7 +36,7 @@
 *    @cite Roman2010:FastEigenvalueMassivelyParallel
 *
 **/
-class Eigenvalue : public IfaceHelios {
+class Eigenvalue : public IfaceGKC {
 
   protected:
    /**
@@ -83,12 +83,6 @@ class Eigenvalue : public IfaceHelios {
 
   protected :
   
-   /**
-   *    Please Document Me !
-   *
-   **/
-   void printOn(ostream &output) const { };
-
    /**
    *    Please Document Me !
    *

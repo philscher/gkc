@@ -27,7 +27,7 @@
 *   @brief Hold information about the plasma with species and normalizations
 *
 **/
-class Plasma : public IfaceHelios {
+class Plasma : public IfaceGKC {
 
   public:
 
@@ -72,7 +72,7 @@ typedef struct Species
    
    // stupid fix, but we have to otherwise all stuff is private
    
-   void update(Geometry<HELIOS_GEOMETRY> *geo, double cs) { 
+   void update(Geometry<GKC_GEOMETRY> *geo, double cs) { 
         scale_v = sqrt(2.*T0/m); 
         scale_n = n0;
         alpha = scale_v*  1./(cs*sqrt(geo->eps_hat));
@@ -140,7 +140,7 @@ typedef struct Species
    *   adiabatic species.
    *   @todo check impact on speed
    **/
-   Plasma(Setup *setup, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo, const int nfields=1);
+   Plasma(Setup *setup, FileIO *fileIO, Geometry<GKC_GEOMETRY> *geo, const int nfields=1);
    
    /**
    *   Note Species goes from 0 ... SPECIES_MAX, where 0 is an

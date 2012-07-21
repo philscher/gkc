@@ -39,7 +39,7 @@ typedef struct Complex_t {
     outputFileName        = setup->get("DataOutput.OutputFileName", "default.h5");
     info                  = setup->get("DataOutput.Info", "No information provided");
     resumeFile            = setup->get("DataOutput.Resume", 0);
-    overwriteFile         = setup->get("DataOutput.Overwrite", 0) || (setup->flags & HELIOS_OVERWRITE);
+    overwriteFile         = setup->get("DataOutput.Overwrite", 0) || (setup->flags & GKC_OVERWRITE);
    
      dataFileFlushTiming  = Timing(setup->get("DataOutput.Flush.Step", -1)       , setup->get("DataOutput.Flush.Time", 100.)); 
     
@@ -175,7 +175,7 @@ typedef struct Complex_t {
                                cfl_offset, cfl_type, 32, NULL, 0, cfl_table ), DMESG("H5Tmake_table : cfl"));
          
 
-         return HELIOS_SUCCESS;
+         return GKC_SUCCESS;
     }
 
 
@@ -196,7 +196,7 @@ typedef struct Complex_t {
          
 
          
- //         return HELIOS_SUCCESS;
+ //         return GKC_SUCCESS;
  //   }
 
 
@@ -205,7 +205,7 @@ typedef struct Complex_t {
       // This is a bit ugly ... :(
 /* 
       int FileIO::load(Vlasov *vlasov, Fields *fields) {
-        return HELIOS_FAILED;
+        return GKC_FAILED;
         hid_t file_in;
         if(inputFileName == outputFileName)
            file_in = check(H5Fopen( inputFileName.c_str(), H5F_ACC_RDWR, H5P_DEFAULT), DMESG("H5Fopen : inputFileName"));
@@ -252,13 +252,13 @@ typedef struct Complex_t {
              phiCount=1; psfCount=1;
         }
             //file = check(H5Fopen( setup->outputFileName.c_str(), H5F_ACC_RDWR, H5P_DEFAULT), DMESG("H5Fopen"));
-           return HELIOS_SUCCESS;
+           return GKC_SUCCESS;
     }
 
      
 
   int FileIO::writeCFLValues(Analysis *analysis, Fields *fields, Timing timing) {
-      return HELIOS_SUCCESS;
+      return GKC_SUCCESS;
         
     cfl_table->timeStep  = timing.step;
     cfl_table->time  = timing.time;
@@ -270,7 +270,7 @@ typedef struct Complex_t {
     
     check(H5TBappend_records (file, "cfl", 1, sizeof(CFLTable), cfl_offset, cfl_sizes, cfl_table), DMESG("Append Table")); 
 
-      return HELIOS_SUCCESS;
+      return GKC_SUCCESS;
   }
 
   void zero(double *DArray, int N) {

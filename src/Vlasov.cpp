@@ -14,10 +14,10 @@
 #include "Vlasov.h"
 
 
-Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *_geo, FFTSolver *(_fft))    : fft(_fft),
+Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry<GKC_GEOMETRY> *_geo, FFTSolver *(_fft))    : fft(_fft),
 boundary_isclean(true),   parallel(_parallel), grid(_grid), setup(_setup), geo(_geo),
-f0(HeliosStorage), f(HeliosStorage), fs(HeliosStorage), fss(HeliosStorage),
-ft(HeliosStorage), G(HeliosStorage4), Xi(HeliosStorage4),    f1(HeliosStorage)
+f0(GKCStorage), f(GKCStorage), fs(GKCStorage), fss(GKCStorage),
+ft(GKCStorage), G(GKCStorage4), Xi(GKCStorage4),    f1(GKCStorage)
 {
 
    allocate(RxLB, RkyLD, RzLB, RvLB, RmLD, RsLD, f0, f, fss, fs, f1, ft);
@@ -97,7 +97,7 @@ int Vlasov::cleanBoundary(Array6z A)
 #endif 
    boundary_isclean = true;
 
-   return HELIOS_SUCCESS;
+   return GKC_SUCCESS;
 }
 
 int Vlasov::setBoundary(Array6z  A , int boundary_type) {
@@ -177,7 +177,7 @@ int Vlasov::setBoundary(Array6z  A , int boundary_type) {
    else if (boundary_type == BOUNDARY_DIRTY) boundary_isclean = false;
    else    check(-1, DMESG("Vlasov : Only clean/dirty values are allowed"));
 
-   return HELIOS_SUCCESS;
+   return GKC_SUCCESS;
 
 }
         

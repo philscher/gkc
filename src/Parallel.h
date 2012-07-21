@@ -56,7 +56,7 @@ struct NeighbourDir {
 *  
 *
 **/
-class Parallel : public IfaceHelios {
+class Parallel : public IfaceGKC {
 
   public:
   
@@ -110,7 +110,7 @@ class Parallel : public IfaceHelios {
      MPI_Isend(Sendl.data(), Sendl.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_l, Talk(dir).psf_msg_tag[1], Comm[DIR_ALL], &Talk(dir).psf_msg_request[2]);
      if(Talk(dir).rank_l == MPI_PROC_NULL)   Recvu = 0.e0;
 #endif // GKC_PARALLEL_MPI
-     return HELIOS_SUCCESS;
+     return GKC_SUCCESS;
 
    };
    int updateNeighboursBarrier();
@@ -129,18 +129,18 @@ class Parallel : public IfaceHelios {
                      Recvu.data(), Recvu.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_u, msg_tag[0], Comm[DIR_ALL], &msg_status[1]);
  
 #endif // GKC_PARALLEL_MPI
-     return HELIOS_SUCCESS;
+     return GKC_SUCCESS;
 
    };
    
  
    template<typename T, int W> int send(Array<T,W> A, int dir=DIR_ALL) {
 #ifdef GKC_PARALLEL_MPI
-     if(dir <= DIR_S) if(decomposition(dir) == 1) return HELIOS_SUCCESS;
+     if(dir <= DIR_S) if(decomposition(dir) == 1) return GKC_SUCCESS;
      // rank differ between communicators, so we should take care of rankFFTMaster
      check(MPI_Bcast(A.data(), A.numElements(), getMPIDataType(typeid(T)), dirMaster[dir], Comm[dir]), DMESG("MPI_Bcast")); 
 #endif
-     return HELIOS_SUCCESS; 
+     return GKC_SUCCESS; 
    }
 
    template<class T> int send(T &x, bool isRoot, int dir=DIR_ALL) {
@@ -151,11 +151,11 @@ class Parallel : public IfaceHelios {
      master_rank = 0;
 
 #ifdef GKC_PARALLEL_MPI
-     if(dir <= DIR_S) if(decomposition(dir) == 1) return HELIOS_SUCCESS;
+     if(dir <= DIR_S) if(decomposition(dir) == 1) return GKC_SUCCESS;
      // rank differ between communicators, so we should take care of rankFFTMaster
      check(MPI_Bcast(&x, 1, getMPIDataType(typeid(T)), master_rank, Comm[dir]), DMESG("MPI_Bcast")); 
 #endif
-     return HELIOS_SUCCESS; 
+     return GKC_SUCCESS; 
    }
    
 

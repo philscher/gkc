@@ -27,7 +27,7 @@
 *    @image html Grid_BoundaryDomain.png
 *
 **/
-class Grid : public IfaceHelios {
+class Grid : public IfaceGKC {
 
   public:
    /// @name Number of ghost cells

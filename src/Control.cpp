@@ -17,8 +17,6 @@
 #include <fenv.h>
 #include <csignal>
 
-extern Helios *helios;
-   
 bool force_exit = false;
 
 Control::Control(Setup *setup, Parallel *_parallel, Analysis *_analysis) : parallel(_parallel), analysis(_analysis) {
@@ -76,7 +74,7 @@ void signal_handler(int sig)
                  //      signal(SIGINT, SIG_IGN);
                  //      raise(SIGTERM); 
                        break;
-      case(SIGTERM)  : //helios->runningException(HELIOS_EXIT); 
+      case(SIGTERM)  : //helios->runningException(GKC_EXIT); 
                        std::cout << "SIGTERM" << std::endl;
                        control_triggered_signal |= SIGTERM;
                        break;
@@ -173,8 +171,8 @@ void Control::printLoopStopReason() {
 void Control::runningException(int status, char *error_message) {
         // catch secondary exceptions
         std::cerr << error_message << std::endl;
-    //    if     (status == HELIOS_FINISH) abort_run = 1;
-    //    else if(status == HELIOS_EXIT  ) delete fileIO;
+    //    if     (status == GKC_FINISH) abort_run = 1;
+    //    else if(status == GKC_EXIT  ) delete fileIO;
    //     else    check(-1, DMESG("No such status"));
     #ifdef GKC_PARALLEL_MPI
         parallel->barrier();

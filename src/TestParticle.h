@@ -30,7 +30,7 @@
 *
 *
 **/
-class TestParticles : public IfaceHelios 
+class TestParticles : public IfaceGKC 
 {
   Parallel *parallel;
  

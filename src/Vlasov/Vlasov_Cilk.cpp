@@ -51,10 +51,10 @@ void VlasovCilk::setBoundaryXY(Array3d A, int dir) {
 
 };
 
-VlasovCilk::VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *_geo, FFTSolver *fft)    
+VlasovCilk::VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry<GKC_GEOMETRY> *_geo, FFTSolver *fft)    
     : Vlasov(_grid, _parallel, _setup, fileIO, _geo, fft),
       dphi_dx(FortranArray<3>()),   dphi_dy(FortranArray<3>()),   
-      dAp_dx(FortranArray<3>()),    dAp_dy(FortranArray<3>()),    k2p_phi(FortranArray<4>()), nonLinearTerms(HeliosStorage4)
+      dAp_dx(FortranArray<3>()),    dAp_dy(FortranArray<3>()),    k2p_phi(FortranArray<4>()), nonLinearTerms(GKCStorage4)
 {
 
     f1.resize(RxLB , RkyLD , RzLB, RvLB, RmLD, RsLD);  f1 = 0.e0;
@@ -82,14 +82,15 @@ int VlasovCilk::solve(std::string equation_type, Fields *fields, Array6z _fs, Ar
   Xi_max = 0.;
   
   if((equation_type == "2D_ES")) Vlasov_2D((A6z) _fs.dataZero(), (A6z) _fss.dataZero(), (A6z) f0.dataZero(), (A6z) f.dataZero(), (A6z) ft.dataZero(), (A5z) fields->phi.dataZero(), (A4z) k2p_phi.dataZero(), (A4z) nonLinearTerms.dataZero(), X.dataZero(), V.dataZero(), M.dataZero(), fields, dt, rk_step, _fs);
-  else if((equation_type == "2D_EM")) Vlasov_EM((A6z) _fs.dataZero(), (A6z) _fss.dataZero(), (A6z) f0.dataZero(), (A6z) f.dataZero(), (A6z) ft.dataZero(), (A5z) fields->phi.dataZero(), (A5z) fields->Ap.dataZero(), (A5z) fields->Bp.dataZero(), (A4z) k2p_phi.dataZero(), (A3z) dphi_dx.dataZero(), (A4z) Xi.dataZero(), (A4z) G.dataZero(), X.dataZero(), V.dataZero(), M.dataZero(), fields, dt, rk_step);
+  else if((equation_type == "2D_EM")) Vlasov_EM_2D((A6z) _fs.dataZero(), (A6z) _fss.dataZero(), (A6z) f0.dataZero(), (A6z) f.dataZero(), (A6z) ft.dataZero(), (A5z) fields->phi.dataZero(), (A5z) fields->Ap.dataZero(), (A5z) fields->Bp.dataZero(), (A4z) k2p_phi.dataZero(), (A3z) dphi_dx.dataZero(), (A4z) Xi.dataZero(), (A4z) G.dataZero(), X.dataZero(), V.dataZero(), M.dataZero(), fields, dt, rk_step);
+  else if((equation_type == "Vlasov_EM")) Vlasov_EM((A6z) _fs.dataZero(), (A6z) _fss.dataZero(), (A6z) f0.dataZero(), (A6z) f.dataZero(), (A6z) ft.dataZero(), (A5z) fields->phi.dataZero(), (A5z) fields->Ap.dataZero(), (A5z) fields->Bp.dataZero(), (A4z) k2p_phi.dataZero(), (A3z) dphi_dx.dataZero(), (A4z) Xi.dataZero(), (A4z) G.dataZero(), X.dataZero(), V.dataZero(), M.dataZero(), fields, dt, rk_step);
   else if((equation_type == "2DIsland")) Vlasov_2D_Island((A6z) _fs.dataZero(), (A6z) _fss.dataZero(), (A6z) f0.dataZero(), (A6z) f.dataZero(), (A6z) ft.dataZero(), (A5z) fields->phi.dataZero(), (A4z) k2p_phi.dataZero(), (A4z) nonLinearTerms.dataZero(), (A3z) dphi_dx.dataZero(), 
       X.dataZero(), V.dataZero(), M.dataZero(), fields, dt, rk_step, _fs);
   else if((equation_type == "2DLandauDamping")) Landau_Damping((A6z) _fs.dataZero(), (A6z) _fss.dataZero(), (A6z) f0.dataZero(), (A6z) f.dataZero(), (A6z) ft.dataZero(), (A5z) fields->phi.dataZero(), (A4z) k2p_phi.dataZero(), (A3z) dphi_dx.dataZero(), 
       X.dataZero(), V.dataZero(), M.dataZero(), fields, dt, rk_step);
   else   check(-1, DMESG("No Such Equation"));
 
-  return HELIOS_SUCCESS;
+  return GKC_SUCCESS;
 }
 
 
@@ -276,6 +277,221 @@ void VlasovCilk::Vlasov_2D(
    }
 }
 
+void VlasovCilk::Vlasov_2D_Island(
+                           cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           cmplxd fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplxd vf0[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplxd f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           cmplxd ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplxd phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           cmplxd k2_phi[plasma->nfields][NzLD][NkyLD][NxLD],
+                           cmplxd nonLinear[NzLD][NkyLD][NxLD][NvLD],
+                           cmplxd dphi_dx[NzLB][NkyLD][NxLB],
+                           const double X[NxGB], const double V[NvGB], const double M[NmGB],
+                           Fields *fields,
+                           const double dt, const int rk_step, Array6z _fs)
+{ 
+
+
+    const double w     = setup->get("Island.Width", 0.); 
+    const double shear = setup->get("Geometry.Shear", 0.4); 
+  
+
+    Xi_max = 0.;
+
+    //auto a_lambda_func = [](int y_k) { return cmplxd(0., fft->(y_k)); };
+
+    for(int s = NsLlD; s <= NsLuD; s++) {
+        
+      // small abbrevations
+      const double w_n   = plasma->species(s).w_n;
+      const double w_T   = plasma->species(s).w_T;
+      const double alpha = plasma->species(s).alpha;
+      const double sigma = plasma->species(s).sigma;
+      const double Temp  = plasma->species(s).T0;
+      const double sub   = (plasma->species(s).doGyro) ? 3./2. : 1./2.;
+
+      const double v2_rms = 1.;//pow2(alpha);
+
+
+      for(int m=NmLlD; m<=NmLuD; m++) {
+
+       // gyro-fluid model
+       if(plasma->species(s).gyroModel == "Gyro-1") k2p_phi(RxLD, RkyLD, RzLD, RFields) = fields->gyroAverage(fields->Field0(RxLD, RkyLD, RzLD, RFields), 2, s,  Field::phi, true);
+       
+       if(calculate_nonLinear && (rk_step != 0)) calculatePoissonBracket(fields->phi, _fs,m, s);
+       //if(calculate_nonLinear && (rk_step != 0)) calculatePoissonBracket(fields->Ap, _fs,m, s);
+
+      for(int z=NzLlD; z<= NzLuD;z++) {  omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
+
+
+
+            // Note : for negative modes we need to use complex conjugate value
+
+            const cmplxd ky     = cmplxd(0., fft->ky(y_k));
+
+            
+            // We need to take care of boundaries. For polidal numbers y_k > N_k-1, we  use zero.
+            // For y_k < 0, the corresponding complex conjugate value is used.
+            const cmplxd ky_p1  = (y_k == Nky-1) ? 0.                       : cmplxd(0.,fft->ky(y_k+1)) ;
+            const cmplxd ky_m1  = (y_k == 0    ) ? cmplxd(0., -fft->ky(1))  : cmplxd(0.,fft->ky(y_k-1)); 
+            const cmplxd ky_1   = cmplxd(0., fft->ky(1));
+
+          //#pragma simd
+          for(int x=NxLlD; x<= NxLuD;x++) {  
+
+       	     // calculate for estimation of CFL condition
+             const cmplxd phi_ = phi[s][m][z][y_k][x];
+
+             dphi_dx[z][y_k][x]  = (8.*(phi[s][m][z][y_k][x+1] - phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] - phi[s][m][z][y_k][x-2]))/(12.*dx)  ;  
+
+             updateCFL(dphi_dx[z][y_k][x], ky*phi_, 0.);
+             
+        /////////////////////////////////////////////////// Magnetic Island Contribution    /////////////////////////////////////////
+        
+        // NOTE :  at the Nyquist frequency we have no coupling with higher frequencies (actually phi(m=Ny) = 0. anyway)
+
+        const double zeta      = 2.*M_PI/Ly;
+        
+        //const double MagIs     = -  0.5 * w*w*shear/16. * cos(zeta * X[x]);
+        //const double dMagIs_dx = +  0.5 * w*w*shear/16. * sin(zeta * X[x]) * zeta;
+        const double p[] = { 0.13828847,  0.70216594, -0.01033686 };
+        const double xx = pow2(X[x]);
+        
+        const double psi  = (1. + p[0]*pow(xx,p[1])) * exp( p[2] * xx);
+        const double dpsi = (X[x] == 0.) ? 0. :  (p[0] * 2. * X[x] * p[1]*pow(xx, p[1]-1.) + (1. + p[0] * pow(xx,p[1])) * p[2] * 2. * X[x]) * exp(p[2]*xx);
+
+
+        //const double MagIs     = - 0.5 * w*w*shear/16.  * psi ;//cos(zeta * X[x]);
+        //const double dMagIs_dx = - 0.5 * w*w*shear/16. * dpsi;// - sin(zeta * X[x]) * zeta;
+        const double MagIs     =  0.5 * w*w*shear/16.  * psi ;//cos(zeta * X[x]);
+        const double dMagIs_dx =  0.5 * w*w*shear/16. * dpsi;// - sin(zeta * X[x]) * zeta;
+
+        
+        const cmplxd     phi_p1 = ( y_k == Nky-1) ? 0.                       : phi[s][m][z][y_k+1][x] ;
+        const cmplxd     phi_m1 = ( y_k ==  0   ) ? conj(phi[s][m][z][1][x]) : phi[s][m][z][y_k-1][x] ;
+
+
+        const cmplxd dphi_dx_p1 = ( y_k == Nky-1) ? 0. 
+                                                  : (8.*(phi[s][m][z][y_k+1][x+1] - phi[s][m][z][y_k+1][x-1]) - (phi[s][m][z][y_k+1][x+2] - phi[s][m][z][y_k+1][x-2]))/(12.*dx)  ;
+
+        const cmplxd dphi_dx_m1 = ( y_k ==    0 ) ?  conj(8.*(phi[s][m][z][    1][x+1] - phi[s][m][z][    1][x-1]) - (phi[s][m][z][    1][x+2] - phi[s][m][z][    1][x-2]))/(12.*dx) 
+                                                  :      (8.*(phi[s][m][z][y_k-1][x+1] - phi[s][m][z][y_k-1][x-1]) - (phi[s][m][z][y_k-1][x+2] - phi[s][m][z][y_k-1][x-2]))/(12.*dx) ;
+        
+	    
+        // The magnetic island
+    
+        /*
+                *  For the latter term, the intrigate derivative is the \partial_y * Island
+                *  remember the island structure is 
+                *  \partial_y (e^{imx} + e^{-imx}) = (i m) * ( e^{imx} - e^{-imx} )
+                *
+        */
+        const cmplxd Island_A_phi =   dMagIs_dx * ( ky_m1 * phi_m1 + ky_p1 * phi_p1) - MagIs *  ky_1 * ( dphi_dx_m1 -  dphi_dx_p1);
+        
+             ///////////////////////////////////////////////////////////////////////////////
+            
+        const cmplxd kp = geo->get_kp(x, ky, z);
+
+               // velocity space magic
+        #pragma simd
+        for(int v=NvLlD; v<= NvLuD;v++) {
+
+            const cmplxd g   =  fs[s][m][z][y_k][x][v];
+            const cmplxd F0  = vf0[s][m][z][y_k][x][v];
+
+
+        /////////////////////////////////////////////////// Magnetic Island Contribution    /////////////////////////////////////////
+      
+        const cmplxd dfs_dx_p1  =  (y_k == Nky-1) 
+                            ? 0.
+                            : (8. *(fs[s][m][z][y_k+1][x+1][v] - fs[s][m][z][y_k+1][x-1][v])  - (fs[s][m][z][y_k+1][x+2][v] - fs[s][m][z][y_k+1][x-2][v]))/(12.*dx) ;
+
+        const cmplxd dfs_dx_m1  =  ( y_k == 0   ) 
+                            ?  	conj(8. *(fs[s][m][z][    1][x+1][v] - fs[s][m][z][    1][x-1][v])  - (fs[s][m][z][    1][x+2][v] - fs[s][m][z][    1][x-2][v]))/(12.*dx) 
+                            :       (8. *(fs[s][m][z][y_k-1][x+1][v] - fs[s][m][z][y_k-1][x-1][v])  - (fs[s][m][z][y_k-1][x+2][v] - fs[s][m][z][y_k-1][x-2][v]))/(12.*dx) ;
+
+        // Note Nky-1 is the maximum mode number Nky = 6 i-> [ 0, 1, 2, 3, 4, 5] 
+        const cmplxd fs_p1      = (y_k == Nky-1) ? 0.                         : fs[s][m][z][y_k+1][x][v] ;
+        const cmplxd fs_m1      = (y_k ==  0   ) ? conj(fs[s][m][z][1][x][v]) : fs[s][m][z][y_k-1][x][v] ;
+         
+        // not at the Nyquist frequency we have no coupling with higher frequencies
+	
+        // mode-mode connections
+        register const cmplxd Island_A_F1 =  dMagIs_dx * (ky_m1 * fs_m1  + ky_p1 * fs_p1 )  -  MagIs  * ky_1 *  (dfs_dx_m1  - dfs_dx_p1 )  ;
+
+
+	
+        /////////// Collisions ////////////////////////////////////////////////////////////////////
+
+        const cmplxd dfs_dv    = (8.  *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - 1. *(fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))/(12.*dv);
+        const cmplxd ddfs_dvv  = (16. *(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) - 1. *(fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) - 30.*fs[s][m][z][y_k][x][v])/(12.*pow2(dv));
+
+
+        /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
+        cmplxd dg_dt = 
+             // Island
+             - alpha * V[v] * (Island_A_F1 + sigma * Island_A_phi * F0) +   
+             // driving term
+             ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])/Temp  - sub)) * F0 * phi_
+
+             // add first order gyro-average term (zero when full-gyro)
+             + 0.5 * w_T  * k2_phi[1][z][y_k][x] * F0)
+      	     // Landau Damping term 
+           - alpha  * V[v]* kp  * ( g + sigma * phi_ * F0);
+            // collisional term
+            + collisionBeta * (g  + V[v] * dfs_dv + v2_rms * ddfs_dvv)
+	        + nonLinear[z][y_k][x][v]
+          ;
+
+        // screen out Nyquiest frequeny
+        //if(y_k == Ny/2) dg_dt = 0.;
+
+
+        //////////////////////////// Vlasov End ////////////////////////////
+        //  time-integrate the distribution function    
+        //
+        // RK-4
+        if(rk_step == 0) {
+            fss[s][m][z][y_k][x][v] = dg_dt;
+        } else {
+            if(rk_step == 1) ft[s][m][z][y_k][x][v] = dg_dt;
+            else if((rk_step == 2) || (rk_step == 3)) ft[s][m][z][y_k][x][v] += 2.0*dg_dt;
+            else    dg_dt = ft[s][m][z][y_k][x][v] + dg_dt;
+        
+            fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v] + dg_dt*dt;
+        }
+
+
+
+      /* 
+        // Heun / RK-2
+        if(rk_step == 1) ft[s][m][z][y_k][x][v] = dg_dt;
+        else    dg_dt = ft[s][m][z][y_k][x][v] + 3. * dg_dt;
+        
+        fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v] + dg_dt*dt;
+       * */ 
+        
+        
+/* 
+        //  time-integrate the distribution function     
+        if(rk_step == 1) ft[s][m][z][y_k][x][v] = dg_dt;
+        else             ft[s][m][z][y_k][x][v] += step_factor * dg_dt;
+       
+        if(lastStep) fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v] + dg_dt*dt;
+        else         fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v] + ft[s][m][z][y_k][x][v]*dt;
+ * */
+
+
+
+      }}} }}
+   }
+
+}
+
+
+
+
 void VlasovCilk::Landau_Damping(
                            cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplxd fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
@@ -320,7 +536,7 @@ void VlasovCilk::Landau_Damping(
    }
 }
 
-void    VlasovCilk::Vlasov_2D_Global(
+void    VlasovCilk::Vlasov_2D_Fullf(
                            cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplxd fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplxd vf0[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
@@ -433,7 +649,7 @@ void    VlasovCilk::Vlasov_2D_Global(
 }
 
 
-void VlasovCilk::Vlasov_EM(
+void VlasovCilk::Vlasov_EM_2D(
                            cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplxd fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplxd vf0[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
@@ -481,7 +697,7 @@ void VlasovCilk::Vlasov_EM(
             const cmplxd phi_ = phi[s][m][z][y_k][x];
             dphi_dx[z][y_k][x] = (8.*(phi[s][m][z][y_k][x+1] - phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] - phi[s][m][z][y_k][x-2]))/(12.*dx)  ;  
 
-            const cmplxd ky = cmplxd(0.,fft->ky(y_k));
+            const cmplxd ky = cmplxd(0., fft->ky(y_k));
             const cmplxd kp = geo->get_kp(x, ky, z);
 
              updateCFL(dphi_dx[z][y_k][x], ky*phi_, 0.);
@@ -558,8 +774,10 @@ void VlasovCilk::setupXiAndG(
   const bool useAp = (plasma->nfields >= 2);
   const bool useBp = (plasma->nfields >= 3);
 
-  for(int z = NzLlB; z <= NzLuB; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
-  for(int x = NxLlB; x <= NxLuB; x++) { for(int v   = NvLlB ;   v <= NvLuB ;   v++) { 
+
+  // setup values
+  for(int z = NzLlB; z <= NzLuB; z++) { omp_for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
+  for(int x = NxLlB; x <= NxLuB; x++) {     for(int v   = NvLlB ;   v <= NvLuB ;   v++) { 
 
      Xi[z][y_k][x][v] = phi[s][m][z][y_k][x] - (useAp ? aeb*V[v]*Ap[s][m][z][y_k][x] : 0.) - (useBp ? aeb*M[m]*Bp[s][m][z][y_k][x] : 0.);
 
@@ -581,5 +799,308 @@ void VlasovCilk::printOn(ostream &output) const
             output << "Vlasov     |   Hyper Viscosity : " << hyper_visc << std::endl;
 
 };
+
+
+
+/*  
+
+
+    Previous version (until 16th May 2012)
+
+void VlasovCilk::Vlasov_2D_Island(
+                           cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           cmplxd fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplxd vf0[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplxd f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           cmplxd ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplxd phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           cmplxd k2_phi[plasma->nfields][NzLD][NkyLD][NxLD],
+                           cmplxd nonLinear[NzLD][NkyLD][NxLD][NvLD],
+                           cmplxd dphi_dx[NzLB][NkyLD][NxLB],
+                           const double X[NxGB], const double V[NvGB], const double M[NmGB],
+                           Fields *fields,
+                           const double dt, const int rk_step, Array6z _fs)
+{ 
+
+
+    const double w     = setup->get("Island.Width", 0.); 
+    const double shear = setup->get("Geometry.Shear", 0.4); 
+  
+
+    Xi_max = 0.;
+
+    //auto a_lambda_func = [](int y_k) { return cmplxd(0., fft->(y_k)); };
+
+
+    for(int s = NsLlD; s <= NsLuD; s++) {
+        
+      // small abbrevations
+      const double w_n   = plasma->species(s).w_n;
+      const double w_T   = plasma->species(s).w_T;
+      const double alpha = plasma->species(s).alpha;
+      const double sigma = plasma->species(s).sigma;
+      const double Temp  = plasma->species(s).T0;
+      const double sub   = (plasma->species(s).doGyro) ? 3./2. : 1./2.;
+
+      const double v2_rms = pow2(alpha);
+
+
+      for(int m=NmLlD; m<=NmLuD; m++) { 
+  
+       // gyro-fluid model
+       if(plasma->species(s).gyroModel == "Gyro-1") k2p_phi(RxLD, RkyLD, RzLD, RFields) = fields->gyroAverage(fields->Field0(RxLD, RkyLD, RzLD, RFields), 2, s,  Field::phi, true);
+       
+       if(calculate_nonLinear && (rk_step != 0)) calculatePoissonBracket(fields->phi, _fs,m, s);
+       //if(calculate_nonLinear && (rk_step != 0)) calculatePoissonBracket(fields->Ap, _fs,m, s);
+
+       
+      for(int z=NzLlD; z<= NzLuD;z++) {
+        
+        #pragma omp parallel for
+        for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
+
+            const cmplxd ky     = cmplxd(0.,fft->ky(y_k));
+            const cmplxd ky_p1  = (y_k+1 <= Nky-1) ? cmplxd(0.,fft->ky(y_k+1)) : 0.;
+            const cmplxd ky_m1  = (y_k-1 >= 0    ) ? cmplxd(0.,fft->ky(y_k-1)) : 0.; 
+            const cmplxd ky_1    = cmplxd(0., fft->ky(1));
+
+          //#pragma simd
+          for(int x=NxLlD; x<= NxLuD;x++) {  
+
+        
+       	     // calculate for estimation of CFL condition
+             const cmplxd phi_ = phi[s][m][z][y_k][x];
+             dphi_dx[z][y_k][x]  = (8.*(phi[s][m][z][y_k][x+1] - phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] - phi[s][m][z][y_k][x-2]))/(12.*dx)  ;  
+
+             updateCFL(dphi_dx[z][y_k][x], ky*phi_, 0.);
+             
+        /////////////////////////////////////////////////// Magnetic Island Contribution    /////////////////////////////////////////
+
+        const double zeta=2.*M_PI/Ly;
+        const double MagIs     =  0.5 * w*w*shear/16. * cos(zeta * X[x]);
+        const double dMagIs_dx = -  0.5 * w*w*shear/16. * sin(zeta * X[x]) * zeta;
+
+        // Note : f, fftw ordering [ 0, 1, 2, 3, 4, -3, -2, -1 ]
+        const cmplxd     phi_p1 = (( y_k+1) <= Nky-1) ? phi[s][m][z][y_k+1][x] : 0.;
+        const cmplxd     phi_m1 = (( y_k-1) >=    0) ? phi[s][m][z][y_k-1][x] : 0.;
+        const cmplxd dphi_dx_p1 = (( y_k+1) <= Nky-1) ?
+                    (8.*(phi[s][m][z][y_k+1][x+1] - phi[s][m][z][y_k+1][x-1]) - (phi[s][m][z][y_k+1][x+2] - phi[s][m][z][y_k+1][x-2]))/(12.*dx)  : 0.;
+        const cmplxd dphi_dx_m1 = (( y_k-1) >=    0) ?
+                    (8.*(phi[s][m][z][y_k-1][x+1] - phi[s][m][z][y_k-1][x-1]) - (phi[s][m][z][y_k-1][x+2] - phi[s][m][z][y_k-1][x-2]))/(12.*dx)  : 0.;
+        
+        // NOTE :  at the Nyquist frequency we have no coupling with higher frequencies (actually phi(m=Ny) = 0. anyway)
+	    
+        // The magnetic island
+    
+        //
+       //         *  For the latter term, the intrigate derivative is the \partial_y * Island
+       //         *  remember the island structure is 
+       //         *  \partial_y (e^{imx} + e^{-imx}) = (i m) * ( e^{imx} - e^{-imx} )
+       //         *
+        //
+        const cmplxd Island_A_phi =  ( - dMagIs_dx * ( ky_m1 * phi_m1 + ky_p1 * phi_p1) + MagIs * ky_1 * (dphi_dx_m1 - dphi_dx_p1));
+        
+             ///////////////////////////////////////////////////////////////////////////////
+            
+        const cmplxd kp = geo->get_kp(x, ky, z);
+
+               // velocity space magic
+        for(int v=NvLlD; v<= NvLuD;v++) {
+
+            const cmplxd g   =  fs[s][m][z][y_k][x][v];
+            const cmplxd F0  = vf0[s][m][z][y_k][x][v];
+
+
+        /////////////////////////////////////////////////// Magnetic Island Contribution    /////////////////////////////////////////
+      
+        // how does they couple with Nyquist frequencty ??   // take care of boundaries !!
+        const cmplxd dfs_dx_p1  =  ((y_k+1) <= Nky-1) ?
+                              	   (8. *(fs[s][m][z][y_k+1][x+1][v] - fs[s][m][z][y_k+1][x-1][v])  - (fs[s][m][z][y_k+1][x+2][v] - fs[s][m][z][y_k+1][x-2][v]))/(12.*dx) : 0.;
+
+        const cmplxd dfs_dx_m1  =  ((y_k-1) >= 0   ) ? 
+                              	   (8. *(fs[s][m][z][y_k-1][x+1][v] - fs[s][m][z][y_k-1][x-1][v])  - (fs[s][m][z][y_k-1][x+2][v] - fs[s][m][z][y_k-1][x-2][v]))/(12.*dx) : 0.;
+
+        const cmplxd fs_p1      = ((y_k+1) <= Nky-1) ? fs[s][m][z][y_k+1][x][v] : 0.;
+        const cmplxd fs_m1      = ((y_k-1) >= 0   ) ? fs[s][m][z][y_k-1][x][v] :  0.;
+         
+
+        // not at the Nyquist frequency we have no coupling with higher frequencies
+	
+        // mode-mode connections
+        register const cmplxd Island_A_F1 = ( - dMagIs_dx * (ky_m1 *fs_m1  + ky_p1 * fs_p1 )  +  MagIs  * ky_1 *  (dfs_dx_m1  - dfs_dx_p1 ))  ;
+
+
+	
+        /////////// Collisions ////////////////////////////////////////////////////////////////////
+
+        const cmplxd dfs_dv    = (8.  *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - 1. *(fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))/(12.*dv);
+        const cmplxd ddfs_dvv  = (16. *(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) - 1. *(fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) - 30.*fs[s][m][z][y_k][x][v])/(12.*pow2(dv));
+
+
+        /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
+        cmplxd dg_dt = 
+             // Island
+             alpha * V[v] * (Island_A_F1 + Island_A_phi * F0) +   
+             // driving term
+             ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])/Temp  - sub)) * F0 * phi_
+
+             // add first order gyro-average term (zero when full-gyro)
+             + 0.5 * w_T  * k2_phi[1][z][y_k][x] * F0)
+      	     // Landau Damping term 
+           - alpha  * V[v]* kp  * ( g + sigma * phi_ * F0);
+            // collisional term
+            + collisionBeta * (g  + V[v] * dfs_dv + v2_rms * ddfs_dvv)
+	        + nonLinear[z][y_k][x][v]
+          ;
+
+        // screen out Nyquiest frequeny
+        //if(y_k == Ny/2) dg_dt = 0.;
+
+
+        //////////////////////////// Vlasov End ////////////////////////////
+        //  time-integrate the distribution function    
+        //
+        // RK-4
+        if(rk_step == 0) {
+            fss[s][m][z][y_k][x][v] = dg_dt;
+        } else {
+            if(rk_step == 1) ft[s][m][z][y_k][x][v] = dg_dt;
+            else if((rk_step == 2) || (rk_step == 3)) ft[s][m][z][y_k][x][v] += 2.0*dg_dt;
+            else    dg_dt = ft[s][m][z][y_k][x][v] + dg_dt;
+        
+            fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v] + dg_dt*dt;
+        }
+
+
+      }}} }}
+   }
+
+}
+
+*/
+
+
+void VlasovCilk::initDataOutput(FileIO *fileIO) {
+                Vlasov::initDataOutput(fileIO); 
+
+                //check(H5LTset_attribute_string(vlasovGroup, ".", "CollisionModel","LennardBernstein"), DMESG("H5LTset_attribute"));
+               //check(H5LTset_attribute_double(vlasovGroup, ".", "CollisionBeta"   ,  &collisionBeta, 1), DMESG("H5LTset_attribute"));
+        
+};
+
+
+void VlasovCilk::Vlasov_EM(
+                           cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           cmplxd fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplxd vf0[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplxd f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           cmplxd ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplxd phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           const cmplxd Ap [NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           const cmplxd Bp [NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           cmplxd    k2_phi[plasma->nfields][NzLD][NkyLD][NxLD],
+                           cmplxd   dphi_dx[NzLB][NkyLD][NxLB],
+                           cmplxd Xi       [NzLB][NkyLD][NxLB][NvLB],
+                           cmplxd G        [NzLB][NkyLD][NxLB][NvLB],
+                           const double X[NxGB], const double V[NvGB], const double M[NmGB],
+                           Fields *fields,
+                           const double dt, const int rk_step)
+{ 
+
+   
+   const double B0 = plasma->B0;
+
+   for(int s = NsLlD; s <= NsLuD; s++) {
+        
+      // small abbrevations
+      const double w_n   = plasma->species(s).w_n;
+      const double w_T   = plasma->species(s).w_T;
+      const double alpha = plasma->species(s).alpha;
+      const double sigma = plasma->species(s).sigma;
+      const double Temp  = plasma->species(s).T0;
+    
+      const double sub = (plasma->species(s).doGyro) ? 3./2. : 1./2.;
+      
+
+      for(int m=NmLlD; m<= NmLuD;m++) { 
+ 
+         setupXiAndG(fs, vf0, phi, Ap, Bp, Xi, G, V, M, m , s);
+
+         //if(nonLinear)   calculatePoissonBracket(Xi, _fs,m, s);
+       
+         // calculate for estimation of CFL condition
+         for(int z=NzLlD; z<= NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
+       
+            const cmplxd phi_ = phi[s][m][z][y_k][x];
+
+            dphi_dx[z][y_k][x] = (8.*(phi[s][m][z][y_k][x+1] - phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] - phi[s][m][z][y_k][x-2]))/(12.*dx)  ;  
+
+            const cmplxd ky = cmplxd(0.,fft->ky(y_k));
+            const cmplxd kp = geo->get_kp(x, ky, z);
+
+             updateCFL(dphi_dx[z][y_k][x], ky*phi_, 0.);
+
+
+     
+      for(int v=NvLlD; v<= NvLuD;v++) {
+        
+
+          
+        const cmplxd g    = fs[s][m][z][y_k][x][v];
+        const cmplxd F0   = vf0[s][m][z][y_k][x][v];
+        const cmplxd G_   = G[z][y_k][x][v];
+        const cmplxd Xi_  = Xi[z][y_k][x][v];
+
+        
+        // Velocity derivaties for Lennard-Bernstein Collisional Model
+        const cmplxd dfs_dv   = (8. *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))/(12.*dv);
+        const cmplxd ddfs_dvv = (16.*(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) - 30.*fs[s][m][z][y_k][x][v])/(12.*dv*dv);
+        const double v2_rms = 1.;//pow2(alpha)
+    
+        
+        /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
+
+        // We use CD-4 (central difference fourth order for every variable)
+
+        const cmplxd dG_dx   = (8.*(G[x+1][y_k][z][v] - G[x-1][y_k][z][v])    -1.*(G[x+2][y_k][z][v] - G[x-2][y_k][z][v]))/(12.*dx);
+        const cmplxd dG_dz   = (8.*(G[x][y_k][z+1][v] - G[x][y_k][z-1][v])    -1.*(G[x][y_k][z+2][v] - G[x][y_k][z-2][v]))/(12.*dz);
+
+        
+        // magnetic prefactor defined as  $ \hat{B}_0 / \hat{B}_{0\parallel}^\star = \left[ 1 + \beta_{ref} \sqrt{\frac{\hat{m_\sigma T_{0\sigma}{2}}}}
+        // note j0 is calculated and needs to be replaced, or ? no we calculate j1 ne ?!
+        const double j0 = 0.;
+        const double Bpre  = 1.; //1./(1. + plasma->beta * sqrt(m * T/2.) * j0 / (q * pow2(geo->B(x,y,z))) * V(v));
+        const double CoJB = 1./geo->J(x,y_k,z);
+
+        
+        // Finally the Vlasov equation calculate the time derivatve      
+        
+        cmplxd dg_dt = 
+            
+          // driving term
+          Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - sub)) * F0 * Xi_ * ky
+          - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0 * geo->Kx(x,y_k,z)) * dG_dx
+          - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0 * geo->Ky(x,y_k,z) - alpha * pow2(V[v]) * plasma->beta * plasma->w_p) * G_ * ky
+          -  CoJB * ( alpha * V[v]* dG_dz)
+          + alpha * V[v] / 2. * M[m] * geo->dB_dz(x,y_k,z) * dfs_dv
+          + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * geo->Kx(x,y_k,z) * (w_n + w_T * (pow2(V[v]) + M[m] * B0)/Temp - 3./2.) * F0;
+
+          
+        //////////////////////////// Vlasov End ////////////////////////////
+
+   //  time-integrate the distribution function     
+        if(rk_step == 0) {
+            fss[s][m][z][y_k][x][v] = dg_dt;
+        } else {
+   if(rk_step == 1) ft[s][m][z][y_k][x][v] = dg_dt;
+   else if((rk_step == 2) || (rk_step == 3)) ft[s][m][z][y_k][x][v] = ft[s][m][z][y_k][x][v] + 2.0*dg_dt;
+   else    dg_dt = ft[s][m][z][y_k][x][v] + dg_dt;
+        
+   fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v] + dg_dt*dt;
+
+        }
+      }}} }}
+   }
+}
 
 

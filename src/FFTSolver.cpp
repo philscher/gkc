@@ -51,7 +51,7 @@ void FFTSolver::setNormalizationConstants() {
 
 
 
-FFTSolver::FFTSolver(Setup *setup, Parallel *_parallel, Geometry<HELIOS_GEOMETRY> *_geo, double _Norm_XYZ, double _Norm_XY, double _Norm_X, double _Norm_Y) :
+FFTSolver::FFTSolver(Setup *setup, Parallel *_parallel, Geometry<GKC_GEOMETRY> *_geo, double _Norm_XYZ, double _Norm_XY, double _Norm_X, double _Norm_Y) :
       parallel(_parallel), Norm_XYZ(_Norm_XYZ), Norm_XY(_Norm_XY), Norm_X(_Norm_X), Norm_Y(_Norm_Y), geo(_geo)
    {
      // is this really necessary ?
@@ -106,7 +106,7 @@ int FFTSolver::suppressModes(Array4z A, const int field)
   }
 
 
-  return HELIOS_SUCCESS;
+  return GKC_SUCCESS;
 }
 
 

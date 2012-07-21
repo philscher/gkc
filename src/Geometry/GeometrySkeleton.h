@@ -45,7 +45,7 @@ struct ShearB {
 
 
 
-template<typename T> class Geometry : public IfaceHelios
+template<typename T> class Geometry : public IfaceGKC
 {
 public:
   const double LoCB

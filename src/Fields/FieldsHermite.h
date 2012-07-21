@@ -142,7 +142,7 @@ public:
    *    Please Document Me !
    *
    **/
- FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo, FFTSolver *fftsolver);
+ FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<GKC_GEOMETRY> *geo, FFTSolver *fftsolver);
   /**
    *    Please Document Me !
    *

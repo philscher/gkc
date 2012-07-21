@@ -17,7 +17,7 @@
 
 Range RFields;
 
-Fields::Fields(Setup *setup, Grid *_grid, Parallel *_parallel, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *_geo)  : 
+Fields::Fields(Setup *setup, Grid *_grid, Parallel *_parallel, FileIO *fileIO, Geometry<GKC_GEOMETRY> *_geo)  : 
 grid(_grid),    parallel(_parallel), geo(_geo), 
 Q(FortranArray<4>()), Field0(FortranArray<4>()), Field(FortranArray<6>()), solveEq(0)
 {
@@ -98,7 +98,7 @@ int Fields::solve(Array6z f0, Array6z  f, Timing timing, int rk_step)
     
    parallel->send(Field, DIR_V);
         
-   return HELIOS_SUCCESS;
+   return GKC_SUCCESS;
 
 }
 
@@ -220,7 +220,7 @@ int Fields::setBoundary(Array6z  A) {
      
 #endif  // GKC_PARALLEL_MPI
 
-   return HELIOS_SUCCESS; 
+   return GKC_SUCCESS; 
 
 };
 

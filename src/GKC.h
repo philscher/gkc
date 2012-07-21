@@ -14,10 +14,6 @@
 #ifndef __GKC_H_
 #define __GKC_H_
 
-#include "config.h"
-
-#include <string>
-
 #include "Global.h"
 
 #include "Vlasov.h"
@@ -41,24 +37,29 @@
 #include "GeometrySlab.h"
 #include "Geometry2D.h"
 
+
+#include "config.h"
+
+#include <string>
+
 /**
  *    @mainpage
- *    @brief The main GKC class which initializaed sub-modules
+ *    @brief The main GKC class which initializes sub-modules
  *         
  * 
  *    GKC (GyroKinetic Code) is a local, delta-f gyro-kinetic 
  *    code. Currently support is restricted to
  *     
- *    * Various geometrie (sheared, shearless, toroidal [untested])
+ *    * Various geometries (sheared, shearless, toroidal [untested])
  *    * multiple species support 
  *    * fully electro-magnetic code (warning untested)  
- *    * Interfaces for various field and vlasov solvers
- *    * Prelimenary support for global simulations
+ *    * Interfaces for various field and Vlasov solvers
+ *    * Preliminary support for global simulations
  *    * hybrid parallelization (MPI and OpenMP) 
  *
- *    Alltough it is not featurich as other gyro-kinetic codes,
+ *    Although it is not feature-rich as other gyro-kinetic codes,
  *    it provides an object-oriented approach using C++. Thus
- *    the emphasis is on simplicity and readbility using abstraction.
+ *    the emphasis is on simplicity and readability using abstraction.
  *
  *    (A little technical notes)
  * 
@@ -70,7 +71,7 @@
  *       calls to MPI functions are not necessary. Function 
  *       overloading is provided to achieve a common interface.
  *       
- *       Future work : Show parallelization rate on Helios for CBC
+ *       Future work : Show parallelization rate on GKC for CBC
  *        
  *       Vectorization support is assured by using proper phragmas
  *     
@@ -82,17 +83,17 @@
  *    
  *    Notes on Speed :
  * 
- *       Fortran is popular in numerical science comunnities due to
+ *       Fortran is popular in numerical science communities due to
  *       it's power of handling multi-dimensional arrays, as well the
  *       many mathematical functions it supports.
  * 
  *       However, the lack of templates, function overloading, pointers
- *       and classes (allhough some of these features are now supported
- *       by the Fortran-03 standard) makes the code difficulat to read.
+ *       and classes (although some of these features are now supported
+ *       by the Fortran-03 standard) makes the code difficult to read.
  *       Additionally for most function calls speed is not of a concern
- *       e.g. in the intialization phase - or consist of a library call
+ *       e.g. in the initialization phase - or consist of a library call
  *       to MPI, FFT routine, PETSc, HDF-5 etc. Using Profiling for a
- *       benchmar case, we concluded that about 80% is spend in the Vlasov
+ *       benchmark case, we concluded that about 80% is spend in the Vlasov
  *       equation solver, and 10% in the underlying FFT solver, with only
  *       a minor fraction (around %5) inside other GKC classes.
  *       
@@ -107,35 +108,34 @@
  *       
  *   Notes on License :
  *       The code is license under the GNU Public License Version 3 ( or
- *       any later version). You are free to use the code for your research
+ *       any later version). You are free to use the code for your research,
  *       referencing the code, citing the code or making the authors of
- *       this code co-authors is NOT required. Alltough depending on your
+ *       this code co-authors is NOT required. Although depending on your
  *       choice highly appreciated, and will benefit further development.
  *
  *    @brief  The main class handles all initializations and
  *            time step iterations
  *
  */
-class Helios
+class GKC
 {
 private:
-    /** @brief class for data input */
-    FileIO        *fileIO;
-    Vlasov        *vlasov;
-    Grid          *grid;
-    Setup        *setup;
-    Parallel      *parallel;
-    Analysis      *analysis;
-    Fields        *fields;   
-    Control       *control;
-    FFTSolver     *fftsolver;
-    TestParticles  *particles;
-    Eigenvalue     *eigenvalue;
-    Geometry<HELIOS_GEOMETRY> *geometry;
-    Event         *event;
-    Init          *init;
-    Visualization *visual;
-    TimeIntegration *timeIntegration;
+    FileIO        *fileIO;             ///< Used for Data Input/Output
+    Vlasov        *vlasov;             ///< Vlasov equation solver
+    Grid          *grid;               ///< Grid initialization and boundaries
+    Setup        *setup;               ///< Reads configuration files
+    Parallel      *parallel;           ///< Parallel communication functions
+    Analysis      *analysis;           ///< Data Analysis
+    Fields        *fields;             ///< Source calculation and field solvers
+    Control       *control;            ///< Program flow control
+    FFTSolver     *fftsolver;          ///< FFTSolver used
+    TestParticles  *particles;         ///< Test particles
+    Eigenvalue     *eigenvalue;        ///< Eigenvalue calculations
+    Geometry<GKC_GEOMETRY> *geometry;  ///< Geometry module
+    Event         *event;              ///< Programmable events 
+    Init          *init;               ///< Initialization for plasma
+    Visualization *visual;             ///< Visualization 
+    TimeIntegration *timeIntegration;  ///< Numerical time integration
 
     /**
     * @brief Run the code, as "IVP" (initial value code)
@@ -149,12 +149,12 @@ private:
 public:
     /**
     * @param setup configuration parameters
-    */
-    Helios(Setup *setup);
-   ~Helios();  
+    **/
+    GKC(Setup *setup);
+   ~GKC();  
    
    int mainLoop();
 };
 
 
-#endif // __HELIOS_H_
+#endif // __GKC_H_

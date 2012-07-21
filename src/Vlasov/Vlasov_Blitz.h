@@ -27,7 +27,11 @@
 #include "Global.h"
 #include "Vlasov_LenardBernstein.h"
 
-//class VlasovBlitz : public Vlasov_Lorentz {
+/**
+*  @brief Implementation of Vlasov's equation using Blitz++
+*
+*
+**/
 class VlasovBlitz : public Vlasov_LenardBernstein {
         
         // Some temporary arrays (not all are necesserally intialized !)
@@ -57,7 +61,7 @@ class VlasovBlitz : public Vlasov_LenardBernstein {
          *  as well as the Gamma abbrevation functions (Eq. 2.50 below)
          *
          *  \f[ \Gamma_{\sigma,\nu} = \partial_\nu F_{1\sigma} + 
-         *          \frac{F_{0\sigma}}{T_{0\sigma}} \partial_\nu \left( q_\sigma \bar{\phi}_1 + \mu \bar{B}_{1\parallel}
+         *      \frac{F_{0\sigma}}{T_{0\sigma}} \partial_\nu \left( q_\sigma \bar{\phi}_1 + \mu \bar{B}_{1\parallel} \right)
          *  \f]
          *
          *  and F1 which needs to be reconstructed from g and is needed for the magnetic mirror term (Eq. 2.50)
@@ -68,7 +72,7 @@ class VlasovBlitz : public Vlasov_LenardBernstein {
          */
         void setupXiAndG(Array6z fs, Fields *fields);
   public:
-        VlasovBlitz(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *_geo, FFTSolver *fft); 
+        VlasovBlitz(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry<GKC_GEOMETRY> *_geo, FFTSolver *fft); 
         
         int solve(std::string equation_tyoe, Fields *fields, Array6z fs, Array6z fss, double dt, int rk_step, int user_boundary_type=BOUNDARY_CLEAN);
  

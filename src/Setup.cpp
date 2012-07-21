@@ -159,7 +159,7 @@ std::string Setup::eraseCharacter(std::string str, std::string chars) {
       
       file.close();
       
-      if(flags & HELIOS_READ_STDIN) {
+      if(flags & GKC_READ_STDIN) {
          while(std::getline(file, line)) parseOption(line);
       }
       // parse options from command line input
@@ -182,8 +182,8 @@ std::string Setup::eraseCharacter(std::string str, std::string chars) {
 
  int Setup::parseOption(std::string line, bool fromFile) {
 
-               if((line[0] == '#') || (line[0] == '!')) return HELIOS_SUCCESS;
-               if(line.empty() == true) return HELIOS_SUCCESS;
+               if((line[0] == '#') || (line[0] == '!')) return GKC_SUCCESS;
+               if(line.empty() == true) return GKC_SUCCESS;
               int posEqual=line.find('=');
 
                 std::string name  = trimLower(line.substr(0,posEqual), false);
@@ -199,7 +199,7 @@ std::string Setup::eraseCharacter(std::string str, std::string chars) {
                  config[name] = value;
 
 
-           return HELIOS_SUCCESS;
+           return GKC_SUCCESS;
 }
 
 

@@ -281,7 +281,7 @@ int Parallel::updateNeighbours(Array6z  Sendu, Array6z  Sendl, Array6z  Recvu, A
         MPI_Sendrecv(Sendl.data(), Sendl.numElements(), MPI_DOUBLE_COMPLEX, Talk(dir).rank_l, Talk(dir).psf_msg_tag[1], 
                      Recvu.data(), Recvu.numElements(), MPI_DOUBLE_COMPLEX, Talk(dir).rank_u, Talk(dir).psf_msg_tag[0], Comm[dir], Talk(dir).msg_status);
     }
-      return HELIOS_SUCCESS;
+      return GKC_SUCCESS;
 }
  */
 
@@ -295,7 +295,7 @@ int Parallel::updateNeighboursBarrier() {
 //     if(decomposition & DECOMP_M) MPI_Waitall(4, Talk(DIR_M).psf_msg_request, Talk(DIR_M).msg_status);
 //     if(decomposition & DECOMP_S) MPI_Waitall(4, Talk(DIR_S).psf_msg_request, Talk(DIR_S).msg_status);
 #endif // GKC_PARALLEL_MPI
-      return HELIOS_SUCCESS;
+      return GKC_SUCCESS;
 
 }
 
@@ -334,7 +334,7 @@ int Parallel::updateNeighbours(Array6z  SendXl, Array6z  SendXu, Array6z  SendYl
       // Ok let's wait here ....
       MPI_Waitall(12, msg_request, msg_status);
 #endif // GKC_PARALLEL_MPI
-      return HELIOS_SUCCESS;
+      return GKC_SUCCESS;
 }
 
 #ifdef GKC_PARALLEL_MPI
@@ -418,7 +418,7 @@ bool Parallel::checkValidDecomposition(Setup *setup, Array1i decomposition) {
    if(((pNs %   decomposition(DIR_S)) != 0    ) && (myRank == 0)) check(-1, DMESG("Decomposition in s have to be modulo of the total number"));
 
 
-    return HELIOS_SUCCESS;
+    return GKC_SUCCESS;
 };
 
 
@@ -447,7 +447,7 @@ void Parallel::printOn(ostream &output) const {
 
 #ifdef GKC_PARALLEL_MPI
 /* 
-//if(setup->flags & HELIOS_VERBOSE) {
+//if(setup->flags & GKC_VERBOSE) {
                 for(int rank = 0; rank < parallel.numProcesses; rank++) {
                     Array2i domain = parallel.getProcessDomain(rank);
                     if(parallel.myRank == 0) infoStream << 

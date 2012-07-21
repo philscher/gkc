@@ -11,70 +11,63 @@
  * =====================================================================================
  */
 
-#include "GKC.h"
-
-#include "Setup.h"
 #include "config.h"
-#include<ctime>
 
+#include "GKC.h"
+#include "Setup.h"
 #include "Plasma.h"
-#include "FieldsFFT.h"
 
-#ifdef GKC_HYPRE
-#include "FieldsHypre.h"
-#endif
+#include "FieldsFFT.h"
 #include "FieldsHermite.h"
+
+#include "FFT/FFTSolver_fftw3.h"
 
 #include "TimeIntegration.h"
 #include "TimeIntegration_PETSc.h"
+
 //#include "Vlasov/Vlasov_Fortran.h"
 //#include "Vlasov/Vlasov_Blitz.h"
-
-//#ifdef HELIOS_CILK
 #include "Vlasov/Vlasov_Cilk.h"
-//#endif
+
 #include "Eigenvalue/Eigenvalue_SLEPc.h"
 #include "Visualization/Visualization_Data.h"
-//#include "LA.h"
-
-Plasma *plasma;
-
-//#include "FFT/FFTSolver_fftw3.h"
-//#include "FFT/FFTSolver_fftw3_dst.h"
-//#include "FFT/FFTSolver_fftw2_mpi.h"
-#include "FFT/FFTSolver_fftw3.h"
-
-#include <unistd.h>
-
-GeneralArrayStorage<6> HeliosStorage;
-GeneralArrayStorage<4> HeliosStorage4;
 
 
+
+GeneralArrayStorage<6> GKCStorage;
+GeneralArrayStorage<4> GKCStorage4;
 
 // TODO : Linux uses UTF-8 encoding for chars per default, Windows not, how to deal with unicode ?
 
-Helios::Helios(Setup *_setup) : setup(_setup)  {
+GKC::GKC(Setup *_setup) : setup(_setup)  {
 
-    // define Storage for helios (used by blitz++ arrays)
-    HeliosStorage.ordering() = fourthDim, firstDim, secondDim,  thirdDim,  fifthDim, sixthDim; 
-    HeliosStorage.base() = NxLlB, NkyLlD, NzLlB, NvLlB, NmLlB, NsLlB;
+    // define Storage for gkc (used by blitz++ arrays)
+    GKCStorage.ordering() = fourthDim, firstDim, secondDim,  thirdDim,  fifthDim, sixthDim; 
+    GKCStorage.base()     = NxLlB, NkyLlD, NzLlB, NvLlB, NmLlB, NsLlB;
     
-    // define Storage for helios (used by blitz++ arrays)
-    HeliosStorage4.ordering() = fourthDim, firstDim, secondDim,  thirdDim; 
-    HeliosStorage4.base()     = NxLlB, NkyLlD, NzLlB, NvLlB;
+    // define Storage for gkc (used by blitz++ arrays)
+    GKCStorage4.ordering() = fourthDim, firstDim, secondDim,  thirdDim; 
+    GKCStorage4.base()     = NxLlB, NkyLlD, NzLlB, NvLlB;
 
-	// *************** Load subsystems ************** //
+
+    // Read Setup 
+    std::string fft_solver_name = setup->get("Helios.FFTSolver", "fftw3");
+    std::string psolver_type    = setup->get("Fields.Solver", "DFT");
+    std::string vlasov_type     = setup->get("Vlasov.Solver", "Cilk");
+    Helios_Type                 = setup->get("GKC.Type", "IVP");
+
+
+	/////////////////// Load subsystems ////////////////
     parallel  = new Parallel(setup);
 
     parallel->print("Intializing GKC");
 
     fileIO    = new FileIO(parallel, setup);
     grid      = new Grid(setup, parallel, fileIO);
-    geometry  = new HELIOS_GEOMETRY(setup, fileIO);
+    geometry  = new GKC_GEOMETRY(setup, fileIO);
     plasma    = new Plasma(setup, fileIO, geometry);
 
 
-    std::string fft_solver_name = setup->get("Helios.FFTSolver", "fftw3");
     
     if(fft_solver_name == "") check(-1, DMESG("No FFT Solver Name given"));
 #ifdef FFTW2MPI
@@ -83,42 +76,35 @@ Helios::Helios(Setup *_setup) : setup(_setup)  {
 #ifdef FFTW3
 //   else if(fft_solver_name == "fftw3")     fftsolver = new FFTSolver_fftw3        (setup, parallel, geometry);
    else if(fft_solver_name == "fftw3") fftsolver = new FFTSolver_fftw3    (setup, parallel, geometry);
-//  else if(fft_solver_name == "fftw3_dst") fftsolver = new FFTSolver_fftw3_dst    (setup, parallel, geometry);
 #endif
    else check(-1, DMESG("No such FFTSolver name"));
  
-//    femsolver  = new FEMSolver(setup, parallel);
-  
-  
 
-
-
-    std::string psolver_type = setup->get("Fields.Solver", "DFT");
+    // Load Field solver
     if     (psolver_type == "DFT"  ) fields   = new FieldsFFT(setup, grid, parallel, fileIO, geometry, fftsolver);
-#ifdef LIBMESH
-     //    (psolver_type == "FEM"  ) fields   = new FieldsFEM(setup, grid, parallel, geometry, femsolver);
-#endif
 #ifdef GKC_HYPRE
     else if(psolver_type == "Hypre"  ) fields   = new FieldsHypre(setup, grid, parallel, fileIO,geometry, fftsolver);
 #endif
-     //    (psolver_type == "PETSc"  ) fields   = new FieldsPETSc(setup, grid, parallel, fileIO,geometry, fftsolver);
     else if(psolver_type == "Hermite") fields   = new FieldsHermite(setup, grid, parallel, fileIO,geometry, fftsolver);
     else    check(-1, DMESG("No such Fields Solver"));
 
-    std::string vlasov_type = setup->get("Vlasov.Solver", "Cilk");
+    // Load Vlasov Solver
     if(vlasov_type == "None" ) check(-1, DMESG("No Vlasov Solver Selected"));
     //    (vlasov_type == "Blitz"  ) vlasov     = new VlasovBlitz  (grid, parallel, setup, fileIO, geometry, fftsolver);
-    //#ifdef GKC_CILK
+//#ifdef GKC_CILK
     else if(vlasov_type == "Cilk"  ) vlasov     = new VlasovCilk  (grid, parallel, setup, fileIO, geometry, fftsolver);
-    //#endif
+//#endif
     else   check(-1, DMESG("No such Fields Solver"));
+
 
     analysis = new Analysis(parallel, vlasov, fields, grid, setup, fftsolver, fileIO, geometry); 
     visual   = new Visualization_Data(grid, parallel, setup, fileIO, vlasov, fields);
     event    = new Event(setup, grid, parallel, fileIO, geometry);
     
     eigenvalue = new Eigenvalue_SLEPc(fileIO, setup, grid, parallel); 
-    // *******************************************   //
+
+
+    /////////////////////////////////////////////////////////////////////////////
 
     // call Initital conditions
   
@@ -130,14 +116,11 @@ Helios::Helios(Setup *_setup) : setup(_setup)  {
     //    }
     // Apply boundary conditions for variables
     
-    control  = new Control(setup, parallel, analysis);
-   
- 
+    control   = new Control(setup, parallel, analysis);
     particles = new TestParticles(fileIO, setup, parallel);
-    Helios_Type = setup->get("GKC.Type", "IVP");
    
     // call before time integration (due to eigenvalue solver)
-    init      = new  Init(parallel, grid, setup, vlasov, fields, geometry);
+    init           = new  Init(parallel, grid, setup, vlasov, fields, geometry);
 
     //timeIntegration = new TimeIntegration_PETSc(setup, grid, parallel, vlasov, fields, eigenvalue);
     timeIntegration = new TimeIntegration(setup, grid, parallel, vlasov, fields, eigenvalue);
@@ -148,7 +131,7 @@ Helios::Helios(Setup *_setup) : setup(_setup)  {
 }
 	       
 
-int Helios::mainLoop()   {
+int GKC::mainLoop()   {
 
    if (Helios_Type == "IVP") {
  
@@ -177,17 +160,16 @@ int Helios::mainLoop()   {
    } else  check(-1, DMESG("No Such Helios.Type Solver"));
 
 
-   return HELIOS_SUCCESS;
+   return GKC_SUCCESS;
 }
 
 
-Helios::~Helios(){
+GKC::~GKC(){
    // Shutdown submodules : ORDER IS IMPORTANT !!
         delete fields;
         delete visual;
         delete vlasov;
         delete geometry;
-     //   delete femsolver;
         delete grid;
         delete analysis;
         delete particles;
@@ -204,7 +186,7 @@ Helios::~Helios(){
 
 
 
-void Helios::printSettings() {
+void GKC::printSettings() {
     std::stringstream infoStream;
   
     time_t start_time = std::time(0); 

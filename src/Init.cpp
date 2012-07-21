@@ -17,7 +17,7 @@
 #include "Reader/ReaderXYV.h"
 #include "System.h"
 
-Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields *fields, Geometry<HELIOS_GEOMETRY> *_geo) : geo(_geo) {
+Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields *fields, Geometry<GKC_GEOMETRY> *_geo) : geo(_geo) {
 
    epsilon_0          = setup->get("Init.Epsilon0", 1.e-14); 
    sigma              = setup->get("Init.Sigma"   , 3.e-1); 
@@ -188,7 +188,7 @@ int Init::PerturbationPSFNoise(Vlasov *vlasov, int s, double pre) {
       vlasov->f(x,y,z,v,m,s) = vlasov->f(x,y,z,v,m,s) + epsilon_0*(wNoise.random()-0.5e0) * vlasov->f0(x,y,z,v,m,s);
     }}}}}}
 
-   return HELIOS_SUCCESS;
+   return GKC_SUCCESS;
 }   
 
 
@@ -199,7 +199,7 @@ int Init::PerturbationPSFExp(Vlasov *vlasov, int s, double pert) {
       vlasov->f(x,y,z,v,m,s) += vlasov->f0(x,y,z,v,m,s) * (pert + Perturbation(x,y,z,1.e-10,0.1));
    }}}}}}
   
-   return HELIOS_SUCCESS;
+   return GKC_SUCCESS;
 }
 
 
@@ -208,7 +208,7 @@ int Init::PerturbationPSFMode(Vlasov *vlasov, int s, double pre) {
    //  Callculates the phase (of what ??!)
    auto Phase = [=] (const int q, const int N)  -> double { return 2.*M_PI*((double) (q-1)/N); };
    // check if value is reasonable
-   if(!((s >= NsLlD) && (s <= NsLuD))) return HELIOS_SUCCESS; 
+   if(!((s >= NsLlD) && (s <= NsLuD))) return GKC_SUCCESS; 
        
    for(int x = NxLlD; x <= NxLuD; x++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z<=NzLuD; z++) {
       
@@ -231,7 +231,7 @@ int Init::PerturbationPSFMode(Vlasov *vlasov, int s, double pre) {
 
     }}}
 
-   return HELIOS_SUCCESS;
+   return GKC_SUCCESS;
 }
 
 
@@ -294,6 +294,6 @@ int Init::PerturbationHermitePolynomial(Vlasov *vlasov, int s, double pert, int 
       vlasov->f(x,y,z,v,m,s) += epsilon_0 * phi_x *vlasov->f0(x,y,z,v,m,s);
    }}}}}}
   
-   return HELIOS_SUCCESS;
+   return GKC_SUCCESS;
 }
 

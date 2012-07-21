@@ -14,7 +14,7 @@
 #include "FieldsFFT.h"
 #include "Special/SpecialMath.h"
 
-FieldsFFT::FieldsFFT(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geo, FFTSolver *_fft) 
+FieldsFFT::FieldsFFT(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<GKC_GEOMETRY> *geo, FFTSolver *_fft) 
 : Fields(setup, grid, parallel, fileIO,  geo), fft(_fft)
 {
 	phi_yz.resize(fft->Rk1xL); phi_yz = 0.;

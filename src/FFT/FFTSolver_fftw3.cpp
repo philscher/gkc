@@ -24,7 +24,7 @@ fftw_plan plan_XForward_Fields, plan_XBackward_Fields;
 
 fftw_plan plan_AA_YForward, plan_AA_YBackward;
 
-FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry<HELIOS_GEOMETRY> *geo) : FFTSolver(setup, parallel, geo, Nx*(2*Nky-2)*Nz, Nx*(2*Nky-2), Nx,  (2*Nky-2)) {
+FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry<GKC_GEOMETRY> *geo) : FFTSolver(setup, parallel, geo, Nx*(2*Nky-2)*Nz, Nx*(2*Nky-2), Nx,  (2*Nky-2)) {
    
 
    if(parallel->Coord(DIR_FFT) == 0) {
@@ -209,7 +209,7 @@ int FFTSolver_fftw3::solve(const int FFTtype, const int direction, const int N) 
         }
         else  check(-1, DMESG("Unknown FFT type or not supported"));
 
-       return HELIOS_SUCCESS;
+       return GKC_SUCCESS;
 }
 
 

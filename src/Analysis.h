@@ -39,7 +39,7 @@
 *
 *
 **/
-class Analysis : public IfaceHelios {
+class Analysis : public IfaceGKC {
 
    hid_t analysisGroup;
    /// scalarValue - Structure to store scalar data.
@@ -73,7 +73,7 @@ class Analysis : public IfaceHelios {
    Grid   *grid;
    Fields *fields;
    FFTSolver *fft;
-   Geometry<HELIOS_GEOMETRY> *geo;
+   Geometry<GKC_GEOMETRY> *geo;
    Array1d  initialEkin, dT;
    Array2c spectrumXZ, spectrumYZ, spectrumXY;
    Array3d pSpec, pPhase;
@@ -102,7 +102,7 @@ class Analysis : public IfaceHelios {
 
   public:
 
-   Analysis(Parallel *_parallel, Vlasov *vlasov, Fields *_fields, Grid *_grid, Setup *_setup, FFTSolver *fft, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *geometry);
+   Analysis(Parallel *_parallel, Vlasov *vlasov, Fields *_fields, Grid *_grid, Setup *_setup, FFTSolver *fft, FileIO *fileIO, Geometry<GKC_GEOMETRY> *geometry);
 
    ~Analysis() ;
 

@@ -14,7 +14,7 @@
 #include "Analysis.h"
 
 
-Analysis::Analysis(Parallel *_parallel, Vlasov *_vlasov, Fields *_fields, Grid *_grid, Setup *_setup, FFTSolver *_fft, FileIO *fileIO, Geometry<HELIOS_GEOMETRY> *_geo) : 
+Analysis::Analysis(Parallel *_parallel, Vlasov *_vlasov, Fields *_fields, Grid *_grid, Setup *_setup, FFTSolver *_fft, FileIO *fileIO, Geometry<GKC_GEOMETRY> *_geo) : 
   parallel(_parallel),setup(_setup), vlasov(_vlasov), grid(_grid), fields(_fields), geo(_geo),  fft(_fft),
      A4(FortranArray<4>()), A4_z(FortranArray<4>())
 
@@ -481,7 +481,7 @@ int Analysis::updateSpectrum(unsigned int dir) {
 
       // set to zero
         * */ 
-        return HELIOS_SUCCESS;
+        return GKC_SUCCESS;
    };
 
 
@@ -669,7 +669,7 @@ int Analysis::writeData(Timing timing, double dt)
             parallel->print(messageStream);
       
       }
-             return HELIOS_SUCCESS;
+             return GKC_SUCCESS;
   }
 
      //###################################### Spectrum  ################################################
@@ -700,7 +700,7 @@ int Analysis::writeData(Timing timing, double dt)
 /* 
   int FileIO::writeSpectrum(Array3z phi_k, Analysis *analysis, Timing timing)
   {
-      return HELIOS_SUCCESS;
+      return GKC_SUCCESS;
     if((parallel->isFFTGroup) && (setup->spectrumAvrg[SPEC_XZ][SPEC_START] <= timing.step) && (timing.step <= setup->spectrumAvrg[SPEC_XZ][SPEC_END])) 
       analysis->updateSpectrum(SPEC_XZ);
     
@@ -716,7 +716,7 @@ int Analysis::writeData(Timing timing, double dt)
 //      if(timeStep == setup->spectrumAvrg[SPEC_XZ][SPEC_END]) FA_spec_xz->write(analysis->getSpectrum(SPEC_XZ).data());
 //      if(timeStep == setup->spectrumAvrg[SPEC_XY][SPEC_END]) FA_spec_xy->write(analysis->getSpectrum(SPEC_XY).data());
 
-      return HELIOS_SUCCESS;
+      return GKC_SUCCESS;
         
 
   }

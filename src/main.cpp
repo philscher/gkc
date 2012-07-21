@@ -16,7 +16,7 @@
 #define MASTER_PROCESS 0
 
 int process_rank;
-Helios *helios;
+GKC *gkc;
 
 
 
@@ -54,7 +54,7 @@ int main(int argc, char **argv)
    std::string setup_filename(""), setup_Xoptions(""), setup_ExArgv("");
    // set it to automatic ?
    std::string setup_decomposition("Auto Decomposition"), setup_scalingFileName("ScalingTime.txt");
-   int heliosFlags=0;
+   int gkcFlags=0;
    
    while ((c = getopt(argc, argv, "x:o:c:d:v;s:;f;i")) != -1) {
             
@@ -73,16 +73,16 @@ int main(int argc, char **argv)
             exit(1);
 #endif            
                        break;
-            case 'v' : heliosFlags      |= HELIOS_VERBOSE;
+            case 'v' : gkcFlags      |= GKC_VERBOSE;
                        break;
-            case 's' : heliosFlags      |= HELIOS_STATISTICS;
+            case 's' : gkcFlags      |= GKC_STATISTICS;
 		       setup_scalingFileName = std::string(optarg);
                        break;
-            case 'f' : heliosFlags      |= HELIOS_OVERWRITE;
+            case 'f' : gkcFlags      |= GKC_OVERWRITE;
                        break;
-            case 'i' : heliosFlags      |= HELIOS_READ_STDIN;
+            case 'i' : gkcFlags      |= GKC_READ_STDIN;
                        break;
-            //case 'b' : heliosFlags      |= HELIOS_SILENT;
+            //case 'b' : gkcFlags      |= GKC_SILENT;
             //           break;
 
         default:
@@ -93,23 +93,23 @@ int main(int argc, char **argv)
 
     int process_pid = getpid();
     // Get simulation properties and setupurations
-	Setup *setup    = new Setup(argc, argv, setup_filename, setup_decomposition, setup_Xoptions, setup_ExArgv, process_pid, heliosFlags);
+	Setup *setup    = new Setup(argc, argv, setup_filename, setup_decomposition, setup_Xoptions, setup_ExArgv, process_pid, gkcFlags);
 
     
     /***********************************************************
-   // Start Helios engine and main loop
+   // Start gkc engine and main loop
    ***********************************************************/
-   helios =  new Helios(setup);
+   gkc =  new GKC(setup);
    
   
     time(&start_sim_time);
     // Mai Loop
-    int helios_status = 0;
+    int GKC_status = 0;
     if(process_rank == MASTER_PROCESS) std::cout << "Running main loop" << std::endl;
-    //#pragma omp parallel reduction(+:helios_status)
-    helios_status = helios->mainLoop();
+    //#pragma omp parallel reduction(+:GKC_status)
+    GKC_status = gkc->mainLoop();
     	
-    if (helios_status == HELIOS_SUCCESS) {
+    if (GKC_status == GKC_SUCCESS) {
               if(process_rank == MASTER_PROCESS) std::cout << "Simulation finished normally ... " << std::endl;
      }
     else                                 std::cout << "Simulation failed            ... " << std::endl;
@@ -119,7 +119,7 @@ int main(int argc, char **argv)
    // write simulation time to file, so we can late investigate it
     // in case for scaling we want to collect some basic statistics about the running
    
-    if((heliosFlags & HELIOS_STATISTICS) && (process_rank == 0)) {
+    if((gkcFlags & GKC_STATISTICS) && (process_rank == 0)) {
 	int numThreads=1;
 #ifdef GKC_PARALLEL_OPENMP
 	#pragma omp parallel
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
 
 
    // Clean up and print basic informations.
-   delete helios;
+   delete gkc;
    delete setup;
     
     time(&end_all_time);

@@ -29,7 +29,7 @@
 class Matrix_FD_Stencil
 {
   public:
-    static void LaplaceOp(Mat &A, Geometry<HELIOS_GEOMETRY> *geo, int y_k, int z, bool periodic=false) {
+    static void LaplaceOp(Mat &A, Geometry<GKC_GEOMETRY> *geo, int y_k, int z, bool periodic=false) {
     
           int idx_l, idx_u;
           PetscErrorCode ierr = MatGetOwnershipRange(A,&idx_l,&idx_u);
@@ -205,7 +205,7 @@ class Matrix_FD_Stencil
     };
 
 
-    static void setLaplace_x_ky(Mat &A, Geometry<HELIOS_GEOMETRY> *geo, double ky2, std::string order = "CD-4", bool periodic_in_x=false) {
+    static void setLaplace_x_ky(Mat &A, Geometry<GKC_GEOMETRY> *geo, double ky2, std::string order = "CD-4", bool periodic_in_x=false) {
      
           // b = k_x^2 + k_y^2 = - \partial_x^2 + k_y^2
           int idx_l, idx_u;

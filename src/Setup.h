@@ -33,10 +33,10 @@ enum SpecRange { SPEC_START = 0, SPEC_STRIDE=1, SPEC_END=2 };
 enum SpecDir   {SPEC_NO=-1, SPEC_XY=0, SPEC_XZ=1, SPEC_YZ=2};
 enum Decomposition { DECOMP_NO = 0, DECOMP_X=1, DECOMP_Y=2, DECOMP_XY=3, DECOMP_Z=4, DECOMP_XYZ=7,DECOMP_V=8, DECOMP_M=16, DECOMP_S=32};
 enum VlasovSolverT { VL_NO=0, VL_LIN=1, VL_NONLIN=2, VL_GEO=4, VL_TRAP=8};
-enum HeliosFlagsT { HELIOS_STATISTICS=1, HELIOS_VERBOSE=2, HELIOS_OVERWRITE=4, HELIOS_READ_STDIN=8};
+enum HeliosFlagsT { GKC_STATISTICS=1, GKC_VERBOSE=2, GKC_OVERWRITE=4, GKC_READ_STDIN=8};
 
 
-class Setup : public IfaceHelios {
+class Setup : public IfaceGKC {
 
     static double sign(double T) { return ((T >= 0.) ? 1. : -1); }
 
@@ -98,7 +98,7 @@ static double string_to_double( const std::string s )
             check(-1, DMESG("Parsing Error, Elements not accessed"));
        }
 
-       return HELIOS_SUCCESS;
+       return GKC_SUCCESS;
 
    };
 

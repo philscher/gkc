@@ -74,7 +74,7 @@ protected :
    *    Please Document Me !
    *
    **/
-   void printOn(ostream &output);
+  void printOn(ostream &output) const;
 
   /**
    *    Please Document Me !
