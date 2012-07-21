@@ -54,7 +54,6 @@ struct NeighbourDir {
 /**
 *  @brief Interface for MPI and OpenMP
 *  
-*  \image html mpi.png
 *
 **/
 class Parallel : public IfaceHelios {

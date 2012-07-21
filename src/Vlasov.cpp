@@ -102,20 +102,6 @@ int Vlasov::cleanBoundary(Array6z A)
 
 int Vlasov::setBoundary(Array6z  A , int boundary_type) {
 
-   // still use periodicity but rescale f1/ use Krook instead
-   /*
-    if(useBoundary == "NoSlip") {
-      const double sigma = 32.;
-       for(int x = NxLlD; x <= NxLuD; x++) {
-         A(x, RkyLD, RzLD, RvLD, RmLD, RsLD) *= 2./(1.+exp(- pow4((X(x)-Lx/2.)/sigma))+ exp(-pow4((X(x)+Lx/2.)/sigma)))-1.;
-         
-         A(Range(NxGlB, NxLlD), RkyLD, RzLD, RvLD, RmLD, RsLD) = 0.;
-         A(Range(NxLuD, NxGuB), RkyLD, RzLD, RvLD, RmLD, RsLD) = 0.;
-       }
-
-    };
-*/
-
    // X-Boundary
    if(parallel->decomposition(DIR_X) > 1) {
 #ifdef GKC_PARALLEL_MPI
@@ -135,12 +121,9 @@ int Vlasov::setBoundary(Array6z  A , int boundary_type) {
    if((parallel->decomposition(DIR_Z) > 1) && (Nz > 1)) {
 #ifdef GKC_PARALLEL_MPI
 	
-   check(-1, DMESG("Boundary not implemented"));
-
-   /*
         for(int x=NxLlD; x<= NxLuD;x++) { for(int y=NyLlD; y<= NyLuD;y++) {
             ShearB b = geo->getYPos(x,y);
-      // original
+            // original
            // SendZl(x, y, RB, RvLD, RmLD, RsLD) = A(x, b.ly, Range(NzLlD  , NzLlD+1), RvLD, RmLD, RsLD);
            // SendZu(x, y, RB, RvLD, RmLD, RsLD) = A(x, b.uy, Range(NzLuD-1, NzLuD  ), RvLD, RmLD, RsLD);
             
@@ -149,7 +132,6 @@ int Vlasov::setBoundary(Array6z  A , int boundary_type) {
 
             check(-1, DMESG("NOT FIXED"));
         }}
-   */
 
    parallel->updateNeighbours(SendZu, SendZl, RecvZu, RecvZl, DIR_Z);
 #else

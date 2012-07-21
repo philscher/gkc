@@ -29,7 +29,7 @@
 *    
 *    \f[ \vec{B}_0 / B_0 = \vec{b} = ???? \f].
 *
-*    Reference : Dannert, PhD , Chapter 2.2 Geometrie \and
+*    Reference : Dannert, PhD , Chapter 2.2 Geometrie and
 *                Goerler, PhD, Chaper 2.2 Geometry
 *
 *

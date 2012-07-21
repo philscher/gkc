@@ -48,7 +48,7 @@ class System
 
    /**
    *    @brief returns the process id
-   *    @param amount of seconds to wait
+   *    @param seconds amount of seconds to wait
    *
    */
    static void doSleep(int seconds) 

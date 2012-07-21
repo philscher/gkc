@@ -107,20 +107,6 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv)
 
       };
 
-      /**
-       *    Solve Gyro-kinetic equation using explicit Runge-Kutta fourth order (RK4) Integration 
-       *
-       *    y_{n+1} = y_n + \frac{1}{6} dt \left[ k_1 + 2k_2 + 2 k_3 +k_4 \right]
-       * 
-       *    \f[
-       *        k_1  = f(t_n, y_n)
-       *        k_2  = f(t_n+1/2dt, y_n + 1/2 dt k_1)
-       *        k_3  = f(t_n + dt, y_n - dt * k_1+ 2 dt k_2)
-       *    \f]
-       *
-       *    To save computational time, calculation of k_1 and the update to y_{n+1} is performed
-       *    at the last timestep.
-       * */
    void TimeIntegration::solveTimeStepRK3(Fields *fields, Vlasov *vlasov,TestParticles *particles, Timing timing, double  dt) {
 
   
@@ -139,10 +125,6 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv)
 
         };
       
-      /**
-       *    Solve Gyro-kinetic equation using explicit Runge-Kutta second order (RK2) Integration 
-       *
-       * */
    void TimeIntegration::solveTimeStepRK2(Fields *fields, Vlasov *vlasov,TestParticles *particles, Timing timing, double  dt) {
 
   
@@ -158,10 +140,6 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv)
        };
 
 
-      /**
-       *    Solve Gyro-kinetic equation using explicit Heun's method  (second order) Integration 
-       *    (unstable scheme)
-       * */
       void TimeIntegration::solveTimeStepHeun(Fields *fields, Vlasov *vlasov,TestParticles *particles, Timing timing, double  dt) {
 
   
@@ -176,10 +154,6 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv)
 
        };
 
-      /**
-       *    Eigenvalues caluclation do not require an timestep integration
-       *
-       **/
       void TimeIntegration::solveTimeStepEigen(Fields *fields, Vlasov *vlasov,Timing timing, double  dt) {
 
   

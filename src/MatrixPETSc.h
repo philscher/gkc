@@ -203,7 +203,7 @@ class Matrix
  
    };
    */
-  
+   
    void addDiagonal(cmplxd a) 
    {
       checkAndAssemble(); 
@@ -218,7 +218,7 @@ class Matrix
 
    /**
    *
-   *   Matrix reduction over $\mu$. Shape is equal thus we don't have to worry about size.
+   *   Matrix reduction over \f$\mu \f$. Shape is equal thus we don't have to worry about size.
    *
    *
    *

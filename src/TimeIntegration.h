@@ -51,7 +51,7 @@
    * we can apply it also also to other  
    * with maximum mu
    *
-   *       Integration Scheme  max(|\mu|) 
+   *       Integration Scheme  max(|\f$ \mu \f$|) 
    *             RK-1   | 2.0
    *             RK-2   | 2.197
    *             RK-3   | 2.537
@@ -77,14 +77,15 @@ class TimeIntegration {
 
    /** 
    *  @brief calculated the maximum allowed linear timestep from max. absoulte eigenvalue
+   *
    *  Calculated maximum allowed time step from the maximum absolute eigenvalue
    *  which is guarranted to be stable for the current integration scheme.
    *
    *  Note : This is only an approximation, because the positiv real eigenvalues
    *         (growing structure) is not necessarily captured.
    *
-   *   @param   maximum absolute eigenvalue
-   *   @return  maximum linear timestep
+   *   @param   max_abs_eigv maximum absolute eigenvalue
+   *   @return               maximum linear timestep
    */ 
    double getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv);
 

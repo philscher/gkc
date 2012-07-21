@@ -24,7 +24,6 @@ fftw_plan plan_XForward_Fields, plan_XBackward_Fields;
 
 fftw_plan plan_AA_YForward, plan_AA_YBackward;
 
-
 FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry<HELIOS_GEOMETRY> *geo) : FFTSolver(setup, parallel, geo, Nx*(2*Nky-2)*Nz, Nx*(2*Nky-2), Nx,  (2*Nky-2)) {
    
 

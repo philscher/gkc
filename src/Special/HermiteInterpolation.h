@@ -25,8 +25,6 @@
 *
 *   @brief Hermite interpolation function
 *
-*   @detailed
-*
 *   \f$ H^N_{nm} \f$ - N is interpolation order, n is radial function,
 *   m it's derivative [ 0, 1, 2, ..] -> [ no, first, second, ... ]
 *   

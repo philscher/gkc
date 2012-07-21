@@ -156,9 +156,7 @@ public:
    *      \f]
    *      and weights
    *      \f[   
-   *        w_k = \frac{\tfrac{1}{2} h \pi \cosh (k h)}
-   *                   {\cosh^2 \left(\tfrac{1}{2} \pi \sinh (k h) \right)
-   *
+   *        w_k = \frac{\tfrac{1}{2} h \pi \cosh{(k h)}}{\cosh^2(\tfrac{1}{2} \pi \sinh{(k h)} )}
    *      \f]
    *
    *

@@ -237,12 +237,6 @@ class Vlasov : public IfaceHelios {
    *   Calculates the timestep according to a defined CFL number. For the Vlasov equation
    *   several terms needs to be calculated for the highest possible timestep. These are
    *
-   *   \f[
-   *       \frac{\D \phi} {\phi x} {\frac{\D \phi}{\D y} 
-   *   \f] 
-   *
-   *
-   *
    **/
    double getMaxTimeStep(int dir, const double maxCFL);
 

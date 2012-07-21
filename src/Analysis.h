@@ -114,8 +114,6 @@ class Analysis : public IfaceHelios {
    *         decomposition are required very minor modification need to be done
    *         for this function.
    *
-   *  @param dir Direction either DIR_X, DIR_Y or DIR_Z
-   *
    *  @return double Array of Power density spectra in direction dir
    *
    **/

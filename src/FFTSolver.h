@@ -27,14 +27,14 @@
 
 
 /**
-*  @enum sign of transform (forward or backward)
-*  @todo avoid global scope 
+*  @brief sign of transform (forward or backward)
+*  @todo  avoid global scope 
 **/
 enum FFT_DIR    {FFT_NO=0, FFT_FORWARD=1, FFT_BACKWARD=2 };
 
 /**
-*  @enum type of transform
-*  @todo avoid global scope 
+*  @brief type of transform
+*  @todo  avoid global scope 
 **/
 enum FFT_FLAGS  {FFT_DUMMY=0, FFT_XYZ=1, FFT_X=2, FFT_XY=4, FFT_Y=16, FFT_AA=32, FFT_FIELDS=64};
 
@@ -185,17 +185,16 @@ class FFTSolver : public IfaceHelios {
    virtual string getLibraryName()  = 0;
 
    /**
-   *  @multiplies 2-arrays by transforming to real space
+   *  @brief multiplies 2-arrays by transforming to real space
    *  A Input Array 1
    *  B
    *  out : R Results
    *  
    *  The final result is properly rescaled.
    *
-   *  @param Array A(x,y_k,z)
-   *  @param Array B(x_y_k,z)
-   *
-   *  @returns C(x,y_k,z)
+   *  @param A  Array A(x,y_k,z)
+   *  @param B Array B(x_y_k,z)
+   *  @param R Result C(x,y_k,z) = A B
    *
    **/
    virtual Array3z multiply(Array3z &A, Array3z &B, Array3z  &R) = 0;
