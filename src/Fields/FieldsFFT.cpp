@@ -39,9 +39,9 @@ Array4z FieldsFFT::solveFieldEquations(Array4z Q, Timing timing) {
    fft->solve(FFT_X, FFT_FORWARD, FFT_FIELDS);
     
    // for 3 fields phi and B_perp are coupled and solved together
-   if     ( solveEq &  Field::phi & Field::Bpp ) solveBParallelEquation(Q(RxLD, RkyLD, RzLD, Field::Bp ), timing);
-   else if( solveEq &  Field::phi              ) solvePoissonEquation  (Q(RxLD, RkyLD, RzLD, Field::phi), timing);
-   if     ( solveEq &  Field::Ap               ) solveAmpereEquation   (Q(RxLD, RkyLD, RzLD, Field::Ap ), timing);
+   if     ( solveEq &  Field::phi & Field::Bpp ) solveBParallelEquation(Q(RxLD, RkyLD, RzLD, Field::Bp ));
+   else if( solveEq &  Field::phi              ) solvePoissonEquation  (Q(RxLD, RkyLD, RzLD, Field::phi));
+   if     ( solveEq &  Field::Ap               ) solveAmpereEquation   (Q(RxLD, RkyLD, RzLD, Field::Ap ));
 
     
    // suppresses modes in all fields
@@ -62,7 +62,7 @@ Array4z FieldsFFT::solveFieldEquations(Array4z Q, Timing timing) {
 
 
 
-Array3z FieldsFFT::solvePoissonEquation(Array3z rho, Timing timing)
+Array3z FieldsFFT::solvePoissonEquation(Array3z rho)
 {
     // Calculate flux-surface averaging
     // Note : how to deal with FFT normalization here ?
@@ -91,7 +91,7 @@ Array3z FieldsFFT::solvePoissonEquation(Array3z rho, Timing timing)
 }
 
 
-Array3z FieldsFFT::solveAmpereEquation(Array3z j, Timing timing)
+Array3z FieldsFFT::solveAmpereEquation(Array3z j)
 {
     
   for(int z=NzLlD; z<=NzLuD;z++) {  omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
@@ -112,7 +112,7 @@ Array3z FieldsFFT::solveAmpereEquation(Array3z j, Timing timing)
 }            
 
 // Note : what about adiabtic/flux-surface averaging ? Or are kinetic electrons required ?
-Array3z FieldsFFT::solveBParallelEquation(Array3z phi, Timing timing) 
+Array3z FieldsFFT::solveBParallelEquation(Array3z phi) 
 {
 
   const double adiab = plasma->species(0).n0 * pow2(plasma->species(0).q)/plasma->species(0).T0;

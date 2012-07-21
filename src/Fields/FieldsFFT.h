@@ -131,7 +131,7 @@ class FieldsFFT : public Fields {
   *  @warning We need to normalize the FFT transform here.
   *
   */
-  Array3z virtual solvePoissonEquation(Array3z rho, Timing timing);
+  Array3z virtual solvePoissonEquation(Array3z rho);
   
   /**
   *
@@ -151,7 +151,7 @@ class FieldsFFT : public Fields {
   *  @warning We need to normalize the FFT transform here.
   *
   */
-  Array3z virtual solveAmpereEquation (Array3z   j, Timing timing);
+  Array3z virtual solveAmpereEquation (Array3z   j);
 
   /**
   *
@@ -195,7 +195,7 @@ class FieldsFFT : public Fields {
   *  @warning We need to normalize the FFT transform here.
   *
   */
-  Array3z virtual solveBParallelEquation(Array3z phi, Timing timing);
+  Array3z virtual solveBParallelEquation(Array3z phi);
 
   /**
   *   @brief holds the flux surface average
@@ -244,7 +244,7 @@ class FieldsFFT : public Fields {
   *  Note : Not sure if this gyro-averaging is valid for \f$ j_\parallel \f$ and how to do for 
   *         \f$ B_{1\parallel} \f$.
   *
-  *  @param A         the field or source terms
+  *  @param fields    the field or source terms
   *  @param m         index of magnetic moment
   *  @param s         index to species
   *  @param nField    index of field (phi, jp, jo) not used
@@ -267,7 +267,7 @@ class FieldsFFT : public Fields {
   *
   *  @todo rename gyro-field to something better, e.g isForwardAverage
   *
-  *  @param A         the field or source terms
+  *  @param fields    the field or source terms
   *  @param m         index of magnetic moment
   *  @param s         index to species
   *  @param nField    index of field (phi, jp, jo) not used
@@ -308,8 +308,8 @@ protected:
   *
   *  @note is it worth to precalculate this values ?
   *
-  *  @param   \f$ k_\perp^2 \f$ (not normalized) perpendicular wavenumber
-  *  @return  \f$ r \f$
+  *  @param  k2_p \f$ k_\perp^2 \f$ (not normalized) perpendicular wavenumber
+  *  @return      \f$ r \f$
   *
   **/
   inline  double sum_qqnT_1mG0(const double k2_p) ;
@@ -323,11 +323,11 @@ protected:
   *
   *  @note is it worth to pre-calculate this values ?
   *
-  *  @param   \f$ k_\perp^2 \f$ (not normalized) perpendicular wavenumber
-  *  @return  \f$ r \f$
+  *  @param   k2_p \f$ k_\perp^2 \f$ (not normalized) perpendicular wavenumber
+  *  @return       \f$ r \f$
   *
   **/
-  inline  double sum_sa2qG0(const double kp_2) ;
+  inline  double sum_sa2qG0(const double k2_p) ;
 
   /**
   *
@@ -340,7 +340,7 @@ protected:
   *  
   *  @note is it worth to pre-calculate this values ?
   *
-  *  @param  k2p  \f$ k_\perp^2 \f$ (not normalized) perpendicular wavenumber
+  *  @param  k2_p  \f$ k_\perp^2 \f$ (not normalized) perpendicular wavenumber
   *  @return      \f$ r \f$
   **/
   inline  double sum_qnB_Delta(const double k2_p) ;
@@ -356,8 +356,8 @@ protected:
   *  
   *  @note is it worth to pre-calculate this values ?
   *
-  *  @param   \f$ k_\perp^2 \f$ (not normalized) perpendicular wavenumber
-  *  @return  \f$ r \f$
+  *  @param  k2_p \f$ k_\perp^2 \f$ (not normalized) perpendicular wavenumber
+  *  @return     \f$ r \f$
   **/
   inline  double sum_2TnBB_Delta(const double k2_p) ;
 

@@ -212,19 +212,19 @@ public:
    *    @brief virtual function to solve the Poisson equation for \f$ \phi \f$
    * 
    */
-   virtual Array3z solvePoissonEquation(Array3z rho, Timing timing)= 0;
+   virtual Array3z solvePoissonEquation(Array3z rho)= 0;
 
    /**
    *
    *    @brief virtual function to solve the Ampere equation for \f$ A_{1\parallel} \f$
    *  
    */
-   virtual Array3z solveAmpereEquation(Array3z j, Timing timing) = 0;
+   virtual Array3z solveAmpereEquation(Array3z j) = 0;
 
    /**
    *    @brief virtual function to solve the Ampere equation for \f$ B_{1\parallel} \f$
    */
-   virtual Array3z solveBParallelEquation(Array3z j, Timing timing) = 0;
+   virtual Array3z solveBParallelEquation(Array3z j) = 0;
    
 
    /**
@@ -241,7 +241,7 @@ public:
    /** Sets the boundary
    *  @brief  update boundaries for the gyro-averaged field which arises due to domain
    *          decomposition
-   *  @param  Current gyro-averaged field  \f[ A(x,y,z,\mu, \sigma) \f] 
+   *  @param  A Current gyro-averaged field  \f[ A(x,y,z,\mu, \sigma) \f] 
    */ 
    int setBoundary(Array6z  A);
    
@@ -313,7 +313,7 @@ public:
    *
    *   \f[ Yeb = Y \hat{\epsilon}_{geo} \beta  \f]
    *
-   *   @ref see Dannert (2008), PhD Thesis], where which chapter ... ?
+   *   @cite Dannert_2006:PhDThesis, where which chapter ... ?
    */
    double Yeb;
   

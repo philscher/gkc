@@ -101,12 +101,12 @@ protected:
    *    Please Document Me !
    *
    **/
-  virtual Array4z solveFieldEquations(Array4z fields, Timing timing) ;// override;
+  virtual Array4z solveFieldEquations(Array4z fields, Timing timing) ;
   /**
    *    Please Document Me !
    *
    **/
-  virtual Array3z solvePoissonEquation(Array3z rho, Timing timing)   ;//override;
+  virtual Array3z solvePoissonEquation(Array3z rho)   ;//override;
   /**
    *    Please Document Me !
    *

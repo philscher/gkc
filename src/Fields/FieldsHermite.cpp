@@ -213,7 +213,7 @@ Array4z FieldsHermite::solveFieldEquations(Array4z Qn, Timing timing)
 {
    
    // for 3 fields phi and B_perp are coupled and need to be solved differently
-   if( solveEq & Field::phi) solvePoissonEquation  (Q(RxLD, RkyLD, RzLD, Field::phi), timing);
+   if( solveEq & Field::phi) solvePoissonEquation  (Q(RxLD, RkyLD, RzLD, Field::phi));
    if( solveEq & Field::Ap ) check(-1, DMESG("Not Implemented"));
    if( solveEq & Field::Bpp) check(-1, DMESG("Not Implemented"));
     
@@ -289,7 +289,7 @@ void FieldsHermite::printOn(ostream &output) const {
    }
  
 
-Array3z FieldsHermite::solvePoissonEquation(Array3z rho, Timing timing)
+Array3z FieldsHermite::solvePoissonEquation(Array3z rho)
     {
       cmplxd *vec_Q, *vec_Field;
       
