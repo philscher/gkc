@@ -44,7 +44,7 @@ void VlasovFortran::Vlasov_EM_NonLinear(Array6z _fs, Array6z _fss, Array6z _ft, 
  * */
 }
 
-VlasovFortran::VlasovFortran(Grid *_grid, Parallel *_parallel, Setup *_setup, Geometry<HELIOS_GEOMETRY> *_geo, FFTSolver *fft)    : Vlasov(_grid, _parallel, _setup, _geo, fft) 
+VlasovFortran::VlasovFortran(Grid *_grid, Parallel *_parallel, Setup *_setup, Geometry<GKC_GEOMETRY> *_geo, FFTSolver *fft)    : Vlasov(_grid, _parallel, _setup, _geo, fft) 
 {
 }
 

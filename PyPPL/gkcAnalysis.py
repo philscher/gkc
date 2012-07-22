@@ -3,7 +3,7 @@ import gkcStyle
 
 import numpy as np
 import pylab
-import Filtering
+import gkcFilter
 
 def plotTimeEvolutionModePower(fileh5, **kwargs):
     """
