@@ -63,7 +63,7 @@ enum Direction : int {DIR_X=0, DIR_Y, DIR_Z, DIR_V, DIR_M, DIR_S, DIR_ALL, DIR_X
             std::cout << ss.str();
               
             // exit through abort so we can get stack trace
-	    if(doAbort=true) abort();
+	    if(doAbort==true) abort();
             exit(0);
         }
         return status;

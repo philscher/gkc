@@ -73,14 +73,14 @@ int main(int argc, char **argv)
             exit(1);
 #endif            
                        break;
-            case 'v' : gkcFlags      |= GKC_VERBOSE;
+            case 'v' : gkcFlags      |= Setup::GKC_VERBOSE;
                        break;
-            case 's' : gkcFlags      |= GKC_STATISTICS;
-		       setup_scalingFileName = std::string(optarg);
+            case 's' : gkcFlags      |= Setup::GKC_STATISTICS;
+		               setup_scalingFileName = std::string(optarg);
                        break;
-            case 'f' : gkcFlags      |= GKC_OVERWRITE;
+            case 'f' : gkcFlags      |= Setup::GKC_OVERWRITE;
                        break;
-            case 'i' : gkcFlags      |= GKC_READ_STDIN;
+            case 'i' : gkcFlags      |= Setup::GKC_READ_STDIN;
                        break;
             //case 'b' : gkcFlags      |= GKC_SILENT;
             //           break;
@@ -119,7 +119,7 @@ int main(int argc, char **argv)
    // write simulation time to file, so we can late investigate it
     // in case for scaling we want to collect some basic statistics about the running
    
-    if((gkcFlags & GKC_STATISTICS) && (process_rank == 0)) {
+    if((gkcFlags & Setup::GKC_STATISTICS) && (process_rank == 0)) {
 	int numThreads=1;
 #ifdef GKC_PARALLEL_OPENMP
 	#pragma omp parallel

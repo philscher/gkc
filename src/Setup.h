@@ -16,7 +16,10 @@
 
 
 // define to compile Fparser with complex number support
-#define FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+//#define FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+
+#include "Global.h"
+#include "FunctionParser/fparser.hh"
 
 #include <string>
 #include <cctype>
@@ -24,40 +27,65 @@
 #include <vector>
 #include <map>
 #include <algorithm>
- #include <sstream>
-
-#include "Global.h"
-#include "FunctionParser/fparser.hh"
-
-enum SpecRange { SPEC_START = 0, SPEC_STRIDE=1, SPEC_END=2 };
-enum SpecDir   {SPEC_NO=-1, SPEC_XY=0, SPEC_XZ=1, SPEC_YZ=2};
-enum Decomposition { DECOMP_NO = 0, DECOMP_X=1, DECOMP_Y=2, DECOMP_XY=3, DECOMP_Z=4, DECOMP_XYZ=7,DECOMP_V=8, DECOMP_M=16, DECOMP_S=32};
-enum VlasovSolverT { VL_NO=0, VL_LIN=1, VL_NONLIN=2, VL_GEO=4, VL_TRAP=8};
-enum HeliosFlagsT { GKC_STATISTICS=1, GKC_VERBOSE=2, GKC_OVERWRITE=4, GKC_READ_STDIN=8};
+#include <sstream>
 
 
+
+/**
+*   @brief Program configuration 
+*
+*
+*   This class provides an interface to the simulation's 
+*   setup, which is either provided by a file, and/or
+*   command line options.
+* 
+*   Class also provided interface to argv arguments.
+*
+*   Reads option like Grid.Nx = 64
+*
+*
+**/ 
 class Setup : public IfaceGKC {
 
-    static double sign(double T) { return ((T >= 0.) ? 1. : -1); }
+   /**
+   *   @brief hash which holds all file configuration options
+   *
+   **/ 
+   map   <std::string, std::string> config;
+  
+   /**
+   *  @brief array to check access to configuration
+   *
+   **/ 
+   vector<std::string> config_check;
 
-    map   <std::string, std::string> config;
-    vector<std::string> config_check;
-
-    std::string commandLineOptions, extraLineOptions;
+   
+   std::string commandLineOptions, ///< line options specified by -x
+               extraLineOptions;   ///< line options specified by -o
 public:
+   /**
+   *   @brief flags defined from command line input
+   *
+   **/ 
+   enum GKCCmdLineFlags { GKC_STATISTICS=1, GKC_VERBOSE=2, GKC_OVERWRITE=4, GKC_READ_STDIN=8} ;
  
- /** create a stringstream
-        add number to the stream
-        return a string with the contents of the stream
-*/
-template<class T> static std::string number2string(T number)
-{
-     stringstream ss;
-     ss << number;
-     return ss.str();
-};
+   /** 
+   *    @brief cast int/double to string
+   **/
+   template<class T> static std::string number2string(T number)
+   {
+       stringstream ss;
+       ss << number;
+       return ss.str();
+   };
  
-static double string_to_double( const std::string s )
+   /** 
+   *    @brief cast string representation of double to double
+   *
+   *    @todo is there any more C++ style way ?
+   *
+   **/
+   static double string_to_double( const std::string s )
    {
         return atof(s.c_str());
         /* 
@@ -68,50 +96,112 @@ static double string_to_double( const std::string s )
          * */
    }
 
-    int flags;
+   /**
+   *   @brief hold  GKCCmdLineFlags  flags
+   *
+   *   Hold the corresponding flags as defined from the command
+   *   line options
+   *
+   **/ 
+   int flags;
 
-    std::vector<char *> ExArgv;
-    int argc; char **argv;
-    
-    std::string setupFilename, configFileString;
-    std::string parser_constants;
+   /**
+   *   @brief command line arguments after -x
+   *
+   *   These command line options are indended to be passed
+   *   to 3rd party libraries like PETSc.
+   *
+   *   @todo : better use direct option string e.g.
+   *           PETSc.Option = -ksp
+   *
+   **/ 
+   std::vector<char *> ExArgv;
 
-    FunctionParser    getFParser();
-//    FunctionParser_cd getFParser_cd();
-   // Some user function
+   /**
+    *   @brief command line input parameters
+    **/ 
+   int argc; char **argv;
 
+   std::string setupFilename,    ///< filename of configuration file
+               configFileString; ///< document me
+
+   std::string parser_constants;   ///< Constants for function parser 
+
+   /**
+   *   @brief Function parser to parse and evaluate mathematical eqution
+   *
+   *   See  http://warp.povusers.org/FunctionParser/
+   *
+   **/ 
+   FunctionParser    getFParser();
+
+   /**
+   *   @brief constructor
+   *
+   **/ 
    Setup(const int argc, char **argv, std::string setup_filename = "", std::string setup_decomposition= "1:1:1:1:1:1", std::string setup_Xoptions="", std::string setup_ExArgv="", int process_id=0, int flags=0);
-  ~Setup() { };
+  
+   /**
+   *   @brief destructor
+   *
+   **/ 
+   ~Setup() { };
 
 
-
-
+   /**
+   *   @brief erases specific characters from the string 
+   **/
    static std::string eraseCharacter(std::string str, std::string chars);
+   /**
+   *   @brief trim all characters to lower space
+   **/
    static std::string trimLower(std::string str, bool lowerCase=true);
-   static std::vector<std::string> split(std::string str, std::string delim);
-   int parseOption(std::string line, bool fromFile = true);
 
-   int check_config() {
-       if(config_check.size() != 0) {
-            vector<std::string>::const_iterator mode;
-            for(mode =  config_check.begin(); mode != config_check.end(); mode++) std::cout << "Element not accessed : " << *mode << std::endl;
-            check(-1, DMESG("Parsing Error, Elements not accessed"));
-       }
-
-       return GKC_SUCCESS;
-
-   };
-
-  /** 
-   *    Access Elements from Configuration file
+   /**
+   *   @brief split the string into 2 parst separated by delim
    *
+   *   @param str   original string
+   *   @param delim delim string
    *
-   *
+   *   @return vector of string split by delim
    *
    **/
-  std::string get(std::string key, const char *default_Value) { return get(key, std::string(default_Value)); };
-  template<class T> T get(std::string key, const T default_Value)
-    {
+   static std::vector<std::string> split(std::string str, std::string delim);
+
+   /**
+   *   @brief parser configuration files
+   *
+   **/ 
+   int parseOption(std::string line, bool fromFile = true);
+
+   /**
+   *  @brief checks if all options were red.
+   *
+   *  After GKC.cpp intializes all sub-modules, this 
+   *  subroutine should be called to check if some
+   *  options, where not requested but set in the configuration file
+   *  (e.g. which may happen due to a spelling error)
+   *
+   **/ 
+   int check_config();
+
+   /** 
+   *    @brief Access Elements from Configuration file
+   *
+   *    Will drop an error in case a key is duplicated.
+   *
+   **/
+   std::string get(std::string key, const char *default_Value) { return get(key, std::string(default_Value)); };
+  
+   
+   /** 
+   *    @brief Access Elements from Configuration file
+   *
+   *    Will drop an error in case a key is duplicated.
+   *
+   **/
+   template<class T> T get(std::string key, const T default_Value)
+   {
         if(     config.count(key) == 1) {
             std::string s = config[key];
             std::istringstream stream (s);
@@ -127,59 +217,36 @@ static double string_to_double( const std::string s )
         }
         else if(config.count(key) > 1) check(-1, DMESG("Parser Error elements occurse more than once"));
 
-
-
         return default_Value;
-    };
+   };
     
-     /**
-     *  time_string should be of the form 1y:1m:1w:1d:1h:24m:7s, 1h:24m, 1d:30m
-     *                                   while years are nonsense it 
-     *  month [l] = 30 days (note as m collides with m for minutes whe choose l for luna)
-     *  year  = 365 days
-     *
-     * */
-    static int getSecondsFromTimeString(std::string time_string) {
-
-        std::vector<std::string> const_vec = split(time_string, ":");
-        int seconds = 0;
-
-        for(unsigned int s = 0; s < const_vec.size(); s++) { 
-            
-            std::string token = const_vec[s];
-
-            int c2sec = 1;
-            char id = token[token.length()-1];
-            
-            switch(id) {
-                case('s') : c2sec = 1 ; break;
-                case('m') : c2sec = 60; break; 
-                case('h') : c2sec = 3600; break; 
-                case('d') : c2sec = 86400; break; 
-                case('w') : c2sec = 604800; break; 
-                case('l') : c2sec = 2592000;  break;
-                case('a') : c2sec = 3153600; break;
-                default : check(-1, DMESG("No such token for time string"));
-            };
-            seconds += c2sec*atoi(token.substr(0, token.length()-1).c_str());
-        };
-    
-        return seconds;
-    };
+   /**
+   *
+   * @brief returns int of seconds from time string
+   * 
+   *  time_string should be of the form e.g.
+   *  1y:1l:1w:1d:1h:24m:7s, 1h:24m, 1d:30m
+   *
+   *  month [l] = fixed to 30 days 
+   *              (note as m collides with m for minutes we choose l (luna) for months
+   *  one year  = fixed to 365 days
+   *
+   **/
+   static int getSecondsFromTimeString(std::string time_string);
      
-protected:
-   virtual void printOn(ostream &output) const {
-         output << "Parser     | Parsing Config  File" << std::endl;
-         if(commandLineOptions != "")   output << "Parser   | with " << commandLineOptions << std::endl;
-         if(extraLineOptions != "")   output << "Extra   | with " << commandLineOptions << std::endl;
-	 if(parser_constants != "")   output <<   "         | FParser Constants : " << parser_constants << std::endl; 
-    
- }
+  protected:
 
-     // we don't have FileIO object yet, so no writting is performed
- //    virtual void initDataOutput(FileIO *fileIO) {};
- //    virtual void writeData(Timing *timing) {};
- //    virtual void closeData() {};
+
+   /** 
+   *   @brief configuration summary output 
+   *
+   **/ 
+   virtual void printOn(ostream &output) const;
+
+   // we don't have FileIO object yet, so no writting is performed
+   //    virtual void initDataOutput(FileIO *fileIO) {};
+   //    virtual void writeData(Timing *timing) {};
+   //    virtual void closeData() {};
 
 };
 

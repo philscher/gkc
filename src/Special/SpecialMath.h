@@ -27,6 +27,12 @@ class SpecialMath
 {
   public:
    /**
+   *   @brief returns sign of double
+   *
+   *
+   **/ 
+   static double sign(const double T) { return ((T >= 0.) ? 1. : -1); }
+   /**
    * C has remainder modulo operator, we need real one
    **/ 
    int realmod(double x,double y) { return static_cast<int>(fmod((fmod(x,y) + y), y)); };
