@@ -29,7 +29,7 @@
 class Matrix_FD_Stencil
 {
   public:
-    static void LaplaceOp(Mat &A, Geometry<GKC_GEOMETRY> *geo, int y_k, int z, bool periodic=false) {
+    static void LaplaceOp(Mat &A, Geometry *geo, int y_k, int z, bool periodic=false) {
     
           int idx_l, idx_u;
           PetscErrorCode ierr = MatGetOwnershipRange(A,&idx_l,&idx_u);
@@ -46,11 +46,11 @@ class Matrix_FD_Stencil
                     // use 4th order Central Difference stencil (1./12 h^2) [ -1 16 -30 16 -1 ]
                     const double h_2   = 12. * pow2(dx);
                     
-                    const cmplxd val_dx2_diag = geo->g_xx(x  ) * ( 30./h_2);
-                    const cmplxd val_dx2_p1   = geo->g_xx(x+1) * (-16./h_2);
-                    const cmplxd val_dx2_m1   = geo->g_xx(x-1) * (-16./h_2);
-                    const cmplxd val_dx2_p2   = geo->g_xx(x+2) * (  1./h_2);
-                    const cmplxd val_dx2_m2  =  geo->g_xx(x-2) * (  1./h_2);
+                    const cmplxd val_dx2_diag = geo->g_xx(x  ,z) * ( 30./h_2);
+                    const cmplxd val_dx2_p1   = geo->g_xx(x+1,z) * (-16./h_2);
+                    const cmplxd val_dx2_m1   = geo->g_xx(x-1,z) * (-16./h_2);
+                    const cmplxd val_dx2_p2   = geo->g_xx(x+2,z) * (  1./h_2);
+                    const cmplxd val_dx2_m2  =  geo->g_xx(x-2,z) * (  1./h_2);
                 
                     ierr = MatSetValue(A, idx, idx, val_dx2_diag, INSERT_VALUES);
                 
@@ -65,10 +65,10 @@ class Matrix_FD_Stencil
                     // use 4th order Central Difference stencil (1./12 h^2) [ -1 16 -30 16 -1 ]
                     const double h_1   = 12. * pow2(dx);
                     
-                    const cmplxd val_dx1_p1   = geo->g_xy(x+1, y_k, z) * (  8./h_1);
-                    const cmplxd val_dx1_m1   = geo->g_xy(x-1, y_k, z) * (- 8./h_1);
-                    const cmplxd val_dx1_p2   = geo->g_xy(x+2, y_k, z) * (- 1./h_1);
-                    const cmplxd val_dx1_m2  =  geo->g_xy(x-2, y_k, z) * (  1./h_1);
+                    const cmplxd val_dx1_p1   = geo->g_xy(x+1, z) * (  8./h_1);
+                    const cmplxd val_dx1_m1   = geo->g_xy(x-1, z) * (- 8./h_1);
+                    const cmplxd val_dx1_p2   = geo->g_xy(x+2, z) * (- 1./h_1);
+                    const cmplxd val_dx1_m2  =  geo->g_xy(x-2, z) * (  1./h_1);
                 
                 
                     if ( (x < NxGuD-1)) ierr = MatSetValue(A, idx, idx+1, val_dx1_p1, ADD_VALUES);
@@ -78,7 +78,7 @@ class Matrix_FD_Stencil
                     if ( (x > NxGlD+2)) ierr = MatSetValue(A, idx, idx-2, val_dx1_m2, ADD_VALUES);
                     
                     // Finally (BUG y_k)
-                    const double val_dy2_diag = - geo->g_yy(x,y_k, z) * y_k;
+                    const double val_dy2_diag = - geo->g_yy(x,z) * y_k;
                     MatSetValue(A, idx, idx, val_dy2_diag, ADD_VALUES);
 
 
@@ -205,7 +205,7 @@ class Matrix_FD_Stencil
     };
 
 
-    static void setLaplace_x_ky(Mat &A, Geometry<GKC_GEOMETRY> *geo, double ky2, std::string order = "CD-4", bool periodic_in_x=false) {
+    static void setLaplace_x_ky(Mat &A, Geometry *geo, double ky2, std::string order = "CD-4", bool periodic_in_x=false) {
      
           // b = k_x^2 + k_y^2 = - \partial_x^2 + k_y^2
           int idx_l, idx_u;

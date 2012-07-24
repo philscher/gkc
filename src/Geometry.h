@@ -21,12 +21,6 @@
 
 #include "FileIO.h"
 
-struct ShearB {
-  ShearB(const int _ly, const int _uy, const double _y0=0.) : ly(_ly),uy(_uy),  y0(_y0) {};
-    const int ly, uy;
-    const double   y0;
-};
-
 /** 
 *   @brief Base class for the Geometry abstraction using CRTP
 *
@@ -46,26 +40,58 @@ struct ShearB {
 *
 *
 **/
-template<typename T> class Geometry : public IfaceGKC
+class Geometry : public IfaceGKC
 {
 
+protected:
+
+
 public:
+  Array2d Kx, Ky, B, dB_dx, dB_dy, dB_dz, J;
+double eps_hat, C;
 
-  bool isSymmetric;
-  double eps_hat;
-  const double LoCB;
+  Geometry(Setup *setup, FileIO *fileIO) {
 
-  Geometry(Setup *setup, FileIO *fileIO, bool _isSymmetric=true) : isSymmetric(_isSymmetric) , LoCB(1.){
+        allocate(RxLD, RzLD, Kx, Ky, B, dB_dx, dB_dy, dB_dz, J);
+    
+        eps_hat = 1.;
+        C       = 1.;
 
-        eps_hat = setup->get("Geometry.eps_hat", 1.);
-
-  
   };
 
   virtual ~Geometry() {};
 
+protected:
+  /**
+  *    @brief setup the geometry arrays, called from derived class
+  *
+  *    @note This function is necessary, as calling pure virtual functions
+  *          from the base constructor is not allowed. 
+  *          See http://stackoverflow.com/questions/99552/
+  *
+  **/ 
+  void setupArrays() {
+        
+        // set metric elements
+        for(int x=NxLlD; x <= NxLuD; x++) {  for(int z=NzLlD; z <= NzLuD; z++) { 
+
+             Kx(x,z)    = get_Kx   (x,z);
+             Ky(x,z)    = get_Ky   (x,z);
+             B(x,z)     = get_B    (x,z);
+             dB_dx(x,z) = get_dB_dx(x,z);
+             dB_dy(x,z) = get_dB_dy(x,z);
+             dB_dz(x,z) = get_dB_dz(x,z);
+             J(x,z)     = get_J    (x,z);
+
+       } }
+
+
+  }
+
+public:
+
   // Jacobian
-  inline  double J(const int x, const int y, const int z)  { return static_cast<T*>(this)->J(x,y,z); };
+  virtual double get_J(const int x, const int z)  = 0;
    
   /**
   *   @name K values  
@@ -75,26 +101,45 @@ public:
   ///@{
   
   /**
-  *    Document me please
+  *   Helper functions defined as
+  *   \f[
+  *     K_x = -\frac{1}{C} \frac{L_{ref}}{B_{ref}} 
+  *             \left( 
+  *             \frac{\partial B_0}{\partial_y} 
+  *             - \frac{\gamma_2}{\gamma_1}  \frac{\partial B_0}{\partial z} 
+  *             \right)
+  *   \f]
+  * 
+  *   see Goerler, PhD
   *
   **/ 
-  inline  double Kx(const int x, const int y, const int z)  { return static_cast<T*>(this)->Kx(x,y,z); };
+  inline  double get_Kx(const int x, const int z)  { 
+    
+        return - 1./C * ( dB_dy(x,z) + g_1(x,z)/g_2(x,z) * dB_dz(x,z));
+  };
+
   /**
-  *    Document me please
+  *   Helper functions defined as
+  *
+  *   \f[
+  *     K_y = \frac{1}{C} \frac{L_{ref}}{B_{ref}} 
+  *             \left( 
+  *             \frac{\partial B_0}{\partial_x} 
+  *             - \frac{\gamma_3}{\gamma_1}  \frac{\partial B_0}{\partial z} 
+  *             \right)
+  *   \f]
+  * 
+  *   see Goerler, PhD
   *
   **/ 
-  inline  double Ky(const int x, const int y, const int z)  { return static_cast<T*>(this)->Ky(x,y,z); };
+  inline  double get_Ky(const int x, const int z)  
+  {
+    
+      return 1./C * ( dB_dx(x,z) - g_3(x,z)/g_1(x,z) * dB_dz(x,z));
+  
+  };
   ///@} 
   
-  /**
-  *   Get the value of shear at position x 
-  **/
-  inline  cmplxd get_kp(const int x, cmplxd ky, const int z)  { return static_cast<T*>(this)->get_kp(x, ky, z); };
-  
-
-
-
-
   /**
   *   @name Metric Gamma helper functions
   *
@@ -104,17 +149,17 @@ public:
    *
    *   \f[ \gamma_1 = g_{xx} g_{yy} - g_{xy} g_{yx} \f]
    */ 
-  inline  double g_1(const int x, const int y, const int z) { return g_xx(x,y,z) * g_yy(x,y,z) - pow2(g_xy(x,y,z))          ; };
+  inline  double g_1(const int x,  const int z) { return g_xx(x,z) * g_yy(x,z) - pow2(g_xy(x,z))          ; };
   /**  Helper function
    *
    *   \f[ \gamma_2 = g_{xx} g_{yz} - g_{xy} g_{xz} \f]
    */ 
-  inline  double g_2(const int x, const int y, const int z) { return g_xx(x,y,z) * g_yz(x,y,z) - g_xy(x,y,z) * g_xz(x,y,z)  ; };
+  inline  double g_2(const int x, const int z) { return g_xx(x,z) * g_yz(x,z) - g_xy(x,z) * g_xz(x,z)  ; };
   /**  Helper function
    *
    *   \f[ \gamma_3 = g_{xy} g_{yz} - g_{yy} g_{xz} \f]
    */ 
-  inline  double g_3(const int x, const int y, const int z) { return g_xy(x,y,z) * g_yz(x,y,z) - g_yy(x,y,z) * g_xz(x,y,z)  ; };
+  inline  double g_3(const int x, const int z) { return g_xy(x,z) * g_yz(x,z) - g_yy(x,z) * g_xz(x,z)  ; };
   ///@}
   
 
@@ -136,18 +181,12 @@ public:
   *   Note, that the metric is symmetric
   **/
   /// @{
-  inline  double g_xx(const int x, const int y, const int z) { return static_cast<T*>(this)->g_xx(x,y,z); };
-  inline  double g_xy(const int x, const int y, const int z) { return static_cast<T*>(this)->g_xy(x,y,z); };
-  inline  double g_xz(const int x, const int y, const int z) { return static_cast<T*>(this)->g_xz(x,y,z); };
-  inline  double g_yy(const int x, const int y, const int z) { return static_cast<T*>(this)->g_yy(x,y,z); };
-  inline  double g_yz(const int x, const int y, const int z) { return static_cast<T*>(this)->g_yz(x,y,z); };
-  inline  double g_zz(const int x, const int y, const int z) { return static_cast<T*>(this)->g_zz(x,y,z); };
-  /// @}
-  
-  /// @{
-  inline  double g_xx(const int z) { return static_cast<T*>(this)->g_xx(-1,-1,z); };
-  inline  double g_xy(const int z) { return static_cast<T*>(this)->g_xy(-1,-1,z); };
-  inline  double g_yy(const int z) { return static_cast<T*>(this)->g_yy(-1,-1,z); };
+  virtual  double g_xx(const int x, const int z) = 0;
+  virtual  double g_xy(const int x, const int z) = 0;
+  virtual  double g_xz(const int x, const int z) = 0;
+  virtual  double g_yy(const int x, const int z) = 0;
+  virtual  double g_yz(const int x, const int z) = 0;
+  virtual  double g_zz(const int x, const int z) = 0;
   /// @}
   
   
@@ -157,34 +196,26 @@ public:
   **/ 
   ///@{
   /// Defined Magnetic field strength \f[ B_0(\vec{x}) \f] at position \f[ \vec{x} = (x,y,z) \f]
-  inline  double B   (const int x, const int y, const int z)    { return static_cast<T*>(this)->B(x,y,z); };
+  virtual  double get_B   (const int x, const int z   ) = 0;  
   
   ///  Defined Magnetic field strength \f[ \frac{\partial B_0}{\partial x}(\vec{x}) \f] at position \f[ \vec{x} = (x,y,z) \f]
-  inline  double dB_dx  (const int x, const int y, const int z) { return static_cast<T*>(this)->dB_dx(x,y,z); };
+  virtual  double get_dB_dx  (const int x,  const int z) = 0;
 
   ///  Defined Magnetic field strength \f[\frac{\partial B_0}{\partial y}(\vec{x}) \f] at position \f[ \vec{x} = (x,y,z) \f]
-  inline  double dB_dy  (const int x, const int y, const int z) { return static_cast<T*>(this)->dB_dy(x,y,z); };
+  virtual  double get_dB_dy  (const int x, const int z) = 0;
   
   ///  Defined Magnetic field strength \f[\frac{\partial B_0}{\partial z}(\vec{x}) \f] at position \f[ \vec{x} = (x,y,z) \f]
-  inline  double dB_dz  (const int x, const int y, const int z) { return static_cast<T*>(this)->dB_dz(x,y,z); };
+  virtual  double get_dB_dz  (const int x, const int z) = 0;
   ///@}
   
   
-  // for sheared magnetic fields, we have special boundary conditions
-  inline  ShearB getYPos(const int x, const int y) { return static_cast<T*>(this)->getYPos(x,y); };
-  
- 
-  inline  double getY (const int x, const int y, const int z) { return static_cast<T*>(this)->getY(x,y,z); };
+  virtual  double nu (const int x) = 0;
 
-  // std::string getGeometryName() { return static_cast<T*>(this)->getGeometryName(); };
-
-   // dataOutput Stuff
-  // void printOn(ostream& o) { static_cast<T*>(this)->printOn (o); } ;
    
    void initDataOutput(FileIO *fileIO) {
         hid_t geometryGroup = check(H5Gcreate(fileIO->getFileID(), "/Geometry",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group for Geometry : H5Gcreate"));
   //    check(H5LTset_attribute_string(geometryGroup, ".", "Type", static_cast<T*>(this)->getGeometryName()), DMESG("H5LTset_attribute"));
-        static_cast<T*>(this)->initDataOutput(fileIO, geometryGroup); 
+        //initDataOutput(fileIO, geometryGroup); 
         H5Gclose(geometryGroup);
    } ;
         

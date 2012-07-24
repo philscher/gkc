@@ -17,9 +17,20 @@
 
 Range RFields;
 
-Fields::Fields(Setup *setup, Grid *_grid, Parallel *_parallel, FileIO *fileIO, Geometry<GKC_GEOMETRY> *_geo)  : 
+Fields::Fields(Setup *setup, Grid *_grid, Parallel *_parallel, FileIO *fileIO, Geometry *_geo)  : 
 grid(_grid),    parallel(_parallel), geo(_geo), 
 Q(FortranArray<4>()), Field0(FortranArray<4>()), Field(FortranArray<6>()), solveEq(0)
+
+/*
+SendXu(<FortranArray<4>()),
+RecvXu(<FortranArray<4>()),
+SendXl(<FortranArray<4>()),
+RecvXl(<FortranArray<4>()),
+SendZu(<FortranArray<4>()),
+RecvZu(<FortranArray<4>()),
+SendZl(<FortranArray<4>()),
+RecvZl(<FortranArray<4>()),
+*/
 {
 
    RFields.setRange(1, plasma->nfields);
@@ -156,7 +167,7 @@ Array3z Fields::calculatePerpendicularCurrentDensity(Array6z f0, Array6z f, cons
 // only support parallelized version.
 int Fields::setBoundary(Array6z  A) {
 
-#ifdef GKC_PARALLEL_MPI
+
 
    SendXl(RB4  , RkyLD, RzLD, RmLD, RsLD, RFields) = A(Range(NxLlD  , NxLlD+3), RkyLD, RzLD, RmLD, RsLD, RFields);
    SendXu(RB4  , RkyLD, RzLD, RmLD, RsLD, RFields) = A(Range(NxLuD-3, NxLuD  ), RkyLD, RzLD, RmLD, RsLD, RFields);
@@ -166,19 +177,14 @@ int Fields::setBoundary(Array6z  A) {
    // SendYu(RxLD, RB4  , RzLD, RmLD, RsLD, RFields) = A(RxLD, Range(NyLuD-3, NyLuD  ), RzLD, RmLD, RsLD, RFields);
         
    // For z-we need to connect the magnetic field lines
-   for(int x=NxLlD; x<= NxLuD;x++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
+   if( Nz > 1) omp_for(int x=NxLlD; x<= NxLuD;x++) {
 
-      const ShearB b = geo->getYPos(x,y_k);
-      double res;
-      // original
-      // SendZl(x, y, RB, RmLD, RsLD, RFields) = A(x, b.ly, Range(NzLlD  , NzLlD+1), RmLD, RsLD, RFields);
-      // SendZu(x, y, RB, RmLD, RsLD, RFields) = A(x, b.uy, Range(NzLuD-1, NzLuD  ), RmLD, RsLD, RFields);
-            
-      // test (but what kind of ? not documented, not remembering :(  )
-      SendZl(x, b.ly, RB, RmLD, RsLD, RFields) = A(x, y_k , Range(NzLlD  , NzLlD+1), RmLD, RsLD, RFields);
-      SendZu(x, y_k , RB, RmLD, RsLD, RFields) = A(x, b.ly, Range(NzLuD-1, NzLuD  ), RmLD, RsLD, RFields);
+      const cmplxd a = cmplxd(0., 2.* M_PI);
+      
+      SendZl(x, RkyLD, RB, RmLD, RsLD, RFields) = A(x, RkyLD, Range(NzLlD  , NzLlD+1), RmLD, RsLD, RFields) * exp( a*geo->nu(x));
+      SendZu(x, RkyLD, RB, RmLD, RsLD, RFields) = A(x, RkyLD, Range(NzLuD-1, NzLuD  ), RmLD, RsLD, RFields) * exp(-a*geo->nu(x));
 
-   }  }
+   }
 
    // Parallized version is using SendRecv call
    parallel->updateNeighbours(  SendXl,   SendXu,  SendYl, SendYu, SendZl,  SendZu, 
@@ -192,33 +198,6 @@ int Fields::setBoundary(Array6z  A) {
         
    A(RxLD, RkyLD, Range(NzLlB  , NzLlB+1), RmLD, RsLD, RFields) = RecvZl(RxLD, RkyLD, RB, RmLD, RsLD, RFields);
    A(RxLD, RkyLD, Range(NzLuD+1, NzLuB  ), RmLD, RsLD, RFields) = RecvZu(RxLD, RkyLD, RB, RmLD, RsLD, RFields);
-
-#else
-
-   A(Range(NxLlB-2, NxLlB+1), RkyLD, RzLD, RmLD, RsLD, RFields) = A(Range(NxLuD-3, NxLuD),   RkyLD, RzLD, RmLD, RsLD, RFields);
-   A(Range(NxLuD+1, NxLuB+2), RkyLD, RzLD, RmLD, RsLD, RFields) = A(Range(NxLlD, NxLlD+3),   RkyLD, RzLD, RmLD, RsLD, RFields);
-    
-   // A(RxLD, Range(NyLlB-2, NyLlB+1), RzLD, RmLD, RsLD, RFields) = A(RxLD, Range(NyLuD-3, NyLuD), RzLD, RmLD, RsLD, RFields);
-   // A(RxLD, Range(NyLuD+1, NyLuB+2), RzLD, RmLD, RsLD, RFields) = A(RxLD, Range(NyLlD, NyLlD+3), RzLD, RmLD, RsLD, RFields);
-
-   // For z-we need to connect the magnetic field lines
-   for(int x=NxLlD; x<= NxLuD;x++) { omp_for(int y=NyLlD; y<= NyLuD;y++) {
-
-      ShearB b = geo->getYPos(x,y);
-      A(x, y, Range(NzLlB, NzLlB+1), RmLD, RsLD, RFields)   = A(x, b.ly, Range(NzLuD-1, NzLuD), RmLD, RsLD, RFields);
-      A(x, y, Range(NzLuD+1, NzLuB), RmLD, RsLD, RFields)   = A(x, b.uy, Range(NzLlD, NzLlD+1), RmLD, RsLD, RFields);
-
-   }   } 
-
-   // Interpolation of connecting field lines if they do not math exactly
-   // A(x, y, Range(NzLlB, NzLlB+1), RmLD, RsLD, RFields)  = b.y0 * A(x, b.ypos, Range(NzLuD-1, NzLuD), RmLD, RsLD, RFields) + (1. - b.y0) *  A(x, b.ypos-1, Range(NzLuD-1, NzLuD), RmLD, RsLD, RFields);
-   // A(x, y, Range( NzLuD+1, NzLuB), RmLD, RsLD, RFields) = b.y0 * A(x, y, Range(NzLlD, NzLlD+1), RmLD, RsLD, RFields)      + (1. - b.y0) *  A(x, y+1     , Range(NzLlD, NzLlD+1), RmLD, RsLD, RFields);
-   // A(x, y,    Range(NzLlB, NzLlB+1), RmLD, RsLD, RFields)    = b.y0 * A(x, b.ypos, Range(NzLuD-1, NzLuD), RmLD, RsLD, RFields) + (1. - b.y0) *  A(x, b.ypos-1, Range(NzLuD-1, NzLuD), RmLD, RsLD, RFields);
-   // A(x, b.ypos, Range( NzLuD+1, NzLuB), RmLD, RsLD, RFields) = b.y0 * A(x, y, Range(NzLlD, NzLlD+1), RmLD, RsLD, RFields)      + (1. - b.y0) *  A(x, y+1     , Range(NzLlD, NzLlD+1), RmLD, RsLD, RFields);
-   // A(x, y,    Range(NzLlB, NzLlB+1), RmLD, RsLD, RFields)    = A(x, b.ypos, Range(NzLuD-1, NzLuD), RmLD, RsLD, RFields) ;
-   // A(x, b.ypos, Range( NzLuD+1, NzLuB), RmLD, RsLD, RFields) = A(x, y, Range(NzLlD, NzLlD+1), RmLD, RsLD, RFields);
-     
-#endif  // GKC_PARALLEL_MPI
 
    return GKC_SUCCESS; 
 
@@ -237,7 +216,7 @@ void Fields::initDataOutput(Setup *setup, FileIO *fileIO) {
      
    bool phiWrite = (parallel->Coord(DIR_VMS) == 0);
      
-   hid_t fieldsGroup = check(H5Gcreate(fileIO->getFileID(), "/Potential",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
+   hid_t fieldsGroup = check(H5Gcreate(fileIO->getFileID(), "/Fields",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
      
    FA_phi      = new FileAttr("Phi" , fieldsGroup, 4, field_dim , field_maxdim   , field_chunkdim   , field_moffset    ,  field_chunkBdim  , field_offset, phiWrite && plasma->nfields >= 1, fileIO->complex_tid);
    FA_Ap       = new FileAttr("Ap"  , fieldsGroup, 4, field_dim , field_maxdim   , field_chunkdim   , field_moffset    ,  field_chunkBdim  , field_offset, phiWrite && plasma->nfields >= 2, fileIO->complex_tid);
@@ -247,7 +226,7 @@ void Fields::initDataOutput(Setup *setup, FileIO *fileIO) {
    H5Gclose(fieldsGroup);
       
      
-   dataOutputFields        = Timing(setup->get("DataOutput.Phi.Step", -1)       , setup->get("DataOutput.Phi.Time", -1.));
+   dataOutputFields        = Timing(setup->get("DataOutput.Fields.Step", -1)       , setup->get("DataOutput.Fields.Time", -1.));
 
 }   
 

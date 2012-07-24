@@ -55,7 +55,7 @@ int mapAAY(const int y_k) ;
 
 
   public:
-    FFTSolver_fftw2_mpi(Setup *setup, Parallel *parallel, Geometry<HELIOS_GEOMETRY> *geo);
+    FFTSolver_fftw2_mpi(Setup *setup, Parallel *parallel, Geometry<GKC_GEOMETRY> *geo);
     ~FFTSolver_fftw2_mpi();
 
     int solve(const int FFTtype, const int direction, const int nstacked=1);

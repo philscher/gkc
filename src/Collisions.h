@@ -32,7 +32,7 @@ public:
    /**
    *  @brief Constructor
    **/
-   Collisions(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry<GKC_GEOMETRY> *_geo, FFTSolver *(_fft)) 
+   Collisions(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *(_fft)) 
    {
    
    };

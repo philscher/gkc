@@ -20,8 +20,7 @@
 #define __FFTW3_H
 
 #include "FFTSolver.h"
-#include "Geometry/GeometryShear.h"
-#include "Geometry/Geometry2D.h"
+#include "Geometry.h"
 
 
 /**
@@ -70,7 +69,7 @@ class FFTSolver_fftw3 : public FFTSolver
    *     @todo allow file link to plan 
    *
    **/
-   FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry<GKC_GEOMETRY> *geo);
+   FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo);
 
    /**
    *   @brief destructor

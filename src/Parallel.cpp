@@ -369,27 +369,6 @@ MPI_Datatype Parallel::getMPIDataType(const std::type_info &T) {
 
 
 
-
-Array2i Parallel::getProcessDomain(int rank) {
-   int domain[6][3] = { { NxLD, NxLlD, NxLuD },
-                        { NkyLD, NkyLlD, NkyLuD },
-                        { NzLD, NzLlD, NzLuD },
-                        { NvLD, NvLlD, NvLuD },
-                        { NmLD, NmLlD, NmLuD },
-                        { NsLD, NsLlD, NsLuD } };
-    Array2i domain_out(Range(0,5), Range(0,2));
-
-       // cannot use enum type here ... why !! DIR_X,...
-#ifdef GKC_PARALLEL_MPI
-                    MPI_Sendrecv(domain,  18, MPI_INT, master_rank,   99,   domain_out.data(),   18, MPI_INT, rank, 99, Comm[DIR_ALL], MPI_STATUS_IGNORE);
-#endif
-  return domain_out;
-     }
-
-
-
-
-
 Array1i Parallel::getAutoDecomposition(int numCPU) {
     Array1i A;
     A.resize(Range(0,5));
@@ -443,26 +422,27 @@ void Parallel::printOn(ostream &output) const {
                             << "M(" << decomposition(DIR_M) << ")  S(" << decomposition(DIR_S) << ") " << std::endl;
    
        } else output << std::endl;
-     
+} 
 
-#ifdef GKC_PARALLEL_MPI
-/* 
-//if(setup->flags & GKC_VERBOSE) {
-                for(int rank = 0; rank < parallel.numProcesses; rank++) {
-                    Array2i domain = parallel.getProcessDomain(rank);
-                    if(parallel.myRank == 0) infoStream << 
-                      
-                      "Rank (" << rank<<")  | " <<
-                        "X(" << domain(0, 0) << " " << domain(0, 1) << "-" << domain(0, 2) << ") " <<  
-                        "Y(" << domain(1, 0) << " " << domain(1, 1) << "-" << domain(1, 2) << ") " <<  
-                        "Z(" << domain(2, 0) << " " << domain(2, 1) << "-" << domain(2, 2) << ") " <<  
-                        "V(" << domain(3, 0) << " " << domain(3, 1) << "-" << domain(3, 2) << ") " <<  
-                        "M(" << domain(4, 0) << " " << domain(4, 1) << "-" << domain(4, 2) << ") " <<  
-                        "S(" << domain(5, 0) << " " << domain(5, 1) << "-" << domain(5, 2) << ") " <<  
-                       std::endl; 
-                      
-//                }
-}
- * */
-#endif // GKC_PARALLEL_MPI
-    };
+int Parallel::getNumberOfWorkers(int dir) 
+{
+        int numWorkers = 0;
+        MPI_Comm_size(Comm[dir],&numWorkers);
+        return numWorkers;
+   
+};
+    
+   
+int Parallel::getWorkerID(int dir) 
+{
+        int rankWorker = 0;
+        MPI_Comm_rank(Comm[dir],&rankWorker);
+        return rankWorker;
+
+};
+
+
+   
+void Parallel::barrier(int dir) {
+        MPI_Barrier(Comm[dir]);
+   };

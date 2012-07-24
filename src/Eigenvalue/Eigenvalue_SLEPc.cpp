@@ -87,7 +87,7 @@ cmplxd Eigenvalue_SLEPc::getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields)
     VecDestroy(&Vec_F1);
 
     std::stringstream msg; msg << " Eigenvalue : " << eigv << std::endl;
-    parallel->print(msg);
+    parallel->print(msg.str());
 
     return eigv;
 

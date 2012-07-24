@@ -27,9 +27,15 @@
 
 enum Operations {OP_NULL = 0, OP_SUM=1, OP_MAX=2, OP_MIN=3, OP_BOR=4, OP_BAND};
 
-#ifdef GKC_PARALLEL_MPI
-
 #include <mpi.h>
+
+
+/**
+*  @brief Interface for MPI and OpenMP
+*  
+*
+**/
+class Parallel : public IfaceGKC {
 
 /**
 *  @brief  Class to simplify MPI handling, for every direction we define such a class
@@ -47,56 +53,75 @@ struct NeighbourDir {
    NeighbourDir() {};
 };
 
-#endif
-
-
-
-/**
-*  @brief Interface for MPI and OpenMP
-*  
-*
-**/
-class Parallel : public IfaceGKC {
-
   public:
-  
-   Array1i Coord;
+ 
+
+   /**
+   *  @brief MPI Decompostion of the code (X,Y,Z,V,M,S)
+   *
+   **/
    Array1i decomposition;
+   
+   /**
+   *   @brief Coordinate of the process in (X,Y,Z,V,M,S)
+   *
+   **/
+   Array1i Coord;
+   
    //! hold the (world) rank of the process
    int myRank, master_process_id;
    int master_rank;
-   bool isAutoDecomposed;
+   
    //! the total number of threads 
    int numThreads, numProcesses, numGPUs;
    //! switches if OpenMP, MPI or OpenCL is during compule time
    bool useOpenMP, useMPI, useOpenCL;
 
+   // Some MPI specific stuff
 #ifdef GKC_PARALLEL_MPI
    Array<NeighbourDir, 1> Talk;
    MPI_Status stat; 
 
    MPI_Comm Comm[DIR_SIZE];
    int dirMaster[DIR_SIZE];
-   
-   void barrier(int dir=DIR_ALL) {
-        MPI_Barrier(Comm[dir]);
-   };
+  
+   /**
+   *   @brief barrier
+   *
+   **/
+   void barrier(int dir=DIR_ALL);
 
+
+   /**
+   *   @brief get corresponding MPI operation from data type
+   *
+   **/
    MPI_Op   getMPIOp(int op);
+
+   /**
+   *   @brief get MPI data type from  C++ type
+   *
+   **/
    MPI_Datatype getMPIDataType(const std::type_info &T);
 
 #endif //Parallel_MPI
    Parallel(Setup *setup);
    virtual ~Parallel();
    
-  
+ 
+   /**
+   *    @brief updates boundaries in X,Z direction
+   *
+   *
+   **/
    int  updateNeighbours(Array6z  SendXl, Array6z  SendXu, Array6z  SendYl, Array6z  SendYu, Array6z SendZl, Array6z SendZu, 
                          Array6z  RecvXl, Array6z  RecvXu, Array6z  RecvYl, Array6z  RecvYu, Array6z RecvZl, Array6z RecvZu); 
-
    
    /**
-   *  no periodic boundary conditions. e.g. for velocity.
-   *  Sets Recv to 0.e0 if it should recv from a program with MPI_PROC_NULL (at the end of the domain with
+   *  @brief updates boundaries in specific direction (non-blocking)
+   *
+   *  This assumes all domains to be periodic, except for velocity, which
+   *  is assumed to be zero. Thus if rank is MPI_PROC_NULL we set value to zero
    **/
    template<typename T, int W> int updateNeighbours(Array<T,W>  Sendu,  Array<T,W>  Sendl,  Array<T,W>  Recvu, Array<T,W>  Recvl, int dir) {
         
@@ -114,7 +139,13 @@ class Parallel : public IfaceGKC {
 
    };
    int updateNeighboursBarrier();
-   
+  
+   /**
+   *  @brief updates boundaries for direction dir
+   *
+   *  Uses blocking SendRecv operations. 
+   *
+   **/
    template<typename T, int W> int updateNeighbours(Array<T,W>  Sendu,  Array<T,W>  Sendl,  Array<T,W>  Recvu, Array<T,W>  Recvl, int dir, bool nonBlocking) {
 #ifdef GKC_PARALLEL_MPI
      
@@ -133,7 +164,13 @@ class Parallel : public IfaceGKC {
 
    };
    
- 
+
+   /**
+   *   @brief sends Array data to other CPU 
+   *
+   *   @todo rename to bcast
+   *
+   **/
    template<typename T, int W> int send(Array<T,W> A, int dir=DIR_ALL) {
 #ifdef GKC_PARALLEL_MPI
      if(dir <= DIR_S) if(decomposition(dir) == 1) return GKC_SUCCESS;
@@ -143,7 +180,15 @@ class Parallel : public IfaceGKC {
      return GKC_SUCCESS; 
    }
 
-   template<class T> int send(T &x, bool isRoot, int dir=DIR_ALL) {
+
+   /**
+   *   @brief sends scalar data to other CPU 
+   *
+   *   @todo rename to bcast
+   *
+   **/
+   template<class T> int send(T &x, bool isRoot, int dir=DIR_ALL) 
+   {
 
      // Notify all process who is root (is there a simpler way ?), take care it fails 
      // horribly if there is more than one root, (note 0 is master process also valid)
@@ -159,19 +204,10 @@ class Parallel : public IfaceGKC {
    }
    
 
-   // Fix this
-   template<class T>  T  collect2(T x, int numElements=1, int op = OP_SUM, int dir=DIR_ALL, bool allreduce=true)
-   {
-#ifdef GKC_PARALLEL_MPI
-     T global_dValue;
-     // we need allreduce instead of reduce because H5TB need all process to have the same value
-     check(MPI_Allreduce(&x, &global_dValue, numElements, getMPIDataType(typeid(T)), getMPIOp(op), Comm[dir]), DMESG("MPI_Reduce")); 
-     return global_dValue; 
-#endif
-     return x; 
-   }
-
-
+   /**
+   *   @brief Allreduce over direction dir
+   *
+   **/
    template<class T>  T  collect(T x, int op = OP_SUM, int dir=DIR_ALL, bool allreduce=true)
    {
 #ifdef GKC_PARALLEL_MPI
@@ -198,61 +234,43 @@ class Parallel : public IfaceGKC {
    }
 
    
-   Array2i getProcessDomain(int rank);
-     
    /**
-   *   Prints out string to terminal (only master process)
-   *    
-   *
+   *  @brief  Prints out string to terminal (only master process)
    *
    **/
    virtual void print(std::string message);
    
-   virtual void print(const char *message) { print(std::string(message));};
-   
    /**
-   *   Prints out stringstream to terminal (only master process)
+   *   @brief gets total number of process in direction DIR
+   *
+   *   @param  dir see enum Direction
+   *   @return     number of processes
    **/
-   virtual void print(std::stringstream &message) { 
-       std::string msg_str = message.str();
-       print(msg_str); 
-   
-   }; 
-
-
-   
-   /**
-   *   Please Document me
-   **/
-   int getNumberOfWorkers(int dir) {
-        int numWorkers = 0;
-        MPI_Comm_size(Comm[dir],&numWorkers);
-        return numWorkers;
-   
-   };
+   int getNumberOfWorkers(int dir);
     
    
    /**
    *   Please Document me
    **/
-   int getWorkerID(int dir) {
-        int rankWorker = 0;
-        MPI_Comm_rank(Comm[dir],&rankWorker);
-        return rankWorker;
-   
-   };
+   int getWorkerID(int dir) ;
 
 
    /**
-   *   Please Document me
+   *    @brief simple checks determine if decomposition is logical correct
    **/
    bool    checkValidDecomposition(Setup *setup, Array1i decomposition);
+
    /**
-   *   Please Document me
+   *   @brief determines recommendend decomposition 
+   *
+   *   @param numCPU Total Number of available CPUs
+   *   @return  Recommended decomposition
+   *
    **/
    Array1i getAutoDecomposition(int numCPU);
 
   protected:
+
    virtual void printOn(ostream &output) const ;
    virtual void initDataOutput(FileIO *fileIO) {};
    virtual void writeData(Timing *timing) {};

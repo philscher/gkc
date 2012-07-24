@@ -33,9 +33,6 @@
 #include "TimeIntegration.h"
 #include "Transport.h"
 #include "Geometry.h"
-#include "GeometryShear.h"
-#include "GeometrySlab.h"
-#include "Geometry2D.h"
 
 
 #include "config.h"
@@ -131,7 +128,7 @@ private:
     FFTSolver     *fftsolver;          ///< FFTSolver used
     TestParticles  *particles;         ///< Test particles
     Eigenvalue     *eigenvalue;        ///< Eigenvalue calculations
-    Geometry<GKC_GEOMETRY> *geometry;  ///< Geometry module
+    Geometry *geometry;                ///< Geometry module
     Event         *event;              ///< Programmable events 
     Init          *init;               ///< Initialization for plasma
     Visualization *visual;             ///< Visualization 

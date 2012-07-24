@@ -2,7 +2,7 @@
 #include "Vlasov_Blitz.h"
 
 
-VlasovBlitz::VlasovBlitz(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry<GKC_GEOMETRY> *_geo, FFTSolver *fft)    : Vlasov_LenardBernstein(_grid, _parallel, _setup,fileIO,  _geo, fft),
+VlasovBlitz::VlasovBlitz(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *fft)    : Vlasov_LenardBernstein(_grid, _parallel, _setup,fileIO,  _geo, fft),
     dphi_dx(FortranArray<3>()),    dphi_dy(FortranArray<3>()),    dAp_dx(FortranArray<3>()),    dAp_dy(FortranArray<3>()),    k2p_phi(FortranArray<3>())
 {
 

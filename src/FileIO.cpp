@@ -39,7 +39,7 @@ typedef struct Complex_t {
     outputFileName        = setup->get("DataOutput.OutputFileName", "default.h5");
     info                  = setup->get("DataOutput.Info", "No information provided");
     resumeFile            = setup->get("DataOutput.Resume", 0);
-    overwriteFile         = setup->get("DataOutput.Overwrite", 0) || (setup->flags & Setup::GKC_OVERWRITE);
+    overwriteFile         = setup->get("DataOutput.Overwrite", 0) || (setup->flags & GKC_OVERWRITE);
    
      dataFileFlushTiming  = Timing(setup->get("DataOutput.Flush.Step", -1)       , setup->get("DataOutput.Flush.Time", 100.)); 
     

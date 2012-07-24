@@ -22,7 +22,7 @@ protected:
   public:
 
 
-       Vlasov_Lorentz(Grid *grid, Parallel *parallel, Setup *setup, Geometry<GKC_GEOMETRY> *geo) : Vlasov(grid, parallel, setup, geo) {
+       Vlasov_Lorentz(Grid *grid, Parallel *parallel, Setup *setup, Geometry *geo) : Vlasov(grid, parallel, setup, geo) {
 
         nu    = setup->get("Collision.Nu", 0.e0);
         

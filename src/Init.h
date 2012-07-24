@@ -27,9 +27,6 @@
 #include "Grid.h"
 #include "Vlasov.h"
 #include "Geometry.h"
-#include "GeometrySlab.h"
-#include "GeometryShear.h"
-#include "Geometry2D.h"
 
 #include "Parallel.h"
 
@@ -47,7 +44,7 @@ class Init   : public IfaceGKC {
    **/
    double epsilon_0, sigma;  
    
-   Geometry<GKC_GEOMETRY> *geo;
+   Geometry *geo;
 
    /**
    *   @brief document me please
@@ -67,7 +64,7 @@ class Init   : public IfaceGKC {
    /**
    *   @brief document me please
    **/
-   Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields *fields, Geometry<GKC_GEOMETRY> *geo);
+   Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields *fields, Geometry *geo);
    /**
    *   @brief document me please
    **/

@@ -279,7 +279,7 @@ class FieldsFFT : public Fields {
   /**
   *   Constructor
   */ 
-  FieldsFFT(Setup *setup, Grid *grid, Parallel *parallel, FileIO * fileIO, Geometry<GKC_GEOMETRY> *geo, FFTSolver *fftsolver);
+  FieldsFFT(Setup *setup, Grid *grid, Parallel *parallel, FileIO * fileIO, Geometry *geo, FFTSolver *fftsolver);
   /**
   *   Constructor
   */ 

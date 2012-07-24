@@ -20,10 +20,6 @@
 #include "config.h"
 #include "Geometry.h"
 
-#include "GeometrySlab.h"
-#include "GeometryShear.h"
-#include "Geometry2D.h"
-
 
 
 /**
@@ -61,7 +57,7 @@ class FFTSolver : public IfaceGKC {
 
   protected:
 
-   Geometry<GKC_GEOMETRY> *geo;
+   Geometry *geo;
    Parallel *parallel;
 
    int flags;
@@ -95,7 +91,7 @@ class FFTSolver : public IfaceGKC {
       const double kx_ = kx(x_k);
       const double ky_ = ky(y_k);
 
-      return geo->g_xx(z) * pow2(kx_) + geo->g_yy(z) * pow2(ky_) + 2. * geo->g_xy(z) * kx_ * ky_;
+      return geo->g_xx(0, z) * pow2(kx_) + geo->g_yy(0, z) * pow2(ky_) + 2. * geo->g_xy(0, z) * kx_ * ky_;
    };
 
    /**
@@ -161,7 +157,7 @@ class FFTSolver : public IfaceGKC {
    *   @brief the contstructor
    *
    **/
-   FFTSolver(Setup *setup, Parallel *_parallel, Geometry<GKC_GEOMETRY> *_geo, double _Norm_XYZ, double _Norm_XY, double _Norm_X, double _Norm_Y); 
+   FFTSolver(Setup *setup, Parallel *_parallel, Geometry *_geo, double _Norm_XYZ, double _Norm_XY, double _Norm_X, double _Norm_Y); 
 
    virtual ~FFTSolver() ;
 

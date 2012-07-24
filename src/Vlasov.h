@@ -112,7 +112,7 @@ class Vlasov : public IfaceGKC {
    Parallel *parallel;
    Grid *grid;
    Setup *setup;
-   Geometry<GKC_GEOMETRY> *geo;
+   Geometry *geo;
    
    /**
    *    Please Document Me !
@@ -195,7 +195,7 @@ class Vlasov : public IfaceGKC {
    *    Please Document Me !
    *
    **/
-   Vlasov(Grid *grid, Parallel *parallel, Setup *setup, FileIO *fileIO, Geometry<GKC_GEOMETRY> *geo, FFTSolver *fft);
+   Vlasov(Grid *grid, Parallel *parallel, Setup *setup, FileIO *fileIO, Geometry *geo, FFTSolver *fft);
 
    /**
    *

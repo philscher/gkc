@@ -32,7 +32,7 @@ fftw_mpi_plan plan_YBackward;
             
 
 
-FFTSolver_fftw2_mpi::FFTSolver_fftw2_mpi(Setup *setup, Parallel *parallel, Geometry<HELIOS_GEOMETRY> *geo) : FFTSolver(setup, parallel, geo, Nx*Ny*Nz, Nx*Ny, Nx, Ny) {
+FFTSolver_fftw2_mpi::FFTSolver_fftw2_mpi(Setup *setup, Parallel *parallel, Geometry<GKC_GEOMETRY> *geo) : FFTSolver(setup, parallel, geo, Nx*Ny*Nz, Nx*Ny, Nx, Ny) {
 
     if(parallel->Coord(DIR_FFT) == 0) {
 
@@ -258,7 +258,7 @@ int FFTSolver_fftw2_mpi::solve(const int FFTtype, const int direction, const int
         }
         else  check(-1, DMESG("Unknown FFT type or not supported"));
 
-       return HELIOS_SUCCESS;
+       return GKC_SUCCESS;
 }
 
 std::string FFTSolver_fftw2_mpi::getLibraryName() {

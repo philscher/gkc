@@ -20,9 +20,6 @@
 #include "Parallel.h"
 #include "Grid.h"
 #include "Geometry.h"
-#include "GeometrySlab.h"
-#include "GeometryShear.h"
-#include "Geometry2D.h"
 
 #include "FileIO.h"
 
@@ -48,7 +45,7 @@ class Event : public IfaceGKC {
 
   bool useEvent; //< Enabled in case events are enabled
 public:
-  Event(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<GKC_GEOMETRY> *geo);
+  Event(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry *geo);
 
 
   void checkEvent(Timing timing, Vlasov *vlasov, Fields *fields);

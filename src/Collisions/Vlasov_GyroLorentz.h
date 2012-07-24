@@ -192,7 +192,7 @@ public:
    inline double A() { return 0.0;};
 
   public:
-       Collisions(Setup *setup, Geometry<GKC_GEOMETRY> *geometry) {};
+       Collisions(Setup *setup, Geometry *geometry) {};
   
        void initDataOutput(hid_t fileID) {
   //######################################################################################

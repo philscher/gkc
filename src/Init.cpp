@@ -17,7 +17,7 @@
 #include "Reader/ReaderXYV.h"
 #include "System.h"
 
-Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields *fields, Geometry<GKC_GEOMETRY> *_geo) : geo(_geo) {
+Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields *fields, Geometry *_geo) : geo(_geo) {
 
    epsilon_0          = setup->get("Init.Epsilon0", 1.e-14); 
    sigma              = setup->get("Init.Sigma"   , 3.e-1); 

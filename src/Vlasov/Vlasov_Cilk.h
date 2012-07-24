@@ -275,7 +275,7 @@ class VlasovCilk : public Vlasov {
    *    Please Document Me !
    *
    **/
-   VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO * fileIO, Geometry<GKC_GEOMETRY> *_geo, FFTSolver *fft); 
+   VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO * fileIO, Geometry *_geo, FFTSolver *fft); 
         
    /**
    *    Please Document Me !

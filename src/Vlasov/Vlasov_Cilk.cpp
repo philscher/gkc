@@ -22,6 +22,7 @@
 #endif
 #include <cilk/cilk.h>
 
+#include "Geometry/Geometry2D.h"
 
 typedef blitz::cmplxd(*A6z)[][][][][];
 typedef blitz::cmplxd(*A5z)[][][][];
@@ -51,7 +52,7 @@ void VlasovCilk::setBoundaryXY(Array3d A, int dir) {
 
 };
 
-VlasovCilk::VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry<GKC_GEOMETRY> *_geo, FFTSolver *fft)    
+VlasovCilk::VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *fft)    
     : Vlasov(_grid, _parallel, _setup, fileIO, _geo, fft),
       dphi_dx(FortranArray<3>()),   dphi_dy(FortranArray<3>()),   
       dAp_dx(FortranArray<3>()),    dAp_dy(FortranArray<3>()),    k2p_phi(FortranArray<4>()), nonLinearTerms(GKCStorage4)
@@ -183,6 +184,7 @@ void VlasovCilk::Vlasov_2D(
                            const double dt, const int rk_step, Array6z _fs)
 { 
 
+  Geometry2D *geo = static_cast<Geometry2D*>(Vlasov::geo);
 
    for(int s = NsLlD; s <= NsLuD; s++) {
         
@@ -292,6 +294,7 @@ void VlasovCilk::Vlasov_2D_Island(
                            const double dt, const int rk_step, Array6z _fs)
 { 
 
+    const Geometry2D *geo = static_cast<Geometry2D*>(Vlasov::geo);
 
     const double w     = setup->get("Island.Width", 0.); 
     const double shear = setup->get("Geometry.Shear", 0.4); 
@@ -392,6 +395,7 @@ void VlasovCilk::Vlasov_2D_Island(
              ///////////////////////////////////////////////////////////////////////////////
             
         const cmplxd kp = geo->get_kp(x, ky, z);
+        //const cmplxd kp = geo->shear * ky * X[x];
 
                // velocity space magic
         #pragma simd
@@ -551,6 +555,8 @@ void    VlasovCilk::Vlasov_2D_Fullf(
 
   Xi_max = 0.;
 
+  Geometry2D *geo = static_cast<Geometry2D*>(Vlasov::geo);
+
    for(int s = NsLlD; s <= NsLuD; s++) {
         
       // small abbrevations
@@ -668,6 +674,7 @@ void VlasovCilk::Vlasov_EM_2D(
 { 
 
    
+  Geometry2D *geo = static_cast<Geometry2D*>(Vlasov::geo);
 
    Xi_max = 0.;
 
@@ -1036,7 +1043,6 @@ void VlasovCilk::Vlasov_EM(
             dphi_dx[z][y_k][x] = (8.*(phi[s][m][z][y_k][x+1] - phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] - phi[s][m][z][y_k][x-2]))/(12.*dx)  ;  
 
             const cmplxd ky = cmplxd(0.,fft->ky(y_k));
-            const cmplxd kp = geo->get_kp(x, ky, z);
 
              updateCFL(dphi_dx[z][y_k][x], ky*phi_, 0.);
 
@@ -1070,7 +1076,7 @@ void VlasovCilk::Vlasov_EM(
         // note j0 is calculated and needs to be replaced, or ? no we calculate j1 ne ?!
         const double j0 = 0.;
         const double Bpre  = 1.; //1./(1. + plasma->beta * sqrt(m * T/2.) * j0 / (q * pow2(geo->B(x,y,z))) * V(v));
-        const double CoJB = 1./geo->J(x,y_k,z);
+        const double CoJB = 1./geo->J(x,z);
 
         
         // Finally the Vlasov equation calculate the time derivatve      
@@ -1079,11 +1085,11 @@ void VlasovCilk::Vlasov_EM(
             
           // driving term
           Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - sub)) * F0 * Xi_ * ky
-          - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0 * geo->Kx(x,y_k,z)) * dG_dx
-          - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0 * geo->Ky(x,y_k,z) - alpha * pow2(V[v]) * plasma->beta * plasma->w_p) * G_ * ky
+          - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0 * geo->Kx(x,z)) * dG_dx
+          - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0 * geo->Ky(x,z) - alpha * pow2(V[v]) * plasma->beta * plasma->w_p) * G_ * ky
           -  CoJB * ( alpha * V[v]* dG_dz)
-          + alpha * V[v] / 2. * M[m] * geo->dB_dz(x,y_k,z) * dfs_dv
-          + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * geo->Kx(x,y_k,z) * (w_n + w_T * (pow2(V[v]) + M[m] * B0)/Temp - 3./2.) * F0;
+          + alpha * V[v] / 2. * M[m] * geo->dB_dz(x,z) * dfs_dv
+          + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * geo->Kx(x,z) * (w_n + w_T * (pow2(V[v]) + M[m] * B0)/Temp - 3./2.) * F0;
 
           
         //////////////////////////// Vlasov End ////////////////////////////

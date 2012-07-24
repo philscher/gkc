@@ -72,7 +72,7 @@ class VlasovBlitz : public Vlasov_LenardBernstein {
          */
         void setupXiAndG(Array6z fs, Fields *fields);
   public:
-        VlasovBlitz(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry<GKC_GEOMETRY> *_geo, FFTSolver *fft); 
+        VlasovBlitz(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *fft); 
         
         int solve(std::string equation_tyoe, Fields *fields, Array6z fs, Array6z fss, double dt, int rk_step, int user_boundary_type=BOUNDARY_CLEAN);
  

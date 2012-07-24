@@ -13,9 +13,8 @@
 
 #include "Analysis.h"
 
-enum SpecDir   {SPEC_NO=-1, SPEC_XY=0, SPEC_XZ=1, SPEC_YZ=2};
 
-Analysis::Analysis(Parallel *_parallel, Vlasov *_vlasov, Fields *_fields, Grid *_grid, Setup *_setup, FFTSolver *_fft, FileIO *fileIO, Geometry<GKC_GEOMETRY> *_geo) : 
+Analysis::Analysis(Parallel *_parallel, Vlasov *_vlasov, Fields *_fields, Grid *_grid, Setup *_setup, FFTSolver *_fft, FileIO *fileIO, Geometry *_geo) : 
   parallel(_parallel),setup(_setup), vlasov(_vlasov), grid(_grid), fields(_fields), geo(_geo),  fft(_fft),
      A4(FortranArray<4>()), A4_z(FortranArray<4>())
 
@@ -667,7 +666,7 @@ int Analysis::writeData(Timing timing, double dt)
             }
             messageStream << std::endl << "------------------------------------------------------------------" <<
                                         std::endl << "Total Energy " << kinetic_energy+scalarValues.phiEnergy + scalarValues.ApEnergy + scalarValues.BpEnergy << "    Total Charge = " << ((plasma->species(0).n0 != 0.) ? 0. : charge) << std::endl;  
-            parallel->print(messageStream);
+            parallel->print(messageStream.str());
       
       }
              return GKC_SUCCESS;

@@ -21,9 +21,6 @@
 #include "Parallel.h"
 #include "Grid.h"
 #include "Geometry.h"
-#include "GeometrySlab.h"
-#include "GeometryShear.h"
-#include "Geometry2D.h"
 
 #include "FileIO.h"
 
@@ -116,7 +113,7 @@ protected:
    /**
    *  @brief Geometry interface
    */
-   Geometry<GKC_GEOMETRY> *geo;
+   Geometry *geo;
   
    /**
    *  @brief please document me
@@ -322,7 +319,7 @@ public:
    * Constructor
    *
    */
-   Fields(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<GKC_GEOMETRY> *geo);
+   Fields(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry *geo);
   
    /**
    *

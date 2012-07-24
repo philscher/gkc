@@ -26,7 +26,7 @@ class VlasovFortran : public Vlasov {
 
         };
   public:
-        VlasovFortran(Grid *_grid, Parallel *_parallel, Setup *_setup, Geometry<GKC_GEOMETRY> *_geo, FFTSolver *fft); 
+        VlasovFortran(Grid *_grid, Parallel *_parallel, Setup *_setup, Geometry *_geo, FFTSolver *fft); 
         int solve(std::string equation_tyoe, Fields *fields, Array6z fs, Array6z fss, double dt, int rk_step, int user_boundary_type=BOUNDARY_CLEAN) {
           check(-1, DMESG("FIX ME"));
         return GKC_SUCCESS; 

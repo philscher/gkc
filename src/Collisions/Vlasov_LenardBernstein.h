@@ -37,7 +37,7 @@ protected:
   public:
 
 
-       Vlasov_LenardBernstein(Grid *grid, Parallel *parallel, Setup *setup, FileIO *fileIO, Geometry<GKC_GEOMETRY> *geo, FFTSolver *fft) : Vlasov(grid, parallel, setup, fileIO, geo, fft) {
+       Vlasov_LenardBernstein(Grid *grid, Parallel *parallel, Setup *setup, FileIO *fileIO, Geometry *geo, FFTSolver *fft) : Vlasov(grid, parallel, setup, fileIO, geo, fft) {
 
         beta    = setup->get("Collision.Beta", 0.e0);
         

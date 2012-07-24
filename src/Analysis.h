@@ -23,9 +23,6 @@
 #include "Vlasov.h"
 #include "FFTSolver.h"
 #include "Geometry.h"
-#include "GeometryShear.h"
-#include "GeometrySlab.h"
-#include "Geometry2D.h"
 #include "Timing.h"
 #include "Plasma.h"
 
@@ -73,7 +70,7 @@ class Analysis : public IfaceGKC {
    Grid   *grid;
    Fields *fields;
    FFTSolver *fft;
-   Geometry<GKC_GEOMETRY> *geo;
+   Geometry *geo;
    Array1d  initialEkin, dT;
    Array2c spectrumXZ, spectrumYZ, spectrumXY;
    Array3d pSpec, pPhase;
@@ -102,7 +99,7 @@ class Analysis : public IfaceGKC {
 
   public:
 
-   Analysis(Parallel *_parallel, Vlasov *vlasov, Fields *_fields, Grid *_grid, Setup *_setup, FFTSolver *fft, FileIO *fileIO, Geometry<GKC_GEOMETRY> *geometry);
+   Analysis(Parallel *_parallel, Vlasov *vlasov, Fields *_fields, Grid *_grid, Setup *_setup, FFTSolver *fft, FileIO *fileIO, Geometry *geometry);
 
    ~Analysis() ;
 

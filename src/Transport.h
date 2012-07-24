@@ -24,9 +24,6 @@
 #include "Analysis.h"
 
 #include "Geometry.h"
-#include "GeometrySlab.h"
-#include "GeometryShear.h"
-#include "Geometry2D.h"
 
 #include "Vlasov.h"
 

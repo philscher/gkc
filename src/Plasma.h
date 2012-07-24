@@ -22,7 +22,6 @@
 
 
 #define SPECIES_MAX 8
-
 /**
 *   @brief Hold information about the plasma with species and normalizations
 *
@@ -31,73 +30,72 @@ class Plasma : public IfaceGKC {
 
   public:
 
-/**
-*   @brief Information about Species
-*
-**/
-typedef struct Species 
-{
+   /**
+   *   @brief Information about Species
+   *
+   **/
+   typedef struct Species 
+   {
   
-   Species() : q(0.), m(0.), collision(0.), w_n(0.), w_T(0.), doGyro(true), T0(0.), n0(0.) 
-   { 
-     alpha   = 0.;
-     sigma   = 0.;
-     T.resize(RxLB); T = 0.;
-     n.resize(RxLB); n = 0.;
-     gyroModel = "";
-   };
+     Species() : q(0.), m(0.), collision(0.), w_n(0.), w_T(0.), doGyro(true), T0(0.), n0(0.) 
+     { 
+       alpha   = 0.;
+       sigma   = 0.;
+       T.resize(RxLB); T = 0.;
+       n.resize(RxLB); n = 0.;
+       gyroModel = "";
+     };
    
-   double q;          ///< Charge 
-   double m;          ///< Mass 
-   double collision;  ///< collisional Frequency 
-   double w_n;        ///< Density gradient
-   double w_T;        ///< Temperature gradient
-   double T0;         ///< Temperature normalization
-   double n0;         ///< Density normalization
-   bool   doGyro;     ///< 
+     double q;          ///< Charge 
+     double m;          ///< Mass 
+     double collision;  ///< collisional Frequency 
+     double w_n;        ///< Density gradient
+     double w_T;        ///< Temperature gradient
+     double T0;         ///< Temperature normalization
+     double n0;         ///< Density normalization
+     bool   doGyro;     ///< 
    
-   double scale_v;    ///< Velocity scale / Thermal velocity
-   double scale_n;    
-   double sigma;      ///< sigma 
-   double alpha;      ///< alpha
+     double scale_v;    ///< Velocity scale / Thermal velocity
+     double scale_n;    
+     double sigma;      ///< sigma 
+     double alpha;      ///< alpha
    
    
-   char name[64];     ///< name of species
-   char n_name[64];   ///< dont know
-   char T_name[64];   ///< dont know
+     char name[64];     ///< name of species
+     char n_name[64];   ///< dont know
+     char T_name[64];   ///< dont know
    
-   std::string gyroModel;
-   std::string f0_str;
-   std::string f1_str;
+     std::string gyroModel;
+     std::string f0_str;
+     std::string f1_str;
    
-   // stupid fix, but we have to otherwise all stuff is private
+     // stupid fix, but we have to otherwise all stuff is private
    
-   void update(Geometry<GKC_GEOMETRY> *geo, double cs) { 
+   void update(Geometry *geo, double cs) { 
         scale_v = sqrt(2.*T0/m); 
         scale_n = n0;
         alpha = scale_v*  1./(cs*sqrt(geo->eps_hat));
         sigma = q / T0;
    
-   };
+     };
 
-   /// Calculate debye legnth
-   double debye2(const int x) { return T(x)/(4.*M_PI*n(x)*q*q); };
+     /// Calculate debye legnth
+     double debye2(const int x) { return T(x)/(4.*M_PI*n(x)*q*q); };
    
 
-   /**
-   *  Temperature profile
-   */
-   Array1d T;
-   /**
-   *  Density profile
-   *
-   **/ 
-   Array1d n;
+     /**
+     *  Temperature profile
+     **/
+     Array1d T;
+   
+     /**
+     *  Density profile
+     *
+     **/ 
+     Array1d n;
+   
+   } _Species;
 
-} _Species;
-
-
- 
    // Check what is really necessary also in plasma
 
    double n_ref, ///< Reference 
@@ -110,7 +108,7 @@ typedef struct Species
    * \f[
    *      \lambda_D = \lambda_D / \rho_{ref} = \sqrt{T_{ref}}{4\pi\rho_{ref}^2 n_{ref} e^2}
    * \f]
-   *
+   *  @note needs to be 1-d over X
    **/
    double debye2;
 
@@ -140,7 +138,7 @@ typedef struct Species
    *   adiabatic species.
    *   @todo check impact on speed
    **/
-   Plasma(Setup *setup, FileIO *fileIO, Geometry<GKC_GEOMETRY> *geo, const int nfields=1);
+   Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int nfields=1);
    
    /**
    *   Note Species goes from 0 ... SPECIES_MAX, where 0 is an

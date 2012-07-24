@@ -26,7 +26,7 @@
 
 #include "petscmat.h" 
 
-FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry<GKC_GEOMETRY> *geo, FFTSolver *fft) 
+FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry *geo, FFTSolver *fft) 
 : FieldsFFT(setup, grid, parallel,fileIO, geo, fft)
 {
         // Move to Master PETSc class (create one ...) 
@@ -178,14 +178,14 @@ cmplxd FieldsHermite::getElements(const int x, const int n, const double r, int 
              *              + \frac{g}{\sqrt{g_{xx}} \rho sin{(\alpha)}
 
              **/
-            const double g = sqrt( geo->g_xx(x,y_k,z) * geo->g_yy(x,y_k,z) - pow2(geo->g_xy(x,y_k,z)) );
+            const double g = sqrt( geo->g_xx(x,z) * geo->g_yy(x,z) - pow2(geo->g_xy(x,z)) );
 
         
 
 
-            const double r_x = sqrt(geo->g_xx(x,y_k, z)) * r * cos(alpha);
-            const double r_y = (geo->g_xy(x, y_k, z) / geo->g_xx(x,y_k,z)) * r * cos(alpha) +
-                               g / geo->g_xx(x,y_k,z) * r * sin(alpha);
+            const double r_x = sqrt(geo->g_xx(x, z)) * r * cos(alpha);
+            const double r_y = (geo->g_xy(x, z) / geo->g_xx(x,z)) * r * cos(alpha) +
+                               g / geo->g_xx(x,z) * r * sin(alpha);
            
             // Is this correct ? (Matrix is still not singular ?)
        //     if( ( i <= (NxGlD+1)) || ( i  >= (NxGuD-1))) return 0.;

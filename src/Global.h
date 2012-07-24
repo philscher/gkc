@@ -191,11 +191,6 @@ extern GeneralArrayStorage<6> GKCStorage;
 extern GeneralArrayStorage<4> GKCStorage4;
 
 
-//#define GKC_GEOMETRY GeometrySlab
-#define GKC_GEOMETRY Geometry2D
-
-class GKC_GEOMETRY;
-
 
 
 #endif // __GLOBAL_H

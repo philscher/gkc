@@ -28,6 +28,8 @@
 //#include "Vlasov/Vlasov_Fortran.h"
 //#include "Vlasov/Vlasov_Blitz.h"
 #include "Vlasov/Vlasov_Cilk.h"
+#include "Geometry/GeometrySA.h"
+#include "Geometry/Geometry2D.h"
 
 #include "Eigenvalue/Eigenvalue_SLEPc.h"
 #include "Visualization/Visualization_Data.h"
@@ -55,6 +57,7 @@ GKC::GKC(Setup *_setup) : setup(_setup)  {
     std::string psolver_type    = setup->get("Fields.Solver", "DFT");
     std::string vlasov_type     = setup->get("Vlasov.Solver", "Cilk");
     Helios_Type                 = setup->get("GKC.Type", "IVP");
+    std::string geometry_Type   = setup->get("GKC.Geometry", "Geometry2D");
 
 
 	/////////////////// Load subsystems ////////////////
@@ -64,7 +67,11 @@ GKC::GKC(Setup *_setup) : setup(_setup)  {
 
     fileIO    = new FileIO(parallel, setup);
     grid      = new Grid(setup, parallel, fileIO);
-    geometry  = new GKC_GEOMETRY(setup, fileIO);
+    
+    if     (geometry_Type == "GeometrySA") geometry  = new GeometrySA(setup, fileIO);
+    else if(geometry_Type == "Geometry2D") geometry  = new Geometry2D(setup, fileIO);
+    else check(-1, DMESG("No such Geometry"));
+
     plasma    = new Plasma(setup, fileIO, geometry);
 
 
@@ -199,7 +206,7 @@ void GKC::printSettings() {
             infoStream << "-------------------------------------------------------------------------------" << std::endl << std::endl << std::flush;
 
 
-   parallel->print(infoStream);
+   parallel->print(infoStream.str());
 
 }
     

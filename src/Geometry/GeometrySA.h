@@ -57,7 +57,7 @@
 *
 *
 **/
-class GeometrySA : public Geometry<GeometrySA>
+class GeometrySA : public Geometry
 {
   public:
 
@@ -66,39 +66,44 @@ class GeometrySA : public Geometry<GeometrySA>
           q0,    ///< Safety factor
           R0,    ///< Major radius
           alpha; ///< Shafranov Shift
- 
-   GeometrySA(Setup *_setup) : Geometry<GeometrySA>(setup, true, true) {
+
+    double Bhat2;
+
+   GeometrySA(Setup *setup, FileIO *fileIO) : Geometry(setup, fileIO) {
     
-    
-      // set default values to Cyclon Base Case (CBC)
-      shear = setup->get("GeometrySA.Shear"         , 0.16);
-      q0    = setup->get("GeometrySA.SafetyFactor"  , 1.5 );
-      R0    = setup->get("GeometrySA.Major Radius"  , 1.5 );
-      eps   = setup->get("GeometrySA.AspectRatio"   , 0.19);
-      alpha = setup->get("GeometrySA.ShafranovShift", 0.0 );
    
+      Bhat2 = 1.;
+      // set default values to Cyclon Base Case (CBC)
+      shear = setup->get("Geometry.SA.Shear"         , 0.16);
+      q0    = setup->get("Geometry.SA.SafetyFactor"  , 1.5 );
+      R0    = setup->get("Geometry.SA.MajorRadius"   , 1.5 );
+      eps   = setup->get("Geometry.SA.AspectRatio"   , 0.19);
+      alpha = setup->get("Geometry.SA.ShafranovShift", 0.0 );
+  
+
+      setupArrays();
     };
 
   
    /// \f$ J = \left( g_{zz} \left[ g_{xx} g_{yy} - g_{xy}^2 \right] \right)^{-\frac{1}{2}} \f$
-   inline const double J(const int x, const int y, const int z) {
+   double get_J(const int x, const int z) {
 
       // where does this comes from
-      return 1./sqrt( g_zz(x,y,z) * ( g_xx(x,y,z) * g_yy(x,y,z) - pow2(g_xy(x,y,z))));
+      return 1./sqrt( g_zz(x,z) * ( g_xx(x,z) * g_yy(x,z) - pow2(g_xy(x,z))));
 
     };
 
-
-    /** Nabla 2 operator  */
+/**
+    /// Nabla 2 operator /
     const double k2_p(const int x_k, const int y_k, const int z) {
       
-      const double kx = k(Nx,Lx,x_k);
-      const double ky = k(Ny,Ly,y_k);
+//      const double kx = k(Nx,Lx,x_k);
+//      const double ky = k(Ny,Ly,y_k);
 
-      return pow2(kx2) + g_xx(x,y,z) * pow2(ky) + 2.* g_xy(x,y,z) * kx * ky;
+//      return pow2(kx2) + g_xx(x,z) * pow2(ky) + 2.* g_xy(x,z) * kx * ky;
 
     };
-
+*/
 
   private:
   
@@ -108,17 +113,17 @@ class GeometrySA : public Geometry<GeometrySA>
    **/
    ///@{
    ///  \f$ g_{xx} = 1 \f$
-   inline const double g_xx(const int x, const int y, const int z) { return 1.0; };
+   inline double g_xx(const int x, const int z) { return 1.0; };
    ///  \f$ g_{xy} = \frac{\hat{s}}{q_0 R_0} z \f$
-   inline const double g_xy(const int x, const int y, const int z) { return shear/(q0*R0)*Z(s); }; 
+   inline double g_xy(const int x, const int z) { return shear/(q0*R0)*Z(z); }; 
    ///  \f$ g_{xx} = 0 \f$
-   inline const double g_xz(const int x, const int y, const int z) { return 0.0; };
+   inline double g_xz(const int x, const int z) { return 0.0; };
    ///  \f$ g_{xx} = 1 + \left(\frac{\hat{s}}{q_0 R_0} \right)^2 z + \left( \epsilon q_0 \right)^2 \f$
-   inline const double g_yy(const int x, const int y, const int z) { return 1.  + pow2(shear/(q0*R0) * Z(z)) + pow2(eps*q0); };
+   inline double g_yy(const int x, const int z) { return 1.  + pow2(shear/(q0*R0) * Z(z)) + pow2(eps*q0); };
    ///  \f$ g_{xx} = q_0 \epsilon \f$
-   inline const double g_yz(const int x, const int y, const int z) { return q0 * eps; };
+   inline double g_yz(const int x, const int z) { return q0 * eps; };
    ///  \f$ g_{xx} = \left( q_0 \epsilon \right) \f$
-   inline const double g_zz(const int x, const int y, const int z) { return pow2(q0*eps); };
+   inline double g_zz(const int x, const int z) { return pow2(q0*eps); };
    ///@}
   
    /**  
@@ -127,23 +132,16 @@ class GeometrySA : public Geometry<GeometrySA>
    **/
    ///@{
    /// \f$  B = 1 \f$
-   inline const double B      (const int x, const int y, const int z) { return 1.;};
+   double get_B      (const int x, const int z) { return 1.;};
    /// \f$  \partial_x B = \frac{-\hat{B}}{R_0} \cos{(z)}  \f$
-   inline const double dB_dx (const int x, const int y, const int z) { return - Bhat2 / R0 * cos(Z(z));            };
+   double get_dB_dx (const int x , const int z) { return - Bhat2 / R0 * cos(Z(z));            };
    /// \f$  \partial_y B = 0 \f$
-   inline const double dB_dy (const int x, const int y, const int z) { return 0.;                                  };
+   double get_dB_dy (const int x, const int z) { return 0.;                                  };
    /// \f$  \partial_x B = -\hat{B} \frac{\epsilon}{q_0 R_0} \cos{(z)}  \f$
-   inline const double dB_dz (const int x, const iny y, const int z) { return - Bhat2 * eps/(q0 * R0) * cos(Z(z)); };
+   double get_dB_dz (const int x, const int z) { return - Bhat2 * eps/(q0 * R0) * cos(Z(z)); };
    ///@}
    
-   /// \f$ K_x = - 4 \sin(z) \f$
-   inline const double Kx(const int x, const int y, const int z) const { return - 2. * 2. * sin(Z(z)); };
-   /// \f$ K_y = - (\cos{(z)} + \hat{s} z \sin{(z)} \f$
-   inline const double Ky(const int x, const int y, const int z) const { return - (cos(Z(z)) + shear * Z(z) * sin(Z(z))); };
-
- 
-   // no shearing, so simply y
-   inline ShearB getYPos(const int x, const int y) { return ShearB(y, y, 0.); };
+   inline double nu (const int x) { return 0.; };
 
   protected:
 

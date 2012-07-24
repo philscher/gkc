@@ -27,15 +27,15 @@
 *
 *
 **/
-class Geometry2D : public Geometry<Geometry2D>
+class Geometry2D : public Geometry
 {
   Array1d By;
   std::string shear_str;
   std::string By_str;
-  double theta, shear, kz;
 
 
  public:
+  double theta, shear, kz;
 
    void printOn(ostream& output) const {
          output   << "Geometry  |  Sheared Slab   By : " << By_str  << " Shear : " << shear_str << " Theta : "  <<  theta << std::endl;
@@ -43,7 +43,7 @@ class Geometry2D : public Geometry<Geometry2D>
 
 
 
-  Geometry2D(Setup *setup, FileIO *fileIO) : Geometry<Geometry2D>(setup, fileIO, true)  {
+  Geometry2D(Setup *setup, FileIO *fileIO) : Geometry(setup, fileIO)  {
  
     // Parse magnetic field 
     theta               = setup->get("Geometry.Theta"   , 0.);
@@ -67,10 +67,13 @@ class Geometry2D : public Geometry<Geometry2D>
 
         // BUG
     Geometry::initDataOutput(fileIO);
+    
+    setupArrays();
+
   };
 
   
-  inline double J(const int x, const int y, const int z) { return 1.; };
+  inline double get_J(const int x, const int z) { return 1.; };
 
 
 
@@ -80,17 +83,17 @@ class Geometry2D : public Geometry<Geometry2D>
    **/
    ///@{
    ///  \f$ g_{xx} = 1 \f$
-   inline double g_xx(const int x, const int y, const int z) { return 1.0;                 };
+   inline double g_xx(const int x, const int z) { return 1.0;                 };
    ///  \f$ g_{xy} = 0 \f$
-   inline double g_xy(const int x, const int y, const int z) { return 0.0;             }; 
+   inline double g_xy(const int x, const int z) { return 0.0;             }; 
    ///  \f$ g_{xz} = 0 \f$
-   inline double g_xz(const int x, const int y, const int z) { return 0.0;                 };
+   inline double g_xz(const int x, const int z) { return 0.0;                 };
    ///  \f$ g_{yy} = 1 \f$
-   inline double g_yy(const int x, const int y, const int z) { return 1.0; };
+   inline double g_yy(const int x, const int z) { return 1.0; };
    ///  \f$ g_{yz} = 0 \f$
-   inline double g_yz(const int x, const int y, const int z) { return 0.0;                 };
+   inline double g_yz(const int x, const int z) { return 0.0;                 };
    ///  \f$ g_{zz} = 0 \f$
-   inline double g_zz(const int x, const int y, const int z) { return 0.0;                 };
+   inline double g_zz(const int x, const int z) { return 0.0;                 };
    ///@}
   
    /**  
@@ -99,41 +102,26 @@ class Geometry2D : public Geometry<Geometry2D>
    **/
    ///@{
    /// \f$  B = 1 \f$
-   inline double B      (const int x, const int y, const int z) { return 1.; };
-   /// \f$  \partial_x B = 0 \f$
-   inline double dB_dx  (const int x, const int y, const int z) { return 0.; };
+   inline double get_B      (const int x, const int z) { return 1.; };
+   /// \f$  \partial_x B = 0 \f$ 
+   inline double get_dB_dx  (const int x, const int z) { return 0.; };
    /// \f$  \partial_y B = 0 \f$
-   inline double dB_dy  (const int x, const int y, const int z) { return 0.; };
+   inline double get_dB_dy  (const int x, const int z) { return 0.; };
    /// \f$  \partial_z B = 0 \f$
-   inline double dB_dz  (const int x, const int y, const int z) { return 0.; };
+   inline double get_dB_dz  (const int x, const int z) { return 0.; };
    ///@}
  
-   ///@{
-   /// \f$  K_x = 0 \f$
-   inline double Kx(const int x, const int y, const int z)  { return 0.; };
-   /// \f$  K_y = 0 \f$
-   inline double Ky(const int x, const int y, const int z)  { return 0.; };
-   ///@}
-  
    /**
    *
    *   Get the value of shear at position x, which is constant for sheared slab geometry 
    *
    **/
-   inline cmplxd get_kp(const int x, const cmplxd ky, const int z)  { return ky * By(x) + cmplxd(0., kz); };
+   inline cmplxd get_kp(const int x, const cmplxd ky, const int z) const  { return ky * By(x) + cmplxd(0., kz); };
   
+  
+   double nu (const int x) { return 0.; };
 
 
-   // for sheared magnetic fields, we have special boundary conditions, because
-   // we need to take care of possible shear
-   inline ShearB getYPos(const int x,const int y) {
-
-            return ShearB(y, y, 0.0  );//(yv - Y(yi-1))/dy);
-              
-   };
-
-
-   std::string getGeometryName() { return "Sheared Slab 2D"; };
 
    void initDataOutput(FileIO *fileIO, hid_t geometryGroup) {
           check(H5LTset_attribute_string(geometryGroup, ".", "Type", "2D"), DMESG("H5LTset_attribute"));
@@ -144,11 +132,6 @@ class Geometry2D : public Geometry<Geometry2D>
     }
 
 
-// transformation
-  double getY(const int x, const int y, const int z) {
-	return Y(y);
- }
-   
      virtual void writeData(Timing *timing) {};
      virtual void closeData() {};
 

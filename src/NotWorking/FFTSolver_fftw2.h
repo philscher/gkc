@@ -52,7 +52,7 @@ class FFTSolver_fftw2 : public FFTSolver
   rfftwnd_plan plan_Phi3DBackward;
 
   public:
-    FFTSolver_fftw2(Setup *setup, Parallel *parallel, Geometry<HELIOS_GEOMETRY> *geo);
+    FFTSolver_fftw2(Setup *setup, Parallel *parallel, Geometry *geo);
     ~FFTSolver_fftw2();
 
     int solve(int FFTtype, int direction);

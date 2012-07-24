@@ -21,7 +21,7 @@
 
 #include "Global.h"
 
-FFTSolver_fftw2::FFTSolver_fftw2(Setup *setup, Parallel *parallel, Geometry<HELIOS_GEOMETRY> *geo) : FFTSolver(setup, parallel, geo, Nx*Ny*Nz, Nx*Ny, Nx) {
+FFTSolver_fftw2::FFTSolver_fftw2(Setup *setup, Parallel *parallel, Geometry *geo) : FFTSolver(setup, parallel, geo, Nx*Ny*Nz, Nx*Ny, Nx) {
        
    check(-1, DMESG("Not working, Please fix"));
    /* 
@@ -126,7 +126,7 @@ int FFTSolver_fftw2::solve(int FFTtype, int direction) {
           std::cout << " 3DFFT" << std::endl;
             if(direction == FFT_FORWARD)  rfftwnd_one_real_to_complex(plan_Phi3DForward , r3In.data()           , (fftw_complex *)      k3Out.data());
             if(direction == FFT_BACKWARD) rfftwnd_one_complex_to_real(plan_Phi3DBackward, (fftw_complex *) k3In.data(), r3Out.data());
-            return HELIOS_SUCCESS;
+            return GKC_SUCCESS;
 	}
     //        if     (direction == FFT_FORWARD ) fftw_execute(plan_Phi3DForward  );
     //        else if(direction == FFT_BACKWARD) fftw_execute(plan_Phi3DBackward);
@@ -137,7 +137,7 @@ int FFTSolver_fftw2::solve(int FFTtype, int direction) {
         if(direction == FFT_FORWARD)      fftw_execute(plan_Phi1DAvrgForward);
         
         if(direction == FFT_BACKWARD)     fftw_execute(plan_Phi1DAvrgBackward);
-        return HELIOS_SUCCESS;
+        return GKC_SUCCESS;
     }
     * */ 
     else if(FFTtype & FFT_2D ) {
@@ -145,11 +145,11 @@ int FFTSolver_fftw2::solve(int FFTtype, int direction) {
           // Set working space !
             if(direction == FFT_FORWARD)  rfftwnd_real_to_complex(plan_Phi2DManyForward , Nz, r3In.data()           , 1, Nx*Ny, (fftw_complex *) k2Out.data(), 1, (Nx/2+1)*Ny);
             if(direction == FFT_BACKWARD) rfftwnd_complex_to_real(plan_Phi2DManyBackward, Nz, (fftw_complex *) k2In.data(), 1, (Nx/2+1)*Ny, r3Out.data(), 1, Nx*Ny);
-            return HELIOS_SUCCESS;
+            return GKC_SUCCESS;
         }
     else  check(-1, DMESG("Unknown FFT type or not supported"));
         
-    return HELIOS_FAILED;
+    return GKC_FAILED;
 }
 
 std::string FFTSolver_fftw2::getLibraryName() {
