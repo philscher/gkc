@@ -307,3 +307,30 @@ void Setup::printOn(ostream &output) const
   if(extraLineOptions   != "")   output << "Extra    | with " << commandLineOptions << std::endl;
   if(parser_constants   != "")   output << "         | FParser Constants : " << parser_constants << std::endl; 
 }
+   
+
+template<class T> T Setup::get(std::string key, const T default_Value)
+{
+        if(     config.count(key) == 1) {
+            std::string s = config[key];
+            std::istringstream stream (s);
+            T t;
+            stream >> t;
+           
+            // delete element in check
+            vector<std::string>::iterator f = find(config_check.begin(), config_check.end(), key);
+            if( f != config_check.end() ) config_check.erase(f);
+            
+            
+            return t;
+        }
+        else if(config.count(key) > 1) check(-1, DMESG("Parser Error elements occurse more than once"));
+
+        return default_Value;
+};
+
+// Most common types, need any more ?
+template double      Setup::get<double>     (std::string key, const double value     );
+template int         Setup::get<int>        (std::string key, const int value        );
+template std::string Setup::get<std::string>(std::string key, const std::string value);
+    

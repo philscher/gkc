@@ -198,28 +198,11 @@ public:
    *    @brief Access Elements from Configuration file
    *
    *    Will drop an error in case a key is duplicated.
-   *
+   *   
+   *    @note : We use explicit template intantiation
    **/
-   template<class T> T get(std::string key, const T default_Value)
-   {
-        if(     config.count(key) == 1) {
-            std::string s = config[key];
-            std::istringstream stream (s);
-            T t;
-            stream >> t;
-           
-            // delete element in check
-            vector<std::string>::iterator f = find(config_check.begin(), config_check.end(), key);
-            if( f != config_check.end() ) config_check.erase(f);
-            
-            
-            return t;
-        }
-        else if(config.count(key) > 1) check(-1, DMESG("Parser Error elements occurse more than once"));
-
-        return default_Value;
-   };
-    
+   template<class T> T get(std::string key, const T default_Value);
+  
    /**
    *
    * @brief returns int of seconds from time string
