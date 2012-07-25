@@ -177,14 +177,15 @@ int Fields::setBoundary(Array6z  A) {
    // SendYu(RxLD, RB4  , RzLD, RmLD, RsLD, RFields) = A(RxLD, Range(NyLuD-3, NyLuD  ), RzLD, RmLD, RsLD, RFields);
         
    // For z-we need to connect the magnetic field lines
-   if( Nz > 1) omp_for(int x=NxLlD; x<= NxLuD;x++) {
+   if(Nz > 1)  for(int x=NxLlD; x<= NxLuD;x++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
 
-      const cmplxd a = cmplxd(0., 2.* M_PI);
+      //const cmplxd a = cmplxd(0., 2.* M_PI * fft->ky(y_k));
+      const cmplxd a = cmplxd(0., 2.* M_PI/Ly * y_k);
       
-      SendZl(x, RkyLD, RB, RmLD, RsLD, RFields) = A(x, RkyLD, Range(NzLlD  , NzLlD+1), RmLD, RsLD, RFields) * exp( a*geo->nu(x));
-      SendZu(x, RkyLD, RB, RmLD, RsLD, RFields) = A(x, RkyLD, Range(NzLuD-1, NzLuD  ), RmLD, RsLD, RFields) * exp(-a*geo->nu(x));
+      SendZl(x, y_k, RB, RmLD, RsLD, RFields) = A(x, y_k, Range(NzLlD  , NzLlD+1), RmLD, RsLD, RFields) * exp( a*geo->nu(x));
+      SendZu(x, y_k, RB, RmLD, RsLD, RFields) = A(x, y_k, Range(NzLuD-1, NzLuD  ), RmLD, RsLD, RFields) * exp(-a*geo->nu(x));
 
-   }
+   } }
 
    // Parallized version is using SendRecv call
    parallel->updateNeighbours(  SendXl,   SendXu,  SendYl, SendYu, SendZl,  SendZu, 

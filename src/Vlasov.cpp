@@ -109,14 +109,14 @@ int Vlasov::setBoundary(Array6z  A , int boundary_type) {
    // Y-Boundary not required
 
    // Z-Boundary 
-   if(Nz > 1) omp_for(int x=NxLlD; x<= NxLuD;x++) {
+   if(Nz > 1)  for(int x=NxLlD; x<= NxLuD;x++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
            
-            const cmplxd a = cmplxd(0., 2.* M_PI);
+            const cmplxd a = cmplxd(0., 2.* M_PI/Ly * y_k);
 
-            SendZl(x, RkyLD, RB, RvLD, RmLD, RsLD) = A(x, RkyLD, Range(NzLlD  , NzLlD+1), RvLD, RmLD, RsLD) * exp( a*geo->nu(x));
-            SendZu(x, RkyLD, RB, RvLD, RmLD, RsLD) = A(x, RkyLD, Range(NzLuD-1, NzLuD  ), RvLD, RmLD, RsLD) * exp(-a*geo->nu(x));
+            SendZl(x, y_k, RB, RvLD, RmLD, RsLD) = A(x, y_k, Range(NzLlD  , NzLlD+1), RvLD, RmLD, RsLD) * exp( a*geo->nu(x));
+            SendZu(x, y_k, RB, RvLD, RmLD, RsLD) = A(x, y_k, Range(NzLuD-1, NzLuD  ), RvLD, RmLD, RsLD) * exp(-a*geo->nu(x));
 
-  }
+  } }
 
    parallel->updateNeighbours(SendZu, SendZl, RecvZu, RecvZl, DIR_Z);
   
