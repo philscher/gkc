@@ -15,11 +15,9 @@
 #ifndef GEOMETRY_SHEARED_H
 #define GEOMETRY_SHEARED_H
 
-#include "Geometry.h"
 #include "Global.h"
-#include "Setup.h"
+#include "Geometry.h"
 
-#include "FileIO.h"
 
 /**
 *
@@ -37,10 +35,10 @@
 *    \f[
 *          g^{ij} = 
 *              \left( \begin{array}{lll}
-*                      1     &  z/L_s                 & 0 \\
-*                       z\L_s &  1 + \frac{z^2}{L_s^2} & 0 \\
-*                       0     &  0                     & 1
-*                       \end{array} \right)
+*                1     &  z/L_s                 & 0 \\
+*                z\L_s &  1 + \frac{z^2}{L_s^2} & 0 \\
+*                0     &  0                     & 1
+*              \end{array} \right)
 *    \f]
 *
 *    This results in the spatial operators of the form
@@ -80,7 +78,7 @@
 *
 *
 **/
-class GeometryShear : public Geometry<GeometryShear>
+class GeometryShear : public Geometry
 {
    double Ls,    ///< Shearing length  
           shear; ///< Shearing
@@ -90,15 +88,9 @@ class GeometryShear : public Geometry<GeometryShear>
 
   public:
 
-   void printOn(ostream& output) const {
-         
-     output   << "Geometry  |  Sheared Slab   shear : " << shear << " (Ls : " << Ls << " ) "  << " eps_hat : " << eps_hat << std::endl;
-     output   << "          |  Connect Field Lines (" << (connectFieldLines ? "true" : "false") << 
-                                   ")   RoundShear (" << (roundShearToConnect ? "true" : "false") << ")" << std::endl;
-   };
 
 
-   GeometryShear(Setup *setup, FileIO *fileIO) : Geometry<GeometryShear>(setup, fileIO,  true)  {
+   GeometryShear(Setup *setup, FileIO *fileIO) : Geometry(setup, fileIO)  {
      
 
       shear               = setup->get("Geometry.Shear"   , 0.);
@@ -120,7 +112,7 @@ class GeometryShear : public Geometry<GeometryShear>
 
  
    /// \f$ J = 1 \f$
-   inline double J(const int x, const int y, const int z) { return 1.; };
+   inline double get_J(const int x, const int z) { return 1.; };
 
 
 
@@ -129,17 +121,17 @@ class GeometryShear : public Geometry<GeometryShear>
    **/
    ///@{
    ///  \f$ g_{xx} = 1 \f$
-   inline double g_xx(const int x, const int y, const int z) { return 1.0;                 };
+   inline double g_xx(const int x, const int z) { return 1.0;                 };
    ///  \f$ g_{xy} = z / L_s \f$
-   inline double g_xy(const int x, const int y, const int z) { return Z(z)/Ls;             }; 
+   inline double g_xy(const int x, const int z) { return Z(z)/Ls;             }; 
    ///  \f$ g_{xz} = 0 \f$
-   inline double g_xz(const int x, const int y, const int z) { return 0.0;                 };
+   inline double g_xz(const int x, const int z) { return 0.0;                 };
    ///  \f$ g_{yy} = 1 + \left( \frac{z}{L_s} \right)^2 \f$
-   inline double g_yy(const int x, const int y, const int z) { return 1.0 + pow2(Z(z)/Ls); };
+   inline double g_yy(const int x, const int z) { return 1.0 + pow2(Z(z)/Ls); };
    ///  \f$ g_{yz} = 0 \f$
-   inline double g_yz(const int x, const int y, const int z) { return 0.0;                 };
+   inline double g_yz(const int x, const int z) { return 0.0;                 };
    ///  \f$ g_{zz} = 1 \f$
-   inline double g_zz(const int x, const int y, const int z) { return 1.0;                 };
+   inline double g_zz(const int x, const int z) { return 1.0;                 };
    ///@}
   
    /**  
@@ -147,69 +139,29 @@ class GeometryShear : public Geometry<GeometryShear>
    **/
    ///@{
    /// \f$  B = 1 \f$
-   inline double B      (const int x, const int y, const int z) { return 1.; };
+   inline double get_B      (const int x, const int z) { return 1.; };
    /// \f$  \partial_x B = 0 \f$
-   inline double dB_dx  (const int x, const int y, const int z) { return 0.; };
+   inline double get_dB_dx  (const int x, const int z) { return 0.; };
    /// \f$  \partial_y B = 0 \f$
-   inline double dB_dy  (const int x, const int y, const int z) { return 0.; };
+   inline double get_dB_dy  (const int x, const int z) { return 0.; };
    /// \f$  \partial_z B = 0 \f$
-   inline double dB_dz  (const int x, const int y, const int z) { return 0.; };
+   inline double get_dB_dz  (const int x, const int z) { return 0.; };
    ///@}
  
-   /**  
-   *    @name The metric coefficient the individual metric components
-   **/
-   ///@{
-   /// \f$ K_x = 0 \f$
-   inline double Kx(const int x, const int y, const int z)  { return 0.; };
-   /// \f$ K_y = 0 \f$
-   inline double Ky(const int x, const int y, const int z)  { return 0.; };
-   ///@}
-  
-   /**
-   *
-   *   Get the value of shear at position x, which is constant for sheared slab geometry 
-   *
-   **/
-   inline double getShear(const int x)  { return shear; };
+ 
+   // how to connect the field lines ?
+   double nu (const int x) { return 0.; };
+   
 
-   // for sheared magnetic fields, we have special boundary conditions, because
-   // we need to take care of possible shear
-   inline ShearB getYPos(const int x,const int y) 
-   {
 
-     // calculte shift in y, 
-     // then map by real modulo (add ghost cells)
-     const double sy = 2. * M_PI * shear * X(x);
-     const int yi = ((int) (sy/dy));
-     int lDy, uDy;
-     
-     if(connectFieldLines) {
-       // lDy = (NzLlD == NzGlD) ? realmod(y- 3 - yi, Ny) + 3: y;
-       // uDy = (NzLuD == NzGuD) ? realmod(y-3 + yi, Ny) + 3: y;
-	        
-     } 
-	  
-     else {
-	
-       lDy = y; uDy = y;
-     
-     }
-     
-     // if field line leaves the domain, don't connect them anymore
-       /*     else {
-	            lDy = (NzLlD == NzGlD) ? ((y-3 + yi > Ny) ? -1 : y + yi + 3) : y;
-                uDy = (NzLuD == NzGuD) ? ((y-3 - yi <  0) ? -1 : y - yi + 3) : y;
-            }
-         */   
-            return ShearB(lDy, uDy, 0.0  );//(yv - Y(yi-1))/dy);
-              
-            check(-1, DMESG("Should not be reached here"));        
+   void printOn(ostream& output) const {
+         
+     output   << "Geometry  |  Sheared Slab   shear : " << shear << " (Ls : " << Ls << " ) "  << " eps_hat : " << eps_hat << std::endl;
+     output   << "          |  Connect Field Lines (" << (connectFieldLines ? "true" : "false") << 
+                                   ")   RoundShear (" << (roundShearToConnect ? "true" : "false") << ")" << std::endl;
    };
 
-   std::string getGeometryName() { return "Sheared Slab"; };
-   
-   void initDataOutput(FileIO *fileIO, hid_t geometryGroup) {
+   void initDataOutput(hid_t geometryGroup) {
 
       check(H5LTset_attribute_string(geometryGroup, ".", "Type", "Sheared Slab"), DMESG("H5LTset_attribute"));
       check(H5LTset_attribute_string(geometryGroup, ".", "ConnectFieldLines", connectFieldLines ? "true" : "false"), DMESG("H5LTset_attribute"));
@@ -221,15 +173,8 @@ class GeometryShear : public Geometry<GeometryShear>
    }
 
 
-   // transformation
-   double getY(const int x, const int y, const int z) {
-	   return Y(y)+X(x)*Z(z)/Ls;
-   }
- 
-   //   void initDataOutput(FileIO *fileIO) {
-   virtual void initDataOutput(FileIO *fileIO) {};
-   virtual void writeData(Timing *timing) {};
-   virtual void closeData() {};
+  // virtual void writeData(Timing *timing) {};
+  // virtual void closeData() {};
 
 };
 

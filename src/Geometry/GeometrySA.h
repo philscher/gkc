@@ -16,9 +16,7 @@
 #define GEOMETRY_FIELDALIGNED_H
 
 #include "Global.h"
-#include "Setup.h"
 #include "Geometry.h"
-#include "FFTSolver.h"
 
 
 /**
@@ -141,13 +139,13 @@ class GeometrySA : public Geometry
    double get_dB_dz (const int x, const int z) { return - Bhat2 * eps/(q0 * R0) * cos(Z(z)); };
    ///@}
    
-   inline double nu (const int x) { return 0.; };
+   inline double nu (const int x) { return  q0 * (1. + shear * (X(x)/R0)); };
 
   protected:
 
    virtual void printOn(ostream& output) const {
-         output   << "Geometry  |  s-alpha Geometry Shear : " << shear << " Safety Factor   : " << q0 << std::endl;
-         output   << "          |  Aspect Ratio           : " << eps   << " Shfaranov-Shift : " << alpha << std::endl;
+         output   << "Geometry   |  s-alpha Geometry Shear : " << shear << " Safety Factor   : " << q0 << std::endl;
+         output   << "           |  Aspect Ratio           : " << eps   << " Shfaranov-Shift : " << alpha << std::endl;
    };
     
    void initDataOutput(hid_t GeometryGroup) {

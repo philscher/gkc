@@ -15,11 +15,9 @@
 #ifndef GEOMETRY_2D_H
 #define GEOMETRY_2D_H
 
-#include "Geometry.h"
 #include "Global.h"
-#include "Setup.h"
+#include "Geometry.h"
 
-#include "FileIO.h"
 /**
 *  @brief 2-d sheared slab geometry definition
 *
@@ -37,9 +35,6 @@ class Geometry2D : public Geometry
  public:
   double theta, shear, kz;
 
-   void printOn(ostream& output) const {
-         output   << "Geometry  |  Sheared Slab   By : " << By_str  << " Shear : " << shear_str << " Theta : "  <<  theta << std::endl;
-   };
 
 
 
@@ -122,8 +117,11 @@ class Geometry2D : public Geometry
    double nu (const int x) { return 0.; };
 
 
+   void printOn(ostream& output) const {
+         output   << "Geometry  |  Sheared Slab   By : " << By_str  << " Shear : " << shear_str << " Theta : "  <<  theta << std::endl;
+   };
 
-   void initDataOutput(FileIO *fileIO, hid_t geometryGroup) {
+   void initDataOutput(hid_t geometryGroup) {
           check(H5LTset_attribute_string(geometryGroup, ".", "Type", "2D"), DMESG("H5LTset_attribute"));
         //check(H5LTset_attribute_double(geometryGroup, ".", "By"   ,  By.data(), Nx), DMESG("H5LTset_attribute"));
           check(H5LTset_attribute_double(geometryGroup, ".", "Shear"   ,  &shear, 1), DMESG("H5LTset_attribute"));
@@ -132,8 +130,8 @@ class Geometry2D : public Geometry
     }
 
 
-     virtual void writeData(Timing *timing) {};
-     virtual void closeData() {};
+//     virtual void writeData(Timing *timing) {};
+//     virtual void closeData() {};
 
 private:
 

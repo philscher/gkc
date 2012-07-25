@@ -211,15 +211,22 @@ public:
   
   virtual  double nu (const int x) = 0;
 
-   
+  
+   /**
+   *    @brief creates Geometry groupd and delegates to child
+   *
+   *
+   **/ 
    void initDataOutput(FileIO *fileIO) {
         hid_t geometryGroup = check(H5Gcreate(fileIO->getFileID(), "/Geometry",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group for Geometry : H5Gcreate"));
-  //    check(H5LTset_attribute_string(geometryGroup, ".", "Type", static_cast<T*>(this)->getGeometryName()), DMESG("H5LTset_attribute"));
-        //initDataOutput(fileIO, geometryGroup); 
+        initDataOutput(geometryGroup); 
         H5Gclose(geometryGroup);
    } ;
         
+   
+     virtual void initDataOutput(hid_t geometryGroup) = 0;
 
+     // is it necessary for later timesteps to 
      virtual void writeData(Timing *timing) {};
      virtual void closeData() {};
 
