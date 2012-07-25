@@ -6,3 +6,26 @@ find . -name "*.h" -or "*.cpp" -exec aspell --mode=ccpp -c '{}' \;
 
 # grep parser LaTeX strings as regular expression, use -F option to avoid, e.g.
 grep -nrF "\frac{1}{2}" *
+
+
+# Sed substitute (i interactive, all files in current dir)
+sed -i 's/A/B/g' *
+
+# Sed substitute recursivly
+find ./ -type f | xargs sed -i 's/string1/string2/g'
+
+# Code checking
+cppcheck . 2> err.txt
+cppint .
+
+# For debuging
+LD_PRELOAD=/lib/libSegFault.so ../../gkc_sa/src/gkc -c Shear.gkc -f
+
+# also try gcc -g -rdynamic
+#
+
+# Profilong assume $GKC_DIR=path to main gkc dir
+gprof $GKC_DIR/src/gkc | python $GKC_DIR/scripts/gprof2dot.py | dot -Tpng -o output.png
+
+
+
