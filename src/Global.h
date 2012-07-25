@@ -25,6 +25,8 @@
 #define GKC_FINISH     5
 
 
+
+// Needed in case we include into Fortran
 #if defined(__cplusplus)
 
 
@@ -41,7 +43,7 @@
  *   handle any private or shared variables , or reduces or ...!!
  *
  *   HANDLE WITH CARE !
- * */
+ **/
 #define omp_for _Pragma("omp parallel for") for
 
 using namespace blitz;
