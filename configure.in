@@ -1,4 +1,4 @@
-AC_INIT([GKC],[0.12],[mail@gkc.special-combo.net])
+AC_INIT([GKC],[0.15],[mail@gkc.special-combo.net])
 
 
 AM_INIT_AUTOMAKE([-Wall -Werror foreign]) 
@@ -11,7 +11,7 @@ AC_CANONICAL_HOST
 
 
 #HERE
-NO_ENV_CXXFLAGS=true
+#NO_ENV_CXXFLAGS=true
 AC_PROG_CXX($CXX g++ sunCC icc)
 AC_PROG_CC($CC   gcc sunC  ic)
 AC_PROG_FC($FC gfortran ifort)
@@ -20,7 +20,7 @@ AC_PROG_FC($FC gfortran ifort)
 # Set code options
 
 # profiling
-AC_ARG_ENABLE([profile], AC_HELP_STRING([--enable-profil], [Helios is compiled with profiling support]), [profile=yes], [profile=no])
+AC_ARG_ENABLE([profile], AC_HELP_STRING([--enable-profil], [gkc is compiled with profiling support]), [profile=yes], [profile=no])
 if test x$profile = xyes ; then
    AC_DEFINE([PROFILE], [], [enables profiling])
 fi
@@ -37,29 +37,29 @@ case $host in
 esac
 
 # profiling
-AC_ARG_ENABLE([fem], AC_HELP_STRING([--enable-fem], [Helios is compiled with Finite Element Support support]), [fem=yes], [fem=no])
+AC_ARG_ENABLE([fem], AC_HELP_STRING([--enable-fem], [gkc is compiled with Finite Element Support support]), [fem=yes], [fem=no])
 if test x$fem = xyes ; then
-   AC_DEFINE([HELIOS_FEM], [], [enables FEM support])
+   AC_DEFINE([GKC_FEM], [], [enables FEM support])
 fi
 
-AC_ARG_ENABLE([hypre], AC_HELP_STRING([--enable-hypre], [Helios is compiled with Finite Element Support support]), [hypre=yes], [hypre=no])
+AC_ARG_ENABLE([hypre], AC_HELP_STRING([--enable-hypre], [gkc is compiled with Hypre support]), [hypre=yes], [hypre=no])
 if test x$hypre = xyes ; then
-   AC_DEFINE([HELIOS_HYPRE], [], [enables hypre support])
+   AC_DEFINE([GKC_HYPRE], [], [enables hypre support])
 fi
 
-AC_ARG_ENABLE([petsc], AC_HELP_STRING([--enable-petsc], [Helios is compiled with PETSc support]), [petsc=yes], [petsc=no])
+AC_ARG_ENABLE([petsc], AC_HELP_STRING([--enable-petsc], [gkc is compiled with PETSc support]), [petsc=yes], [petsc=no])
 if test x$petsc = xyes ; then
-   AC_DEFINE([HELIOS_PETSc], [], [enables PETSc support])
+   AC_DEFINE([GKC_PETSc], [], [enables PETSc support])
 fi
 
-AC_ARG_ENABLE([slepc], AC_HELP_STRING([--enable-slepc], [Helios is compiled with SLEPc support]), [slepc=yes], [slepc=no])
+AC_ARG_ENABLE([slepc], AC_HELP_STRING([--enable-slepc], [gkc is compiled with SLEPc support]), [slepc=yes], [slepc=no])
 if test x$slepc = xyes ; then
-   AC_DEFINE([HELIOS_SLEPc], [], [enables SLEPc support])
+   AC_DEFINE([GKC_SLEPc], [], [enables SLEPc support])
 fi
 
-AC_ARG_ENABLE([superlu], AC_HELP_STRING([--enable-superlu], [Helios is compiled with Finite Element Support support]), [superlu=yes], [superlu=no])
-if test x$superlu = xyes ; then
-   AC_DEFINE([HELIOS_SUPERLU], [], [enables superlu support])
+AC_ARG_ENABLE([papi], AC_HELP_STRING([--enable-papi], [gkc is compiled with PAPI support]), [papi=yes], [papi=no])
+if test x$papi = xyes ; then
+   AC_DEFINE([GKC_SUPERLU], [], [enables papi support])
 fi
 
 #################
@@ -153,21 +153,21 @@ AC_SUBST(DIR_SLEPC)
 
 
 
-AC_ARG_WITH(superludir,
+AC_ARG_WITH(papidir,
   AC_HELP_STRING(
-    [--with-superludir=prefix],
-    [use specified prefix install directory of superlu library]
+    [--with-papidir=prefix],
+    [use specified prefix install directory of papi library]
   ),
-  DIR_SUPERLU="$with_superludir",
-  DIR_SUPERLU="$DIR_SUPERLU"
+  DIR_PAPI="$with_papidir",
+  DIR_PAPI="$DIR_PAPI"
 )
-AC_SUBST(DIR_SUPERLU)
+AC_SUBST(DIR_PAPI)
 
 
 ##########################3333
 # Libary stuff
 
-AC_ARG_ENABLE(static, AC_HELP_STRING([--enable-static], [Build with Helios using satic libraries.]), [static=yes], [static=no])           
+AC_ARG_ENABLE(static, AC_HELP_STRING([--enable-static], [Build with gkc using satic libraries.]), [static=yes], [static=no])           
 if test x$static = xyes ; then
    # echo -e "mpi"
    AM_CONDITIONAL([STATIC], [test x$static = xyes])
@@ -175,7 +175,7 @@ if test x$static = xyes ; then
 fi
 
 
-AC_ARG_ENABLE(shared, AC_HELP_STRING([--enable-shared], [Build with Helios using shared libraries.]), [shared=no], [static=yes])           
+AC_ARG_ENABLE(shared, AC_HELP_STRING([--enable-shared], [Build with gkc using shared libraries.]), [shared=no], [static=yes])           
 if test x$shared = xyes ; then
    # echo -e "mpi"
    AM_CONDITIONAL([SHARED], [test x$shared = xyes])
@@ -205,8 +205,8 @@ opencl=no
 AC_ARG_ENABLE(mpi, AC_HELP_STRING([--enable-mpi], [Build with MPI support.]), [mpi=yes], [mpi=no])           
 if test x$mpi = xyes ; then
    # echo -e "mpi"
-   AC_DEFINE([HELIOS_PARALLEL], [], [Defined when compiled parallel version])
-   AC_DEFINE([HELIOS_PARALLEL_MPI], [], [Defined when compiled parallel version with MPI])
+   AC_DEFINE([GKC_PARALLEL], [], [Defined when compiled parallel version])
+   AC_DEFINE([GKC_PARALLEL_MPI], [], [Defined when compiled parallel version with MPI])
    AM_CONDITIONAL([MPI], [test x$mpi = xyes])
 fi
 
@@ -214,11 +214,11 @@ fi
 
 
 AC_ARG_ENABLE(openmp, AC_HELP_STRING([--enable-openmp], [Build with OpenMP support.]), [openmp=yes], [openmp=no]) 
- echo " openmp = $openmp "
 if test x$openmp = xyes ; then
    # echo -e "openmp"
-   AC_DEFINE([HELIOS_PARALLEL], [], [Defined when compiled parallel version])
-   AC_DEFINE([HELIOS_PARALLEL_OPENMP], [], [Defined when compiled with OpenMP support])
+   AC_DEFINE([GKC_PARALLEL], [], [Defined when compiled parallel version])
+   AC_DEFINE([GKC_PARALLEL_OPENMP], [], [Defined when compiled with OpenMP support])
+   AM_CONDITIONAL([OPENMP],  [test x$openmp  = xyes])
 fi
 
 
@@ -226,8 +226,8 @@ AC_ARG_ENABLE(opencl, AC_HELP_STRING([--enable-opencl], [Build with OpenCL suppo
  echo " opencl = $opencl "
 if test x$opencl = xyes ; then
    # echo -e "opencl"
-   AC_DEFINE([HELIOS_PARALLEL], [], [Defined when compiled parallel version])
-   AC_DEFINE([HELIOS_PARALLEL_OPENCL], [], [Defined when compiled with OpenCL support])
+   AC_DEFINE([GKC_PARALLEL], [], [Defined when compiled parallel version])
+   AC_DEFINE([GKC_PARALLEL_OPENCL], [], [Defined when compiled with OpenCL support])
 fi
 
 if [[ "$mpi" == "no" -a "$openmp" == "no" ]] ; then 
@@ -268,23 +268,6 @@ if test x$fftw2 = xyes ; then
    AC_DEFINE([FFTW2], [], [Defined when compiled parallel version])
 fi
 
-################### fftw2-mpi ####################################################
-AC_ARG_ENABLE(fftw2mpi, AC_HELP_STRING([--enable-fftw2mpi], [Build with FFTW2 MPI support.]), [fftw2mpi=yes], [fftw2mpi=no]) 
-AC_ARG_WITH(fftw2mpidir,
-  AC_HELP_STRING(
-    [--with-fftw2mpidir=prefix],
-    [use specified prefix install directory of fftw2 MPI library]
-  ),
-  DIR_FFTW2MPI="$with_fftw2mpidir",
-)
-
-AC_SUBST(DIR_FFTW2MPI)
-AM_CONDITIONAL([FFTW2MPI], [test x$fftw2mpi  = xyes])
-if test x$fftw2mpi = xyes ; then
-   AC_DEFINE([FFTW2MPI], [], [Defined when compiled parallel version])
-fi
-
-
 ################### fftw3 ####################################################
 
 AC_ARG_ENABLE(fftw3, AC_HELP_STRING([--enable-fftw3], [Build with FFTW support.]), [fftw3=yes], [fftw3=no]) 
@@ -298,30 +281,14 @@ AC_ARG_WITH(fftw3dir,
 
 AC_SUBST(DIR_FFTW3)
 AM_CONDITIONAL([FFTW3],  [test x$fftw3  = xyes])
+
 if test x$fftw3 = xyes ; then
    AC_DEFINE([FFTW3], [], [Defined when compiled parallel version])
 fi
 
-################### FFTW-3 MPI ####################################################
-
-AC_ARG_ENABLE(fftw3mpi, AC_HELP_STRING([--enable-fftw3mpi], [Build with FFTW MPI support.]), [fftw3mpi=yes], [fftw3mpi=no]) 
-AC_ARG_WITH(fftw3mpidir,
-  AC_HELP_STRING(
-    [--with-fftw3mpidir=prefix],
-    [use specified prefix install directory of fftw3 library]
-  ),
-  DIR_FFTW3MPI="$with_fftw3mpidir",
-)
-
-AC_SUBST(DIR_FFTW3MPI)
-AM_CONDITIONAL([FFTW3MPI],  [test x$fftw3mpi  = xyes])
-
-if test x$fftw3mpi = xyes ; then
-   AC_DEFINE([FFTW3MPI], [], [Defined when compiled parallel version])
-fi
-
 ###############
 
+# Do I need them again ?!
 AM_CONDITIONAL([MPI],    [test x$mpi = xyes])
 AM_CONDITIONAL([STATIC], [test x$static  = xyes])
 AM_CONDITIONAL([SHARED], [test x$shared  = xyes])
@@ -335,7 +302,7 @@ AM_CONDITIONAL([LIBMESH],[test x$fem     = xyes])
 AM_CONDITIONAL([HYPRE],  [test x$hypre   = xyes])
 AM_CONDITIONAL([PETSC],  [test x$petsc   = xyes])
 AM_CONDITIONAL([SLEPC],  [test x$slepc   = xyes])
-AM_CONDITIONAL([SUPERLU],  [test x$superlu   = xyes])
+AM_CONDITIONAL([PAPI],  [test x$papi    = xyes])
 
 
 
@@ -362,7 +329,7 @@ fi
 
 # We should later check this if we really need this ...
 if test x$openmp = xyes ; then 
-    CXXFLAGS+=-DBZ_THREADSAFE
+    CXXFLAGS+=' -DBZ_THREADSAFE'
 fi
 
 

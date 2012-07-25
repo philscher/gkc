@@ -30,6 +30,10 @@
 #include "Vlasov/Vlasov_Cilk.h"
 #include "Geometry/GeometrySA.h"
 #include "Geometry/Geometry2D.h"
+#include "Geometry/GeometryShear.h"
+#include "Geometry/GeometrySlab.h"
+#include "Geometry/GeometryCHEASE.h"
+
 
 #include "Eigenvalue/Eigenvalue_SLEPc.h"
 #include "Visualization/Visualization_Data.h"
@@ -61,6 +65,7 @@ GKC::GKC(Setup *_setup) : setup(_setup)  {
 
 
 	/////////////////// Load subsystems ////////////////
+    bench     = new Benchmark(); 
     parallel  = new Parallel(setup);
 
     parallel->print("Intializing GKC");
@@ -148,7 +153,9 @@ int GKC::mainLoop()   {
 
             for(; control->checkOK(timing, timeIntegration->maxTiming);){
         
+            bench->start("MainLoop");
         	    double dt = timeIntegration->solveTimeStep(vlasov, fields, particles, timing);        
+          bench->stop("MainLoop");
          	    // #pragma single
          	    event->checkEvent(timing, vlasov, fields);
          	    analysis->writeData(timing, dt);
@@ -189,6 +196,7 @@ GKC::~GKC(){
         delete parallel;
         delete init;
         delete timeIntegration;
+        delete bench;
 }
 
 

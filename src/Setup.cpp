@@ -301,11 +301,11 @@ int Setup::check_config()
    
 void Setup::printOn(ostream &output) const 
 {
-  output << "Parser     | Parsing Config  File" << std::endl;
+  output << "Parser     | File :  " << setupFilename << std::endl;
   
-  if(commandLineOptions != "")   output << "Parser   | with " << commandLineOptions << std::endl;
-  if(extraLineOptions   != "")   output << "Extra    | with " << commandLineOptions << std::endl;
-  if(parser_constants   != "")   output << "         | FParser Constants : " << parser_constants << std::endl; 
+  if(commandLineOptions != "")   output << "Parser     | with " << commandLineOptions << std::endl;
+  if(extraLineOptions   != "")   output << "Extra      | with " << commandLineOptions << std::endl;
+  if(parser_constants   != "")   output << "           | FParser Constants : " << parser_constants << std::endl; 
 }
    
 

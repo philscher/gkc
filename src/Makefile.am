@@ -28,6 +28,12 @@ if STATIC
 gkc_LDADD += $(DIR_BLITZ)/lib/liblitz.a   $(DIR_HDF5)/lib/libhdf5_hl.a $(DIR_HDF5)/lib/libhdf5.a  -lz -lgfortran
 endif
 
+if PAPI
+AM_CPPFLAGS += -I$(DIR_PAPI)/include
+gkc_LDADD   += -L$(DIR_PAPI)/lib/ -lpapi
+endif
+
+
 if MPI
 
 if MPIP

@@ -33,7 +33,7 @@
 #include "TimeIntegration.h"
 #include "Transport.h"
 #include "Geometry.h"
-
+#include "Benchmark.h"
 
 #include "config.h"
 
@@ -131,7 +131,8 @@ private:
     Geometry *geometry;                ///< Geometry module
     Event         *event;              ///< Programmable events 
     Init          *init;               ///< Initialization for plasma
-    Visualization *visual;             ///< Visualization 
+    Visualization *visual;             ///< Visualization
+    Benchmark     *bench;              ///< Interface for profiling and benchmarking
     TimeIntegration *timeIntegration;  ///< Numerical time integration
 
     /**
