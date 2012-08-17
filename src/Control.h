@@ -49,7 +49,7 @@ extern int control_triggered_signal;
 *
 *
 **/
-class Control {
+class Control : public IfaceGKC {
   
    bool useControlFile;
 

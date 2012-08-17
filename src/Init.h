@@ -1,26 +1,22 @@
 /*
  * =====================================================================================
  *
- *       Filename:  Init.cpp
+ *       Filename: Init.h
  *
- *    Description:  
+ *    Description: Definition of Initial conditions 
  *
- *        Version:  1.0
- *        Created:  11/19/2009 06:20:20 PM
- *       Revision:  none
- *       Compiler:  gcc
+ *         Author: Paul P. Hilscher (2010-), 
  *
- *         Author:  YOUR NAME (), 
- *        Company:  
- *
+ *        License: GPLv3+
  * =====================================================================================
  */
+
+
 #ifndef __INIT_H_
 #define __INIT_H_
 
 #include "Global.h"
 
-#include<blitz/array.h>
 #include<random/uniform.h>
 
 

@@ -145,9 +145,6 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    ////////////////////////////////////////////////////////    Set Fixed Fields  phi, Ap, Bp //////////////////
    // set fixed fields if requested,  initialize Fields, Ap
 
-// future interface
-    //    setup->setValuesFromString(setup->get("Init.FixedPhi", "0."), fields->Field0(RxLD, RyLD, RzLD));
-
    if (setup->get("Init.FixedPhi", "0.").substr(0,4) == "File") setFieldFromDataFile(setup, fields->Field0, Field::phi, setup->get("Init.FixedPhi", "0."));
    else if (plasma->nfields >= 1) setFieldFromFunction(setup, fields->Field0, Field::phi, setup->get("Init.FixedPhi", "0."));
 

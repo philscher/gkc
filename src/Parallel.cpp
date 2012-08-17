@@ -357,9 +357,10 @@ MPI_Op Parallel::getMPIOp(int op) {
 #ifdef GKC_PARALLEL_MPI
 MPI_Datatype Parallel::getMPIDataType(const std::type_info &T) {
     MPI_Datatype type=0;
-    if     (T == typeid(double)) type = MPI_DOUBLE;
+    if     (T == typeid(cmplxd)) type = MPI_DOUBLE_COMPLEX;
+    else if(T == typeid(double)) type = MPI_DOUBLE;
     else if(T == typeid(int   )) type = MPI_INT;
-    else if(T == typeid(cmplxd)) type = MPI_DOUBLE_COMPLEX;
+    else if(T == typeid(long long)) type = MPI_LONG_LONG;
 //    else if(T == typeid(bool  )) type = MPI_BOOL;
     else check(-1, DMESG("Such type is not defined"));
     
@@ -411,15 +412,18 @@ void Parallel::print(std::string message) {
 void Parallel::printOn(ostream &output) const {
        output << "Parallel   | ";
 		
-      if      (useOpenMP) output << " OpenMP (Threads)   : " << Num2String(numThreads)  << std::endl;
-      if      (useOpenCL) output << " OpenCL (Threads)   : " << Num2String(numGPUs   )  << std::endl;
+      if      (useOpenMP) output << " OpenMP (Threads) : " << Num2String(numThreads) ;
+      if      (useOpenCL) output << " OpenCL (Threads) : " << Num2String(numGPUs   ) ;
       if      (useMPI   ) {
-	    output <<  " MPI (processes) : " << Num2String(numProcesses)  << " Decompostion : ";
-            if (decomposition(DIR_X) == 0) output <<  "Automatic" << std::endl;
-	    else
-                     output << "X(" << decomposition(DIR_X) << ")  Y(" << decomposition(DIR_Y) << ") "
-                            << "Z(" << decomposition(DIR_Z) << ")  V(" << decomposition(DIR_V) << ") "
-                            << "M(" << decomposition(DIR_M) << ")  S(" << decomposition(DIR_S) << ") " << std::endl;
+      
+           if (decomposition(DIR_X) == 0) output <<  "Automatic" << std::endl;
+           else  output <<  " MPI (processes) : " << Num2String(numProcesses) << std::endl;
+
+       
+      output << "           |  Decompostion : " 
+        << "X(" << decomposition(DIR_X) << ")  Y(" << decomposition(DIR_Y) << ") "
+        << "Z(" << decomposition(DIR_Z) << ")  V(" << decomposition(DIR_V) << ") "
+        << "M(" << decomposition(DIR_M) << ")  S(" << decomposition(DIR_S) << ") " << std::endl;
    
        } else output << std::endl;
 } 

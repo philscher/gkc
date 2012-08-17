@@ -12,8 +12,8 @@
  */
 
 
-#ifndef GEOMETRY_SHEARED_H
-#define GEOMETRY_SHEARED_H
+#ifndef GEOMETRY_SHEAR_H
+#define GEOMETRY_SHEAR_H
 
 #include "Global.h"
 #include "Geometry.h"
@@ -179,4 +179,4 @@ class GeometryShear : public Geometry
 };
 
 
-#endif // GEOMETRY_H
+#endif // GEOMETRY_SHEAR_H

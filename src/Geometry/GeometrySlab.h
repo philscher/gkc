@@ -48,7 +48,7 @@ public:
 
 
    /// \f$ J = 1 \f$
-   inline  double get_J(const int x, const int z) const { return 1.;};
+   double get_J(const int x, const int z)  { return 1.;};
    
    /**  
    *    @name The metric coefficient the individual metric components

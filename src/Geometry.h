@@ -54,7 +54,7 @@ double eps_hat, C;
 
         allocate(RxLD, RzLD, Kx, Ky, B, dB_dx, dB_dy, dB_dz, J);
     
-        eps_hat = 1.;
+        eps_hat = setup->get("Geometry.eps", 1.);
         C       = 1.;
 
   };
@@ -94,7 +94,7 @@ public:
   virtual double get_J(const int x, const int z)  = 0;
    
   /**
-  *   @name K values  
+  *   @name Normalized Curvature terms
   *   Get the value of shear at position x
   *   what is the definition of it ?
   **/
@@ -113,7 +113,7 @@ public:
   *   see Goerler, PhD
   *
   **/ 
-  inline  double get_Kx(const int x, const int z)  { 
+  virtual  double get_Kx(const int x, const int z)  { 
     
         return - 1./C * ( dB_dy(x,z) + g_1(x,z)/g_2(x,z) * dB_dz(x,z));
   };
@@ -132,7 +132,7 @@ public:
   *   see Goerler, PhD
   *
   **/ 
-  inline  double get_Ky(const int x, const int z)  
+  virtual double get_Ky(const int x, const int z)  
   {
     
       return 1./C * ( dB_dx(x,z) - g_3(x,z)/g_1(x,z) * dB_dz(x,z));

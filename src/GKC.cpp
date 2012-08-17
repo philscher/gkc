@@ -65,8 +65,8 @@ GKC::GKC(Setup *_setup) : setup(_setup)  {
 
 
 	/////////////////// Load subsystems ////////////////
-    bench     = new Benchmark(); 
     parallel  = new Parallel(setup);
+    bench     = new Benchmark(setup, parallel); 
 
     parallel->print("Intializing GKC");
 
@@ -135,7 +135,7 @@ GKC::GKC(Setup *_setup) : setup(_setup)  {
     init           = new  Init(parallel, grid, setup, vlasov, fields, geometry);
 
     //timeIntegration = new TimeIntegration_PETSc(setup, grid, parallel, vlasov, fields, eigenvalue);
-    timeIntegration = new TimeIntegration(setup, grid, parallel, vlasov, fields, eigenvalue);
+    timeIntegration = new TimeIntegration(setup, grid, parallel, vlasov, fields, eigenvalue, bench);
     
     printSettings();	
     setup->check_config();
@@ -151,11 +151,10 @@ int GKC::mainLoop()   {
             // this is ugly here ...
             timeIntegration->setMaxLinearTimeStep(eigenvalue, vlasov, fields);
 
+            bench->start("MainLoop");
             for(; control->checkOK(timing, timeIntegration->maxTiming);){
         
-            bench->start("MainLoop");
         	    double dt = timeIntegration->solveTimeStep(vlasov, fields, particles, timing);        
-          bench->stop("MainLoop");
          	    // #pragma single
          	    event->checkEvent(timing, vlasov, fields);
          	    analysis->writeData(timing, dt);
@@ -163,6 +162,7 @@ int GKC::mainLoop()   {
          	    visual->writeData(timing, dt);
                     // OK Time Step finished
  		    }
+          bench->stop("MainLoop");
 
    
         control->printLoopStopReason();
@@ -208,9 +208,8 @@ void GKC::printSettings() {
   infoStream 
             << PACKAGE_NAME << "(version " << PACKAGE_VERSION <<") : " << std::ctime(&start_time)         
             << "-------------------------------------------------------------------------------" << std::endl
-            << *grid << *plasma << *fileIO << *setup << *vlasov  << *fields << *geometry << *init << *parallel << *fftsolver;
-            infoStream << "Timing     |  " << timeIntegration;
-            infoStream << "Control    |  File : " << control->cntrl_file_name << std::endl;
+            << *grid << *plasma << *fileIO << *setup << *vlasov  << *fields << *geometry << *init << *parallel << *fftsolver << *timeIntegration;
+            infoStream << *control << std::endl;
             infoStream << "-------------------------------------------------------------------------------" << std::endl << std::endl << std::flush;
 
 

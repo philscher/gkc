@@ -38,6 +38,7 @@
 #include<blitz/types.h>
 #include<blitz/allocate.h>
 
+
 /**
  *   Implicit OpenMP parallelization. Take care, it does not 
  *   handle any private or shared variables , or reduces or ...!!
@@ -165,7 +166,7 @@ class FileIO;
 class Timing;
 
 class IfaceGKC {
-
+   
     protected:
       virtual void printOn(ostream &output) const = 0;
       //virtual ~IfaceGKC() { closeData(); };
