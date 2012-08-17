@@ -121,7 +121,7 @@ class FieldsFFT : public Fields {
   *
   *  \f[
   *      \lambda_D^2 \phi + \sum_\sigma frac{q_\sigma^2 n_\sigma}{T_\sigma}
-  *       left( 1 - \Gamma_0(k_\perp^2\rho_{t\sigma}^2) \right) + \frac{q_0^2 n_0}{T_0} 
+  *       \left( 1 - \Gamma_0(k_\perp^2\rho_{t\sigma}^2) \right) + \frac{q_0^2 n_0}{T_0} 
   *       \left(\phi - \left< \phi \right>_{yz} \right)
   *       = \rho 
   *  \f]
@@ -150,7 +150,7 @@ class FieldsFFT : public Fields {
   *
   *  @warning We need to normalize the FFT transform here.
   *
-  */
+  **/
   Array3z virtual solveAmpereEquation (Array3z   j);
 
   /**
