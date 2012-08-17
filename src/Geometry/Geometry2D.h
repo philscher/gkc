@@ -24,6 +24,19 @@
 *  ToDO : Parallelize the parallel boundary condition.
 *
 *
+*  In the two-dimensional geometry, we set the \f$ k_\parallel \f$
+*  is a function of, namely we distinguish between
+*
+*
+*  \f$ k_\parallel = \theta k_y    \f$ - constant theta , local simulations with constant ange
+*  \f$ k_\parallel = k_z           \f$ - sheareless slab, local simulations with constant ange
+*  \f$ k_\parallel = \hat{s} x k_y \f$ - sheared slab   , non-local simulations with constant ange
+*  
+*  and other combinations (including extension to three dimensions).
+*
+*
+*
+*
 **/
 class Geometry2D : public Geometry
 {
@@ -118,7 +131,7 @@ class Geometry2D : public Geometry
 
 
    void printOn(ostream& output) const {
-         output   << "Geometry  |  Sheared Slab   By : " << By_str  << " Shear : " << shear_str << " Theta : "  <<  theta << std::endl;
+         output   << "Geometry   |  Sheared Slab   By : " << By_str  << " Shear : " << shear_str << " Theta : "  <<  theta << std::endl;
    };
 
    void initDataOutput(hid_t geometryGroup) {
