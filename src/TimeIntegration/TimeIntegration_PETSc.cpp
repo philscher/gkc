@@ -18,7 +18,8 @@ static char help[] = "Help for PETSc Interface not available, please look up gkc
 
 extern PetscErrorCode MatrixVectorProduct(Mat A, Vec x, Vec y);
 
-TimeIntegration_PETSc::TimeIntegration_PETSc(Setup *setup, Grid *grid, Parallel *parallel, Vlasov *vlasov, Fields *fields, Eigenvalue *eigenvalue) : TimeIntegration(setup, grid, parallel, vlasov, fields,eigenvalue)
+TimeIntegration_PETSc::TimeIntegration_PETSc(Setup *setup, Grid *grid, Parallel *parallel, Vlasov *vlasov, Fields *fields, Eigenvalue *eigenvalue, Benchmark *bench)
+     : TimeIntegration(setup, grid, parallel, vlasov, fields,eigenvalue, bench)
 {
       PetscInitialize(&setup->argc, &setup->argv, (char *) 0,  help);
       

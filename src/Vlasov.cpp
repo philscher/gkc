@@ -14,7 +14,7 @@
 #include "Vlasov.h"
 
 
-Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *(_fft))    : fft(_fft),
+Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *_fft)    : fft(_fft),
 boundary_isclean(true),   parallel(_parallel), grid(_grid), setup(_setup), geo(_geo),
 f0(GKCStorage), f(GKCStorage), fs(GKCStorage), fss(GKCStorage),
 ft(GKCStorage), G(GKCStorage4), Xi(GKCStorage4),    f1(GKCStorage)
@@ -60,14 +60,12 @@ Vlasov::~Vlasov()
 };
 
 
-int Vlasov::solve(Fields *fields, Array6z  _fs, Array6z  _fss, double dt, int rk_step, int user_boundary_type)
+int Vlasov::solve(Fields *fields, Array6z  _fs, Array6z  _fss, double dt, int rk_step, const double rk[3], int user_boundary_type)
 {
    if(boundary_isclean == false) cleanBoundary(f_boundary);
-   solve(equation_type, fields, _fs, _fss, dt, rk_step);
+   solve(equation_type, fields, _fs, _fss, dt, rk_step, rk);
 
-   // collision->addCollision(equation_type, fields, _fs, _fss, dt, rk_step);
-
-   #pragma omp single
+   // Note : we have non-blocking boundaries as Poisson solver does not require ghosts
    setBoundary(_fss, user_boundary_type);       
    if(user_boundary_type == BOUNDARY_DIRTY) f_boundary.reference(_fss);
   
@@ -111,10 +109,10 @@ int Vlasov::setBoundary(Array6z  A , int boundary_type) {
    // Z-Boundary 
    if(Nz > 1)  for(int x=NxLlD; x<= NxLuD;x++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
            
-            const cmplxd a = cmplxd(0., 2.* M_PI/Ly * y_k);
+            const cmplxd a = cmplxd(0., 2. * M_PI * (2.* M_PI/Ly) * y_k);
 
-            SendZl(x, y_k, RB, RvLD, RmLD, RsLD) = A(x, y_k, Range(NzLlD  , NzLlD+1), RvLD, RmLD, RsLD) * exp( a*geo->nu(x));
-            SendZu(x, y_k, RB, RvLD, RmLD, RsLD) = A(x, y_k, Range(NzLuD-1, NzLuD  ), RvLD, RmLD, RsLD) * exp(-a*geo->nu(x));
+            SendZl(x, y_k, RB, RvLD, RmLD, RsLD) = A(x, y_k, Range(NzLlD  , NzLlD+1), RvLD, RmLD, RsLD) * exp( ((NzLlD == NzGlD) ? a : 0. ) *geo->nu(x));
+            SendZu(x, y_k, RB, RvLD, RmLD, RsLD) = A(x, y_k, Range(NzLuD-1, NzLuD  ), RvLD, RmLD, RsLD) * exp(-((NzLuD == NzGuD) ? a : 0. ) *geo->nu(x));
 
   } }
 
@@ -131,6 +129,7 @@ int Vlasov::setBoundary(Array6z  A , int boundary_type) {
       check(-1, DMESG("decompositionn in Y, but compiled without MPI support"));
 #endif 
    } else {
+          //- alpha * pow2(V[v]) * plasma->beta * plasma->w_p * G_ * ky
       A(RxLD, RkyLD, RzLD, Range(NvGlB  , NvGlB+1), RmLD, RsLD) = 0.e0;
       A(RxLD, RkyLD, RzLD, Range(NvGuD+1, NvGuB  ), RmLD, RsLD) = 0.e0;
    }

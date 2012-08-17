@@ -25,6 +25,7 @@
 #include "Parallel.h"
 #include "Init.h"
 #include "Eigenvalue.h"
+#include "Benchmark.h"
 #include "Fields.h"
 
 /**
@@ -60,11 +61,12 @@
    *
 *
 */
-class TimeIntegration {
+class TimeIntegration  : public IfaceGKC{
    std::string linearTimeStep;
  protected:
    std::string timeIntegrationScheme;
    Parallel *parallel;
+   Benchmark *bench;
  public:
 
    bool useCFL;
@@ -100,7 +102,7 @@ class TimeIntegration {
    *   Constructor
    *
    */ 
-   TimeIntegration(Setup *setup, Grid *grid, Parallel *parallel, Vlasov *vlasov, Fields *fields, Eigenvalue *eigenvalue);
+   TimeIntegration(Setup *setup, Grid *grid, Parallel *parallel, Vlasov *vlasov, Fields *fields, Eigenvalue *eigenvalue, Benchmark *bench);
 
    /**
    *

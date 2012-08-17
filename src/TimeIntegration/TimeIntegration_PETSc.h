@@ -48,7 +48,7 @@ class TimeIntegration_PETSc : public TimeIntegration {
    *    Please Document Me !
    *
    **/
-        TimeIntegration_PETSc(Setup *setup, Grid *grid, Parallel *parallel, Vlasov *vlasov, Fields *fields, Eigenvalue *eigenvalue);
+        TimeIntegration_PETSc(Setup *setup, Grid *grid, Parallel *parallel, Vlasov *vlasov, Fields *fields, Eigenvalue *eigenvalue, Benchmark *bench);
   /**
    *    Please Document Me !
    *

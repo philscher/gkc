@@ -122,7 +122,7 @@ class VlasovCilk : public Vlasov {
    *
    **/
    void    Vlasov_2D(
-                           cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplxd fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplxd vf0[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplxd f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
@@ -132,7 +132,7 @@ class VlasovCilk : public Vlasov {
                            cmplxd nonLinear[NzLD][NkyLD][NxLD][NvLD],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            Fields *fields,
-                           const double dt, const int rk_step, Array6z _fs);
+                           const double dt, const int rk_step, const double rk[3], Array6z _fs);
    /**
    *   @brief perform full-f simulations
    *
@@ -146,7 +146,7 @@ class VlasovCilk : public Vlasov {
                            const cmplxd phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                            cmplxd k2_phi[plasma->nfields][NzLD][NkyLD][NxLD],
                            Fields *fields,
-                           const double dt, const int rk_step, Array6z _fs);
+                           const double dt, const int rk_step, const double rk[3], Array6z _fs);
 
 
    /**
@@ -165,7 +165,7 @@ class VlasovCilk : public Vlasov {
                            cmplxd dphi_dx  [NzLB][NkyLD][NxLB],
                            const double    X[NxGB], const double V[NvGB], const double M[NmGB],
                            Fields *fields,
-                           const double dt, const int rk_step, Array6z _fs);
+                           const double dt, const int rk_step, const double rk[3], Array6z _fs);
 
    /**
    *    Please Document Me !
@@ -183,7 +183,7 @@ class VlasovCilk : public Vlasov {
                            cmplxd dphi_dx[NzLB][NkyLD][NxLB],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            Fields *fields,
-                           const double dt, const int rk_step);
+                           const double dt, const int rk_step, const double rk[3]);
 
    /**
    *
@@ -242,7 +242,7 @@ class VlasovCilk : public Vlasov {
                            cmplxd G        [NzLD][NkyLD][NxLD  ][NvLD],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            Fields *fields,
-                           const double dt, const int rk_step);
+                           const double dt, const int rk_step, const double rk[3]);
 
 
    /**
@@ -265,7 +265,7 @@ class VlasovCilk : public Vlasov {
                            cmplxd G        [NzLD][NkyLD][NxLD  ][NvLD],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            Fields *fields,
-                           const double dt, const int rk_step);
+                           const double dt, const int rk_step, const double rk[3]);
 
 
 
@@ -281,7 +281,7 @@ class VlasovCilk : public Vlasov {
    *    Please Document Me !
    *
    **/
-   int solve(std::string equation_tyoe, Fields *fields, Array6z fs, Array6z fss, double dt, int rk_step, int user_boundary_type=BOUNDARY_CLEAN);
+   int solve(std::string equation_tyoe, Fields *fields, Array6z fs, Array6z fss, double dt, int rk_step, const double rk[3], int user_boundary_type=BOUNDARY_CLEAN);
  
   protected :
   

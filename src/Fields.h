@@ -21,7 +21,6 @@
 #include "Parallel.h"
 #include "Grid.h"
 #include "Geometry.h"
-
 #include "FileIO.h"
 
 #include "Timing.h"
@@ -333,7 +332,7 @@ public:
    *
    *
    */
-   int solve(Array6z f0, Array6z  f, Timing timing=0, int rk_step=0);
+   int solve(Array6z f0, Array6z  f, Timing timing=0);
 
    /**
    *  @brief set which equation to solve if one field is assumed to be fixed

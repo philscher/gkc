@@ -70,7 +70,9 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
 
    GL_vlasov->setBoundary(GL_vlasov->fs, BOUNDARY_CLEAN); 
    GL_fields->solve(GL_vlasov->f0,  GL_vlasov->fs); 
-   GL_vlasov->solve(GL_vlasov->getEquationType(), GL_fields, GL_vlasov->fs, GL_vlasov->fss, 0., 0);
+   const double rk_0[] = { 0., 0., 0.};
+   //GL_vlasov->f = 0.;
+   GL_vlasov->solve(GL_vlasov->getEquationType(), GL_fields, GL_vlasov->fs, GL_vlasov->fss, 1., 0, rk_0);
    
     // copy whole phase space function (waste but starting point) (important due to bounday conditions
    for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {

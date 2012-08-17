@@ -168,7 +168,7 @@ class Vlasov : public IfaceGKC {
    *
    *
    **/
-   virtual int solve(std::string equation_type, Fields *fields, Array6z fs, Array6z fss, double dt, int rk_step, int user_boundary_type=BOUNDARY_CLEAN) = 0;
+   virtual int solve(std::string equation_type, Fields *fields, Array6z fs, Array6z fss, double dt, int rk_step, const double rk[3], int user_boundary_type=BOUNDARY_CLEAN) = 0;
  public:
   
    /**
@@ -208,7 +208,7 @@ class Vlasov : public IfaceGKC {
    *  Handles boundary conditions
    *
    **/
-   int solve(Fields *fields, Array6z fs, Array6z fss, double dt, int rk_step, int user_boundary_type=BOUNDARY_CLEAN);
+   int solve(Fields *fields, Array6z fs, Array6z fss, double dt, int rk_step, const double rk[3],  int user_boundary_type=BOUNDARY_CLEAN);
 
    /**
    *    Please Document Me !

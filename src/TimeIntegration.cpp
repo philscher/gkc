@@ -14,7 +14,8 @@
 #include "TimeIntegration.h"
 
 
-TimeIntegration::TimeIntegration(Setup *setup, Grid *grid, Parallel *_parallel, Vlasov *vlasov, Fields *fields, Eigenvalue *eigenvalue) : parallel(_parallel) {
+TimeIntegration::TimeIntegration(Setup *setup, Grid *grid, Parallel *_parallel, Vlasov *vlasov, Fields *fields, Eigenvalue *eigenvalue, Benchmark *_bench) 
+  : parallel(_parallel), bench(_bench) {
 
     start_time = std::time(0); 
     timeIntegrationScheme = setup->get("Helios.TimeIntegration", "Explicit_RK4");
@@ -85,23 +86,28 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv)
 
         
         // Runge-Kutta step 1
-	    fields->solve(vlasov->f0,vlasov->f, timing);
-        vlasov ->solve(fields, vlasov->f  , vlasov->fs, 0.5e0*dt , 1, BOUNDARY_DIRTY);
+        const double rk_1[] = { 0., 1., 0.};
+	     fields->solve(vlasov->f0,vlasov->f, timing);
+        vlasov ->solve(fields, vlasov->f  , vlasov->fs, 0.5e0*dt , 1, rk_1 , BOUNDARY_DIRTY);
         particles->integrate(vlasov, fields, 1);
+        
         // Runge-Kutta step 2
+        const double rk_2[] = { 1., 2., 0.};
         fields->solve(vlasov->f0,vlasov->fs, timing);
-        vlasov ->solve(fields, vlasov->fs , vlasov->fss, 0.5e0*dt, 2, BOUNDARY_DIRTY);
+        vlasov ->solve(fields, vlasov->fs , vlasov->fss, 0.5e0*dt, 2, rk_2, BOUNDARY_DIRTY);
         particles->integrate(vlasov, fields, 2);
 
     
         // Runge-Kutta step 3
-	    fields->solve(vlasov->f0,vlasov->fss, timing);
-        vlasov ->solve(fields, vlasov->fss, vlasov->fs,  dt      , 3, BOUNDARY_DIRTY);
+        const double rk_3[] = { 1., 2., 0.};
+	     fields->solve(vlasov->f0,vlasov->fss, timing);
+        vlasov ->solve(fields, vlasov->fss, vlasov->fs,  dt      , 3, rk_3, BOUNDARY_DIRTY);
         particles->integrate(vlasov, fields, 3);
 
         // Runge-Kutta step 4
-        fields->solve(vlasov->f0,vlasov->fs, timing, 4);
-        vlasov ->solve(fields, vlasov->fs , vlasov->f ,  dt/6.e0 , 4, BOUNDARY_DIRTY);
+        const double rk_4[] = { 1., 0., 1.};
+        fields->solve(vlasov->f0,vlasov->fs, timing);
+        vlasov ->solve(fields, vlasov->fs , vlasov->f ,  dt/6.e0 , 4, rk_4, BOUNDARY_DIRTY);
         particles->integrate(vlasov, fields, 4);
 
 
@@ -111,23 +117,26 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv)
 
   
         // Runge-Kutta step 1
+        const double rk_1[] = { 0., 1., 0.};
         fields->solve(vlasov->f0,vlasov->f, timing);
-        vlasov ->solve(fields, vlasov->f  , vlasov->fs, 0.5e0*dt , 1, BOUNDARY_DIRTY);
+        vlasov ->solve(fields, vlasov->f  , vlasov->fs, 0.5e0*dt , 1, rk_1, BOUNDARY_DIRTY);
 
 
         // Runge-Kutta step 2
+        const double rk_2[] = { 1., 4., -1./2.};
         fields->solve(vlasov->f0,vlasov->fs, timing);
-        vlasov ->solve(fields, vlasov->fs , vlasov->fss, dt, 2, BOUNDARY_DIRTY);
+        vlasov ->solve(fields, vlasov->fs , vlasov->fss, 2.*dt, 2, rk_2, BOUNDARY_DIRTY);
 
         // Runge-Kutta step 3
+        const double rk_3[] = { 1., 0., 1.};
         fields->solve(vlasov->f0,vlasov->fs, timing);
-        vlasov ->solve(fields, vlasov->fss, vlasov->f,  dt/6.      , 3, BOUNDARY_DIRTY);
-
-        };
+        vlasov ->solve(fields, vlasov->fss, vlasov->f,  dt/6. , 3, rk_3, BOUNDARY_DIRTY);
+        
+   };
       
    void TimeIntegration::solveTimeStepRK2(Fields *fields, Vlasov *vlasov,TestParticles *particles, Timing timing, double  dt) {
 
-  
+ /* 
         // Runge-Kutta step 1
         fields->solve(vlasov->f0,vlasov->f, timing);
         vlasov ->solve(fields, vlasov->f  , vlasov->fs, 0.5e0*dt , 1, BOUNDARY_DIRTY);
@@ -136,13 +145,14 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv)
         // Runge-Kutta step 2
         fields->solve(vlasov->f0,vlasov->fs, timing);
         vlasov ->solve(fields, vlasov->fs , vlasov->fss, 0.5e0*dt, 2, BOUNDARY_DIRTY);
+  * */ 
 
        };
 
 
       void TimeIntegration::solveTimeStepHeun(Fields *fields, Vlasov *vlasov,TestParticles *particles, Timing timing, double  dt) {
 
-  
+ /*   
         // Runge-Kutta step 1
         fields->solve(vlasov->f0,vlasov->f, timing);
         vlasov ->solve(fields, vlasov->f  , vlasov->fs, 2./3.*dt , 1, BOUNDARY_DIRTY);
@@ -151,6 +161,7 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv)
         // Runge-Kutta step 2
         fields->solve(vlasov->f0,vlasov->fs, timing);
         vlasov ->solve(fields, vlasov->fs , vlasov->f, 1./4.*dt, 2, BOUNDARY_DIRTY);
+  * */ 
 
        };
 
@@ -158,8 +169,9 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv)
 
   
         // Runge-Kutta step 1
+        const double rk_0[] = { 0., 0., 0.};
         fields->solve(vlasov->f0,vlasov->f, timing);
-        vlasov ->solve(fields, vlasov->f  , vlasov->fs, 0.5e0*dt , 1, BOUNDARY_DIRTY);
+        vlasov ->solve(fields, vlasov->f  , vlasov->fs, 1. , 0, rk_0, BOUNDARY_DIRTY);
 
         };
        
@@ -182,8 +194,8 @@ int TimeIntegration::writeTimeStep(Timing timing, Timing maxTiming, double dt) {
  void TimeIntegration::printOn(ostream &output) const {
 
 
-            output << "CFL        |  maxCFL Number : " << maxCFLNumber   << std::endl;
-            output << "Max Timing |  " << maxTiming << std::endl;
+            output << "Time Int.  |  " << timeIntegrationScheme << "  maxCFL Number : " << maxCFLNumber   << std::endl;
+            output << "Max Timing |  " << maxTiming << " lin. TimeStep " << linearTimeStep <<  std::endl;
         
          }
 

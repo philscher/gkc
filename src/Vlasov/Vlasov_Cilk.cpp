@@ -16,13 +16,14 @@
 #include "config.h"
 #include "Vlasov_Cilk.h"
 
+#include "Geometry/Geometry2D.h"
 
 #ifndef __cilk
 #include <cilk/cilk_stub.h>
 #endif
 #include <cilk/cilk.h>
 
-#include "Geometry/Geometry2D.h"
+#include "Benchmark.h"
 
 typedef blitz::cmplxd(*A6z)[][][][][];
 typedef blitz::cmplxd(*A5z)[][][][];
@@ -77,18 +78,23 @@ VlasovCilk::VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *
 }
 
 
-int VlasovCilk::solve(std::string equation_type, Fields *fields, Array6z _fs, Array6z _fss, double dt, int rk_step, int user_boundary_type) 
+int VlasovCilk::solve(std::string equation_type, Fields *fields, Array6z _fs, Array6z _fss, double dt, int rk_step, const double rk[3], int user_boundary_type) 
 {
    /// Enter Cilk Part here
   Xi_max = 0.;
-  
-  if((equation_type == "2D_ES")) Vlasov_2D((A6z) _fs.dataZero(), (A6z) _fss.dataZero(), (A6z) f0.dataZero(), (A6z) f.dataZero(), (A6z) ft.dataZero(), (A5z) fields->phi.dataZero(), (A4z) k2p_phi.dataZero(), (A4z) nonLinearTerms.dataZero(), X.dataZero(), V.dataZero(), M.dataZero(), fields, dt, rk_step, _fs);
-  else if((equation_type == "2D_EM")) Vlasov_EM_2D((A6z) _fs.dataZero(), (A6z) _fss.dataZero(), (A6z) f0.dataZero(), (A6z) f.dataZero(), (A6z) ft.dataZero(), (A5z) fields->phi.dataZero(), (A5z) fields->Ap.dataZero(), (A5z) fields->Bp.dataZero(), (A4z) k2p_phi.dataZero(), (A3z) dphi_dx.dataZero(), (A4z) Xi.dataZero(), (A4z) G.dataZero(), X.dataZero(), V.dataZero(), M.dataZero(), fields, dt, rk_step);
-  else if((equation_type == "Vlasov_EM")) Vlasov_EM((A6z) _fs.dataZero(), (A6z) _fss.dataZero(), (A6z) f0.dataZero(), (A6z) f.dataZero(), (A6z) ft.dataZero(), (A5z) fields->phi.dataZero(), (A5z) fields->Ap.dataZero(), (A5z) fields->Bp.dataZero(), (A4z) k2p_phi.dataZero(), (A3z) dphi_dx.dataZero(), (A4z) Xi.dataZero(), (A4z) G.dataZero(), X.dataZero(), V.dataZero(), M.dataZero(), fields, dt, rk_step);
+ 
+  if((equation_type == "2D_ES")) {
+  Benchmark bench(setup, parallel);
+  bench.start("Vlasov");
+  Vlasov_2D((A6z) _fs.dataZero(), (A6z) _fss.dataZero(), (A6z) f0.dataZero(), (A6z) f.dataZero(), (A6z) ft.dataZero(), (A5z) fields->phi.dataZero(), (A4z) k2p_phi.dataZero(), (A4z) nonLinearTerms.dataZero(), X.dataZero(), V.dataZero(), M.dataZero(), fields, dt, rk_step, rk, _fs);
+  bench.stop("Vlasov");
+  }
+  else if((equation_type == "2D_EM")) Vlasov_EM_2D((A6z) _fs.dataZero(), (A6z) _fss.dataZero(), (A6z) f0.dataZero(), (A6z) f.dataZero(), (A6z) ft.dataZero(), (A5z) fields->phi.dataZero(), (A5z) fields->Ap.dataZero(), (A5z) fields->Bp.dataZero(), (A4z) k2p_phi.dataZero(), (A3z) dphi_dx.dataZero(), (A4z) Xi.dataZero(), (A4z) G.dataZero(), X.dataZero(), V.dataZero(), M.dataZero(), fields, dt, rk_step, rk);
+  else if((equation_type == "Vlasov_EM")) Vlasov_EM((A6z) _fs.dataZero(), (A6z) _fss.dataZero(), (A6z) f0.dataZero(), (A6z) f.dataZero(), (A6z) ft.dataZero(), (A5z) fields->phi.dataZero(), (A5z) fields->Ap.dataZero(), (A5z) fields->Bp.dataZero(), (A4z) k2p_phi.dataZero(), (A3z) dphi_dx.dataZero(), (A4z) Xi.dataZero(), (A4z) G.dataZero(), X.dataZero(), V.dataZero(), M.dataZero(), fields, dt, rk_step, rk);
   else if((equation_type == "2DIsland")) Vlasov_2D_Island((A6z) _fs.dataZero(), (A6z) _fss.dataZero(), (A6z) f0.dataZero(), (A6z) f.dataZero(), (A6z) ft.dataZero(), (A5z) fields->phi.dataZero(), (A4z) k2p_phi.dataZero(), (A4z) nonLinearTerms.dataZero(), (A3z) dphi_dx.dataZero(), 
-      X.dataZero(), V.dataZero(), M.dataZero(), fields, dt, rk_step, _fs);
+      X.dataZero(), V.dataZero(), M.dataZero(), fields, dt, rk_step, rk,  _fs);
   else if((equation_type == "2DLandauDamping")) Landau_Damping((A6z) _fs.dataZero(), (A6z) _fss.dataZero(), (A6z) f0.dataZero(), (A6z) f.dataZero(), (A6z) ft.dataZero(), (A5z) fields->phi.dataZero(), (A4z) k2p_phi.dataZero(), (A3z) dphi_dx.dataZero(), 
-      X.dataZero(), V.dataZero(), M.dataZero(), fields, dt, rk_step);
+      X.dataZero(), V.dataZero(), M.dataZero(), fields, dt, rk_step, rk);
   else   check(-1, DMESG("No Such Equation"));
 
   return GKC_SUCCESS;
@@ -115,15 +121,16 @@ Array3d VlasovCilk::transform2Real(const Array6z A, const int v, const int m, co
 
 
 
+// We copy arrays many time, very inefficient. Improve
 Array4z VlasovCilk::calculatePoissonBracket(Array5z phi, Array6z f1, const int m, const int s) 
 {
 
-//   xy_phi(RxLD, RyLD, RzLD) = transform2Real(phi, m , s);
+   // Transform fields to real space
    transform2Real(phi, m , s); xy_phi(RxLD, RyLD, RzLD) = fft->rYOut(RxLD, RyLD, RzLD, Field::phi);
    setBoundaryXY(xy_phi,DIR_XY);
 
    // perform CD-4 derivative for dphi_dx , and dphi_dy
-   for(int z = NzLlD; z <= NzLuD; z++) { for(int y=NyLlD; y<= NyLuD;y++) { for(int x=NxLlD; x<= NxLuD;x++)  {
+   for(int z = NzLlD; z <= NzLuD; z++) { omp_for(int y=NyLlD; y<= NyLuD;y++) { for(int x=NxLlD; x<= NxLuD;x++)  {
 
      xy_dphi_dx(x, y, z) = (8.*(xy_phi(x+1, y,z) - xy_phi(x-1, y, z)) - (xy_phi(x+2,y,z) - xy_phi(x-2,y,z)))/(12.*dx); 
      xy_dphi_dy(x, y, z) = (8.*(xy_phi(x, y+1,z) - xy_phi(x, y-1, z)) - (xy_phi(x,y+2,z) - xy_phi(x,y-2,z)))/(12.*dy); 
@@ -138,13 +145,13 @@ Array4z VlasovCilk::calculatePoissonBracket(Array5z phi, Array6z f1, const int m
    const double fft_Norm = fft->Norm_Y_Backward * fft->Norm_Y_Backward * fft->Norm_Y_Forward;
    for(int v=NvLlD; v<=NvLuD;v++) { 
    
-//      xy_f1(RxLD, RyLD, RzLD) = transform2Real(f1, v, m ,s);
-      transform2Real(f1, v, m ,s); xy_f1(RxLD, RyLD, RzLD) = fft->rYOut(RxLD, RyLD, RzLD, Field::phi);
-     setBoundaryXY(xy_f1,DIR_XY);
+   // Transform phase-space to real space   
+   transform2Real(f1, v, m ,s); xy_f1(RxLD, RyLD, RzLD) = fft->rYOut(RxLD, RyLD, RzLD, Field::phi);
+   setBoundaryXY(xy_f1,DIR_XY);
      
       
       ///////////////////////   calculate cross terms using Morinishi scheme    [ phi, F1]  //////////////////////////////////
-      for(int z=NzLlD; z<=NzLuD;z++) { for(int y=NyLlD; y<=NyLuD;y++) { for(int x= NxLlD; x <= NxLuD; x++) {
+      for(int z=NzLlD; z<=NzLuD;z++) { omp_for(int y=NyLlD; y<=NyLuD;y++) { for(int x= NxLlD; x <= NxLuD; x++) {
 
                 const double dXi_dy__dG_dx =  ( 8.*((xy_dphi_dy(x,y,z)+xy_dphi_dy(x+1,y,z))*(xy_f1(x+1, y, z)) - (xy_dphi_dy(x,y,z)+xy_dphi_dy(x-1,y,z))*(xy_f1(x-1, y, z)))      
                                             - (     (xy_dphi_dy(x,y,z)+xy_dphi_dy(x+2,y,z))*(xy_f1(x+2, y, z)) - (xy_dphi_dy(x,y,z)+xy_dphi_dy(x-2,y,z))*(xy_f1(x-2, y, z))))/(24.*dx)     ;
@@ -171,21 +178,33 @@ Array4z VlasovCilk::calculatePoissonBracket(Array5z phi, Array6z f1, const int m
 
 
 void VlasovCilk::Vlasov_2D(
-                           cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplxd fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplxd vf0[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplxd f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplxd ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplxd phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           cmplxd k2_phi[plasma->nfields][NzLD][NkyLD][NxLD],
-                           cmplxd nonLinear[NzLD][NkyLD][NxLD][NvLD],
+                           cmplxd    k2_phi[plasma->nfields][NzLD][NkyLD][NxLD],
+                           cmplxd    nonLinear[NzLD][NkyLD][NxLD][NvLD],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            Fields *fields,
-                           const double dt, const int rk_step, Array6z _fs)
+                           const double dt, const int rk_step, const double rk[3], Array6z _fs)
 { 
 
-  Geometry2D *geo = static_cast<Geometry2D*>(Vlasov::geo);
+//  const Geometry2D *geo = static_cast<Geometry2D*>(Vlasov::geo);
+       
+  // increases speed by 5% 
+  const double _12_dv    = 1./(12.*dv);
+  const double _12_dv_dv = 1./(12.*dv*dv);
+  const double _16_dx4 = 16.*pow4(dx);
 
+/*
+  __asm{
+         nop
+  }
+  */ 
+   #pragma ivdep
+   #pragma vector always 
    for(int s = NsLlD; s <= NsLuD; s++) {
         
       // small abbrevations
@@ -202,50 +221,53 @@ void VlasovCilk::Vlasov_2D(
       for(int m=NmLlD; m<= NmLuD;m++) { 
   
        // gyro-fluid model
-       if(plasma->species(s).gyroModel == "Gyro-1") k2p_phi(RxLD, RkyLD, RzLD, RFields) = fields->gyroAverage(fields->Field0(RxLD, RkyLD, RzLD, RFields), 2, s,  Field::phi, true);
-       if(calculate_nonLinear && (rk_step != 0)) calculatePoissonBracket(fields->phi, _fs,m, s);
+  //     if(plasma->species(s).gyroModel == "Gyro-1") k2p_phi(RxLD, RkyLD, RzLD, RFields) = fields->gyroAverage(fields->Field0(RxLD, RkyLD, RzLD, RFields), 2, s,  Field::phi, true);
+  //     if(calculate_nonLinear && (rk_step != 0)) calculatePoissonBracket(fields->phi, _fs,m, s);
        
        
 
        // calculate for estimation of CFL condition
-       for(int z=NzLlD; z<= NzLuD;z++) {  omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
+       for(int z=NzLlD; z<= NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
       
 
 
-             const double Krook_nu = krook_nu * ( (X[x] > 0.8 * Lx/2.) || (X[x] < -0.8 * Lx/2.))  ?  0.1 * pow2(abs(X[x]) - 0.8 * Lx/2.): 0.;
+     //        const double Krook_nu = krook_nu * ( (X[x] > 0.8 * Lx/2.) || (X[x] < -0.8 * Lx/2.))  ?  0.1 * pow2(abs(X[x]) - 0.8 * Lx/2.): 0.;
 
              const cmplxd dphi_dx  = (8.*(phi[s][m][z][y_k][x+1] - phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] - phi[s][m][z][y_k][x-2]))/(12.*dx)  ;  
              const cmplxd phi_     = phi[s][m][z][y_k][x];
              
              const cmplxd ky = cmplxd(0.,fft->ky(y_k));
-             const cmplxd kp = geo->get_kp(x, ky, z);
+  //           const cmplxd kp = geo->get_kp(x, ky, z);
+             const cmplxd kp = 0.4 * ky * X[x]; //geo->get_kp(x, ky, z);
 
 
 
              // BUG : does it needs a mutex ?
              updateCFL(dphi_dx, ky*phi_, 0.);
 
-            
-            #pragma simd 
+            #pragma vector always 
+            #pragma ivdep
             for(int v=NvLlD; v<= NvLuD;v++) {
         
         const cmplxd g    = fs [s][m][z][y_k][x][v];
         const cmplxd F0   = vf0[s][m][z][y_k][x][v];
 
-	     const cmplxd dfs_dv   = (8.  *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))/(12.*dv);
-        const cmplxd ddfs_dvv = (16. *(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) - 30.*fs[s][m][z][y_k][x][v])/(12.*pow2(dv));
+	     //const cmplxd dfs_dv   = (8.  *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))/(12.*dv);
+        //const cmplxd ddfs_dvv = (16. *(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) - 30.*fs[s][m][z][y_k][x][v])/(12.*pow2(dv));
+	     const cmplxd dfs_dv   = (8.  *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))*_12_dv;
+        const cmplxd ddfs_dvv = (16. *(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) - 30.*fs[s][m][z][y_k][x][v]) * _12_dv_dv;
         
        
         // hyperdiffusion terms
-        const cmplxd d4fs_d4x = (-(fs[s][m][z][y_k][x-2][v] + fs[s][m][z][y_k][x+2][v]) + 4. * (fs[s][m][z][y_k][x-1][v] + fs[s][m][z][y_k][x+1][v]) - 6.*fs[s][m][z][y_k][x][v])/(16.*pow4(dx));
+        const cmplxd d4fs_d4x = (-(fs[s][m][z][y_k][x-2][v] + fs[s][m][z][y_k][x+2][v]) + 4. * (fs[s][m][z][y_k][x-1][v] + fs[s][m][z][y_k][x+1][v]) - 6.*fs[s][m][z][y_k][x][v])/_16_dx4;
        
 	    /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
-        cmplxd dg_dt = 
+       const register cmplxd dg_dt = 
              
 	         // driving term (use dphi_dy instead of dXi_dy, because v * A does not vanish due to numerical errors)
              ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])/Temp  - sub)) * F0 * phi_
              // add first order gyro-average term (zero when full-gyro)
-                  + 0.5 * w_T  * k2_phi[1][z][y_k][x] * F0)
+                 )//              + 0.5 * w_T  * k2_phi[1][z][y_k][x] * F0)
       	     // Landau Damping term 
              - alpha  * V[v]* kp  * ( g + sigma * phi_ * F0)
              // collisional term (Lennard-Bernstein)
@@ -254,24 +276,17 @@ void VlasovCilk::Vlasov_2D(
 	         + nonLinear[z][y_k][x][v]
 
              // hyperdiffusive terms
-             + hyper_visc[DIR_X] * d4fs_d4x - krook_nu * g
-          ;
+             + hyper_visc[DIR_X] * d4fs_d4x ;//- krook_nu * g
+             //+ hyper_visc[DIR_X] * d4fs_d4x ;//- krook_nu * g
 
 
         //////////////////////////// Vlasov End ////////////////////////////
-        if(rk_step == 0) {
-            fss[s][m][z][y_k][x][v] = dg_dt;
-        } else {
-
-            //  time-integrate the distribution function     
-            if(rk_step == 1) ft[s][m][z][y_k][x][v] = dg_dt;
-            else if((rk_step == 2) || (rk_step == 3)) ft[s][m][z][y_k][x][v] = ft[s][m][z][y_k][x][v] + 2.0*dg_dt;
-            else    dg_dt = ft[s][m][z][y_k][x][v] + dg_dt;
         
-            fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v] + dg_dt*dt;
-       }  
-
-      }}} }
+        //  time-integrate the distribution function    
+        ft [s][m][z][y_k][x][v] = rk[0] * ft[s][m][z][y_k][x][v] + rk[1] * dg_dt             ;
+        fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v]         + (rk[2] * ft[s][m][z][y_k][x][v] + dg_dt) * dt;
+            
+       }}} }
       
 //       if(plasma->species(s).gyroModel != "Gyro") break;
 
@@ -291,7 +306,7 @@ void VlasovCilk::Vlasov_2D_Island(
                            cmplxd dphi_dx[NzLB][NkyLD][NxLB],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            Fields *fields,
-                           const double dt, const int rk_step, Array6z _fs)
+                           const double dt, const int rk_step, const double rk[3], Array6z _fs)
 { 
 
     const Geometry2D *geo = static_cast<Geometry2D*>(Vlasov::geo);
@@ -301,8 +316,6 @@ void VlasovCilk::Vlasov_2D_Island(
   
 
     Xi_max = 0.;
-
-    //auto a_lambda_func = [](int y_k) { return cmplxd(0., fft->(y_k)); };
 
     for(int s = NsLlD; s <= NsLuD; s++) {
         
@@ -367,8 +380,9 @@ void VlasovCilk::Vlasov_2D_Island(
 
         //const double MagIs     = - 0.5 * w*w*shear/16.  * psi ;//cos(zeta * X[x]);
         //const double dMagIs_dx = - 0.5 * w*w*shear/16. * dpsi;// - sin(zeta * X[x]) * zeta;
-        const double MagIs     =  0.5 * w*w*shear/16.  * psi ;//cos(zeta * X[x]);
-        const double dMagIs_dx =  0.5 * w*w*shear/16. * dpsi;// - sin(zeta * X[x]) * zeta;
+        // changed sign , check !!!
+        const double MagIs     = - 0.5 * w*w*shear/16.  * psi ;//cos(zeta * X[x]);
+        const double dMagIs_dx = - 0.5 * w*w*shear/16. * dpsi;// - sin(zeta * X[x]) * zeta;
 
         
         const cmplxd     phi_p1 = ( y_k == Nky-1) ? 0.                       : phi[s][m][z][y_k+1][x] ;
@@ -454,41 +468,10 @@ void VlasovCilk::Vlasov_2D_Island(
 
         //////////////////////////// Vlasov End ////////////////////////////
         //  time-integrate the distribution function    
-        //
-        // RK-4
-        if(rk_step == 0) {
-            fss[s][m][z][y_k][x][v] = dg_dt;
-        } else {
-            if(rk_step == 1) ft[s][m][z][y_k][x][v] = dg_dt;
-            else if((rk_step == 2) || (rk_step == 3)) ft[s][m][z][y_k][x][v] += 2.0*dg_dt;
-            else    dg_dt = ft[s][m][z][y_k][x][v] + dg_dt;
-        
-            fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v] + dg_dt*dt;
-        }
-
-
-
-      /* 
-        // Heun / RK-2
-        if(rk_step == 1) ft[s][m][z][y_k][x][v] = dg_dt;
-        else    dg_dt = ft[s][m][z][y_k][x][v] + 3. * dg_dt;
-        
-        fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v] + dg_dt*dt;
-       * */ 
-        
-        
-/* 
-        //  time-integrate the distribution function     
-        if(rk_step == 1) ft[s][m][z][y_k][x][v] = dg_dt;
-        else             ft[s][m][z][y_k][x][v] += step_factor * dg_dt;
-       
-        if(lastStep) fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v] + dg_dt*dt;
-        else         fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v] + ft[s][m][z][y_k][x][v]*dt;
- * */
-
-
-
-      }}} }}
+        ft [s][m][z][y_k][x][v] = rk[0] * ft[s][m][z][y_k][x][v] + rk[1] * dg_dt             ;
+        fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v]         + (rk[2] * ft[s][m][z][y_k][x][v] + dg_dt) * dt;
+      
+        }}} }}
    }
 
 }
@@ -507,7 +490,7 @@ void VlasovCilk::Landau_Damping(
                            cmplxd dphi_dx[NzLB][NkyLD][NxLB],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            Fields *fields,
-                           const double dt, const int rk_step)
+                           const double dt, const int rk_step, const double rk[3])
 { 
 
    for(int s = NsLlD; s <= NsLuD; s++) { for(int m=NmLlD; m<= NmLuD;m++) { 
@@ -528,13 +511,9 @@ void VlasovCilk::Landau_Damping(
 
         //////////////////////////// Landau End ////////////////////////////
 
-        //  time-integrate the distribution function     
-        if(rk_step == 1) ft[s][m][z][y_k][x][v] = dg_dt;
-        else if((rk_step == 2) || (rk_step == 3)) ft[s][m][z][y_k][x][v] = ft[s][m][z][y_k][x][v] + 2.0*dg_dt;
-        else    dg_dt = ft[s][m][z][y_k][x][v] + dg_dt;
-        
-        fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v] + dg_dt*dt;
-
+        //  time-integrate the distribution function    
+        ft [s][m][z][y_k][x][v] = rk[0] * ft[s][m][z][y_k][x][v] + rk[1] * dg_dt             ;
+        fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v]         + (rk[2] * ft[s][m][z][y_k][x][v] + dg_dt) * dt;
 
       }}} }}
    }
@@ -549,7 +528,7 @@ void    VlasovCilk::Vlasov_2D_Fullf(
                            const cmplxd phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                            cmplxd k2_phi[plasma->nfields][NzLD][NkyLD][NxLD],
                            Fields *fields,
-                           const double dt, const int rk_step, Array6z _fs)
+                           const double dt, const int rk_step, const double rk[3], Array6z _fs)
 { 
    /// Enter Cilk Part here
 
@@ -636,22 +615,12 @@ void    VlasovCilk::Vlasov_2D_Fullf(
 
 
         //////////////////////////// Vlasov End ////////////////////////////
-
-        //  time-integrate the distribution function     
-        if(rk_step == 0) {
-            fss[s][m][z][y_k][x][v] = dg_dt;
-        } else {
-
-            if(rk_step == 1) ft[s][m][z][y_k][x][v] = dg_dt;
-            else if((rk_step == 2) || (rk_step == 3)) ft[s][m][z][y_k][x][v] = ft[s][m][z][y_k][x][v] + 2.0*dg_dt;
-            else    dg_dt = ft[s][m][z][y_k][x][v] + dg_dt;
-        
-            fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v] + dg_dt*dt;
-        }
+        //  time-integrate the distribution function    
+        ft [s][m][z][y_k][x][v] = rk[0] * ft[s][m][z][y_k][x][v] + rk[1] * dg_dt             ;
+        fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v]         + (rk[2] * ft[s][m][z][y_k][x][v] + dg_dt) * dt;
 
       }}} }}
    }
-//if(rk_step == 4)        std::cout << sum(pow2(fields->phi(RxLD, RkyLD, RzLD, 1, 1))) << " nl : " << sum(pow2(nonLinearTerms(RxLD, RkyLD, RzLD, RvLD))) << std::endl; 
 }
 
 
@@ -670,18 +639,17 @@ void VlasovCilk::Vlasov_EM_2D(
                            cmplxd G        [NzLB][NkyLD][NxLB][NvLB],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            Fields *fields,
-                           const double dt, const int rk_step)
+                           const double dt, const int rk_step, const double rk[3])
 { 
 
-   
+
   Geometry2D *geo = static_cast<Geometry2D*>(Vlasov::geo);
 
-   Xi_max = 0.;
-
+  Xi_max = 0.;
 
    for(int s = NsLlD; s <= NsLuD; s++) {
         
-      // small abbrevations
+      // abbrevations
       const double w_n   = plasma->species(s).w_n;
       const double w_T   = plasma->species(s).w_T;
       const double alpha = plasma->species(s).alpha;
@@ -691,45 +659,49 @@ void VlasovCilk::Vlasov_EM_2D(
       const double sub = (plasma->species(s).doGyro) ? 3./2. : 1./2.;
       
 
-      for(int m=NmLlD; m<= NmLuD;m++) { 
+         for(int m=NmLlD; m<= NmLuD;m++) { 
  
-           setupXiAndG(fs, vf0, phi, Ap, Bp, Xi, G, V, M, m , s);
+            setupXiAndG(fs, vf0, phi, Ap, Bp, Xi, G, V, M, m , s);
 
-         // gyro-fluid model
-       //if(nonLinear)   calculatePoissonBracket(Xi, _fs,m, s);
+            // gyro-fluid model
+           // if(nonLinear)   calculatePoissonBracket(Xi, _fs,m, s);
        
-         // calculate for estimation of CFL condition
-         for(int z=NzLlD; z<= NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
+            // calculate for estimation of CFL condition
+            for(int z=NzLlD; z<= NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
        
-            const cmplxd phi_ = phi[s][m][z][y_k][x];
-            dphi_dx[z][y_k][x] = (8.*(phi[s][m][z][y_k][x+1] - phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] - phi[s][m][z][y_k][x-2]))/(12.*dx)  ;  
+               const cmplxd phi_ = phi[s][m][z][y_k][x];
+               dphi_dx[z][y_k][x] = (8.*(phi[s][m][z][y_k][x+1] - phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] - phi[s][m][z][y_k][x-2]))/(12.*dx)  ;  
 
-            const cmplxd ky = cmplxd(0., fft->ky(y_k));
-            const cmplxd kp = geo->get_kp(x, ky, z);
+               const cmplxd ky = cmplxd(0., fft->ky(y_k));
+               const cmplxd kp = geo->get_kp(x, ky, z);
 
-             updateCFL(dphi_dx[z][y_k][x], ky*phi_, 0.);
+               updateCFL(dphi_dx[z][y_k][x], ky*phi_, 0.);
 
 
-            for(int v=NvLlD; v<= NvLuD;v++) {
+   #pragma ivdep
+   #pragma vector always 
+   for(int v=NvLlD; v<= NvLuD;v++) {
         
 
-   const cmplxd g    = fs[s][m][z][y_k][x][v];
-   const cmplxd F0   = vf0[s][m][z][y_k][x][v];
-   const cmplxd G_   = G[z][y_k][x][v];
-   const cmplxd Xi_  = Xi[z][y_k][x][v];
+      const cmplxd g    = fs[s][m][z][y_k][x][v];
+      const cmplxd F0   = vf0[s][m][z][y_k][x][v];
+      const cmplxd G_   = G[z][y_k][x][v];
+      const cmplxd Xi_  = Xi[z][y_k][x][v];
 
-   // Velocity derivaties for Lennard-Bernstein Collisional Model
-   const cmplxd dfs_dv   = (8. *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))/(12.*dv);
-   const cmplxd ddfs_dvv = (16.*(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) - 30.*fs[s][m][z][y_k][x][v])/(12.*dv*dv);
-   const double v2_rms = 1.;//pow2(alpha)
+      // Velocity derivaties for Lennard-Bernstein Collisional Model
+      const cmplxd dfs_dv   = (8. *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))/(12.*dv);
+      const cmplxd ddfs_dvv = (16.*(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) - 30.*fs[s][m][z][y_k][x][v])/(12.*dv*dv);
+      const double v2_rms = 1.;//pow2(alpha)
     
-    cmplxd k2_Xi = 0.;
-       if(plasma->species(s).gyroModel == "Gyro-1") { 
-    const cmplxd ddXi_dx = (16.*(Xi[z][y_k][x+1][v] + Xi[z][y_k][x-1][v]) - (Xi[z][y_k][x+2][v] + Xi[z][y_k][x-2][v]) - 30.*Xi[z][y_k][x][v])/(12.*dx*dx);
-    k2_Xi = (ky*ky + ddXi_dx);
-   }
-   /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
-   cmplxd dg_dt = 
+      cmplxd k2_Xi = 0.;
+      if(plasma->species(s).gyroModel == "Gyro-1") { 
+        const cmplxd ddXi_dx = (16.*(Xi[z][y_k][x+1][v] + Xi[z][y_k][x-1][v]) - (Xi[z][y_k][x+2][v] + Xi[z][y_k][x-2][v]) - 30.*Xi[z][y_k][x][v])/(12.*dx*dx);
+        k2_Xi = (ky*ky + ddXi_dx);
+     }
+   
+     /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
+   
+     cmplxd dg_dt = 
              
       //nonLinearTerms(x,y_k,z,v) +
              
@@ -744,16 +716,12 @@ void VlasovCilk::Vlasov_EM_2D(
       + collisionBeta * (g  + V[v] * dfs_dv + v2_rms * ddfs_dvv)    ;
 
         //////////////////////////// Vlasov End ////////////////////////////
+  
+      //  time-integrate the distribution function    
+      ft [s][m][z][y_k][x][v] = rk[0] * ft[s][m][z][y_k][x][v] + rk[1] * dg_dt             ;
+      fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v]         + (rk[2] * ft[s][m][z][y_k][x][v] + dg_dt) * dt;
 
-   //  time-integrate the distribution function     
-        if(rk_step == 0) {
-            fss[s][m][z][y_k][x][v] = dg_dt;
-        } else {
-   if(rk_step == 1) ft[s][m][z][y_k][x][v] = dg_dt;
-   else if((rk_step == 2) || (rk_step == 3)) ft[s][m][z][y_k][x][v] = ft[s][m][z][y_k][x][v] + 2.0*dg_dt;
-   else    dg_dt = ft[s][m][z][y_k][x][v] + dg_dt;
-        
-   fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v] + dg_dt*dt;
+
 
         }
       }}} }}
@@ -809,11 +777,9 @@ void VlasovCilk::printOn(ostream &output) const
 
 
 
-/*  
 
-
-    Previous version (until 16th May 2012)
-
+/*
+ *
 void VlasovCilk::Vlasov_2D_Island(
                            cmplxd fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplxd fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
@@ -829,42 +795,6 @@ void VlasovCilk::Vlasov_2D_Island(
                            const double dt, const int rk_step, Array6z _fs)
 { 
 
-
-    const double w     = setup->get("Island.Width", 0.); 
-    const double shear = setup->get("Geometry.Shear", 0.4); 
-  
-
-    Xi_max = 0.;
-
-    //auto a_lambda_func = [](int y_k) { return cmplxd(0., fft->(y_k)); };
-
-
-    for(int s = NsLlD; s <= NsLuD; s++) {
-        
-      // small abbrevations
-      const double w_n   = plasma->species(s).w_n;
-      const double w_T   = plasma->species(s).w_T;
-      const double alpha = plasma->species(s).alpha;
-      const double sigma = plasma->species(s).sigma;
-      const double Temp  = plasma->species(s).T0;
-      const double sub   = (plasma->species(s).doGyro) ? 3./2. : 1./2.;
-
-      const double v2_rms = pow2(alpha);
-
-
-      for(int m=NmLlD; m<=NmLuD; m++) { 
-  
-       // gyro-fluid model
-       if(plasma->species(s).gyroModel == "Gyro-1") k2p_phi(RxLD, RkyLD, RzLD, RFields) = fields->gyroAverage(fields->Field0(RxLD, RkyLD, RzLD, RFields), 2, s,  Field::phi, true);
-       
-       if(calculate_nonLinear && (rk_step != 0)) calculatePoissonBracket(fields->phi, _fs,m, s);
-       //if(calculate_nonLinear && (rk_step != 0)) calculatePoissonBracket(fields->Ap, _fs,m, s);
-
-       
-      for(int z=NzLlD; z<= NzLuD;z++) {
-        
-        #pragma omp parallel for
-        for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
 
             const cmplxd ky     = cmplxd(0.,fft->ky(y_k));
             const cmplxd ky_p1  = (y_k+1 <= Nky-1) ? cmplxd(0.,fft->ky(y_k+1)) : 0.;
@@ -897,25 +827,11 @@ void VlasovCilk::Vlasov_2D_Island(
         
         // NOTE :  at the Nyquist frequency we have no coupling with higher frequencies (actually phi(m=Ny) = 0. anyway)
 	    
-        // The magnetic island
-    
-        //
-       //         *  For the latter term, the intrigate derivative is the \partial_y * Island
-       //         *  remember the island structure is 
-       //         *  \partial_y (e^{imx} + e^{-imx}) = (i m) * ( e^{imx} - e^{-imx} )
-       //         *
-        //
         const cmplxd Island_A_phi =  ( - dMagIs_dx * ( ky_m1 * phi_m1 + ky_p1 * phi_p1) + MagIs * ky_1 * (dphi_dx_m1 - dphi_dx_p1));
         
              ///////////////////////////////////////////////////////////////////////////////
             
         const cmplxd kp = geo->get_kp(x, ky, z);
-
-               // velocity space magic
-        for(int v=NvLlD; v<= NvLuD;v++) {
-
-            const cmplxd g   =  fs[s][m][z][y_k][x][v];
-            const cmplxd F0  = vf0[s][m][z][y_k][x][v];
 
 
         /////////////////////////////////////////////////// Magnetic Island Contribution    /////////////////////////////////////////
@@ -935,55 +851,11 @@ void VlasovCilk::Vlasov_2D_Island(
 	
         // mode-mode connections
         register const cmplxd Island_A_F1 = ( - dMagIs_dx * (ky_m1 *fs_m1  + ky_p1 * fs_p1 )  +  MagIs  * ky_1 *  (dfs_dx_m1  - dfs_dx_p1 ))  ;
-
-
 	
-        /////////// Collisions ////////////////////////////////////////////////////////////////////
-
-        const cmplxd dfs_dv    = (8.  *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - 1. *(fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))/(12.*dv);
-        const cmplxd ddfs_dvv  = (16. *(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) - 1. *(fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) - 30.*fs[s][m][z][y_k][x][v])/(12.*pow2(dv));
-
-
         /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
         cmplxd dg_dt = 
              // Island
              alpha * V[v] * (Island_A_F1 + Island_A_phi * F0) +   
-             // driving term
-             ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])/Temp  - sub)) * F0 * phi_
-
-             // add first order gyro-average term (zero when full-gyro)
-             + 0.5 * w_T  * k2_phi[1][z][y_k][x] * F0)
-      	     // Landau Damping term 
-           - alpha  * V[v]* kp  * ( g + sigma * phi_ * F0);
-            // collisional term
-            + collisionBeta * (g  + V[v] * dfs_dv + v2_rms * ddfs_dvv)
-	        + nonLinear[z][y_k][x][v]
-          ;
-
-        // screen out Nyquiest frequeny
-        //if(y_k == Ny/2) dg_dt = 0.;
-
-
-        //////////////////////////// Vlasov End ////////////////////////////
-        //  time-integrate the distribution function    
-        //
-        // RK-4
-        if(rk_step == 0) {
-            fss[s][m][z][y_k][x][v] = dg_dt;
-        } else {
-            if(rk_step == 1) ft[s][m][z][y_k][x][v] = dg_dt;
-            else if((rk_step == 2) || (rk_step == 3)) ft[s][m][z][y_k][x][v] += 2.0*dg_dt;
-            else    dg_dt = ft[s][m][z][y_k][x][v] + dg_dt;
-        
-            fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v] + dg_dt*dt;
-        }
-
-
-      }}} }}
-   }
-
-}
-
 */
 
 
@@ -1011,7 +883,7 @@ void VlasovCilk::Vlasov_EM(
                            cmplxd G        [NzLB][NkyLD][NxLB][NvLB],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            Fields *fields,
-                           const double dt, const int rk_step)
+                           const double dt, const int rk_step, const double rk[3])
 { 
 
    
@@ -1033,7 +905,7 @@ void VlasovCilk::Vlasov_EM(
  
          setupXiAndG(fs, vf0, phi, Ap, Bp, Xi, G, V, M, m , s);
 
-         //if(nonLinear)   calculatePoissonBracket(Xi, _fs,m, s);
+      //   if(nonLinear)   calculatePoissonBracket(Xi, _fs,m, s);
        
          // calculate for estimation of CFL condition
          for(int z=NzLlD; z<= NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
@@ -1068,8 +940,8 @@ void VlasovCilk::Vlasov_EM(
 
         // We use CD-4 (central difference fourth order for every variable)
 
-        const cmplxd dG_dx   = (8.*(G[x+1][y_k][z][v] - G[x-1][y_k][z][v])    -1.*(G[x+2][y_k][z][v] - G[x-2][y_k][z][v]))/(12.*dx);
-        const cmplxd dG_dz   = (8.*(G[x][y_k][z+1][v] - G[x][y_k][z-1][v])    -1.*(G[x][y_k][z+2][v] - G[x][y_k][z-2][v]))/(12.*dz);
+        const cmplxd dG_dz   = (8.*(G[z+1][y_k][x][v] - G[z-1][y_k][x][v])    -1.*(G[z+2][y_k][x][v] - G[z-2][y_k][x][v]))/(12.*dz);
+        const cmplxd dG_dx   = (8.*(G[z][y_k][x+1][v] - G[z][y_k][x-1][v])    -1.*(G[z][y_k][x+2][v] - G[z][y_k][x-2][v]))/(12.*dx);
 
         
         // magnetic prefactor defined as  $ \hat{B}_0 / \hat{B}_{0\parallel}^\star = \left[ 1 + \beta_{ref} \sqrt{\frac{\hat{m_\sigma T_{0\sigma}{2}}}}
@@ -1085,26 +957,19 @@ void VlasovCilk::Vlasov_EM(
             
           // driving term
           Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - sub)) * F0 * Xi_ * ky
-          - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0 * geo->Kx(x,z)) * dG_dx
-          - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0 * geo->Ky(x,z) - alpha * pow2(V[v]) * plasma->beta * plasma->w_p) * G_ * ky
-          -  CoJB * ( alpha * V[v]* dG_dz)
-          + alpha * V[v] / 2. * M[m] * geo->dB_dz(x,z) * dfs_dv
-          + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * geo->Kx(x,z) * (w_n + w_T * (pow2(V[v]) + M[m] * B0)/Temp - 3./2.) * F0;
+          - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0) * (geo->Kx(x,z) * dG_dx - geo->Ky(x,z) * ky * G_)
+          //- alpha * pow2(V[v]) * plasma->beta * plasma->w_p * G_ * ky
+          -  CoJB *  alpha * V[v]* dG_dz
+          + alpha  / 2. * M[m] * geo->dB_dz(x,z) * dfs_dv
+          + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * geo->Kx(x,z) * ((w_n + w_T * (pow2(V[v]) + M[m] * B0)/Temp - sub) * dG_dx + sigma * dphi_dx[z][y_k][x] * F0);
 
           
         //////////////////////////// Vlasov End ////////////////////////////
 
-   //  time-integrate the distribution function     
-        if(rk_step == 0) {
-            fss[s][m][z][y_k][x][v] = dg_dt;
-        } else {
-   if(rk_step == 1) ft[s][m][z][y_k][x][v] = dg_dt;
-   else if((rk_step == 2) || (rk_step == 3)) ft[s][m][z][y_k][x][v] = ft[s][m][z][y_k][x][v] + 2.0*dg_dt;
-   else    dg_dt = ft[s][m][z][y_k][x][v] + dg_dt;
+        //  time-integrate the distribution function    
+        ft [s][m][z][y_k][x][v] = rk[0] * ft[s][m][z][y_k][x][v] + rk[1] * dg_dt             ;
+        fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v]         + (rk[2] * ft[s][m][z][y_k][x][v] + dg_dt) * dt;
         
-   fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v] + dg_dt*dt;
-
-        }
       }}} }}
    }
 }
