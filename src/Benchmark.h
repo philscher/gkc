@@ -21,7 +21,12 @@
 
 #include "Global.h"
 
+#include "Setup.h"
+#include "Parallel.h"
+#include "FileIO.h"
+#include "Timing.h"
 
+#include <sys/time.h>
 #include <papi.h> 
 
 /**
@@ -41,70 +46,57 @@
 * @todo save value in HDF-5 file.
 * @todo check if using PAPI does have performance impact
 *
-*/
-class Benchmark
+**/
+class Benchmark : public IfaceGKC
 {
-   
+  int num_hwcntrs; ///< Number of available Hardware counters
+
+  struct Counters
+  {
+	long long Cycles; ///< Total Cycles
+	long long Instructions   ; ///< Total Instructions
+  };
+
+
   struct Measure {
-   float rtime;  ///< Real time
-   float ptime;  ///< Processor time
-   long long flpops; ///< Total floating point operations
-   float mflops;   ///< Million Floating Operations Per Second
+   float      rtime;  ///< Real time
+   float      ptime;  ///< Processor time
+   long long flpops;  ///< Total floating point operations
+   float     mflops;  ///< Million Floating Operations Per Second
    } M;
+    
+  timespec ts_start, ts_end;
+  
+  bool useBenchmark;
 
-
+  Parallel * parallel;
   /**
   *    @brief get error string from PAPI error
   *
   **/ 
-  std::string getPAPIErrorString(int error_val)
-   {
-     const int max_str_len = 128;
-     char error_str[max_str_len];
-     PAPI_perror(error_val, error_str, max_str_len);
-     return std::string(error_str);
-   };
-
+  static std::string getPAPIErrorString(int error_val);
 
   public:
-   
+  
+
+ 
    /**
    *   @brief constructor which initialized PAPI
    *
    **/
-   Benchmark()
-   {
+   Benchmark(Setup *setup, Parallel *_parallel);
 
-int retval = PAPI_library_init(PAPI_VER_CURRENT);
+   ~Benchmark();
 
-   };
+   void start(std::string id, int type=0);
 
-   ~Benchmark()
-   {
-         PAPI_shutdown();
-   };
+   void stop(std::string id, int type=0);
 
-   void start(std::string id, int type=0)
-   {  
-      int ret;
-      // Setup PAPI library and begin collecting data from the counters
-      if((ret = PAPI_flops( &M.rtime, &M.ptime, &M.flpops, &M.mflops)) < PAPI_OK)
-         check(-1, DMESG(getPAPIErrorString(ret))); 
-   };
-
-   void stop(std::string id, int type=0)
-   {
-
-      int ret;
-      // Setup PAPI library and begin collecting data from the counters
-      if((ret = PAPI_flops( &M.rtime, &M.ptime, &M.flpops, &M.mflops)) < PAPI_OK)
-         check(-1, DMESG(getPAPIErrorString(ret)));
-
-     std::cout << std::endl << "FLOP : " << M.flpops << " GFLOP/s : " << std::setprecision(2) << (M.mflops/1000.) << std::endl;
-     std::cout << std::endl << " GFLOP/s : " << std::setprecision(2) << std::setiosflags(ios::fixed) << setw(5) << (M.mflops/1000.) << std::endl;
-   };
-
-
+protected:
+   virtual void writeData(Timing timing, double dt);
+   void initDataOutput(Setup *setup, FileIO *fileIO);
+   void closeData();
+   virtual void printOn(ostream &output) const ;
 };
 
 
