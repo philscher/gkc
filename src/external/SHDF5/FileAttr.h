@@ -61,7 +61,7 @@ class FileAttr
 
    // ToDo : Can we directly pass the blitz array ? and then do A.data() ?
     template<typename T, int W> void write(Array<T,W> A, int increase=+1) {
-		write(A.data());
+      write(A.data());
     } 
     template<typename T> int write(T data, int increase=+1) 
     {

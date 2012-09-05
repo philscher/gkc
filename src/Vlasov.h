@@ -25,12 +25,6 @@
 #include "Collisions.h"
 
 
-/**
-*
-*
-*
-**/
-enum Boundary  { BOUNDARY_DIRTY=0,  BOUNDARY_CLEAN=1};
 
 
 class Event;
@@ -66,6 +60,12 @@ class Vlasov : public IfaceGKC {
    friend class Benchmark;
 
  protected:
+  /**
+  *
+  **/
+  enum Boundary  { BOUNDARY_SEND=1,  BOUNDARY_RECV=2, BOUNDARY_SENDRECV=3};
+
+
    /**
    *    Please Document Me !
    *
@@ -139,7 +139,7 @@ class Vlasov : public IfaceGKC {
    *    @brief set if non-linear simulations are performed
    *
    **/
-   bool calculate_nonLinear;
+   bool nonLinear;
     
 
         
@@ -149,7 +149,7 @@ class Vlasov : public IfaceGKC {
    *
    *
    **/
-   virtual int solve(std::string equation_type, Fields *fields, Array6C fs, Array6C fss, double dt, int rk_step, const double rk[3], int user_boundary_type=BOUNDARY_CLEAN) = 0;
+   virtual int solve(std::string equation_type, Fields *fields, Array6C fs, Array6C fss, double dt, int rk_step, const double rk[3]) = 0;
  public:
   
    /**
@@ -189,23 +189,16 @@ class Vlasov : public IfaceGKC {
    *  Handles boundary conditions
    *
    **/
-   int solve(Fields *fields, Array6C fs, Array6C fss, double dt, int rk_step, const double rk[3],  int user_boundary_type=BOUNDARY_CLEAN);
+   int solve(Fields *fields, Array6C fs, Array6C fss, double dt, int rk_step, const double rk[3],  bool useNonBlockingBoundary=true);
 
    /**
    *    Please Document Me !
    *
    **/
-   void setBoundary(Array6C  A, int boundary_type=BOUNDARY_CLEAN);
+   void setBoundary(Array6C);
 
-   void updateBoundary(
-         CComplex g     [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-         CComplex SendXl[NsLD][NmLD][NzLD][NkyLD][GC2 ][NvLD], CComplex SendXu[NsLD][NmLD][NzLD][NkyLD][GC2 ][NvLD], 
-         CComplex RecvXl[NsLD][NmLD][NzLD][NkyLD][GC2 ][NvLD], CComplex RecvXu[NsLD][NmLD][NzLD][NkyLD][GC2 ][NvLD], 
-         CComplex SendZl[NsLD][NmLD][GC2 ][NkyLD][NxLD][NvLD], CComplex SendZu[NsLD][NmLD][GC2 ][NkyLD][NxLD][NvLD],
-         CComplex RecvZl[NsLD][NmLD][GC2 ][NkyLD][NxLD][NvLD], CComplex RecvZu[NsLD][NmLD][GC2 ][NkyLD][NxLD][NvLD],
-         CComplex SendVl[NsLD][NmLD][NzLD][NkyLD][NxLD][GC2 ], CComplex SendVu[NsLD][NmLD][NvLD][NkyLD][NxLD][GC2 ],
-         CComplex RecvVl[NsLD][NmLD][NzLD][NkyLD][NxLD][GC2 ], CComplex RecvVu[NsLD][NmLD][NvLD][NkyLD][NxLD][GC2 ]);
 
+   void setBoundary(Array6C, int boundary_type);
 
    /**
    *    Please Document Me !

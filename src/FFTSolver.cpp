@@ -23,13 +23,13 @@ void FFTSolver::setNormalizationConstants() {
         // Real -> Complex (Fourier sapce) transform
       rYIn(NxLlD, RyLD) = 1.;
       
-    solve(FFT_Y, FFT_FORWARD, rYIn.data(), kYOut.data());
+    solve(FFT_Y_NL, FFT_FORWARD, rYIn.data(), kYOut.data());
    Norm_Y_Forward = real(kYOut(NxLlD, 0));      
 
 
     // Complex (Fourier sapce) -> Real transform
     kYIn(RxLD, RkyLD) = 0.; kYIn(NxLlD, NkyLlD) = 1.;
-    solve(FFT_Y, FFT_BACKWARD, kYIn.data(), rYOut.data());
+    solve(FFT_Y_NL, FFT_BACKWARD, kYIn.data(), rYOut.data());
    Norm_Y_Backward = rYOut(NxLlD, NyLlD);
        
 

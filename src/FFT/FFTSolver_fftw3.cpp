@@ -17,7 +17,9 @@
 
 
 // we have to place plans here to avoid namespace errors 
-fftw_plan plan_YForward_Field, plan_YBackward_Field, plan_YForward_PSF, plan_YBackward_PSF;
+fftw_plan plan_YForward_Field, plan_YBackward_Field, 
+          plan_YForward_PSF, plan_YBackward_PSF,
+          plan_YForward_NL , plan_YBackward_NL;
 fftw_plan plan_XForward, plan_XBackward;
 
 fftw_plan plan_XForward_Fields, plan_XBackward_Fields;
@@ -178,8 +180,11 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
                 plan_YForward_Field  = fftw_plan_many_dft_r2c(1, &NyLD, NxLD+8,                 rYIn.data(), NULL, 1, NyLD+4,  (fftw_complex*) kYOut.data(), NULL, 1, NkyLD, perf_flag);
                 plan_YBackward_Field = fftw_plan_many_dft_c2r(1, &NyLD, NxLD+8, (fftw_complex*) kYIn.data(), NULL, 1, NkyLD,                  rYOut.data(), NULL, 1, NyLD , perf_flag);
                 
-                plan_YForward_PSF    = fftw_plan_many_dft_r2c(1, &NyLD, NxLD  ,                 rYIn.data(), NULL, 1, NyLD ,  (fftw_complex*) kYOut.data(), NULL, 1, NkyLD, perf_flag);
-                plan_YBackward_PSF   = fftw_plan_many_dft_c2r(1, &NyLD, NxLD  , (fftw_complex*) kYIn.data(), NULL, 1, NkyLD,                  rYOut.data(), NULL, 1, NyLD , perf_flag);
+                plan_YForward_PSF    = fftw_plan_many_dft_r2c(1, &NyLD, NxLB  ,                 rYIn.data(), NULL, 1, NyLD ,  (fftw_complex*) kYOut.data(), NULL, 1, NkyLD, perf_flag);
+                plan_YBackward_PSF   = fftw_plan_many_dft_c2r(1, &NyLD, NxLB  , (fftw_complex*) kYIn.data(), NULL, 1, NkyLD,                  rYOut.data(), NULL, 1, NyLD , perf_flag);
+                
+                plan_YForward_NL    = fftw_plan_many_dft_r2c(1, &NyLD, NxLD  ,                 rYIn.data(), NULL, 1, NyLD ,  (fftw_complex*) kYOut.data(), NULL, 1, NkyLD, perf_flag);
+                plan_YBackward_NL   = fftw_plan_many_dft_c2r(1, &NyLD, NxLD  , (fftw_complex*) kYIn.data(), NULL, 1, NkyLD,                  rYOut.data(), NULL, 1, NyLD , perf_flag);
                 
 
 
@@ -212,9 +217,11 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
 }
 
 
-
+/// too much crap here ..... :(
 void FFTSolver_fftw3::solve(const int FFTtype, const int direction, void *in, void *out) 
 {
+
+
          
          if(FFTtype & FFT_X_FIELDS) {
              
@@ -277,13 +284,32 @@ void FFTSolver_fftw3::solve(const int FFTtype, const int direction, void *in, vo
              else   check(-1, DMESG("No such FFT direction"));
             }
  * */
-        else if(FFTtype & FFT_Y  & flags) {
+        else if(FFTtype & FFT_Y_FIELDS ) {
             
              // Need to cast between bit comparible complex types
              if     (direction == FFT_FORWARD )  fftw_execute_dft_r2c(plan_YForward_Field , (double   *) in, (fftw_complex *) out); 
              else if(direction == FFT_BACKWARD)  fftw_execute_dft_c2r(plan_YBackward_Field, (fftw_complex *) in, (double   *) out); 
              else   check(-1, DMESG("No such FFT direction"));
         }
+        
+        else if(FFTtype & FFT_Y_PSF ) {
+            
+             // Need to cast between bit comparible complex types
+             if     (direction == FFT_FORWARD )  fftw_execute_dft_r2c(plan_YForward_PSF , (double   *) in, (fftw_complex *) out); 
+             else if(direction == FFT_BACKWARD)  fftw_execute_dft_c2r(plan_YBackward_PSF, (fftw_complex *) in, (double   *) out); 
+             else   check(-1, DMESG("No such FFT direction"));
+        }
+        else if(FFTtype & FFT_Y_NL  ) {
+            
+             // Need to cast between bit comparible complex types
+             if     (direction == FFT_FORWARD )  fftw_execute_dft_r2c(plan_YForward_NL , (double   *) in, (fftw_complex *) out); 
+             else if(direction == FFT_BACKWARD)  fftw_execute_dft_c2r(plan_YBackward_NL, (fftw_complex *) in, (double   *) out); 
+             else   check(-1, DMESG("No such FFT direction"));
+        }
+
+
+
+
         else  check(-1, DMESG("Unknown FFT type or not supported"));
 
        return;

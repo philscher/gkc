@@ -52,7 +52,7 @@ class ProgramRun(threading.Thread):
         result_list.append(result)
         self.vlock.release()
 
-def ManyExecture(Func, par, nthreads):
+def ManyExecute(Func, par, nthreads):
     queue = getQueueFromList(par)
     #result_list = []
     threads = []

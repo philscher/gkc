@@ -14,6 +14,9 @@ sed -i 's/A/B/g' *
 # Sed substitute recursivly
 find ./ -type f | xargs sed -i 's/string1/string2/g'
 
+# replace tab with 3 whitespace (also can use expand, tr)
+find ./ -iname "*.cpp" -type f -exec sed -i 's/\t/   /g' {} \;
+
 # Code checking
 cppcheck . 2> err.txt
 cppint .
@@ -28,4 +31,14 @@ LD_PRELOAD=/lib/libSegFault.so ../../gkc_sa/src/gkc -c Shear.gkc -f
 gprof $GKC_DIR/src/gkc | python $GKC_DIR/scripts/gprof2dot.py | dot -Tpng -o output.png
 
 
-
+# Check oprofile
+# gprof2dot try --skew 0.001 --strip
+#
+#
+# set CPU affinity to CPU #2 and start program
+taskset -c 2 ./prog
+#
+#
+sysconf ....
+# Get system information e.g. size of L1 Cache
+# 

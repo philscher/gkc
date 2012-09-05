@@ -68,7 +68,7 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
 
    }}} }}}
 
-   GL_vlasov->setBoundary(GL_vlasov->fs, BOUNDARY_CLEAN); 
+   GL_vlasov->setBoundary(GL_vlasov->fs); 
    GL_fields->solve(GL_vlasov->f0,  GL_vlasov->fs); 
    const double rk_0[] = { 0., 0., 0.};
    //GL_vlasov->f = 0.;

@@ -91,26 +91,26 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(Complex max_abs_eigv)
         // Runge-Kutta step 1
         const double rk_1[] = { 0., 1., 0.};
         fields->solve(vlasov->f0,vlasov->f, timing);
-        vlasov ->solve(fields, vlasov->f  , vlasov->fs, 0.5e0*dt , 1, rk_1 , BOUNDARY_DIRTY);
+        vlasov ->solve(fields, vlasov->f  , vlasov->fs, 0.5e0*dt , 1, rk_1 );
         particles->integrate(vlasov, fields, 1);
         
         // Runge-Kutta step 2
         const double rk_2[] = { 1., 2., 0.};
         fields->solve(vlasov->f0,vlasov->fs, timing);
-        vlasov ->solve(fields, vlasov->fs , vlasov->fss, 0.5e0*dt, 2, rk_2, BOUNDARY_DIRTY);
+        vlasov ->solve(fields, vlasov->fs , vlasov->fss, 0.5e0*dt, 2, rk_2);
         particles->integrate(vlasov, fields, 2);
 
     
         // Runge-Kutta step 3
         const double rk_3[] = { 1., 2., 0.};
    fields->solve(vlasov->f0,vlasov->fss, timing);
-        vlasov ->solve(fields, vlasov->fss, vlasov->fs,  dt      , 3, rk_3, BOUNDARY_DIRTY);
+        vlasov ->solve(fields, vlasov->fss, vlasov->fs,  dt      , 3, rk_3);
         particles->integrate(vlasov, fields, 3);
 
         // Runge-Kutta step 4
         const double rk_4[] = { 1., 0., 1.};
         fields->solve(vlasov->f0,vlasov->fs, timing);
-        vlasov ->solve(fields, vlasov->fs , vlasov->f ,  dt/6.e0 , 4, rk_4, BOUNDARY_DIRTY);
+        vlasov ->solve(fields, vlasov->fs , vlasov->f ,  dt/6.e0 , 4, rk_4);
         particles->integrate(vlasov, fields, 4);
 
 
@@ -122,18 +122,18 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(Complex max_abs_eigv)
         // Runge-Kutta step 1
         const double rk_1[] = { 0., 1., 0.};
         fields->solve(vlasov->f0,vlasov->f, timing);
-        vlasov ->solve(fields, vlasov->f  , vlasov->fs, 1./3. * dt , 1, rk_1, BOUNDARY_DIRTY);
+        vlasov ->solve(fields, vlasov->f  , vlasov->fs, 1./3. * dt , 1, rk_1);
 
 
         // Runge-Kutta step 2
         const double rk_2[] = { 1./3., 0., 0.};
         fields->solve(vlasov->f0,vlasov->fs, timing);
-        vlasov ->solve(fields, vlasov->fs , vlasov->fss, 2./3. *dt, 2, rk_2, BOUNDARY_DIRTY);
+        vlasov ->solve(fields, vlasov->fs , vlasov->fss, 2./3. *dt, 2, rk_2);
 
         // Runge-Kutta step 3
         const double rk_3[] = { 1., 0., 1.};
         fields->solve(vlasov->f0,vlasov->fss, timing);
-        vlasov ->solve(fields, vlasov->fss, vlasov->f,  3./4. * dt , 3, rk_3, BOUNDARY_DIRTY);
+        vlasov ->solve(fields, vlasov->fss, vlasov->f,  3./4. * dt , 3, rk_3);
         
    };
       
@@ -142,12 +142,12 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(Complex max_abs_eigv)
  /* 
         // Runge-Kutta step 1
         fields->solve(vlasov->f0,vlasov->f, timing);
-        vlasov ->solve(fields, vlasov->f  , vlasov->fs, 0.5e0*dt , 1, BOUNDARY_DIRTY);
+        vlasov ->solve(fields, vlasov->f  , vlasov->fs, 0.5e0*dt , 1);
 
 
         // Runge-Kutta step 2
         fields->solve(vlasov->f0,vlasov->fs, timing);
-        vlasov ->solve(fields, vlasov->fs , vlasov->fss, 0.5e0*dt, 2, BOUNDARY_DIRTY);
+        vlasov ->solve(fields, vlasov->fs , vlasov->fss, 0.5e0*dt, 2);
   * */ 
 
        };
@@ -158,12 +158,12 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(Complex max_abs_eigv)
  /*   
         // Runge-Kutta step 1
         fields->solve(vlasov->f0,vlasov->f, timing);
-        vlasov ->solve(fields, vlasov->f  , vlasov->fs, 2./3.*dt , 1, BOUNDARY_DIRTY);
+        vlasov ->solve(fields, vlasov->f  , vlasov->fs, 2./3.*dt , 1);
 
 
         // Runge-Kutta step 2
         fields->solve(vlasov->f0,vlasov->fs, timing);
-        vlasov ->solve(fields, vlasov->fs , vlasov->f, 1./4.*dt, 2, BOUNDARY_DIRTY);
+        vlasov ->solve(fields, vlasov->fs , vlasov->f, 1./4.*dt, 2);
   * */ 
 
        };
@@ -174,7 +174,7 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(Complex max_abs_eigv)
         // Runge-Kutta step 1
         const double rk_0[] = { 0., 0., 0.};
         fields->solve(vlasov->f0,vlasov->f, timing);
-        vlasov ->solve(fields, vlasov->f  , vlasov->fs, 1. , 0, rk_0, BOUNDARY_DIRTY);
+        vlasov ->solve(fields, vlasov->f  , vlasov->fs, 1. , 0, rk_0);
 
         };
        

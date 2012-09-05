@@ -172,9 +172,6 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    fields->updateBoundary(); // fields->Field);
 
 
-   std::cout << "SEtting manually f in Init.cpp" << std::cout;
-   vlasov->f = 1.e-18 * vlasov->f0;
-    
 };
 
 int Init::PerturbationPSFNoise(Vlasov *vlasov, int s, double pre) {

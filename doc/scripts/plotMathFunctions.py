@@ -57,7 +57,7 @@ gplot(-3, 2,  func, "$\\Delta(x)$", "Bessel Function", "GK_Delta.png", 'loglin')
 func = lambda x : (scipy.special.i0(x)-scipy.special.i1(x))*exp(-x)
 gplot(-3, 2,  func, "$\\Delta(x)$", "Bessel Function", "GK_G0mG1.png", 'loglin')
 func = lambda x : x/(x+1.)
-gplot(-3, 2.,  func, "$1-\\Gamma_0(x) = \\frac{x}{1+x}$", "Bessel Function", "GK_1mG_Pade.png", 'loglin')
+gplot(-3, 2.,  func, "$1-\\Gamma_0(x) = \\frac{x}{1+x}$", "Bessel Function", "GK_1mG0_Pade.png", 'loglin')
 
 
 
