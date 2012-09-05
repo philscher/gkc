@@ -43,7 +43,7 @@ TimeIntegration_PETSc::TimeIntegration_PETSc(Setup *setup, Grid *grid, Parallel 
 
       // Setup inital vector
       Vec Vec_init;
-      cmplxd *init_x = PETScMatrixVector::getCreateVector(grid, Vec_init);
+      Complex *init_x = PETScMatrixVector::getCreateVector(grid, Vec_init);
     
       for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
       for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD ; m   <= NmLuD ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
@@ -75,7 +75,7 @@ double TimeIntegration_PETSc::solveTimeStep(Vlasov *vlasov, Fields *fields, Test
                     TSStep(ts); 
                     // Get Solution
     Vec    Vec_F1;   
-    cmplxd  *x_F1; 
+    Complex  *x_F1; 
     
 
                     TSGetSolution(ts, &Vec_F1);

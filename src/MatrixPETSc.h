@@ -90,10 +90,10 @@ class Matrix
       return;
    };
 
-   void setValue(int row, int col, cmplxd value) 
+   void setValue(int row, int col, Complex value) 
    {
               
-     MatSetValues(PETSc_Matrix, 1, &row, 1, &col, &value, INSERT_VALUES);
+     MatSetValues(PETSc_Matrix, 1, &row, 1, &col, (PetscScalar *) &value, INSERT_VALUES);
 
    };
 
@@ -126,7 +126,7 @@ class Matrix
   
   
   //// Operator overloading /////////////
-//  friend Matrix& operator+=(Matrix &A, cmplxd a) {
+//  friend Matrix& operator+=(Matrix &A, Complex a) {
 //    MatShift(A.getMat(), a);
 //    return A;
 //  };
@@ -160,13 +160,13 @@ class Matrix
 
    }
 
-   //  friend Matrix& operator+(Matrix &A, cmplxd a) {
+   //  friend Matrix& operator+(Matrix &A, Complex a) {
    //    A.checkAndAssemble(); 
    //    MatShift(A.getMat(), a);
    //    return A;
    //  };
   
-   friend Matrix& operator*(cmplxd a, Matrix &A) 
+   friend Matrix& operator*(Complex a, Matrix &A) 
    {
     
       A.checkAndAssemble();
@@ -177,34 +177,34 @@ class Matrix
 
    friend Matrix& operator*(double &a, Matrix &A) {
     
-      MatScale(A.getMat(), cmplxd(a,0));
+      MatScale(A.getMat(), newComplex(a,0.));
       return A;
    };
    
    friend Matrix& operator*(Matrix &A, double &a) {
     
       A.checkAndAssemble();
-      MatScale(A.getMat(), cmplxd(a,0));
+      MatScale(A.getMat(), newComplex(a,0.));
       return A;
    };
 
-   friend Matrix& operator*(Matrix &A, cmplxd a) {
+   friend Matrix& operator*(Matrix &A, Complex a) {
       A.checkAndAssemble();
       MatScale(A.getMat(), a);
       return A;
    }
 
    /* 
-   inline cmplxd& Matrix::operator() (int row, int col)
+   inline Complex& Matrix::operator() (int row, int col)
    {
-    cmplxd value; 
+    Complex value; 
     MatSetValues(PETSc_Matrix, 1, &row, 1, &col, &value, INSERT_VALUES);
     return value;
  
    };
    */
    
-   void addDiagonal(cmplxd a) 
+   void addDiagonal(Complex a) 
    {
       checkAndAssemble(); 
       MatShift(PETSc_Matrix, a);
@@ -213,7 +213,7 @@ class Matrix
    void addDiagonal(double a) 
    {
       checkAndAssemble(); 
-      MatShift(PETSc_Matrix, cmplxd(a, 0.));
+      MatShift(PETSc_Matrix, newComplex(a, 0.));
    }
 
    /**
@@ -232,14 +232,14 @@ class Matrix
           Mat Matrix_AllReduce;
                
           
-          Array2z ReduceArray(Range(0, n_local-1),  Range(0, n_local-1)); 
+          Array2C ReduceArray(Range(0, n_local-1),  Range(0, n_local-1)); 
 
-          //Array2z ReduceArray(Range(start, stop),  Range(start, stop)); 
+          //Array2C ReduceArray(Range(start, stop),  Range(start, stop)); 
           MatConvert(PETSc_Matrix, MATMPIDENSE,  MAT_INITIAL_MATRIX, &Matrix_AllReduce);
 
           
-          cmplxd *matrix_val;
-          MatGetArray(Matrix_AllReduce, &matrix_val);
+          Complex *matrix_val;
+          MatGetArray(Matrix_AllReduce, (PetscScalar **) &matrix_val);
 
           
           for(int x = 0, n = 0; x < n_local-1; x++) {  for(int x2 = 0; x2 < n_local-1; x2++) {
@@ -259,7 +259,7 @@ class Matrix
           } }     
                
           
-          MatRestoreArray(Matrix_AllReduce, &matrix_val);
+          MatRestoreArray(Matrix_AllReduce, (PetscScalar **) &matrix_val);
           MatCopy(Matrix_AllReduce, PETSc_Matrix, DIFFERENT_NONZERO_PATTERN);
 
           checkAndAssemble();

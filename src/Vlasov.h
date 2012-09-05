@@ -20,6 +20,7 @@
 #include "Fields.h"
 #include "Grid.h"
 #include "FFTSolver.h"
+#include "Benchmark.h"
 
 #include "Collisions.h"
 
@@ -38,11 +39,14 @@ class PETScMatrixVector;
 *
 * @brief  class for solving the Vlasov equation
 *
-* We solve the 6 dimensional Vlasov equation (X, Y, Z, Vp), m, s 
+* We solve the 6 dimensional Vlasov equation 
+*
+* \f[
+*     f_{1\sigma}(x, k_y, z, v_\parallel, \mu, \sigma)
+* \f]
 *
 **/
 class Vlasov : public IfaceGKC {
-
    /**
    *    Please Document Me !
    *
@@ -55,6 +59,12 @@ class Vlasov : public IfaceGKC {
    **/
    friend class PETScMatrixVector;
 
+   /**
+   *    Please Document Me !
+   *
+   **/
+   friend class Benchmark;
+
  protected:
    /**
    *    Please Document Me !
@@ -64,23 +74,14 @@ class Vlasov : public IfaceGKC {
 
  private:
    /**
-   *    Please Document Me !
-   *
-   *    Set to periodic  or zero boundary
-   *
-   **/
-   std::string useBoundary;
-
-        
-   /**
    *  @brief Buffer for exchange ghost cells in each direction
    */ 
-   Array6z  SendYu, SendXu, SendYl, SendXl, SendVl, SendVu, SendZl, SendZu; 
+   Array6C  SendYu, SendXu, SendYl, SendXl, SendVl, SendVu, SendZl, SendZu; 
   
    /**
    *  @brief Buffer for exchange ghost cells in each direction
    */ 
-   Array6z  RecvYu, RecvXu, RecvYl, RecvXl, RecvVl, RecvVu, RecvZl, RecvZu;
+   Array6C  RecvYu, RecvXu, RecvYl, RecvXl, RecvVl, RecvVu, RecvZl, RecvZu;
       
    /**
    *    Please Document Me !
@@ -92,28 +93,24 @@ class Vlasov : public IfaceGKC {
    *   @brief Update boundary conditions in case non-blocking MPI is used
    *
    **/
-   int cleanBoundary(Array6z A);
+   void cleanBoundary(Array6C A);
         
    /**
    *   @brief reference to last used array used for non-blocking
    *         boundaries
    *
    **/
-   Array6z f_boundary;
+   Array6C f_boundary;
 
 
  protected:
-   /**
-   *    Please Document Me !
-   **/
-   bool useAntiAliasing;
-
    FFTSolver *fft;
    Parallel *parallel;
    Grid *grid;
    Setup *setup;
    Geometry *geo;
-   
+   Benchmark *bench;  
+
    /**
    *    Please Document Me !
    **/
@@ -144,22 +141,6 @@ class Vlasov : public IfaceGKC {
    **/
    bool calculate_nonLinear;
     
-   /**
-   *
-   *  Set the Krook operator 
-   *  \f[
-   *     \frac{\partial g_{1sigma}}{\partial t} = \dots - \nu(x) g_{1\sigma}
-   *  \f]
-   * Is used to damp oscillations close to the simulation boundary.
-   *
-   *  Note : 
-   *          * Is this the no-slip boundary condition ?
-   *          * Violates conservation of particles, energy and momentum and
-   *            needs to be fixed by modifing the fields. See Lapillone.
-   *
-   *
-   **/
-   double krook_nu;
 
         
    /**
@@ -168,14 +149,14 @@ class Vlasov : public IfaceGKC {
    *
    *
    **/
-   virtual int solve(std::string equation_type, Fields *fields, Array6z fs, Array6z fss, double dt, int rk_step, const double rk[3], int user_boundary_type=BOUNDARY_CLEAN) = 0;
+   virtual int solve(std::string equation_type, Fields *fields, Array6C fs, Array6C fss, double dt, int rk_step, const double rk[3], int user_boundary_type=BOUNDARY_CLEAN) = 0;
  public:
   
    /**
    *    Please Document Me !
    *
    **/
-   Array1d  Xi_max;
+   double  Xi_max[3];
   
    /**
    *   @brief 6-dimensional phase-space function
@@ -183,19 +164,19 @@ class Vlasov : public IfaceGKC {
    *   @note should this be allocated in TimeIntegation or set to 7dim ?
    *
    **/
-   Array6z f0, f, fs, fss, ft, f1;
+   Array6C f0, f, fs, fss, ft, f1;
    
    /**
    *    Please Document Me !
    *
    **/
-   Array4z G, Xi;
+   Array4C G, Xi;
 
    /**
    *    Please Document Me !
    *
    **/
-   Vlasov(Grid *grid, Parallel *parallel, Setup *setup, FileIO *fileIO, Geometry *geo, FFTSolver *fft);
+   Vlasov(Grid *grid, Parallel *parallel, Setup *setup, FileIO *fileIO, Geometry *geo, FFTSolver *fft, Benchmark *bench);
 
    /**
    *
@@ -208,13 +189,22 @@ class Vlasov : public IfaceGKC {
    *  Handles boundary conditions
    *
    **/
-   int solve(Fields *fields, Array6z fs, Array6z fss, double dt, int rk_step, const double rk[3],  int user_boundary_type=BOUNDARY_CLEAN);
+   int solve(Fields *fields, Array6C fs, Array6C fss, double dt, int rk_step, const double rk[3],  int user_boundary_type=BOUNDARY_CLEAN);
 
    /**
    *    Please Document Me !
    *
    **/
-   int setBoundary(Array6z  A, int boundary_type=BOUNDARY_CLEAN);
+   void setBoundary(Array6C  A, int boundary_type=BOUNDARY_CLEAN);
+
+   void updateBoundary(
+         CComplex g     [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+         CComplex SendXl[NsLD][NmLD][NzLD][NkyLD][GC2 ][NvLD], CComplex SendXu[NsLD][NmLD][NzLD][NkyLD][GC2 ][NvLD], 
+         CComplex RecvXl[NsLD][NmLD][NzLD][NkyLD][GC2 ][NvLD], CComplex RecvXu[NsLD][NmLD][NzLD][NkyLD][GC2 ][NvLD], 
+         CComplex SendZl[NsLD][NmLD][GC2 ][NkyLD][NxLD][NvLD], CComplex SendZu[NsLD][NmLD][GC2 ][NkyLD][NxLD][NvLD],
+         CComplex RecvZl[NsLD][NmLD][GC2 ][NkyLD][NxLD][NvLD], CComplex RecvZu[NsLD][NmLD][GC2 ][NkyLD][NxLD][NvLD],
+         CComplex SendVl[NsLD][NmLD][NzLD][NkyLD][NxLD][GC2 ], CComplex SendVu[NsLD][NmLD][NvLD][NkyLD][NxLD][GC2 ],
+         CComplex RecvVl[NsLD][NmLD][NzLD][NkyLD][NxLD][GC2 ], CComplex RecvVu[NsLD][NmLD][NvLD][NkyLD][NxLD][GC2 ]);
 
 
    /**
@@ -240,6 +230,13 @@ class Vlasov : public IfaceGKC {
    **/
    double getMaxTimeStep(int dir, const double maxCFL);
 
+   
+   
+   /**
+   *    @brief Holds the non-linear terms from the ExB
+   *
+   **/
+   Array3C nonLinearTerms; 
 
    /**
    *
@@ -253,9 +250,18 @@ class Vlasov : public IfaceGKC {
    *          (RK-3, RK-4, Heun method).
    *
    *   Calculated using ....
+   *
+   *   This needs only to be caluclated in the non-linear terms
+   *
    *  @note get linking error if defined inline. Check Performance !
    **/
-   void updateCFL(const cmplxd dphi_dx, const cmplxd dphi_dy, const cmplxd dphi_dz);
+   void inline updateCFL(const Complex dphi_dx, const Complex dphi_dy, const Complex dphi_dz)
+{
+  Xi_max[DIR_X] = max(Xi_max[DIR_X], abs(dphi_dx));
+  Xi_max[DIR_Y] = max(Xi_max[DIR_Y], abs(dphi_dy));
+  Xi_max[DIR_Z] = max(Xi_max[DIR_Z], abs(dphi_dz));
+};
+ 
  
  protected :
 

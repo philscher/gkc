@@ -19,6 +19,7 @@
 
 
 #ifdef GKC_PARALLEL_MPI
+
 // MPI_ERror handler so we can use check and backtrace
 void check_mpi(MPI_Comm *comm, int *err_code, ...) {
 
@@ -37,35 +38,29 @@ Parallel::Parallel(Setup *setup)
   // initialize some basic parameter
   myRank = 0;  numThreads = 1; numProcesses = 1, master_rank = 0; numGPUs = 0; 
   useOpenMP = false; useMPI = false; useOpenCL = false; 
-  Coord.resize(Range(DIR_X,DIR_SIZE-1)); Coord(Range(DIR_X, DIR_SIZE-1)) = 0; //Coord(Range(DIR_S+1, DIR_SIZE-1)) = -1;
+  Coord[:] = 0;
   master_process_id = setup->get("Helios.Process_ID", 0);
+  decomposition[:] = 1;
 
-#ifdef PARALLEL_OPENMP
-
+#ifdef GKC_PARALLEL_OPENMP
       useOpenMP = true;
-
       // if OpenMP is enabled, we decompose over y direction
-
       #pragma omp parallel
       {
         numThreads = omp_get_num_threads();
       }
 #endif
 
-    /////////////////////////////////////////////////////////////////////////////////////////
-    // Check domain decomposition
-    decomposition.resize(Range(DIR_X,DIR_S)); decomposition = 1;
-     /////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef GKC_PARALLEL_MPI
    useMPI = true;
    for(int d=DIR_X;d<DIR_SIZE;d++) Comm[d] = MPI_COMM_NULL;
    Talk.resize(Range(DIR_X,DIR_S));
 
-   ///////////////////////////////////////////////////////////////////////////////////////////////
-   // Set Message tags, enumerate through
+
+   //////////////////////// Set Message tags, enumerate through ////////////////////////
    int i = 0;
-   
+   // do its in one loop ?
    for(int dir = DIR_X; dir <= DIR_S; dir++) {
         Talk(dir).psf_msg_tag[0] = ++i;
         Talk(dir).psf_msg_tag[1] = ++i;
@@ -81,96 +76,87 @@ Parallel::Parallel(Setup *setup)
 
   // set automatic decomposition
   std::vector<std::string> decomp = Setup::split(setup->get("Parallel.Decomposition","Auto"), ":");
-  if(decomp[0] == "Auto")                              decomposition      = getAutoDecomposition(numProcesses);
-  else for(unsigned int dir=DIR_X; dir < decomp.size(); dir++)  decomposition(dir) =  atoi(decomp[dir].c_str());
+  // check also if decomp is not longer than N<=6
+  if(decomp[0] == "Auto")  getAutoDecomposition(numProcesses);
+  else for(unsigned int dir=DIR_X; dir < decomp.size() && (dir <= DIR_S); dir++)  decomposition[dir] =  atoi(decomp[dir].c_str());
  
   // Not if OpenMP is enabled OpenMP, we decompose in Y in OpenMP threads (not clean solution tough)
-#ifdef PARALLEL_OPENMP
-      numThreads = decomposition(DIR_Y); 
+#ifdef GKC_PARALLEL_OPENMP
       #pragma omp parallel
       {
         omp_set_num_threads(numThreads);
       } 
-      // need to set to 1 for MPI
-      decomposition(DIR_Y) = 1; 
 #endif
 
-
-
-  checkValidDecomposition(setup, decomposition);
-
+   checkValidDecomposition(setup);
    
-   // Create 6-D Cartesian Grid
+    // need to set to 1 for MPI
+    int dec_Y = decomposition[DIR_Y]; decomposition[DIR_Y] = 1; 
+   
+    
+    /////////////////// Create 6-D Cartesian Grid ////////////////////
    int periods[6] = { 1, 1, 1, 0, 0, 0};
-   MPI_Cart_create(MPI_COMM_WORLD, 6, decomposition.data(), periods, 1, &Comm[DIR_ALL]);
+   MPI_Cart_create(MPI_COMM_WORLD, 6, decomposition, periods, 1, &Comm[DIR_ALL]);
 
-   // we let even fatal errors return, but we check the return code of each send
-   // this needed to enable backtracing when debugging
-   MPI_Errhandler my_errhandler;
-   MPI_Errhandler_create(&check_mpi, &my_errhandler);
-   MPI_Errhandler_set(Comm[DIR_ALL], my_errhandler);
+
    // Get Cart coordinates to set 
-   MPI_Comm_rank(Comm[DIR_ALL],&myRank); process_rank = myRank;
-   MPI_Cart_coords(Comm[DIR_ALL], myRank, 6, Coord.data());
+   MPI_Comm_rank(Comm[DIR_ALL],&myRank); 
+   process_rank = myRank; // process rank is global, needed ?
+
+   MPI_Cart_coords(Comm[DIR_ALL], myRank, 6, Coord);
  
+   // Get combined positions 
+   Coord[DIR_VMS]   = ((Coord[DIR_V] == 0) && (Coord[DIR_M] == 0) && (Coord[DIR_S] == 0)) ? 0 : -1;
+   Coord[DIR_VM ]   = ((Coord[DIR_V] == 0) && (Coord[DIR_M] == 0))                        ? 0 : -1;
+   Coord[DIR_MS ]   = ((Coord[DIR_M] == 0) && (Coord[DIR_S] == 0))                        ? 0 : -1;
 
-   Coord(DIR_VMS)   = ((Coord(DIR_V) == 0) && (Coord(DIR_M) == 0) && (Coord(DIR_S) == 0)) ? 0 : -1;
-   Coord(DIR_VM )   = ((Coord(DIR_V) == 0) && (Coord(DIR_M) == 0))                        ? 0 : -1;
-   Coord(DIR_MS )   = ((Coord(DIR_M) == 0) && (Coord(DIR_S) == 0))                        ? 0 : -1;
-   Coord(DIR_YZVMS) = sum(Coord(Range(DIR_Y, DIR_S))        == 0)                         ? 0 : -1;
-   Coord(DIR_XYZVM) = sum(Coord(Range(DIR_X, DIR_M))        == 0)                         ? 0 : -1;
 
-   ////////////////////////////////////////////////////////////////////////////////////////
 
-//   if     (FFT_DECOMP == DECOMP_NO ) Coord(DIR_FFT) = ((sum(Coord(Range(DIR_X,DIR_Y)))+Coord(DIR_V)) == 0) ? 0 : -1;
- //  else if(FFT_DECOMP == DECOMP_X  ) Coord(DIR_FFT) = ((sum(Coord(Range(DIR_Y,DIR_Y)))+Coord(DIR_V)) == 0) ? 0 : -1;
- //  else   check(-1, DMESG("Spatial Decomposition strategy for FFT does not exist"));
-
-    //  ******************  Set SubCommunicators for (V,M,S & Phi) *********************** //
+    ///////////////////  Set SubCommunicators for various directions //////////////////////////
+    // Note , we do not need to translate ranks, because dirMaster is always used with appropriate Comm
     
     int coord_master[6] = { 0, 0, 0, 0, 0, 0 };
  
-    // we do not need to translate ranks, because dirMaster is always used  with appropriate Comm
   
-    /* 
-   MPI_Group CommV_group, CommALL_group;
-   MPI_Comm_group(Comm[DIR_ALL],   &CommALL_group);
-   MPI_Comm_group(Comm[DIR_V  ],  &CommV_group);
-*/   
-
+    // Coomunicator for X
     int remain_dims_X[6] = { true, false, false, false, false, false };         
     MPI_Cart_sub(Comm[DIR_ALL], remain_dims_X, &Comm[DIR_X]);
     MPI_Cart_rank  (Comm[DIR_X], coord_master, &dirMaster[DIR_X]);
     
+    // Coomunicator for Y
     int remain_dims_Y[6] = { false, true, false, false, false, false };         
     MPI_Cart_sub(Comm[DIR_ALL], remain_dims_Y, &Comm[DIR_Y]);
     MPI_Cart_rank  (Comm[DIR_Y], coord_master, &dirMaster[DIR_Y]);
     
+    // Coomunicator for Z
+    int remain_dims_Z[6] = { false, false, true, false, false, false };         
+    MPI_Cart_sub(Comm[DIR_ALL], remain_dims_Z, &Comm[DIR_Z]);
+    MPI_Cart_rank  (Comm[DIR_Z], coord_master, &dirMaster[DIR_Z]);
+    
+    // Coomunicator for V
     int remain_dim_V[6]   = {false, false, false, true, false ,false};
     MPI_Cart_sub(Comm[DIR_ALL], remain_dim_V, &Comm[DIR_V]);
     MPI_Cart_rank  (Comm[DIR_V], coord_master, &dirMaster[DIR_V]);
 
-
+    // Coomunicator for M
     int remain_dim_M[6] = {false, false, false, false, true ,false};
     MPI_Cart_sub(Comm[DIR_ALL], remain_dim_M, &Comm[DIR_M]); 
     MPI_Cart_rank  (Comm[DIR_M], coord_master, &dirMaster[DIR_M]);
 
-
+    // Coomunicator for S
     int remain_dim_S[6] = {false, false, false, false, false, true};
     MPI_Cart_sub(Comm[DIR_ALL], remain_dim_S, &Comm[DIR_S]); 
     MPI_Cart_rank  (Comm[DIR_S], coord_master, &dirMaster[DIR_S]);
-    
+   
+    // Communicator for M&S (used by gyro-averaging solver)
     int remain_dim_MS[6] = {false, false, false, false, true, true};
     MPI_Cart_sub(Comm[DIR_ALL], remain_dim_MS, &Comm[DIR_MS]); 
     MPI_Cart_rank  (Comm[DIR_MS], coord_master, &dirMaster[DIR_MS]);
-    
+   
+    // For real space communication
     int remain_dim_XYZ[6] = {true, true, true, false, false, false};
     MPI_Cart_sub(Comm[DIR_ALL], remain_dim_XYZ, &Comm[DIR_XYZ]); 
     MPI_Cart_rank  (Comm[DIR_XYZ], coord_master, &dirMaster[DIR_XYZ]);
-    
-    int remain_dim_YZ[6] = {false, true, true, false, false, false};
-    MPI_Cart_sub(Comm[DIR_ALL], remain_dim_YZ, &Comm[DIR_YZ]); 
-    MPI_Cart_rank  (Comm[DIR_YZ], coord_master, &dirMaster[DIR_YZ]);
     
     int remain_dim_VMS[6] = {false, false, false, true, true ,true};
     MPI_Cart_sub(Comm[DIR_ALL], remain_dim_VMS, &Comm[DIR_VMS]);
@@ -180,58 +166,48 @@ Parallel::Parallel(Setup *setup)
     MPI_Cart_sub(Comm[DIR_ALL], remain_dim_VM, &Comm[DIR_VM]);
     MPI_Cart_rank  (Comm[DIR_VM], coord_master, &dirMaster[DIR_VM]);
     
-    int remain_dim_YZVMS[6] = {false, true, true, true, true ,true};
-    MPI_Cart_sub(Comm[DIR_ALL], remain_dim_YZVMS, &Comm[DIR_YZVMS]);
-    MPI_Cart_rank  (Comm[DIR_YZVMS], coord_master, &dirMaster[DIR_YZVMS]);
-    
+    // Phase-space of individual species
     int remain_dim_XYZVM[6] = {true, true, true, true, true ,false};
     MPI_Cart_sub(Comm[DIR_ALL], remain_dim_XYZVM, &Comm[DIR_XYZVM]);
     MPI_Cart_rank  (Comm[DIR_XYZVM], coord_master, &dirMaster[DIR_XYZVM]);
     
-    int remain_dim_XMS[6] = {true, false, false, false, true , true};
-    MPI_Cart_sub(Comm[DIR_ALL], remain_dim_XMS, &Comm[DIR_XMS]);
-    MPI_Cart_rank  (Comm[DIR_XMS], coord_master, &dirMaster[DIR_XMS]);
+
+    ////// Get ranks of neigbouring processes for Vlasov equation boundary exchange //////
+
+    int rank = myRank; // is this necessary ?!
     
-    int remain_dim_XM[6] = {true, false, false, false, true ,false};
-    MPI_Cart_sub(Comm[DIR_ALL], remain_dim_XM, &Comm[DIR_XM]);
-    MPI_Cart_rank  (Comm[DIR_XM], coord_master, &dirMaster[DIR_XM]);
+    // setup communcation ranks for X
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_X, 1, &rank, &Talk(DIR_X).rank_u);
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_X,-1, &rank, &Talk(DIR_X).rank_l);
+  
+    // setup communcation ranks for Y
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_Y, 1, &rank, &Talk(DIR_Y).rank_u);
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_Y,-1, &rank, &Talk(DIR_Y).rank_l);
+ 
+    // setup communcation ranks for Z
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_Z, 1, &rank, &Talk(DIR_Z).rank_u);
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_Z,-1, &rank, &Talk(DIR_Z).rank_l);
 
-
-   // because ranks changed withing groups, we need to translate them between the communicators
-//   MPI_Group CommCart_group, CommSlaves_group;
-//   MPI_Comm_group(CommSlaves,   &CommSlaves_group);
-//   MPI_Comm_group(Comm[DIR_ALL],  &CommCart_group);
+    // V (not periodic), returns NULL_COMM at the domain ends
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_V, 1, &rank, &Talk(DIR_V).rank_u);
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_V,-1, &rank, &Talk(DIR_V).rank_l);
+  
+    // S (not periodic), returns NULL_COMM at the domain ends
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_M, 1, &rank, &Talk(DIR_M).rank_u);
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_M,-1, &rank, &Talk(DIR_M).rank_l);
+  
+    // M (not periodic), returns NULL_COMM at the domain ends
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_S, 1, &rank, &Talk(DIR_S).rank_u);
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_S,-1, &rank, &Talk(DIR_S).rank_l);
+ 
+    // distributed unified id to all processes
+    master_process_id = (int) collect((double) (myRank == 0) ? master_process_id : 0, OP_SUM, DIR_ALL);
    
-//   MPI_Group_translate_ranks(CommCart_group, 1, &rankFFTMaster,  CommSlaves_group, &rankFFTMaster);
-
-
-  // Get Communicators to our positions, use MPI_CART_SHIFT for that !
-  int rank = myRank;
-  MPI_Cart_shift(Comm[DIR_ALL], DIR_X, 1, &rank, &Talk(DIR_X).rank_u);
-  MPI_Cart_shift(Comm[DIR_ALL], DIR_X,-1, &rank, &Talk(DIR_X).rank_l);
-  
-  // setup communcation ranks for Y
-  MPI_Cart_shift(Comm[DIR_ALL], DIR_Y, 1, &rank, &Talk(DIR_Y).rank_u);
-  MPI_Cart_shift(Comm[DIR_ALL], DIR_Y,-1, &rank, &Talk(DIR_Y).rank_l);
- 
-  // setup communcation ranks for Z
-  MPI_Cart_shift(Comm[DIR_ALL], DIR_Z, 1, &rank, &Talk(DIR_Z).rank_u);
-  MPI_Cart_shift(Comm[DIR_ALL], DIR_Z,-1, &rank, &Talk(DIR_Z).rank_l);
-
-  // V (not periodic), returns NULL_COMM at the domain ends
-  MPI_Cart_shift(Comm[DIR_ALL], DIR_V, 1, &rank, &Talk(DIR_V).rank_u);
-  MPI_Cart_shift(Comm[DIR_ALL], DIR_V,-1, &rank, &Talk(DIR_V).rank_l);
-  
-  // S (not periodic), returns NULL_COMM at the domain ends
-  MPI_Cart_shift(Comm[DIR_ALL], DIR_M, 1, &rank, &Talk(DIR_M).rank_u);
-  MPI_Cart_shift(Comm[DIR_ALL], DIR_M,-1, &rank, &Talk(DIR_M).rank_l);
-  
-  // M (not periodic), returns NULL_COMM at the domain ends
-  MPI_Cart_shift(Comm[DIR_ALL], DIR_S, 1, &rank, &Talk(DIR_S).rank_u);
-  MPI_Cart_shift(Comm[DIR_ALL], DIR_S,-1, &rank, &Talk(DIR_S).rank_l);
- 
-  // distributed unified id to all processes
-  master_process_id = (int) collect((double) (myRank == 0) ? master_process_id : 0, OP_SUM, DIR_ALL);
+    
+    /////////////////// Setup own error handle,  this needed to enable backtracing when debugging
+    MPI_Errhandler my_errhandler;
+    MPI_Errhandler_create(&check_mpi, &my_errhandler);
+    MPI_Errhandler_set(Comm[DIR_ALL], my_errhandler);
 
 #endif // GKC_PARALLEL_MPI
 
@@ -260,10 +236,12 @@ Parallel::~Parallel() {
  }
 
 /* 
+// use template instantination
+
 
 // There should be a better way instead of defininng 2 updateNEighbours as all same the same functions
 // but teplate arguments are different ... :(, if the border is reached we send recv value to zero !
-int Parallel::updateNeighbours(Array6z  Sendu, Array6z  Sendl, Array6z  Recvu, Array6z  Recvl, int dir, bool nonBlocking)
+int Parallel::updateNeighbours(Array6C  Sendu, Array6C  Sendl, Array6C  Recvu, Array6C  Recvl, int dir, bool nonBlocking)
 {
 #ifdef GKC_PARALLEL_MPI
     if(nonBlocking) { 
@@ -288,10 +266,10 @@ int Parallel::updateNeighbours(Array6z  Sendu, Array6z  Sendl, Array6z  Recvu, A
 int Parallel::updateNeighboursBarrier() {
     // BUG what happen if we never sent a message, what does Waitall
 #ifdef GKC_PARALLEL_MPI 
-     if(decomposition(DIR_X) > 1) MPI_Waitall(4, Talk(DIR_X).psf_msg_request, Talk(DIR_X).msg_status);
-     if(decomposition(DIR_Y) > 1) MPI_Waitall(4, Talk(DIR_Y).psf_msg_request, Talk(DIR_Y).msg_status);
-     if(decomposition(DIR_Z) > 1) MPI_Waitall(4, Talk(DIR_Z).psf_msg_request, Talk(DIR_Z).msg_status);
-     if(decomposition(DIR_V) > 1) MPI_Waitall(4, Talk(DIR_V).psf_msg_request, Talk(DIR_V).msg_status);
+     if(decomposition[DIR_X] > 1) MPI_Waitall(4, Talk(DIR_X).psf_msg_request, Talk(DIR_X).msg_status);
+     if(decomposition[DIR_Y] > 1) MPI_Waitall(4, Talk(DIR_Y).psf_msg_request, Talk(DIR_Y).msg_status);
+     if(decomposition[DIR_Z] > 1) MPI_Waitall(4, Talk(DIR_Z).psf_msg_request, Talk(DIR_Z).msg_status);
+     if(decomposition[DIR_V] > 1) MPI_Waitall(4, Talk(DIR_V).psf_msg_request, Talk(DIR_V).msg_status);
 //     if(decomposition & DECOMP_M) MPI_Waitall(4, Talk(DIR_M).psf_msg_request, Talk(DIR_M).msg_status);
 //     if(decomposition & DECOMP_S) MPI_Waitall(4, Talk(DIR_S).psf_msg_request, Talk(DIR_S).msg_status);
 #endif // GKC_PARALLEL_MPI
@@ -302,8 +280,8 @@ int Parallel::updateNeighboursBarrier() {
 
 // There should be a better way instead of defininng 2 updateNEighbours as all same the same functions
 // but teplate arguments are different ... :(
-int Parallel::updateNeighbours(Array6z  SendXl, Array6z  SendXu, Array6z  SendYl, Array6z  SendYu, Array6z SendZl, Array6z SendZu, 
-                               Array6z  RecvXl, Array6z  RecvXu, Array6z  RecvYl, Array6z  RecvYu, Array6z RecvZl, Array6z RecvZu) 
+int Parallel::updateNeighbours(Array6C  SendXl, Array6C  SendXu, Array6C  SendYl, Array6C  SendYu, Array6C SendZl, Array6C SendZu, 
+                               Array6C  RecvXl, Array6C  RecvXu, Array6C  RecvYl, Array6C  RecvYu, Array6C RecvZl, Array6C RecvZu) 
 {
 #ifdef GKC_PARALLEL_MPI 
       MPI_Status  msg_status[12];
@@ -357,7 +335,7 @@ MPI_Op Parallel::getMPIOp(int op) {
 #ifdef GKC_PARALLEL_MPI
 MPI_Datatype Parallel::getMPIDataType(const std::type_info &T) {
     MPI_Datatype type=0;
-    if     (T == typeid(cmplxd)) type = MPI_DOUBLE_COMPLEX;
+    if     (T == typeid(Complex)) type = MPI_DOUBLE_COMPLEX;
     else if(T == typeid(double)) type = MPI_DOUBLE;
     else if(T == typeid(int   )) type = MPI_INT;
     else if(T == typeid(long long)) type = MPI_LONG_LONG;
@@ -370,32 +348,33 @@ MPI_Datatype Parallel::getMPIDataType(const std::type_info &T) {
 
 
 
-Array1i Parallel::getAutoDecomposition(int numCPU) {
-    Array1i A;
-    A.resize(Range(0,5));
-    A = 1;
-    return A;
+void Parallel::getAutoDecomposition(int numCPU) {
+
+    if (numCPU == 1) decomposition[:] = 1;
+    else check(-1, DMESG("Not implemented"));
+
+    return;
 
 };
   
 
-bool Parallel::checkValidDecomposition(Setup *setup, Array1i decomposition) {
+bool Parallel::checkValidDecomposition(Setup *setup) {
 
 
    // Check basic decomposition sizes
-   if( decomposition(DIR_X) > setup->get("Grid.Nx", 1)) check(-1, DMESG("Decomposition in x bigger than Nx"));
-// no need to check y-decomposition (OpenMP parallelization)   
-   if( decomposition(DIR_Y) > setup->get("Grid.Ny", 1)) check(-1, DMESG("Decomposition in y bigger than Ny"));
-   if( decomposition(DIR_Z) > setup->get("Grid.Nz", 1)) check(-1, DMESG("Decomposition in z bigger than Nz"));
-   if( decomposition(DIR_V) > setup->get("Grid.Nv", 1)) check(-1, DMESG("Decomposition in v bigger than Nv"));
-   if( decomposition(DIR_M) > setup->get("Grid.Nm", 1)) check(-1, DMESG("Decomposition in m bigger than Nm"));
-   if( decomposition(DIR_S) > setup->get("Grid.Ns", 1)) check(-1, DMESG("Decomposition in s bigger than Ns"));
+   if( decomposition[DIR_X] > setup->get("Grid.Nx", 1)) check(-1, DMESG("Decomposition in x bigger than Nx"));
+   // no need to check y-decomposition (OpenMP parallelization)   
+   //if( decomposition(DIR_Y) > setup->get("Grid.Ny", 1)) check(-1, DMESG("Decomposition in y bigger than Ny"));
+   if( decomposition[DIR_Z] > setup->get("Grid.Nz", 1)) check(-1, DMESG("Decomposition in z bigger than Nz"));
+   if( decomposition[DIR_V] > setup->get("Grid.Nv", 1)) check(-1, DMESG("Decomposition in v bigger than Nv"));
+   if( decomposition[DIR_M] > setup->get("Grid.Nm", 1)) check(-1, DMESG("Decomposition in m bigger than Nm"));
+   if( decomposition[DIR_S] > setup->get("Grid.Ns", 1)) check(-1, DMESG("Decomposition in s bigger than Ns"));
    
    // Simple Check if reasonable values are provided for decomposition (only MPI proceeses)
    const int pNs = setup->get("Grid.Ns", 1 );
    //if((product(decomposition) != numThreads * numProcesses) && (myRank == 0)) check(-1, DMESG("Decomposition and number of processors are not equal"));
-   if((product(decomposition) != numProcesses) && (myRank == 0)) check(-1, DMESG("Decomposition and number of processors are not equal"));
-   if(((pNs %   decomposition(DIR_S)) != 0    ) && (myRank == 0)) check(-1, DMESG("Decomposition in s have to be modulo of the total number"));
+   if((__sec_reduce_mul(decomposition[DIR_X:6]) != numThreads * numProcesses) && (myRank == 0)) check(-1, DMESG("Decomposition and number of processors are not equal"));
+   if(((pNs %   decomposition[DIR_S]) != 0    ) && (myRank == 0)) check(-1, DMESG("Decomposition in s have to be modulo of the total number"));
 
 
     return GKC_SUCCESS;
@@ -404,26 +383,27 @@ bool Parallel::checkValidDecomposition(Setup *setup, Array1i decomposition) {
 
 void Parallel::print(std::string message) {
 
-    if(myRank == 0) std::cout << message;
+    if(myRank == 0) std::cout << message << std::endl;
 
 }
 
 
 void Parallel::printOn(ostream &output) const {
+
        output << "Parallel   | ";
-		
+      
       if      (useOpenMP) output << " OpenMP (Threads) : " << Num2String(numThreads) ;
       if      (useOpenCL) output << " OpenCL (Threads) : " << Num2String(numGPUs   ) ;
       if      (useMPI   ) {
       
-           if (decomposition(DIR_X) == 0) output <<  "Automatic" << std::endl;
+           if (decomposition[DIR_X] == 0) output <<  "Automatic" << std::endl;
            else  output <<  " MPI (processes) : " << Num2String(numProcesses) << std::endl;
 
        
       output << "           |  Decompostion : " 
-        << "X(" << decomposition(DIR_X) << ")  Y(" << decomposition(DIR_Y) << ") "
-        << "Z(" << decomposition(DIR_Z) << ")  V(" << decomposition(DIR_V) << ") "
-        << "M(" << decomposition(DIR_M) << ")  S(" << decomposition(DIR_S) << ") " << std::endl;
+        << "X(" << decomposition[DIR_X] << ")  Y(" << decomposition[DIR_Y] << ") "
+        << "Z(" << decomposition[DIR_Z] << ")  V(" << decomposition[DIR_V] << ") "
+        << "M(" << decomposition[DIR_M] << ")  S(" << decomposition[DIR_S] << ") " << std::endl;
    
        } else output << std::endl;
 } 
@@ -449,4 +429,4 @@ int Parallel::getWorkerID(int dir)
    
 void Parallel::barrier(int dir) {
         MPI_Barrier(Comm[dir]);
-   };
+};

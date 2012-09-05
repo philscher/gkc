@@ -55,7 +55,7 @@ Analysis::~Analysis() {
 }
 
 // calculate phi_rms (root mean square)
- Array3d Analysis::getPowerSpectrum() {
+ Array3R Analysis::getPowerSpectrum() {
         
    
            pSpec = 0.e0;
@@ -63,11 +63,11 @@ Analysis::~Analysis() {
           // The z-value are complex conjugate to each other, so fftw does not include them ( but we do need to have a factor of 2 ?!)
           // Note : Because we take the power, we need to multiply not by 2 but by 4 (for Z)
 
-         if(parallel->Coord(DIR_VMS) == 0) {
+         if(parallel->Coord[DIR_VMS] == 0) {
 
 
-            fft->rXIn(RxLD, RkyLD, RzLD, RFields) = fields->Field0(RxLD, RkyLD, RzLD,RFields);
-            fft->solve(FFT_X, FFT_FORWARD, FFT_FIELDS);
+            //fft->rXIn(RxLD, RkyLD, RzLD, RFields) = fields->Field0(RxLD, RkyLD, RzLD,RFields);
+            fft->solve(FFT_X_FIELDS, FFT_FORWARD, fields->Field0.data());
 
             
              // check if domains are valid
@@ -150,7 +150,7 @@ Analysis::~Analysis() {
 
     };
 
-	
+   
     void Analysis::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEnergy) {
        
       fields->calculateFieldEnergy(fields->Q, phiEnergy, ApEnergy, BpEnergy);
@@ -191,7 +191,7 @@ double Analysis::getParticelNumber(int sp)
 
 
 
-Array4d Analysis::getNumberDensity(const bool total) {
+Array4R Analysis::getNumberDensity(const bool total) {
 
     for(int s = NsLlD; s <= NsLuD; s++) {
 
@@ -208,7 +208,7 @@ Array4d Analysis::getNumberDensity(const bool total) {
 };
 
 
-Array4d Analysis::getMomentumParallel() {
+Array4R Analysis::getMomentumParallel() {
 /* 
     for(int s = NsLlD; s <= NsLuD; s++) {
 
@@ -227,7 +227,7 @@ Array4d Analysis::getMomentumParallel() {
 }
 
 
-Array4z Analysis::getTemperatureParallel() {
+Array4C Analysis::getTemperatureParallel() {
     
   A4_z = 0.;
 
@@ -240,7 +240,7 @@ Array4z Analysis::getTemperatureParallel() {
       for(int z=NzLlD; z<= NzLuD;z++){ for(int x=NxLlD; x  <= NxLuD ;  x++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
 
       
-            const cmplxd ky=cmplxd(0.,-fft->ky(y_k));
+            const Complex ky=Complex(0.,-fft->ky(y_k));
               
              // integrate over velocity space
              for(int v=NvLlD; v<= NvLuD;v++) A4_z(x,y_k,z,s) += (pow2(V(v)) +  M(m) * plasma->B0) * vlasov->f(x, y_k, z, v, m, s) * d6Z;
@@ -256,7 +256,7 @@ Array4z Analysis::getTemperatureParallel() {
 
 
 
-Array4d Analysis::getTemperatureOthogonal() {
+Array4R Analysis::getTemperatureOthogonal() {
 /* 
     for(int s = NsLlD; s <= NsLuD; s++) {
 
@@ -275,7 +275,7 @@ Array4d Analysis::getTemperatureOthogonal() {
 
 
 
-Array4d Analysis::getHeatFluxParallel() {
+Array4R Analysis::getHeatFluxParallel() {
 /* 
     for(int s = NsLlD; s <= NsLuD; s++) {
 
@@ -293,7 +293,7 @@ Array4d Analysis::getHeatFluxParallel() {
     return parallel->collect(A4, OP_SUM, DIR_VM);
 }
 
-Array4d Analysis::getHeatFluxOrthogonal() {
+Array4R Analysis::getHeatFluxOrthogonal() {
 /* 
     for(int s = NsLlD; s <= NsLuD; s++) {
 
@@ -314,12 +314,12 @@ Array4d Analysis::getHeatFluxOrthogonal() {
 
 // note the hear flux rate have to be calculted after getkinetic energy
 // this should go hand-in-hand with the temperature calculation
-Array4z Analysis::getHeatFlux(int sp) 
+Array4C Analysis::getHeatFlux(int sp) 
 {
     A4_z = 0.;
 
-    Array3z V2(RxLD, RkyLD, RzLD); 
-    Array3z W2(RxLD, RkyLD, RzLD); 
+    Array3C V2(RxLD, RkyLD, RzLD); 
+    Array3C W2(RxLD, RkyLD, RzLD); 
    
    //for(int s = ((sp == TOTAL) ? NsLlD : sp); s <= NsLuD && ((sp != TOTAL) ? s == sp : true)  ; s++) {
   // for(int s = ((sp == TOTAL) ? NsLlD : sp); (s <= ((sp == TOTAL) ? NsLuD : sp)) && ( (sp >= NsLlD) && (sp <= NsLuD))  ; s++) { 
@@ -333,7 +333,7 @@ Array4z Analysis::getHeatFlux(int sp)
         // multiply in real-space 
       for(int z=NzLlD; z<= NzLuD;z++){ for(int x=NxLlD; x  <= NxLuD ;  x++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
 
-            const cmplxd ky=cmplxd(0.,-fft->ky(y_k));
+            const Complex ky=Complex(0.,-fft->ky(y_k));
               
             V2(x,y_k,z) = ky * fields->phi(x,y_k,z,m,s);
         
@@ -355,9 +355,9 @@ Array4z Analysis::getHeatFlux(int sp)
 
 // note the hear flux rate have to be calculted after getkinetic energy
 // this should go hand-in-hand with the temperature calculation
-Array3d Analysis::getHeatFluxKy(int sp) 
+Array3R Analysis::getHeatFluxKy(int sp) 
 {
-    Array3d Q(RFields, RkyLD, RsLD); Q = 0.;
+    Array3R Q(RFields, RkyLD, RsLD); Q = 0.;
       
     
     getHeatFlux(sp);
@@ -404,7 +404,7 @@ double Analysis::getTotalParticleFlux(int s)
     //for(int s = ((sp == TOTAL) ? NsLlD : sp); s <= NsLuD && ((sp != TOTAL) ? s == sp : true)  ; s++) particleFlux += sum(getParticleFluxKy(sp)); 
     //for(int s = ((sp == TOTAL) ? NsLlD : sp); s <= NsLuD && ((sp != TOTAL) ? s == sp : true)  ; s++)
 
-//    Array3d G(RFields, RsGD, RkyLD); G = 0.;
+//    Array3R G(RFields, RsGD, RkyLD); G = 0.;
     
 //    if((s >= NsLlD) && (s <= NsLuD)) {
 
@@ -416,12 +416,12 @@ double Analysis::getTotalParticleFlux(int s)
 
 };
 
-Array3d  Analysis::getParticleFluxKy(int sp) 
+Array3R  Analysis::getParticleFluxKy(int sp) 
 {
-    Array3d G(RFields, RkyLD, RsLD); G = 0.;
+    Array3R G(RFields, RkyLD, RsLD); G = 0.;
     
-    Array3z V2(RxLD, RkyLD, RzLD); V2 = 0.;
-    Array3z W2(RxLD, RkyLD, RzLD); W2 = 0.;
+    Array3C V2(RxLD, RkyLD, RzLD); V2 = 0.;
+    Array3C W2(RxLD, RkyLD, RzLD); W2 = 0.;
    
   for(int s = NsLlD; s <= NsLuD; s++) {
       
@@ -432,7 +432,7 @@ Array3d  Analysis::getParticleFluxKy(int sp)
         // multiply in real-space 
         for(int x=NxLlD; x  <= NxLuD ;  x++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
 
-            const cmplxd ky=cmplxd(0.,-fft->ky(y_k));
+            const Complex ky=Complex(0.,-fft->ky(y_k));
               
             V2(x,y_k,z) = ky * fields->phi(x,y_k,z,m,s);
         
@@ -487,8 +487,8 @@ int Analysis::updateSpectrum(unsigned int dir) {
    };
 
 
-Array2c Analysis::getSpectrum(unsigned int dir) {
-       Array2c spectrum;
+Array2C Analysis::getSpectrum(unsigned int dir) {
+       Array2C spectrum;
        if     (dir == SPEC_XZ)  spectrum.reference(spectrumXZ);
        else if(dir == SPEC_YZ)  spectrum.reference(spectrumXZ);
        else if(dir == SPEC_XY)  spectrum.reference(spectrumXY);
@@ -515,14 +515,9 @@ void Analysis::initDataOutput(Setup *setup, FileIO *fileIO) {
      hsize_t FSky_chunkdim[]  = { plasma->nfields, Nky, NsLD, 1 };
      hsize_t FSky_chunkBdim[] = { plasma->nfields, Nky, NsLD, 1 };
      hsize_t FSky_offset[]    = { 0, 0  , NsLlD-1, 0  };
-//     std::cout << "NsLD : " << NsLD << std::endl;
-//     std::cout << parallel->Coord(DIR_XYZVM) << std::endl << std::flush;
-//     parallel->barrier();
-     
-//check(-1, DMESG("STOP"));
 
-     FA_heatKy      = new FileAttr("Heat"   , fluxGroup, 4, FSky_dim, FSky_maxdim, FSky_chunkdim, offset0,  FSky_chunkBdim, FSky_offset, parallel->Coord(DIR_XYZVM == 0));
-     FA_particleKy  = new FileAttr("Density", fluxGroup, 4, FSky_dim, FSky_maxdim, FSky_chunkdim, offset0,  FSky_chunkBdim, FSky_offset, parallel->Coord(DIR_XYZVM == 0));
+     FA_heatKy      = new FileAttr("Heat"   , fluxGroup, 4, FSky_dim, FSky_maxdim, FSky_chunkdim, offset0,  FSky_chunkBdim, FSky_offset, parallel->Coord[DIR_XYZVM] == 0);
+     FA_particleKy  = new FileAttr("Density", fluxGroup, 4, FSky_dim, FSky_maxdim, FSky_chunkdim, offset0,  FSky_chunkBdim, FSky_offset, parallel->Coord[DIR_XYZVM] == 0);
     
      H5Gclose(fluxGroup);
      
@@ -536,7 +531,7 @@ void Analysis::initDataOutput(Setup *setup, FileIO *fileIO) {
      hsize_t moment_moffset[]   =  { 0, 0, 0, 0, 0 };
      hsize_t moment_offset[]    =  { NzLlD-3, 0     , NxLlD-3, 0     ,  0  };
      
-     bool momWrite = (parallel->Coord(DIR_VM) == 0);
+     bool momWrite = (parallel->Coord[DIR_VM] == 0);
      
      
      FA_Mom_Tp        = new FileAttr("Temperature_v", momentGroup, 5, moment_dim , moment_maxdim   , moment_chunkdim   , moment_moffset    ,  moment_chunkBdim  , moment_offset, momWrite, fileIO->complex_tid);
@@ -619,20 +614,20 @@ int Analysis::writeData(Timing timing, double dt)
       if (timing.check(dataOutputStatistics, dt)       )   {
       // Ugly and error-prone
       getPowerSpectrum();
-      Array2d pSpecX(Range(1, plasma->nfields), Range(0, Nx/2)); pSpecX(Range(1, plasma->nfields), Range(0, Nx/2)) = pSpec((int) DIR_X, Range(1, plasma->nfields), Range(0, Nx/2));
-      Array2d pSpecY(Range(1, plasma->nfields), Range(0, Nky)); pSpecY(Range(1, plasma->nfields), Range(0, Nky)) = pSpec((int) DIR_Y, Range(1, plasma->nfields), Range(0, Nky));
+      Array2R pSpecX(Range(1, plasma->nfields), Range(0, Nx/2)); pSpecX(Range(1, plasma->nfields), Range(0, Nx/2)) = pSpec((int) DIR_X, Range(1, plasma->nfields), Range(0, Nx/2));
+      Array2R pSpecY(Range(1, plasma->nfields), Range(0, Nky)); pSpecY(Range(1, plasma->nfields), Range(0, Nky)) = pSpec((int) DIR_Y, Range(1, plasma->nfields), Range(0, Nky));
       
-      Array2d pPhaseX(Range(1, plasma->nfields), Range(0, Nx/2)); pPhaseX(Range(1, plasma->nfields), Range(0, Nx/2)) = pPhase((int) DIR_X, Range(1, plasma->nfields), Range(0, Nx/2));
-      Array2d pPhaseY(Range(1, plasma->nfields), Range(0, Nky)) ; pPhaseY(Range(1, plasma->nfields), Range(0, Nky))  = pPhase((int) DIR_Y, Range(1, plasma->nfields), Range(0, Nky));
+      Array2R pPhaseX(Range(1, plasma->nfields), Range(0, Nx/2)); pPhaseX(Range(1, plasma->nfields), Range(0, Nx/2)) = pPhase((int) DIR_X, Range(1, plasma->nfields), Range(0, Nx/2));
+      Array2R pPhaseY(Range(1, plasma->nfields), Range(0, Nky)) ; pPhaseY(Range(1, plasma->nfields), Range(0, Nky))  = pPhase((int) DIR_Y, Range(1, plasma->nfields), Range(0, Nky));
 
       FA_grow_x->write( pSpecX.data()); FA_grow_y->write( pSpecY.data()); FA_grow_t->write(&timing);
       FA_freq_x->write(pPhaseX.data()); FA_freq_y->write(pPhaseY.data()); FA_freq_t->write(&timing);
 
 
       // Heat Flux
-      Array3d heatKy; heatKy.reference(getHeatFluxKy());
+      Array3R heatKy; heatKy.reference(getHeatFluxKy());
       FA_heatKy->write(heatKy.data());
-      Array3d particleKy; particleKy.reference(getParticleFluxKy());
+      Array3R particleKy; particleKy.reference(getParticleFluxKy());
       FA_particleKy->write(particleKy.data());
       
   
@@ -658,7 +653,7 @@ int Analysis::writeData(Timing timing, double dt)
             // write out to Terminal/File
             std::stringstream messageStream;
             messageStream << "Step : " << scalarValues.timestep      << "  Time " << scalarValues.time        
-			  << " Field : (phi)" << scalarValues.phiEnergy  << "   (Ap)" << scalarValues.ApEnergy  <<  " (Bp) " << scalarValues.BpEnergy << std::endl; 
+           << " Field : (phi)" << scalarValues.phiEnergy  << "   (Ap)" << scalarValues.ApEnergy  <<  " (Bp) " << scalarValues.BpEnergy << std::endl; 
             double charge = 0., kinetic_energy=0.;
             for(int s = NsGlD; s <= NsGuD; s++) {
                             messageStream << plasma->species(s).name << "   N :" << scalarValues.particle_number[s-1]  << "  Kinetic Energy : " << scalarValues.kinetic_energy[s-1] ;
@@ -700,7 +695,7 @@ int Analysis::writeData(Timing timing, double dt)
 
         
 /* 
-  int FileIO::writeSpectrum(Array3z phi_k, Analysis *analysis, Timing timing)
+  int FileIO::writeSpectrum(Array3C phi_k, Analysis *analysis, Timing timing)
   {
       return GKC_SUCCESS;
     if((parallel->isFFTGroup) && (setup->spectrumAvrg[SPEC_XZ][SPEC_START] <= timing.step) && (timing.step <= setup->spectrumAvrg[SPEC_XZ][SPEC_END])) 

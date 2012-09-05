@@ -48,16 +48,16 @@
 
 class ReaderXYV : public Reader {
 
-    Array1d X;
-    Array1d Y;
+    Array1R X;
+    Array1R Y;
 
     Interpolate *interpol;
 
-    Array1d parseNumberLine(std::string line, const char delimiter=' ') {
+    Array1R parseNumberLine(std::string line, const char delimiter=' ') {
 
        std::vector<std::string> token = Setup::split(Setup::trimLower(line), &delimiter);
            
-       Array1d V(Range(0,token.size()-1));
+       Array1R V(Range(0,token.size()-1));
 
 
        for(int n = 0; n < token.size();n++)  V(n) = Setup::string_to_double(token[n]);
@@ -91,7 +91,7 @@ public:
        // Simple check for consistency, Y len is the number of data rows
        if((lc-2) != Y.numElements()) check(-1, DMESG("Number of lines and size in Y does not match"));
 
-       Array2d V(Range(0,X.numElements()-1), Range(0, Y.numElements()-1));
+       Array2R V(Range(0,X.numElements()-1), Range(0, Y.numElements()-1));
 
        // Read in main data file
        for(int ny = 0; ny < Y.numElements(); ny++) {

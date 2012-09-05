@@ -105,15 +105,13 @@ std::vector<std::string> Setup::split(std::string str, std::string delim)
    
   commandLineOptions = setup_Xoptions;
   extraLineOptions   = setup_ExArgv;
-  setupFilename = setup_filename;
+  setupFilename      = setup_filename;
   
-  ///////////////////////////////////////////////////////////////////////////////////////
-  // Create own, see http://stackoverflow.com/questions/1511797/convert-string-to-argv-in-c
+  // Create alternativ argc/argv from -x to pass to libraries 
   std::istringstream iss(setup_ExArgv);
   std::string token;
     
-  
-  ExArgv.push_back("helios");
+  ExArgv.push_back("gkc");
   
   while(iss >> token) {
           char *arg = new char[token.size() + 1];
@@ -122,15 +120,12 @@ std::vector<std::string> Setup::split(std::string str, std::string delim)
           ExArgv.push_back(arg);
   
   }
-   
   ExArgv.push_back(0);
 
-  
   config["Parallel.Decomposition"] = setup_decomposition;
-  config["Helios.Process_ID"]      =  number2string(process_id);
+  config["gkc.Process_ID"]      =  number2string(process_id);
      
-
-  
+  std::cout << "---> " << setup_Xoptions << std::endl;
   //////////////////// parse Setup file /////////////////
   
   if(setupFilename == "") check(-1, DMESG("No config file provided. Start helios with : -c <config_file_name> option"));
@@ -148,24 +143,22 @@ std::vector<std::string> Setup::split(std::string str, std::string delim)
   configFileString = buffer.str();
 
   
-  // now parse it
+  // Parse configuation file given per -c option
   file.seekg (0, ios::beg);
   // read setup file line per line
   while(std::getline(file, line)) parseOption(line);
-      
-  
   file.close();
-      
+ 
+  // Read configuration from STDIN
+  if(flags & GKC_READ_STDIN) while(std::getline(file, line)) parseOption(line);
   
-  if(flags & GKC_READ_STDIN)  {
-    while(std::getline(file, line)) parseOption(line);
-  }
+  // Parse options from command line input -o
+  if(setup_Xoptions.empty() == false)  {
   
-  // parse options from command line input
-  
-  if(setup_Xoptions != "")  {
-  
-    std::vector<std::string> options_list = split(setup_Xoptions, ";");
+    //std::vector<std::string> options_list = split(setup_Xoptions, ",");
+    //std::vector<std::string> options_list = split(setup_Xoptions, ";");
+    // need to use + as Intel MPI 4.1 does interpret : and ;
+    std::vector<std::string> options_list = split(setup_Xoptions, "+");
     
     while(options_list.empty() == false) { 
     
@@ -177,8 +170,7 @@ std::vector<std::string> Setup::split(std::string str, std::string delim)
   }
 
   // ToDo : check some values
-    
-  parser_constants = eraseCharacter(get("Setup.Constants", ""), "{}");
+  parser_constants = eraseCharacter(get("Setup.Constants", ""), "[]");
 
 }
 
@@ -205,7 +197,7 @@ int Setup::parseOption(std::string line, bool fromFile)
   if((el != config.end()) && fromFile) { 
     std::cout << "Parsing Error : Duplicated key in File " << name << std::endl; check(-1, DMESG("Duplicate key added"));
   }
-  
+ 
   if(fromFile) config_check.push_back(name) ;
   config[name] = value;
   
@@ -227,13 +219,10 @@ FunctionParser Setup::getFParser()
    parser.AddConstant("Ns", (double) Ns);
     
    //  BUG : Crashes if parser_constants is empty. Why ?
-   
    if (!parser_constants.empty()) {
-
       std::vector<std::string> const_vec = split(parser_constants, ",");
       
       for(int s = 0; s < const_vec.size(); s++) { 
-
             std::vector<std::string> key_value = split(const_vec[s],"=");
             parser.AddConstant(trimLower(key_value[0], false), string_to_double(key_value[1]));
 

@@ -38,7 +38,7 @@ class Grid : public IfaceGKC {
        NvGC; ///< Number of ghost cells in v-direction
    ///@}
    
-   Array1d dm; ///< Weights for \f$ \mu(m) \f$
+   Array1R dm; ///< Weights for \f$ \mu(m) \f$
 
   
    /// @name Ranges for computational domain

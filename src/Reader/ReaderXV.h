@@ -48,7 +48,7 @@
 
 class ReaderXV : public Reader {
 
-    Array1d X;
+    Array1R X;
 
     Interpolate *interpol;
 
@@ -76,7 +76,7 @@ public:
        // Simple check for consistency, Y len is the number of data rows
        if((lc-2) != Y.numElements()) check(-1, DMESG("Number of lines and size in Y does not match"));
 
-       Array1d V(Range(0,X.numElements()-1));
+       Array1R V(Range(0,X.numElements()-1));
 
        // Read in main data file
        for(int ny = 0; ny < Y.numElements(); ny++) {

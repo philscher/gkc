@@ -42,7 +42,7 @@ extern int control_triggered_signal;
 *
 *     ## Setup ##
 *
-*     	if (setup->get("Control.useControlFile", 0)) {
+*        if (setup->get("Control.useControlFile", 0)) {
 *        maxKineticEnergy  = setup->get("Control.MaxKineticEnergy", 1.e355);
 *        maxElectricEnergy = setup->get("Control.MaxElectricEnergy", 1.e355);
 *        maxMagneticEnergy = setup->get("Control.MaxMagneticEnergy", 1.e355);

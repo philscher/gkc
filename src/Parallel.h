@@ -19,9 +19,7 @@
 #include "Global.h"
 #include "Setup.h"
 
-#define PARALLEL_OPENMP
-
-#ifdef PARALLEL_OPENMP
+#ifdef GKC_PARALLEL_OPENMP
 #include <omp.h>
 #endif
 
@@ -60,13 +58,13 @@ struct NeighbourDir {
    *  @brief MPI Decompostion of the code (X,Y,Z,V,M,S)
    *
    **/
-   Array1i decomposition;
+   int decomposition[6];
    
    /**
    *   @brief Coordinate of the process in (X,Y,Z,V,M,S)
    *
    **/
-   Array1i Coord;
+   int Coord[DIR_SIZE];
    
    //! hold the (world) rank of the process
    int myRank, master_process_id;
@@ -114,8 +112,8 @@ struct NeighbourDir {
    *
    *
    **/
-   int  updateNeighbours(Array6z  SendXl, Array6z  SendXu, Array6z  SendYl, Array6z  SendYu, Array6z SendZl, Array6z SendZu, 
-                         Array6z  RecvXl, Array6z  RecvXu, Array6z  RecvYl, Array6z  RecvYu, Array6z RecvZl, Array6z RecvZu); 
+   int  updateNeighbours(Array6C  SendXl, Array6C  SendXu, Array6C  SendYl, Array6C  SendYu, Array6C SendZl, Array6C SendZu, 
+                         Array6C  RecvXl, Array6C  RecvXu, Array6C  RecvYl, Array6C  RecvYu, Array6C RecvZl, Array6C RecvZu); 
    
    /**
    *  @brief updates boundaries in specific direction (non-blocking)
@@ -173,7 +171,7 @@ struct NeighbourDir {
    **/
    template<typename T, int W> int send(Array<T,W> A, int dir=DIR_ALL) {
 #ifdef GKC_PARALLEL_MPI
-     if(dir <= DIR_S) if(decomposition(dir) == 1) return GKC_SUCCESS;
+     if(dir <= DIR_S) if(decomposition[dir] == 1) return GKC_SUCCESS;
      // rank differ between communicators, so we should take care of rankFFTMaster
      check(MPI_Bcast(A.data(), A.numElements(), getMPIDataType(typeid(T)), dirMaster[dir], Comm[dir]), DMESG("MPI_Bcast")); 
 #endif
@@ -196,7 +194,7 @@ struct NeighbourDir {
      master_rank = 0;
 
 #ifdef GKC_PARALLEL_MPI
-     if(dir <= DIR_S) if(decomposition(dir) == 1) return GKC_SUCCESS;
+     if(dir <= DIR_S) if(decomposition[dir] == 1) return GKC_SUCCESS;
      // rank differ between communicators, so we should take care of rankFFTMaster
      check(MPI_Bcast(&x, 1, getMPIDataType(typeid(T)), master_rank, Comm[dir]), DMESG("MPI_Bcast")); 
 #endif
@@ -222,7 +220,7 @@ struct NeighbourDir {
    template<typename T, int W> Array<T,W> collect(Array<T,W> A, int op=OP_SUM, int dir=DIR_ALL, bool allreduce=true) {
 #ifdef GKC_PARALLEL_MPI
      // Return immediately if we don't decompose in this direction
-     if(dir <= DIR_S) if(decomposition(dir) == 1) return A;
+     if(dir <= DIR_S) if(decomposition[dir] == 1) return A;
     
      if(allreduce == true)
         MPI_Allreduce(MPI_IN_PLACE, A.data(), A.numElements(), getMPIDataType(typeid(T)), getMPIOp(op),                Comm[dir]), DMESG("MPI_Allreduce");
@@ -258,7 +256,7 @@ struct NeighbourDir {
    /**
    *    @brief simple checks determine if decomposition is logical correct
    **/
-   bool    checkValidDecomposition(Setup *setup, Array1i decomposition);
+   bool    checkValidDecomposition(Setup *setup);
 
    /**
    *   @brief determines recommendend decomposition 
@@ -267,7 +265,7 @@ struct NeighbourDir {
    *   @return  Recommended decomposition
    *
    **/
-   Array1i getAutoDecomposition(int numCPU);
+   void getAutoDecomposition(int numCPU);
 
   protected:
 

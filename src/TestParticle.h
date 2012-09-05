@@ -44,14 +44,14 @@ class TestParticles : public IfaceGKC
             charge = 1.;
         }
         */
-		int number;
+      int number;
 
-		double mass;
-		double charge;
-		
-		double p[3];
-		double v[3];
-	};
+      double mass;
+      double charge;
+      
+      double p[3];
+      double v[3];
+   };
   
   Particle *particles;
   FileAttr *FA_X, *FA_V, *FA_Time;

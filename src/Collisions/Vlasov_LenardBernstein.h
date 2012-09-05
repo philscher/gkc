@@ -63,10 +63,10 @@ protected:
           else {
 
               //const double v2_rms = 3./2. * pow2(plasma->species(s).scale_v);
-              const cmplxd v2_rms = pow2(plasma->species(s).scale_v);
+              const Complex v2_rms = pow2(plasma->species(s).scale_v);
 
-  //            const cmplxd df1_dv    = (8. *(f1(x, y, z, v+1, m, s) - f1(x, y, z, v-1, m, s))  -1. *(f1(x, y, z, v+2, m, s) - f1(x, y, z, v-2, m, s)))/(12.*dv);
-//              const cmplxd ddf1_dvv  = (beta > 0.) ? (16. *(f1(x, y, z, v+1, m, s) + f1(x, y, z, v-1, m, s))  -1. *(f1(x, y, z, v+2, m, s) + f1(x, y, z, v-2, m, s)) - 30.*f1(x,y,z,v,m,s))/(12.*pow2(dv)): 0.;
+  //            const Complex df1_dv    = (8. *(f1(x, y, z, v+1, m, s) - f1(x, y, z, v-1, m, s))  -1. *(f1(x, y, z, v+2, m, s) - f1(x, y, z, v-2, m, s)))/(12.*dv);
+//              const Complex ddf1_dvv  = (beta > 0.) ? (16. *(f1(x, y, z, v+1, m, s) + f1(x, y, z, v-1, m, s))  -1. *(f1(x, y, z, v+2, m, s) + f1(x, y, z, v-2, m, s)) - 30.*f1(x,y,z,v,m,s))/(12.*pow2(dv)): 0.;
 
           //    return    ((beta > 0.) ? beta * (f1(x,y,z,v,m,s)  + V(v) * df1_dv + v2_rms * ddf1_dvv): 0.);
           }

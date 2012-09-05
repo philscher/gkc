@@ -17,109 +17,108 @@
 FieldsFFT::FieldsFFT(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry *geo, FFTSolver *_fft) 
 : Fields(setup, grid, parallel, fileIO,  geo), fft(_fft)
 {
-	phi_yz.resize(fft->Rk1xL); phi_yz = 0.;
+   
+   phi_yz.resize(fft->Rk1xL); phi_yz = 0.;
 
    screenNyquist = setup->get("Fields.screenNyquist", 1);
 } 
 
 
-FieldsFFT::~FieldsFFT() {
+FieldsFFT::~FieldsFFT() 
+{
 
 }
 
-Array4z FieldsFFT::solveFieldEquations(Array4z Q, Timing timing) {
    
-  
-   // need to set other Q to zero to avoid accumulation of errors
-   // is this necessary ? avoid accumulation of numerical errors in FFT 
-   fft->rXOut = 0.;
+void FieldsFFT::solveFieldEquations(CComplex Q     [Nq][NzLD][NkyLD][NxLD],
+                                    CComplex Field0[Nq][NzLD][NkyLD][NxLD]) 
+{
 
-   // transform to fourier space
-   fft->rXIn(RxLD, RkyLD, RzLD, RFields) = Q(RxLD, RkyLD, RzLD, RFields);
-   fft->solve(FFT_X, FFT_FORWARD, FFT_FIELDS);
-    
-   // for 3 fields phi and B_perp are coupled and solved together
-   if     ( solveEq &  Field::phi & Field::Bpp ) solveBParallelEquation(Q(RxLD, RkyLD, RzLD, Field::Bp ));
-   else if( solveEq &  Field::phi              ) solvePoissonEquation  (Q(RxLD, RkyLD, RzLD, Field::phi));
-   if     ( solveEq &  Field::Ap               ) solveAmpereEquation   (Q(RxLD, RkyLD, RzLD, Field::Ap ));
+   // Transform to fourier space (x,ky) -> (kx,ky)
+   fft->solve(FFT_X_FIELDS, FFT_FORWARD, FieldsFFT::Q.data());
 
-    
-   // suppresses modes in all fields
+   // if (phi,Ap,Bp) is solved together, (phi,Bp) are coupled and have to be solved together
+   if     ( solveEq &  Field::phi & Field::Bpp ) solveBParallelEquation((A4zz) fft->kXOut.dataZero(), (A4zz) fft->kXIn.dataZero());
+   else if( solveEq &  Field::phi              ) solvePoissonEquation  ((A4zz) fft->kXOut.dataZero(), (A4zz) fft->kXIn.dataZero());
+   if     ( solveEq &  Field::Ap               ) solveAmpereEquation   ((A4zz) fft->kXOut.dataZero(), (A4zz) fft->kXIn.dataZero());
+
+   // suppresses modes in all fields (needs work)
    //fft->suppressModes(fft->kXIn, Field::phi);
 
-   fft->solve(FFT_X, FFT_BACKWARD, FFT_FIELDS);
-  
    // replace calcultated field with fixed one if option is set Don't need - or ?
-   //if(!(solveEq & Field::phi) && (plasma->nfields >= 1)) fft->rXOut(RxLD, RkyLD, RzLD, Field::phi) = Field0(RxLD, RkyLD, RzLD, Field::phi);
-   //if(!(solveEq & Field::Ap ) && (plasma->nfields >= 2)) fft->rXOut(RxLD, RkyLD, RzLD, Field::Ap ) = Field0(RxLD, RkyLD, RzLD, Field::Ap );
-   //if(!(solveEq & Field::Bpp) && (plasma->nfields >= 3)) fft->rXOut(RxLD, RkyLD, RzLD, Field::Bp ) = Field0(RxLD, RkyLD, RzLD, Field::Bp );
+   //if(!(solveEq & Field::phi) && (Nq >= 1)) fft->rXOut(RxLD, RkyLD, RzLD, Field::phi) = Field0(RxLD, RkyLD, RzLD, Field::phi);
+   //if(!(solveEq & Field::Ap ) && (Nq >= 2)) fft->rXOut(RxLD, RkyLD, RzLD, Field::Ap ) = Field0(RxLD, RkyLD, RzLD, Field::Ap );
+   //if(!(solveEq & Field::Bpp) && (Nq >= 3)) fft->rXOut(RxLD, RkyLD, RzLD, Field::Bp ) = Field0(RxLD, RkyLD, RzLD, Field::Bp );
 
-    
-   return fft->rXOut(RxLD, RkyLD, RzLD, RFields);
-
+   // transform back to real-space (kx,ky) -> (x,ky)
+   fft->solve(FFT_X_FIELDS, FFT_BACKWARD, FieldsFFT::Field0.data());
+   
+   return;
 
 }
 
-
-
-Array3z FieldsFFT::solvePoissonEquation(Array3z rho)
+void FieldsFFT::solvePoissonEquation(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+                                     CComplex kXIn [Nq][NzLD][NkyLD][FFTSolver::X_NkxL])
 {
     // Calculate flux-surface averaging
     // Note : how to deal with FFT normalization here ?
-    if(plasma->species(0).doGyro) phi_yz = calcFluxSurfAvrg(fft->kXOut);
+    //if(plasma->species(0).doGyro) phi_yz = calcFluxSurfAvrg(fft->kXOut);
     
     // adiabatic response term (if no adiabatic species included n0 = 0)
     const double adiab = plasma->species(0).n0 * pow2(plasma->species(0).q)/plasma->species(0).T0;
     
-    // solve PoissonEq. in Fourier space, using periodic boundary conditions
-    for(int z=NzLlD;z<=NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<=NkyLuD;y_k++) { for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
+    for(int z=NzLlD;z<=NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<=NkyLuD; y_k++) { simd_for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD; x_k++) {
 
           // Set kx=0/ky=0 component to zero (gauge freedom)
-          if((x_k == 0) && (y_k == 0)) { fft->kXIn(x_k,y_k,z, Field::phi) = (cmplxd) 0.e0 ; continue; }
-          
+          if((x_k == 0) && (y_k == 0)) { kXIn[Field::phi][z][y_k][x_k] = 0.e0 ; continue; }
+         
+          // BUG (Optimize) : need to vectorize this one 
           const double k2_p = fft->k2_p(x_k,y_k,z);
           
-          const double lhs  = plasma->debye2 * k2_p + sum_qqnT_1mG0(k2_p) + adiab;
-          const cmplxd rhs  =  (fft->kXOut(x_k,y_k,z, Q::rho) + adiab * phi_yz(x_k))/fft->Norm_X; 
+          const double lhs    = plasma->debye2 * k2_p + sum_qqnT_1mG0(k2_p) + adiab;
+          const CComplex rhs  = (kXOut[Q::rho][z][y_k][x_k])/fft->Norm_X; 
           
-          fft->kXIn(x_k,y_k,z, Field::phi) = rhs/lhs;
-         
-    } } }
+          kXIn[Field::phi][z][y_k][x_k] = rhs/lhs;
+          
+    } } } // z, y_k, x_k
         
-    // note we requre this one !! maybe from Analysis or so ?
-    return rho;    
+    return;    
 }
 
 
-Array3z FieldsFFT::solveAmpereEquation(Array3z j)
+
+void FieldsFFT::solveAmpereEquation(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+                                    CComplex kXIn [Nq][NzLD][NkyLD][FFTSolver::X_NkxL])
+
 {
     
-  for(int z=NzLlD; z<=NzLuD;z++) {  omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
+  for(int z=NzLlD; z<=NzLuD;z++) {  omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { simd_for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
  
-     if((x_k == 0) && (y_k == 0)) { fft->kXIn(x_k,y_k,z, Field::Ap) = (cmplxd) 0.e0; continue; }
+     // Set kx=0/ky=0 component to zero (gauge freedom)
+     if((x_k == 0) && (y_k == 0)) { kXIn[Field::Ap][z][y_k][x_k] = 0.e0 ; continue; }
           
      const double k2_p = fft->k2_p(x_k,y_k,z);
            
-     const double lhs =  - k2_p - Yeb * sum_sa2qG0(k2_p);
-     const cmplxd rhs =  fft->kXOut(x_k,y_k,z, Q::jp)/fft->Norm_X;
-          
-     fft->kXIn(x_k,y_k,z, Field::Ap ) = rhs/lhs;
+     const double lhs   =  - k2_p - Yeb * sum_sa2qG0(k2_p);
+     const CComplex rhs =  kXOut[Q::jp][z][y_k][x_k]/fft->Norm_X; 
+     
+     kXIn[Field::Ap][z][y_k][x_k] = rhs/lhs;
 
-  } } }
+  } } } // z, y_k, x_k
       
- return j;
+ return;
 
 }            
 
-// Note : what about adiabtic/flux-surface averaging ? Or are kinetic electrons required ?
-Array3z FieldsFFT::solveBParallelEquation(Array3z phi) 
+void FieldsFFT::solveBParallelEquation(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+                                       CComplex kXIn [Nq][NzLD][NkyLD][FFTSolver::X_NkxL])
 {
 
   const double adiab = plasma->species(0).n0 * pow2(plasma->species(0).q)/plasma->species(0).T0;
     
   for(int z=NzLlD; z<=NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
  
-     if((x_k == 0) && (y_k == 0)) { fft->kXIn(x_k,y_k,z, Field::Bp) = (cmplxd) 0.e0; continue; }
+     if((x_k == 0) && (y_k == 0)) { kXIn[Field::phi][z][y_k][x_k] =0.; continue; }
          
      const double k2_p = fft->k2_p(x_k,y_k,z);
 
@@ -127,23 +126,23 @@ Array3z FieldsFFT::solveBParallelEquation(Array3z phi)
      const double C_2 = - sum_qnB_Delta(k2_p);
      const double C_3 = 2./plasma->beta - sum_2TnBB_Delta(k2_p);
           
-     const cmplxd M_00 = fft->kXOut(x_k, y_k, z, Q::rho);
-     const cmplxd M_01 = fft->kXOut(x_k, y_k, z, Q::jo );
+     const CComplex M_00 = kXOut[Q::rho][z][y_k][x_k];
+     const CComplex M_01 = kXOut[Q::jo ][z][y_k][x_k];
 
-     fft->kXIn(x_k, y_k, z, Field::phi) = (C_3 * M_00 - C_2 * M_01) / (C_1 * C_3 - pow2(C_2)) / fft->Norm_X;
-     fft->kXIn(x_k, y_k, z, Field::Bp ) = (C_1 * M_01 - C_2 * M_00) / (C_1 * C_3 - pow2(C_2)) / fft->Norm_X;
+     kXIn[Field::phi][z][y_k][x_k] = (C_3 * M_00 - C_2 * M_01) / (C_1 * C_3 - pow2(C_2)) / fft->Norm_X;
+     kXIn[Field::Bp ][z][y_k][x_k] = (C_1 * M_01 - C_2 * M_00) / (C_1 * C_3 - pow2(C_2)) / fft->Norm_X;
 
-    } } }
+    } } } // z, y_k, x_k
     
-    return phi;
+    return;
 }
 
 
 // Note : This is very unpolished and is it also valid in toroidal case ? 
-Array1z FieldsFFT::calcFluxSurfAvrg(Array4z kXOut) 
+void FieldsFFT::calcFluxSurfAvrg(Array4C kXOut, Array1C phi_yz) 
 {
 
-  if(parallel->Coord(DIR_VMS) != 0) check(-1, DMESG("calcFluxAverg should only be called by XYZ-main nodes"));
+  if(parallel->Coord[DIR_VMS] != 0) check(-1, DMESG("calcFluxAverg should only be called by XYZ-main nodes"));
    
   phi_yz = 0.; 
 
@@ -151,13 +150,13 @@ Array1z FieldsFFT::calcFluxSurfAvrg(Array4z kXOut)
   //        by divinding through the number of points we get the averaged valued
   for(int z=NzLlD; z<=NzLuD;z++) { if((NkyLlD <= 0) && (NkyLuD >= 0)) { for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD; x_k++) {
             
-     if(x_k == 0) { phi_yz(x_k) = (cmplxd) 0.e0 ; continue; }
+     if(x_k == 0) { phi_yz(x_k) = (Complex) 0.e0 ; continue; }
           
      const double k2_p = fft->k2_p(x_k,0,z);
      
      const double lhs  = plasma->debye2 * k2_p + sum_qqnT_1mG0(k2_p);
      // A(x_k, 0) is the sum over y, thus A(x_k, 0)/Ny is the average 
-     const cmplxd rhs  =  kXOut(x_k,0,z, Field::phi)/((double) (grid->NyGD*Nz));
+     const Complex rhs  =  kXOut(x_k,0,z, Field::phi)/((double) (grid->NyGD*Nz));
      phi_yz(x_k) = rhs/lhs;
     
   } } }
@@ -165,60 +164,65 @@ Array1z FieldsFFT::calcFluxSurfAvrg(Array4z kXOut)
   // average over z-direction & distribute over y 
   parallel->collect(phi_yz, OP_SUM, DIR_XYZ);  
 
-  return phi_yz;
+  return;
 
 }
 
 
-Array4z FieldsFFT::gyroFull(Array4z A4, int m, int s, const int nField2, bool gyroField)  
+// Pretty sure needs to be turned around
+void FieldsFFT::gyroFull(Array4C In, Array4C Out,
+                         CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+                         CComplex kXIn [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+                         const int m, const int s, const bool gyroFields)  
 {
-   if(!(do_gyro && (parallel->Coord(DIR_V) == 0) && plasma->species(s).doGyro)) return A4;
-        
-   fft->rXIn(RxLD, RkyLD, RzLD, RFields) = A4(RxLD, RkyLD, RzLD, RFields);
-   fft->solve(FFT_X, FFT_FORWARD, FFT_FIELDS);
-        
-   for(int nField = 1; nField <= plasma->nfields; nField++) {
-
+   //wtf if(!(do_gyro && (parallel->Coord(DIR_V) == 0) && plasma->species(s).doGyro)) Out=In;
+   
+   // Test if gyro-field is OK !     
+   fft->solve(FFT_X_FIELDS, FFT_FORWARD, In.data());
+   
+   // solve for all fields at once
+   for(int n = 1; n <= Nq; n++) {
       
-      // get therma gyro-radius^2 of species and lambda =  2 x b 
-     	const double rho_t2 = plasma->species(s).T0 * plasma->species(s).m / (pow2(plasma->species(s).q) * plasma->B0); 
-     	const double lambda2 = 2. * M(m) * rho_t2;
+        // get therma gyro-radius^2 of species and lambda =  2 x b 
+        const double rho_t2  = plasma->species(s).T0 * plasma->species(s).m / (pow2(plasma->species(s).q) * plasma->B0); 
+        const double lambda2 = 2. * M(m) * rho_t2;
 
-      // perform gyro-average in Fourier space for rho/phi field
-      for(int z=NzLlD; z<=NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {  for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
+        // perform gyro-average in Fourier space for rho/phi field
+        for(int z=NzLlD; z<=NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {  simd_for(int x_k=fft->K1xLlD; x_k<=fft->K1xLuD;x_k++) {
     
          const double k2_p = fft->k2_p(x_k,y_k,z);
-         fft->kXIn(x_k,y_k,z, nField) = fft->kXOut(x_k,y_k,z, nField)/fft->Norm_X *  ((nField != 3) ? SpecialMath::BesselJ0(sqrt(lambda2 * k2_p)) 
-                                                                                                    : SpecialMath::BesselI1(sqrt(lambda2 * k2_p)));
-           
-         // According to GENE code the Nyquiest frequency in x is unphysicall and thus needs to be screened out * geo->B0k(k_x,k_y,z)
-         // highest modes explodes in kinetic simulations.
-         if((y_k == Nky-1) && screenNyquist) fft->kXIn(x_k,y_k,z, nField) = 0.;
+          
+          kXIn[n][z][y_k][x_k] = kXOut[n][z][y_k][x_k]/fft->Norm_X * ((n != 3) ? SpecialMath::BesselJ0(sqrt(lambda2 * k2_p)) 
+                                                                               : SpecialMath::BesselI1(sqrt(lambda2 * k2_p)));
 
-      } } }
+         // According to GENE code the Nyquiest frequency in x is unphysicall and thus needs to be screened out
+         // highest modes explodes in kinetic simulations.
+         if((y_k == Nky-1) && screenNyquist) kXIn[n][z][y_k][x_k]  = 0.;
+      
+       } } }
    }
-        
-   fft->solve(FFT_X, FFT_BACKWARD, FFT_FIELDS);
+   
+   fft->solve(FFT_X_FIELDS, FFT_BACKWARD, Out.data());
        
-   return fft->rXOut(RxLD, RkyLD, RzLD, RFields);
+   return;
 
 }
 
+
 // This is depracated
-Array4z FieldsFFT::gyroFirst(Array4z A4, int m, int s, const int nField2, bool gyroField)  
+void FieldsFFT::gyroFirst(Array4C In , Array4C Out, const int m, const int s, const bool gyroFields)  
 {
 
-  if(gyroField==false) return A4;
-        
-  fft->rXIn(RxLD, RkyLD, RzLD, RFields) = A4(RxLD, RkyLD, RzLD, RFields);
-  fft->solve(FFT_X, FFT_FORWARD, FFT_FIELDS);
+  if(gyroFields==false) Out = In;
+
+  fft->solve(FFT_X_FIELDS, FFT_FORWARD, In.data());
            
-  for(int nField = 1; nField <= plasma->nfields; nField++) {
+  for(int nField = 1; nField <= Nq; nField++) {
 
     // get therma gyro-radius^2 of species and lambda =  2 x b 
     const double rho_t2 = plasma->species(s).T0 * plasma->species(s).m / (pow2(plasma->species(s).q) * plasma->B0); 
 
-    for(int z=NzLlD; z<=NzLuD;z++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {  for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
+    for(int z=NzLlD; z<=NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {  simd_for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
     
       // perform gyro-average in Fourier space for rho/phi field
       const double k2p_rho2 = fft->k2_p(x_k, y_k, z) * rho_t2;
@@ -230,54 +234,55 @@ Array4z FieldsFFT::gyroFirst(Array4z A4, int m, int s, const int nField2, bool g
       if((y_k == Nky-1) && screenNyquist) fft->kXIn(x_k,y_k,z, nField) = 0.;
             
     } } }
-	
+   
   }
 
-  fft->solve(FFT_X, FFT_BACKWARD, FFT_FIELDS);
-  return fft->rXOut(RxLD, RkyLD, RzLD, RFields);
+  fft->solve(FFT_X_FIELDS, FFT_BACKWARD, Out.data());
+  
+  return;
 
 };
 
 
-Array4z FieldsFFT::gyroAverage(Array4z A4, int m, int s, const int nField, bool gyroField) 
+// note : back gyro-average goes over only one field not all !
+void FieldsFFT::gyroAverage(Array4C In, Array4C Out, const int m, const int s, const bool gyroFields) 
 {
-
   // check if we should do gyroAvearge
-  if     (plasma->species(s).gyroModel == "Drift" ) return A4;
-  else if(plasma->species(s).gyroModel == "Gyro"  ) return gyroFull (A4, m, s, nField, gyroField);  
-  else if(plasma->species(s).gyroModel == "Gyro-1") return gyroFirst(A4, m, s, nField, gyroField); 
+  if     (plasma->species(s).gyroModel == "Drift" ) Out=In;
+  else if(plasma->species(s).gyroModel == "Gyro"  ) gyroFull (In, Out, (A4zz) fft->kXOut.dataZero(), (A4zz) fft->kXIn.dataZero(), m, s, gyroFields);  
+  else if(plasma->species(s).gyroModel == "Gyro-1") gyroFirst(In, Out, m, s, gyroFields); 
   else   check(-1, DMESG("No such gyro-average Model"));
   
-  return A4;
+  return;
 
 }
 
-// @todo also show solver
+
 void FieldsFFT::printOn(ostream &output) const
 {
   Fields::printOn(output);
-  output   << "Fields     |  FFT "  << std::endl;
+  output   << "Fields     |  FFT Solver"  << std::endl;
 }
 
 
-void FieldsFFT::calculateFieldEnergy(Array4z Q, double& phiEnergy, double& ApEnergy, double& BpEnergy)
+void FieldsFFT::calculateFieldEnergy(Array4C Q, double& phiEnergy, double& ApEnergy, double& BpEnergy)
 {
       phiEnergy = 0.; ApEnergy = 0.; BpEnergy = 0.;
 
-      if(parallel->Coord(DIR_VMS) == 0) {
+      if(parallel->Coord[DIR_VMS] == 0) {
         
 
-        fft->rXIn(RxLD, RkyLD, RzLD, RFields) = Field0(RxLD,RkyLD, RzLD, RFields);
-        fft->solve(FFT_X, FFT_FORWARD, FFT_FIELDS);
+        //fft->rXIn(RxLD, RkyLD, RzLD, RFields) = Field0(RxLD,RkyLD, RzLD, RFields);
+        fft->solve(FFT_X_FIELDS, FFT_FORWARD, Field0.data());
 
         // Add only kinetic contributions
-        for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int z=NzLlD; z<=NzLuD;z++) { for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
+        for(int z=NzLlD; z<=NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { simd_for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
               
               const double k2_p = fft->k2_p(x_k,y_k,z);
               
-              if(plasma->nfields >= 1) phiEnergy += (plasma->debye2*k2_p + sum_qqnT_1mG0(k2_p)) * pow2(abs(fft->kXOut(x_k,y_k,z,Field::phi)))/fft->Norm_X;
-              if(plasma->nfields >= 2) ApEnergy  += (k2_p - Yeb * sum_sa2qG0(k2_p))     * pow2(abs(fft->kXOut(x_k,y_k,z,Field::Ap )))/fft->Norm_X;
-              if(plasma->nfields >= 3) BpEnergy  += 0.;
+              if(Nq >= 1) phiEnergy += (plasma->debye2*k2_p + sum_qqnT_1mG0(k2_p)) * pow2(abs(fft->kXOut(x_k,y_k,z,Field::phi)))/fft->Norm_X;
+              if(Nq >= 2) ApEnergy  += (k2_p - Yeb * sum_sa2qG0(k2_p))     * pow2(abs(fft->kXOut(x_k,y_k,z,Field::Ap )))/fft->Norm_X;
+              if(Nq >= 3) BpEnergy  += 0.;
            
         } } }
       
@@ -287,12 +292,12 @@ void FieldsFFT::calculateFieldEnergy(Array4z Q, double& phiEnergy, double& ApEne
      // modify field energy term to add adiabatic contributions
 
         // short-circuit contribution for ITG mode 
-        Array1z phi_yz(RxLD); phi_yz = 0.;
+        Array1C phi_yz(RxLD); phi_yz = 0.;
        /* 
         if(plasma->species(0).doGyro) {
           // muss ich wirklich ueber yz mitteln ? nicht summieren ??
-	    for(int x = NxLlD; x <= NxLuD; x++) phi_yz(x) = sum(fields->phi(x, RyLD, RzLD, 1, 1))/((double) Ny*Nz);
-//	    for(int x = NxLlD; x <= NxLuD; x++) phi_yz(x) = sum(fields->phi(x, RyLD, RzLD, 1, 1));
+       for(int x = NxLlD; x <= NxLuD; x++) phi_yz(x) = sum(fields->phi(x, RyLD, RzLD, 1, 1))/((double) Ny*Nz);
+//       for(int x = NxLlD; x <= NxLuD; x++) phi_yz(x) = sum(fields->phi(x, RyLD, RzLD, 1, 1));
             parallel->collect(phi_yz, OP_SUM, DIR_YZ);
         }
       
@@ -317,37 +322,34 @@ void FieldsFFT::calculateFieldEnergy(Array4z Q, double& phiEnergy, double& ApEne
 
 //////////////// Some Helper functions ////////////////////
 
-
 double FieldsFFT::sum_qqnT_1mG0(const double k2_p) 
 {
    double g0 = 0.;
+
    for(int s = NsGlD; s <= NsGuD; s++) {
 
       const double qqnT   = plasma->species(s).n0 * pow2(plasma->species(s).q)/plasma->species(s).T0;
       const double rho_t2 = plasma->species(s).T0  * plasma->species(s).m / pow2(plasma->species(s).q * plasma->B0);
        
-      // doGyro = true
-      if(plasma->species(s).doGyro == true) g0 += qqnT * SpecialMath::_1mGamma0( rho_t2 * k2_p);
-      else g0 += qqnT * (rho_t2 * k2_p);
+      g0 += qqnT * SpecialMath::_1mGamma0_Pade( rho_t2 * k2_p);
         
-      //g0 += qqnT * _1mGamma0( rho_t2 * k2_p, plasma->species(s).doGyro);
    }
    return g0;
 };
   
-
 double FieldsFFT::sum_sa2qG0(const double kp_2) 
 {
     double g0 = 0.;
+    
+    #pragma simd
     for(int s = NsGlD; s <= NsGuD; s++) {
+
        const double sa2q   = plasma->species(s).sigma * pow2(plasma->species(s).alpha) * plasma->species(s).q;
        const double rho_t2 = plasma->species(s).T0 * plasma->species(s).m / (pow2(plasma->species(s).q) * plasma->B0);
 
        const double b = rho_t2 * kp_2;
-       //g0 += sa2q * (1.e0 - _1mGamma0( rho_t2 * kp_2, plasma->species(s).doGyro));
-       //if(plasma->species(s).doGyro == true) g0 += sa2q * I0(b)*exp(-b);
-       if(plasma->species(s).doGyro == true) g0  += sa2q * (1.e0 - SpecialMath::_1mGamma0(b));
-       else g0 += sa2q;
+       
+       g0  += sa2q * (1.e0 - SpecialMath::_1mGamma0_Pade(b));
     }
     return g0;
 };
@@ -357,6 +359,7 @@ double FieldsFFT::sum_qnB_Delta(const double k2_p)
 {
 
    double g0 = 0.;
+   
    for(int s = NsGlD; s <= NsGuD; s++) {
 
       const double qn    = plasma->species(s).q * plasma->species(s).n0;
@@ -370,6 +373,7 @@ double FieldsFFT::sum_qnB_Delta(const double k2_p)
 double FieldsFFT::sum_2TnBB_Delta(const double k2_p) 
 {
    double g0 = 0.;
+   
    for(int s = NsGlD; s <= NsGuD; s++) {
 
       const double Tn   = plasma->species(s).T0 * plasma->species(s).n0;

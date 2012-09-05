@@ -79,10 +79,16 @@ class System
 
       time_t start_time = std::time(0); 
       std::string currentTime(std::ctime(&start_time));
-	
+   
       return currentTime;
-   }
+   };
 
+   static void* align_alloc(size_t N, int align)
+   {
+      void *p;
+           posix_memalign((void **) &p, align, N);
+      return p;
+   };
 };
 
 #endif // __SYSTEM_H

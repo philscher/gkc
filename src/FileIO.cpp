@@ -26,7 +26,8 @@
 typedef struct Complex_t {
       double r;   // real part
       double i;   // imaginary part
-}  Complex;
+};
+//}  Complex;
 
 
 
@@ -50,9 +51,9 @@ typedef struct Complex_t {
     H5Tinsert(timing_tid, "Time"    , HOFFSET(Timing, time), H5T_NATIVE_DOUBLE);
 
     // don't changes r and i name otherwise it will break compatibiltiy with pyTables
-    complex_tid = H5Tcreate(H5T_COMPOUND, sizeof (Complex));
-    H5Tinsert(complex_tid, "r", HOFFSET(Complex,r), H5T_NATIVE_DOUBLE);
-    H5Tinsert(complex_tid, "i", HOFFSET(Complex,i), H5T_NATIVE_DOUBLE);
+    complex_tid = H5Tcreate(H5T_COMPOUND, sizeof (Complex_t));
+    H5Tinsert(complex_tid, "r", HOFFSET(Complex_t,r), H5T_NATIVE_DOUBLE);
+    H5Tinsert(complex_tid, "i", HOFFSET(Complex_t,i), H5T_NATIVE_DOUBLE);
     
     vector3D_tid = H5Tcreate(H5T_COMPOUND, sizeof (Vector3D));
     H5Tinsert(vector3D_tid, "x", HOFFSET(Vector3D,x), H5T_NATIVE_DOUBLE);
@@ -308,8 +309,8 @@ int FileIO::checkOutput(Vlasov *vlasov, Fields *fields, Visualization *visual, A
         
         //if (timing.check(dataOutputPSF, dt) || force_write ) writePhaseSpace(vlasov->f, timing);
         if (timing.check(dataOutputVisual,dt) )              visual->doPlots(vlasov, fields, analysis, timing);
-    	if (timing.check(dataOutputStatistics, dt))          analysis->writeScalarValues(vlasov, fields,  analysis, timing);
-    	if (timing.check(dataOutputStatistics, dt))          writeCFLValues(analysis, fields, timing);
+       if (timing.check(dataOutputStatistics, dt))          analysis->writeScalarValues(vlasov, fields,  analysis, timing);
+       if (timing.check(dataOutputStatistics, dt))          writeCFLValues(analysis, fields, timing);
 
 
  * */ 
@@ -323,9 +324,9 @@ double FileIO::getOutputMaxTimeStep(Timing timing, double dt) {
         dt = min(dt, dataOutputStatistics & timing);
         dt = min(dt, dataOutputXProperty  & timing);
    * */ 
-//    	if (timing % dataOutputStatistics) writeScalarValues(vlasov, fields,  analysis, timing);
-//    	if (timing % dataOutputXProperty ) writeXProperty(vlasov, fields,  analysis, timing);
-//    	if (timing % dataOutputStatistics) writeCFLValues(analysis, fields, timing);
+//       if (timing % dataOutputStatistics) writeScalarValues(vlasov, fields,  analysis, timing);
+//       if (timing % dataOutputXProperty ) writeXProperty(vlasov, fields,  analysis, timing);
+//       if (timing % dataOutputStatistics) writeCFLValues(analysis, fields, timing);
 
         return dt; 
 
@@ -342,7 +343,7 @@ hid_t  FileIO::newGroup(hid_t parentNode, std::string name)
 
 void FileIO::flush(Timing timing, double dt)
 {
-	if(timing.check(dataFileFlushTiming, dt)) H5Fflush(file, H5F_SCOPE_GLOBAL);
+   if(timing.check(dataFileFlushTiming, dt)) H5Fflush(file, H5F_SCOPE_GLOBAL);
 
 }
 

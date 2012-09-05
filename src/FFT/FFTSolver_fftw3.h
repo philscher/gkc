@@ -20,7 +20,7 @@
 #define __FFTW3_H
 
 #include "FFTSolver.h"
-#include "Geometry.h"
+//#include "Geometry.h"
 
 
 /**
@@ -40,13 +40,14 @@ class FFTSolver_fftw3 : public FFTSolver
    *   Arrays for real-complex transform for Y-direction
    **/ 
    double *data_Y_rIn, *data_Y_rOut;
-   cmplxd *data_Y_kIn, *data_Y_kOut;
+   Complex *data_Y_kIn, *data_Y_kOut;
 
    /**
    *   Arrays for complex-to-complex transform for X-direction
    **/ 
-   cmplxd *data_X_rIn , *data_X_rOut;  
-   cmplxd *data_X_kIn , *data_X_kOut; 
+   Complex *data_X_rIn , *data_X_rOut;  
+   Complex *data_X_kIn , *data_X_kOut; 
+   Complex *data_X_Transp_1,  *data_X_Transp_2; 
 
    /**
    *    Anti-Aliased Fourier transform used by
@@ -55,9 +56,9 @@ class FFTSolver_fftw3 : public FFTSolver
    **/
    Range AA_RkyLD, AA_RyLD;
    int AA_NyLD, AA_NyLlD, AA_NyLuD, AA_NkyLD, AA_NkyLlD, AA_NkyLuD;
-   Array4d AA_rYIn, AA_rYOut;
-   Array4z AA_kYOut, AA_kYIn;
-  
+   Array2R AA_rYIn, AA_rYOut;
+   Array2C AA_kYOut, AA_kYIn;
+   
   public:
    /**
    *   @brief the contstructor
@@ -83,9 +84,9 @@ class FFTSolver_fftw3 : public FFTSolver
    *
    *
    **/
-   int solve(int FFTtype, int direction, const int N);
+   void solve(const int type, const int direction, void *in=nullptr, void *out=nullptr);
    
-   Array3z  multiply(Array3z &A, Array3z &B, Array3z  &R);
+   Array3C  multiply(Array3C &A, Array3C &B, Array3C  &R);
    
 
 

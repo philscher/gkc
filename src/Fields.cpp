@@ -17,22 +17,18 @@
 
 Range RFields;
 
+int GC2, GC4, Nq;
+
 Fields::Fields(Setup *setup, Grid *_grid, Parallel *_parallel, FileIO *fileIO, Geometry *_geo)  : 
-grid(_grid),    parallel(_parallel), geo(_geo), 
-Q(FortranArray<4>()), Field0(FortranArray<4>()), Field(FortranArray<6>()), solveEq(0)
+grid(_grid), parallel(_parallel), geo(_geo), 
+Q  (FortranArray<4>()),  Qm(FortranArray<4>()),  Field0(FortranArray<4>()), Field(FortranArray<6>()), solveEq(0),
 
-/*
-SendXu(<FortranArray<4>()),
-RecvXu(<FortranArray<4>()),
-SendXl(<FortranArray<4>()),
-RecvXl(<FortranArray<4>()),
-SendZu(<FortranArray<4>()),
-RecvZu(<FortranArray<4>()),
-SendZl(<FortranArray<4>()),
-RecvZl(<FortranArray<4>()),
-*/
+SendXu(FortranArray<6>()), SendXl(FortranArray<6>()), SendZu(FortranArray<6>()), SendZl(FortranArray<6>()), 
+RecvXu(FortranArray<6>()), RecvXl(FortranArray<6>()), RecvZu(FortranArray<6>()), RecvZl(FortranArray<6>()) 
+
 {
-
+   GC2 = 2; GC4 = 4, Nq=plasma->nfields;
+ 
    RFields.setRange(1, plasma->nfields);
    // Note : Fixed fields are initialized in Init.cpp
    solveEq |=  ((plasma->nfields >= 1) && (setup->get("Init.FixedPhi", ".0") == ".0")) ? Field::phi : 0;
@@ -42,7 +38,7 @@ RecvZl(<FortranArray<4>()),
 
    // for phi terms
    allocate(RxLB4,RkyLD,RzLB, RmLB, RsLB, RFields, Field);
-   allocate(RxLD ,RkyLD,RzLD, RFields, Q, Field0);
+   allocate(RxLD ,RkyLD,RzLD, RFields, Q, Qm, Field0);
       
 
    if(plasma->nfields >= Field::phi) { phi.reference(Field(RxLB4,RkyLD,RzLB,RmLB, RsLB, Field::phi)); phi = 0.; }
@@ -52,157 +48,214 @@ RecvZl(<FortranArray<4>()),
    //  brackets should be 1/2 but due to numerical errors, we should calculate it ourselves, see Dannert[2] 
    Yeb = (1./sqrt(M_PI) * sum(pow2(V(RvLD)) * exp(-pow2(V(RvLD)))) * dv) * geo->eps_hat * plasma->beta; 
 
-
    // Allocate boundary conditions, allocate Send/Recv buffers, note we have 4 ghost cells for X, 0 for Y
    allocate(RB4 , RkyLD, RzLD, RmLD, RsLD, RFields, SendXu, SendXl, RecvXu, RecvXl);
-   allocate(RxLD, RB4  , RzLD, RmLD, RsLD, RFields, SendYu, SendYl, RecvYu, RecvYl);
+   //allocate(RxLD, RB4  , RzLD, RmLD, RsLD, RFields, SendYu, SendYl, RecvYu, RecvYl);
    allocate(RxLD, RkyLD, RB  , RmLD, RsLD, RFields, SendZu, SendZl, RecvZu, RecvZl);
 
    initDataOutput(setup, fileIO);
 } 
 
+Fields::~Fields() {
 
-int Fields::solve(Array6z f0, Array6z  f, Timing timing, int rk_step)
+   closeData() ;
+
+}
+
+
+void Fields::solve(Array6C f0, Array6C  f, Timing timing)
 {
-   
-  ////////////// / calculate source terms  (do we have to set it to zero ??) ///////////
-   
-   Q = 0.;
-   for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) {
+  
+  // calculate source terms  Q (Q is overwritten in the first iteration )
+  for(int s = NsLlD, loop=0; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++, loop++) {
 
-      if(solveEq & Field::phi) calculateChargeDensity               (f0, f, m, s);
-      if(solveEq & Field::Ap ) calculateParallelCurrentDensity      (f0, f, m, s);
-      if(solveEq & Field::Bpp) calculatePerpendicularCurrentDensity (f0, f, m, s);
-     
+      if(solveEq & Field::phi) calculateChargeDensity               ((A6zz) f0.dataZero(), (A6zz) f.dataZero(), (A4zz) Field0.dataZero(),               m, s);
+      if(solveEq & Field::Ap ) calculateParallelCurrentDensity      ((A6zz) f0.dataZero(), (A6zz) f.dataZero(), (A4zz) Field0.dataZero(), V.dataZero(), m, s);
+      if(solveEq & Field::Bpp) calculatePerpendicularCurrentDensity ((A6zz) f0.dataZero(), (A6zz) f.dataZero(), (A4zz) Field0.dataZero(), M.dataZero(), m, s);
+  
       // thus uses AllReduce, Reduce is more effective (with false flag...)
       parallel->collect(Field0, OP_SUM, DIR_V, true); 
-        
-	  // gyro-average : back-transformation 
-	  if (parallel->Coord(DIR_V) == 0) Q(RxLD, RkyLD, RzLD, RFields) += gyroAverage(Field0(RxLD, RkyLD, RzLD, RFields), m,s, Q::rho);
-    
-     } 
-   //if(plasma->species(s).gyroModel != "Gyro") break; 
+ 
+      // OPTIM : Normally we would decompose in m&s, thus no need for Qm                         
+      // backward-transformation from gyro-center to drift-center 
+      if (parallel->Coord[DIR_V] == 0) {
 
-   } // for m, for s
-    
+            gyroAverage(Field0, Qm, m, s, true);            
+            // Lambda function to integrate over m ( for source terms), If loop=0, we overwrite value of Q
+           if(loop==0) [=] (CComplex Q[Nq][NzLD][NkyLD][NxLD], CComplex Qm[Nq][NzLD][NkyLD][NxLD]) { Q[:][:][:][:]  = Qm[:][:][:][:]; } ((A4zz) Q.data(), (A4zz) Qm.data()); 
+           else        [=] (CComplex Q[Nq][NzLD][NkyLD][NxLD], CComplex Qm[Nq][NzLD][NkyLD][NxLD]) { Q[:][:][:][:] += Qm[:][:][:][:]; } ((A4zz) Q.data(), (A4zz) Qm.data()); 
+      
+      }
+      
+   }  } // for m, for s
 
    /////////////////////////////// Solve for the corresponding fields //////////////
-  
-   // Note :  Fields are only solved by root nodes in real space (X=0, V=0, S=0)
-   //        Gyro-averaging is done for (V=0)
-   if(parallel->Coord(DIR_V) == 0) {
+   // Note :  Fields are only solved by root nodes  (X=0, V=0, S=0), Gyro-averaging is done for (V=0)
+   if(parallel->Coord[DIR_V] == 0) {
 
       // integrate over mu-space and over species
       parallel->collect(Q, OP_SUM, DIR_MS);
-      if((parallel->Coord(DIR_MS) == 0)) Field0(RxLD, RkyLD, RzLD, RFields) = solveFieldEquations(Q, timing);
+
+      // Solve field equation in drift coordinates
+      // This routine is solved only on a part of notes when decomposed in m thus efficiency is crucial
+      if(parallel->Coord[DIR_MS] == 0) solveFieldEquations((A4zz) Q.dataZero(), (A4zz) Field0.dataZero());
+
       parallel->send(Field0, DIR_MS);    
 
-      // gyro-averaging procedure for each species and magnetic moment
+      // Gyro-averaging procedure for each species and magnetic moment ( drift-coord -> gyro-coord )
+      // OPTIM : We can skip foward transform after first call
       for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) {
 
-         Field(RxLD,RkyLD,RzLD,m, s, RFields ) = gyroAverage(Field0(RxLD, RkyLD, RzLD, RFields ), m, s, Field::phi, true);
+           // Field has complicated stride, thus cannot be easily used in FFTSolver.
+           // Use temporary Qm, and copy to Fields afterwards.
+
+           // forward-transformation from drift-center -> gyro-center 
+           gyroAverage(Field0, Qm, m, s, true);
+
+           // Field is first index, is last index not better ? e.g. write as vector ?
+           [=] (CComplex Qm[Nq][NzLD][NkyLD][NxLD], CComplex Field[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]) 
+           { 
+                  Field[1:Nq][s][m][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD] = Qm[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]   ;
+           } ((A4zz) Qm.dataZero(), (A6zz) Field.dataZero());
         
-	  } }
+      } }
    
-     setBoundary(Field);
+      updateBoundary();
+   
    }   
-    
+  
    parallel->send(Field, DIR_V);
         
-   return GKC_SUCCESS;
+   return;
 
 }
 
 
-Array3z Fields::calculateChargeDensity(Array6z f0, Array6z f, const int m, const int s) 
+void Fields::calculateChargeDensity(CComplex f0         [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                    CComplex f          [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                    CComplex Field0     [Nq]        [NzLD][NkyLD][NxLD]      ,
+                                    const int m, const int s) 
 {
-  
+ 
    // In case of a full-f simulation the Maxwellian is subtracted
 
    // re-normalize with \f[ \hat{v}^3
-   const double pqnB_dV = M_PI * plasma->species(s).n0 * plasma->species(s).q   * plasma->B0 * dv * grid->dm(m) ;
+   const double pqnB_dvdm = M_PI * plasma->species(s).n0 * plasma->species(s).q   * plasma->B0 * dv * grid->dm(m) ;
     
    for(int z=NzLlD; z<= NzLuD;z++) {  omp_for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
-              Field0(x, y_k, z, Q::rho) =  ( sum(f(x, y_k, z, RvLD, m, s) - (plasma->global ? sum(f0(x,y_k,z,RvLD,m,s)) : 0. ) ) ) * pqnB_dV;
+              Field0[Q::rho][z][y_k][x] = ( __sec_reduce_add(f [s][m][z][y_k][x][NvLlD:NvLD]) 
+                        - (plasma->global ? __sec_reduce_add(f0[s][m][z][y_k][x][NvLlD:NvLD]) : 0)) * pqnB_dvdm;
      
-   } } }
-    
-   return Q(RxLD, RkyLD, RzLD, Q::rho); 
+   } } } // z, y_k, x
+   
+   return; 
 }
 
-Array3z Fields::calculateParallelCurrentDensity(Array6z f0, Array6z f, const int m, const int s) 
+
+
+void Fields::calculateParallelCurrentDensity(CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                             CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                             CComplex Field0[Nq][NzLD][NkyLD][NxLD],
+                                             double V[NvGB], const int m, const int s          ) 
 {
   
-   const double qa_dV = plasma->species(s).alpha * plasma->species(s).q   * plasma->B0 * M_PI * dv * grid->dm(m) ;
+   const double qa_dvdm = plasma->species(s).q * plasma->species(s).alpha  * plasma->B0 * M_PI * dv * grid->dm(m) ;
    
    for(int z=NzLlD; z<= NzLuD;z++) {  omp_for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
-                Field0(x, y_k, z, Q::jp) = - sum(V(RvLD) * f(x, y_k, z, RvLD, m, s)) * qa_dV;
+                Field0[Q::jp][z][y_k][x] = -__sec_reduce_add(V[NvLlD:NvLD] * f[s][m][z][y_k][x][NvLlD:NvLD]) * qa_dvdm;
 
-   } } }
+   } } } // z, y_k, x
 
-   return Q(RxLD, RkyLD, RzLD, Q::jp); 
+   return ; 
 
 }
 
   
 // Note : Did not checked correctness of this function
-Array3z Fields::calculatePerpendicularCurrentDensity(Array6z f0, Array6z f, const int m, const int s) 
+void Fields::calculatePerpendicularCurrentDensity(CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                                  CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                                  CComplex Field0[Nq][NzLD][NkyLD][NxLD],
+                                                  double M[NmGB], const int m, const int s          ) 
 {
    
-   const double qan_dV = - plasma->species(s).q * plasma->species(s).alpha   * plasma->B0 * M_PI * dv * grid->dm(m) ;
+   const double qan_dvdm = - plasma->species(s).q * plasma->species(s).alpha   * plasma->B0 * M_PI * dv * grid->dm(m) ;
    
    for(int z=NzLlD; z<= NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++){
 
-      Field0(x, y_k, z, Q::jo) = M(m) * sum(f(x, y_k, z, RvLD, m, s)) * qan_dV;
+      Field0[Q::jo][z][y_k][x] =  M[m] * __sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD]) * qan_dvdm;
             
-   } } }
+   } } } // z, y_k, x
 
-   return Q(RxLD, RkyLD, RzLD, Q::jo); 
+   return;
 }
 
    
 // @todo this needs some cleanup work  and retesting for 3-dimensional case.
-// only support parallelized version.
-int Fields::setBoundary(Array6z  A) {
+// only support parallelized version (assuming we run always parallized).
+void Fields::updateBoundary()
+{
+   updateBoundary((A6zz ) Field.dataZero(), 
+                  (A6zz ) SendXl.data()   , (A6zz) SendXu.data(), (A6zz) RecvXl.data(), (A6zz) RecvXu.data(),
+                  (A6zz ) SendZl.data()   , (A6zz) SendZu.data(), (A6zz) RecvZl.data(), (A6zz) RecvZu.data());
+   return;
+}
 
 
 
-   SendXl(RB4  , RkyLD, RzLD, RmLD, RsLD, RFields) = A(Range(NxLlD  , NxLlD+3), RkyLD, RzLD, RmLD, RsLD, RFields);
-   SendXu(RB4  , RkyLD, RzLD, RmLD, RsLD, RFields) = A(Range(NxLuD-3, NxLuD  ), RkyLD, RzLD, RmLD, RsLD, RFields);
+void Fields::updateBoundary(
+         CComplex Field [Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4], 
+         CComplex SendXl[Nq][NsLD][NmLD][NzLD][NkyLD][GC4   ], CComplex SendXu[Nq][NsLD][NmLD][NzLD][NkyLD][GC4 ],
+         CComplex RecvXl[Nq][NsLD][NmLD][NzLD][NkyLD][GC4   ], CComplex RecvXu[Nq][NsLD][NmLD][NzLD][NkyLD][GC4 ],
+         CComplex SendZl[Nq][NsLD][NmLD][GC2 ][NkyLD][NxLD  ], CComplex SendZu[Nq][NsLD][NmLD][GC2 ][NkyLD][NxLD],
+         CComplex RecvZl[Nq][NsLD][NmLD][GC2 ][NkyLD][NxLD  ], CComplex RecvZu[Nq][NsLD][NmLD][GC2 ][NkyLD][NxLD])
+{
+   
+   // X-Boundary (we have extended BC  - 4 ghost cells)
+   SendXl[:][:][:][:][:][:] = Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD  :4];
+   SendXu[:][:][:][:][:][:] = Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLuD-3:4];
 
-   // Not required
-   // SendYl(RxLD, RB4  , RzLD, RmLD, RsLD, RFields) = A(RxLD, Range(NyLlD  , NyLlD+3), RzLD, RmLD, RsLD, RFields);
-   // SendYu(RxLD, RB4  , RzLD, RmLD, RsLD, RFields) = A(RxLD, Range(NyLuD-3, NyLuD  ), RzLD, RmLD, RsLD, RFields);
-        
-   // For z-we need to connect the magnetic field lines
+   // Not required in Y
+       
+   // Z-Boundary (N z-we need to connect the magnetic field lines)
+   // (For 2-d space simulations (x,y) boundaries are not required)
    if(Nz > 1)  for(int x=NxLlD; x<= NxLuD;x++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
 
-      //const cmplxd a = cmplxd(0., 2.* M_PI * fft->ky(y_k));
-      const cmplxd a = cmplxd(0., 2.* M_PI/Ly * y_k);
+        const CComplex a = ((CComplex) 0. + 1.j) *  (2.*M_PI * (2.* M_PI/Ly) * y_k);
       
-      SendZl(x, y_k, RB, RmLD, RsLD, RFields) = A(x, y_k, Range(NzLlD  , NzLlD+1), RmLD, RsLD, RFields) * exp( a*geo->nu(x));
-      SendZu(x, y_k, RB, RmLD, RsLD, RFields) = A(x, y_k, Range(NzLuD-1, NzLuD  ), RmLD, RsLD, RFields) * exp(-a*geo->nu(x));
+        //SendZl(x, y_k, RB, RmLD, RsLD, RFields) = A(x, y_k, Range(NzLlD  , NzLlD+1), RmLD, RsLD, RFields) * exp( ((NzLuD == NzGuD) ? a : 0.) * geo->nu(x));
+        //SendZu(x, y_k, RB, RmLD, RsLD, RFields) = A(x, y_k, Range(NzLuD-1, NzLuD  ), RmLD, RsLD, RFields) * exp(-((NzLlD == NzGlD) ? a : 0.) * geo->nu(x));
+        SendZl[:][:][:][:][y_k][x-3] = Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD  :2][y_k][x] ;//* (reinterpret_cast<CComplex> (exp( ((Complex) ((NzLuD == NzGuD) ? a : 0.) * geo->nu(x)))));
+        SendZu[:][:][:][:][y_k][x-3] = Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLuD-1:2][y_k][x] ;//* (reinterpret_cast<CComplex> (exp(-((Complex) ((NzLlD == NzGlD) ? a : 0.) * geo->nu(x)))));
 
    } }
+   
+   // Parallized version is using SendRecv call exchange ghostcells
+   parallel->updateNeighbours(Fields::SendXl, Fields::SendXu,  Fields::SendYl, Fields::SendYu, Fields::SendZl,  Fields::SendZu, 
+                              Fields::RecvXl, Fields::RecvXu,  Fields::RecvYl, Fields::RecvYu, Fields::RecvZl,  Fields::RecvZu); 
 
-   // Parallized version is using SendRecv call
-   parallel->updateNeighbours(  SendXl,   SendXu,  SendYl, SendYu, SendZl,  SendZu, 
-                                RecvXl,   RecvXu,  RecvYl, RecvYu, RecvZl,  RecvZu); 
-        
-   A(Range(NxLlB-2, NxLlD-1), RkyLD, RzLD, RmLD, RsLD, RFields) = RecvXl(RB4, RkyLD, RzLD, RmLD, RsLD, RFields);
-   A(Range(NxLuD+1, NxLuB+2), RkyLD, RzLD, RmLD, RsLD, RFields) = RecvXu(RB4, RkyLD, RzLD, RmLD, RsLD, RFields);
+   // X-Boundary
+   Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlB-2:4] = RecvXl[:][:][:][:][:][:];
+   Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLuD+1:4] = RecvXu[:][:][:][:][:][:];
  
-   // A(RxLD, Range(NyLlB-2, NyLlD-1), RzLD, RmLD, RsLD, RFields) = RecvYl(RxLD, RB4, RzLD, RmLD, RsLD, RFields);
-   // A(RxLD, Range(NyLuD+1, NyLuB+2), RzLD, RmLD, RsLD, RFields) = RecvYu(RxLD, RB4, RzLD, RmLD, RsLD, RFields);
-        
-   A(RxLD, RkyLD, Range(NzLlB  , NzLlB+1), RmLD, RsLD, RFields) = RecvZl(RxLD, RkyLD, RB, RmLD, RsLD, RFields);
-   A(RxLD, RkyLD, Range(NzLuD+1, NzLuB  ), RmLD, RsLD, RFields) = RecvZu(RxLD, RkyLD, RB, RmLD, RsLD, RFields);
+   // Z-Boundary
+   if( Nz > 1 ) {
 
-   return GKC_SUCCESS; 
+   Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlB  :2][NkyLlD:NkyLD][NxLlD:NxLD] = RecvZl[:][:][:][:][:][:];
+   Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLuD+1:2][NkyLlD:NkyLD][NxLlD:NxLD] = RecvZu[:][:][:][:][:][:];
+   
+   }
+
+   return; 
 
 };
+
+
+
+
+
+//////////////////////// Data I/O //////////////////
 
 
 void Fields::initDataOutput(Setup *setup, FileIO *fileIO) {
@@ -215,7 +268,7 @@ void Fields::initDataOutput(Setup *setup, FileIO *fileIO) {
    hsize_t field_moffset[]   = { 2, 0, 4, 0 };
    hsize_t field_offset[]    = {NzLlB-1, NkyLlB, NxLlB-1, 0 }; 
      
-   bool phiWrite = (parallel->Coord(DIR_VMS) == 0);
+   bool phiWrite = (parallel->Coord[DIR_VMS] == 0);
      
    hid_t fieldsGroup = check(H5Gcreate(fileIO->getFileID(), "/Fields",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
      
@@ -226,12 +279,9 @@ void Fields::initDataOutput(Setup *setup, FileIO *fileIO) {
         
    H5Gclose(fieldsGroup);
       
-     
    dataOutputFields        = Timing(setup->get("DataOutput.Fields.Step", -1)       , setup->get("DataOutput.Fields.Time", -1.));
 
 }   
-
-
 
 // to do : Improve writeMessage (timestep, offset, etc.)
 void Fields::writeData(Timing timing, double dt) 
@@ -268,10 +318,4 @@ void Fields::printOn(ostream &output) const {
          output   << "           |  Pert. : " << ((!(solveEq & Field::Ap) && (plasma->nfields >= 2))     ? ApPerturbationStr  : " ") << std::endl;
 }
 
-
-Fields::~Fields() {
-
-   closeData() ;
-
-}
 

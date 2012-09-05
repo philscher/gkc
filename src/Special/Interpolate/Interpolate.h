@@ -24,12 +24,12 @@
 *   @todo cleanup , improve
 **/
 class Interpolate {
-    Array2d A;
-    Array1d Xa,Ya;
+    Array2R A;
+    Array1R Xa,Ya;
 
     std::string type;
   public:
-    Interpolate(Array1d _X, Array1d _Y, Array2d _A, Setup *setup, std::string interpol = "Linear") : type(interpol) {
+    Interpolate(Array1R _X, Array1R _Y, Array2R _A, Setup *setup, std::string interpol = "Linear") : type(interpol) {
 
 
 

@@ -91,7 +91,7 @@ class FieldsFFT : public Fields {
   * the fields equation, we need to subtract it from the adiabatic response, but
   * only for(ky=0, kz=0) modes !!!.
   **/
-  virtual Array1z calcFluxSurfAvrg(Array4z rho_kykx);
+  virtual void calcFluxSurfAvrg(Array4C rho_kykx, Array1C phi_yz);
 
   /**
   *   @brief Set if Nyquist frequency is removed from FFT spectra
@@ -109,9 +109,12 @@ class FieldsFFT : public Fields {
   *   Implements filtering. 
   *   Calling of various solvers (coupled and uncoupled)
   *
+  *   solve Eq. in Fourier space, using periodic boundary conditions in X and Y
   *
   **/
-  virtual Array4z solveFieldEquations(Array4z fields, Timing timing);
+  //virtual Array4C solveFieldEquations(Array4C fields, Timing timing);
+  void solveFieldEquations(CComplex Q     [plasma->nfields][NxLD][NkyLD][Nz],
+                           CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz]);
 
   /**
   *
@@ -131,7 +134,10 @@ class FieldsFFT : public Fields {
   *  @warning We need to normalize the FFT transform here.
   *
   */
-  Array3z virtual solvePoissonEquation(Array3z rho);
+  //void virtual solvePoissonEquation(Array3C rho);
+//  static int X_NkxL;
+  virtual void solvePoissonEquation(CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
+                                    CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields]);
   
   /**
   *
@@ -151,7 +157,9 @@ class FieldsFFT : public Fields {
   *  @warning We need to normalize the FFT transform here.
   *
   **/
-  Array3z virtual solveAmpereEquation (Array3z   j);
+  //void virtual solveAmpereEquation (Array3C   j);
+  void solveAmpereEquation(CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
+                           CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields]);
 
   /**
   *
@@ -195,7 +203,8 @@ class FieldsFFT : public Fields {
   *  @warning We need to normalize the FFT transform here.
   *
   */
-  Array3z virtual solveBParallelEquation(Array3z phi);
+  void solveBParallelEquation(CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
+                              CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields]);
 
   /**
   *   @brief holds the flux surface average
@@ -204,7 +213,7 @@ class FieldsFFT : public Fields {
   *
   *
   */ 
-  Array1z  phi_yz;
+  Array1C  phi_yz;
 
   public:
 
@@ -222,7 +231,7 @@ class FieldsFFT : public Fields {
   *   @todo link to function.
   *
   */
-  Array4z gyroAverage(Array4z A, int m, int s, int nField, bool gyroField=false);
+  void gyroAverage(Array4C In, Array4C Out, const int m, const int s, const bool gyroField=false);
     
   /**
   * 
@@ -251,7 +260,7 @@ class FieldsFFT : public Fields {
   *  @param gyroField forward- or backward transformation
   *
   */
-  Array4z gyroFirst(Array4z fields, int m, int s, int nField, bool gyroField=false);
+  void gyroFirst(Array4C In, Array4C Out, const int m, const int s, const bool gyroField=false);
   
   /**
   *   @brief performs gyro-averaging in Fourier space
@@ -274,7 +283,11 @@ class FieldsFFT : public Fields {
   *  @param gyroField forward- or backward transformation
   *
   */
-  Array4z gyroFull (Array4z fields, int m, int s, int nField, bool gyroField=false);
+  //Array4C gyroFull (Array4C fields, int m, int s, int nField, bool gyroField=false);
+  void gyroFull(Array4C In, Array4C Out,
+                CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
+                CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
+                const int m, const int s, const bool gyroField=false);  
   
   /**
   *   Constructor
@@ -289,7 +302,7 @@ class FieldsFFT : public Fields {
   *    @brief calculates the field energy
   *
   **/ 
-  void calculateFieldEnergy(Array4z Q, double& phi, double& Ap, double& Bp);
+  void calculateFieldEnergy(Array4C Q, double& phi, double& Ap, double& Bp);
   
 protected:
 
@@ -312,7 +325,7 @@ protected:
   *  @return      \f$ r \f$
   *
   **/
-  inline  double sum_qqnT_1mG0(const double k2_p) ;
+  inline double sum_qqnT_1mG0(const double k2_p) ;
 
   /**
   *  @brief helper function for 
@@ -323,11 +336,19 @@ protected:
   *
   *  @note is it worth to pre-calculate this values ?
   *
+  *  Note :
+  *
+  *    In case of drift-kinetic 1-(1-Gamma_0)) becomes 1 thus
+  *  
+  *  \f[
+  *     r = \sum_\sigma \sigma_\sigma alpha_\sigma^2 q_\sigma 
+  *  \f]
+  *
   *  @param   k2_p \f$ k_\perp^2 \f$ (not normalized) perpendicular wavenumber
   *  @return       \f$ r \f$
   *
   **/
-  inline  double sum_sa2qG0(const double k2_p) ;
+  inline double sum_sa2qG0(const double k2_p) ;
 
   /**
   *

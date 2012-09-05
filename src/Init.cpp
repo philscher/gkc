@@ -69,34 +69,35 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    
    ////////////////////////////////////////////// Recheck Charge Neutrality for Perturabtion and correct  /////////////////////////
 
+/*
    if(Ns > 1 && setup->get("Init.ChargeNeutral", 0)) {
      check(-1, DMESG("Buggy"));
      double total_charge = 0.;
-   	for(int m = NmLlD; m <= NmLuD; m++) total_charge = parallel->collect((NkyLlD == 0) ? sum(abs(fields->calculateChargeDensity(vlasov->f0, vlasov->f,m, 1)(RxLD, 0, RzLD, Q::rho))) : 0.); 
+   	for(int m = NmLlD; m <= NmLuD; m++) total_charge = parallel->collect((NkyLlD == 0) ? sum(abs(fields->calculateChargeDensity((A6zz) vlasov->f0.dataZero(), (A6zz) vlasov->f.dataZero(), (A4zz) fields->Field0.dataZero(), m, 1)(RxLD, 0, RzLD, Q::rho))) : 0.); 
     
         for(int s = NsLlD; s <= NsLuD; s++) vlasov->f(RxLB, RkyLD, RzLB, RvLB, RmLB, s) *= (1. - total_charge/((double) Ns));
    }
-
+*/
 
    /////////////////////////////////////// Initialize dynamic Fields for Ap (we use Canonical Momentum Method) ////////////////////////////
    if(plasma->nfields >= 2) {
    	FunctionParser Ap_parser = setup->getFParser();
    	FunctionParser phi_parser = setup->getFParser();
-   	check(((phi_parser.Parse(setup->get("Init.phi", "0."), "x,ky,z") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
-   	check(((Ap_parser.Parse(setup->get("Init.Ap", "0."), "x,ky,z") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
+   	check(((phi_parser.Parse(setup->get("Init.phi", "0."), "x,y_k,z") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
+   	check((( Ap_parser.Parse(setup->get("Init.Ap ", "0."), "x,y_k,z") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
 
    	for(int s = NsLlD; s <= NsLuB; s++) { for(int m = NmLlD; m <= NmLuD; m++) {
    
      	for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  for(int x = NxLlD; x <= NxLuD; x++) {
 
-         	//const cmplxd pos[3] = { X(x), Y(y_k), Z(z) };
-         	const double pos[3] = { X(x), 2.*M_PI / Ly * y_k, Z(z) };
-         //	fields->Field0 (x,y_k,z,Field::Ap ) = (y_k == 1) ? cmplxd(sqrt(2.),sqrt(2.)) * Ap_parser.Eval(pos) : 0.;
-         //	fields->Field0(x,y_k,z, Field::phi) = cmplxd(sqrt(2.), sqrt(2.)) * phi_parser.Eval(pos);
+         	//const Complex pos[3] = { X(x), Y(y_k), Z(z) };
+         	const double pos[3] = { X(x), y_k, Z(z) };
+         //	fields->Field0 (x,y_k,z,Field::Ap ) = (y_k == 1) ? Complex(sqrt(2.),sqrt(2.)) * Ap_parser.Eval(pos) : 0.;
+         //	fields->Field0(x,y_k,z, Field::phi) = Complex(sqrt(2.), sqrt(2.)) * phi_parser.Eval(pos);
   
      	} } }
 
-        fields->Field (RxLD, RkyLD, RzLD, m, s, RFields) = fields->gyroAverage(fields->Field0(RxLD,RkyLD, RzLD, RFields), m, s, Field::phi);
+       	fields->gyroAverage(fields->Field0(RxLD,RkyLD, RzLD, RFields), fields->Field(RxLD, RkyLD, RzLD, m , s, RFields), m, s, true);
 
     	} }
            
@@ -159,8 +160,8 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    // Perform gyro-average of the fields
    for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) {
         
-        //Perform gyroaverage
-        fields->Field(RxLD, RkyLD, RzLD, m, s, RFields) = fields->gyroAverage(fields->Field0(RxLD,RkyLD, RzLD, RFields ), m, s, Field::phi );
+       	//fields->gyroAverage(fields->Field0(RxLD,RkyLD, RzLD, RFields), fields->Field(RxLD, RkyLD, RzLD, m , s, RFields), m, s, Field::phi);
+       	fields->gyroAverage(fields->Field0, fields->Field(RxLD, RkyLD, RzLD, m , s, RFields), m, s, true);
    
    }}
    
@@ -168,10 +169,13 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    // Boundaries and Done   
    vlasov->setBoundary( vlasov->f0   );
    vlasov->setBoundary( vlasov->f    );
-   fields->setBoundary( fields->Field);
+   fields->updateBoundary(); // fields->Field);
 
+
+   std::cout << "SEtting manually f in Init.cpp" << std::cout;
+   vlasov->f = 1.e-18 * vlasov->f0;
+    
 };
-
 
 int Init::PerturbationPSFNoise(Vlasov *vlasov, int s, double pre) {
     
@@ -241,7 +245,7 @@ double inline Init::Perturbation(int x,int y,int z, const double epsilon_0, cons
 
 
 
-void Init::setFieldFromDataFile(Setup *setup, Array4z Field0, int n, std::string path) {
+void Init::setFieldFromDataFile(Setup *setup, Array4C Field0, int n, std::string path) {
 
   
    std::vector<std::string> token = Setup::split(path, ":");
@@ -260,17 +264,16 @@ void Init::setFieldFromDataFile(Setup *setup, Array4z Field0, int n, std::string
 }
    
 
-void Init::setFieldFromFunction(Setup *setup, Array4z Field0, int n , std::string func) {
+void Init::setFieldFromFunction(Setup *setup, Array4C Field0, int n , std::string func) {
 
    FunctionParser parser = setup->getFParser();
 
-   check(((parser.Parse (func, "x,y,z") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
+   check(((parser.Parse (func, "x,y_k,z") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition"));
 
-   
 
    for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  for(int x = NxLlD; x <= NxLuD; x++) {
 
-      const double pos[3] = { X(x), 2. * M_PI / Ly * y_k, Z(z) };
+      const double pos[3] = { X(x), y_k, Z(z) };
 
       if(plasma->nfields >= n) Field0(x,y_k,z,n) = parser.Eval(pos);
 

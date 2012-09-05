@@ -26,8 +26,13 @@
 #include "FileIO.h"
 #include "Timing.h"
 
+
 #include <sys/time.h>
 #include <papi.h> 
+
+
+class Vlasov;
+class Fields;
 
 /**
 * @brief interface to PAPI 
@@ -51,10 +56,12 @@ class Benchmark : public IfaceGKC
 {
   int num_hwcntrs; ///< Number of available Hardware counters
 
+  
+   
   struct Counters
   {
-	long long Cycles; ///< Total Cycles
-	long long Instructions   ; ///< Total Instructions
+   long long Cycles; ///< Total Cycles
+   long long Instructions   ; ///< Total Instructions
   };
 
 
@@ -76,8 +83,10 @@ class Benchmark : public IfaceGKC
   **/ 
   static std::string getPAPIErrorString(int error_val);
 
+  double simMaxGFLOPS;
   public:
   
+  int BlockSize_X, BlockSize_V;
 
  
    /**
@@ -90,7 +99,9 @@ class Benchmark : public IfaceGKC
 
    void start(std::string id, int type=0);
 
-   void stop(std::string id, int type=0);
+   double stop(std::string id, int type=0);
+ 
+   void bench(Vlasov *vlasov, Fields *fields) ;
 
 protected:
    virtual void writeData(Timing timing, double dt);

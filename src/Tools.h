@@ -73,10 +73,10 @@ class Tools
       * */
      static std::vector<int> ParallelRange(const int stop, Parallel *parallel, int dir) {
 
-        //	    int Nworkers = parallel->getNumberWorkers();
+        //       int Nworkers = parallel->getNumberWorkers();
         int Nworkers = parallel->getNumberOfWorkers(dir);
         int w_id = parallel->getWorkerID(dir) ;
-	    // create list	
+       // create list   
 
         int start = 0;
 
@@ -97,7 +97,7 @@ class Tools
        w_stop = w_start + chunk - 1;
      }
 
-	std::vector<int> loop;// = { 1, 2, 3, 4, 5, 6, 7 };
+   std::vector<int> loop;// = { 1, 2, 3, 4, 5, 6, 7 };
 
       // create list from worker
       for(int n = w_start; n <= w_stop; n++) loop.push_back(n);

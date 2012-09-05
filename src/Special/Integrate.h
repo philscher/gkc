@@ -15,6 +15,8 @@
 #ifndef __GAUSS_LEGENDRE_H__
 #define __GAUSS_LEGENDRE_H__
 
+#include "Global.h"
+
 #include "GaussLegendreWeights.h"
 #include "GaussLaguerreWeights.h"
 #include "GaussRadauWeights.h"
@@ -49,15 +51,15 @@ class Integrate {
  //template<class T> static T integrate(int n, std::function func, double a, double b)
 private:
 
-  static cmplxd integrate(std::function<cmplxd (double)> func, double a, double b, int n, const double x[], const double w[])
+  static Complex integrate(std::function<Complex (double)> func, double a, double b, int n, const double x[], const double w[])
   {
-	const double A = 0.5*(b-a);
-	const double B = 0.5*(b+a);
+   const double A = 0.5*(b-a);
+   const double B = 0.5*(b+a);
 
-    cmplxd s = 0. ;
+    Complex s = 0. ;
     for (int i = 0 ; i <= n; i++) s += w[i] *  func(A*x[i] + B );
 
-	return A*s;
+   return A*s;
   }
 
 
@@ -72,8 +74,8 @@ public:
        
          auto setupNodesAndWeights = [=] (double *x, double *w, bool rescale) { 
             
-	        const double A = (rescale) ? 0.5*(b-a) : 1.;
-	        const double B = (rescale) ? 0.5*(b+a) : 0.;
+           const double A = (rescale) ? 0.5*(b-a) : 1.;
+           const double B = (rescale) ? 0.5*(b+a) : 0.;
 
                 nodes   = new double[order];
                 weights = new double[order];
@@ -107,7 +109,7 @@ public:
  double w(const int n) const { return (n < order) ? weights[n] : 0.; };
 
  /*   
-  static cmplxd i/ntegrate(std::function<cmplxd (double)> func, double a, double b, int n=9)
+  static Complex i/ntegrate(std::function<Complex (double)> func, double a, double b, int n=9)
     {
 
     // Maximum Gauss Weigths/
@@ -120,27 +122,27 @@ public:
     const double *x = gauss_weights[n].points;
     const double *w = gauss_weights[n].weights;
 
-	const double A = 0.5*(b-a);
-	const double B = 0.5*(b+a);
+   const double A = 0.5*(b-a);
+   const double B = 0.5*(b+a);
 
-    cmplxd s = 0. ;
+    Complex s = 0. ;
     for (int i = 0 ; i <= n; i++) s += w[i] *  func(A*x[i] + B );
 
-	return A*s;
+   return A*s;
   }
   */
-  static cmplxd GaussLegendre(std::function<cmplxd (double)> func, double a, double b, int n=9) {
+  static Complex GaussLegendre(std::function<Complex (double)> func, double a, double b, int n=9) {
 
         return integrate(func, a, b, n, gauss_weights[n].points, gauss_weights[n].weights);
 
   }
   
-  static cmplxd GaussRadau(std::function<cmplxd (double)> func, double a, double b, int n=9) {
+  static Complex GaussRadau(std::function<Complex (double)> func, double a, double b, int n=9) {
 
         return integrate(func, a, b, n, Radau_weights[n].points, Radau_weights[n].weights);
   
   }
-	
+   
    /**
    *      Extracted from wikipedia article 
    *
@@ -160,8 +162,8 @@ public:
    *      \f]
    *
    *
-	*/
-   static cmplxd TanhSinh(std::function<cmplxd (double)> func, double a, double b, int n=9)
+   */
+   static Complex TanhSinh(std::function<Complex (double)> func, double a, double b, int n=9)
     {
 
       const double h = 2./n;

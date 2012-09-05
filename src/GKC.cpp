@@ -25,9 +25,9 @@
 #include "TimeIntegration.h"
 #include "TimeIntegration_PETSc.h"
 
-//#include "Vlasov/Vlasov_Fortran.h"
-//#include "Vlasov/Vlasov_Blitz.h"
 #include "Vlasov/Vlasov_Cilk.h"
+#include "Vlasov/Vlasov_Aux.h"
+#include "Vlasov/Vlasov_Optim.h"
 #include "Geometry/GeometrySA.h"
 #include "Geometry/Geometry2D.h"
 #include "Geometry/GeometryShear.h"
@@ -42,6 +42,7 @@
 
 GeneralArrayStorage<6> GKCStorage;
 GeneralArrayStorage<4> GKCStorage4;
+GeneralArrayStorage<3> GKCStorage3;
 
 // TODO : Linux uses UTF-8 encoding for chars per default, Windows not, how to deal with unicode ?
 
@@ -52,23 +53,26 @@ GKC::GKC(Setup *_setup) : setup(_setup)  {
     GKCStorage.base()     = NxLlB, NkyLlD, NzLlB, NvLlB, NmLlB, NsLlB;
     
     // define Storage for gkc (used by blitz++ arrays)
-    GKCStorage4.ordering() = fourthDim, firstDim, secondDim,  thirdDim; 
+    GKCStorage4.ordering() = fourthDim, firstDim, secondDim, thirdDim; 
     GKCStorage4.base()     = NxLlB, NkyLlD, NzLlB, NvLlB;
+    
+    GKCStorage3.ordering() = thirdDim, firstDim, secondDim; 
+    GKCStorage3.base()     = NxLlB, NkyLlD, NvLlB;
 
 
     // Read Setup 
     std::string fft_solver_name = setup->get("Helios.FFTSolver", "fftw3");
     std::string psolver_type    = setup->get("Fields.Solver", "DFT");
-    std::string vlasov_type     = setup->get("Vlasov.Solver", "Cilk");
+    std::string vlasov_type     = setup->get("Vlasov.Solver", "Aux");
     Helios_Type                 = setup->get("GKC.Type", "IVP");
     std::string geometry_Type   = setup->get("GKC.Geometry", "Geometry2D");
 
 
-	/////////////////// Load subsystems ////////////////
+   /////////////////// Load subsystems ////////////////
     parallel  = new Parallel(setup);
     bench     = new Benchmark(setup, parallel); 
 
-    parallel->print("Intializing GKC");
+    parallel->print("Initializing GKC++\n");
 
     fileIO    = new FileIO(parallel, setup);
     grid      = new Grid(setup, parallel, fileIO);
@@ -102,10 +106,9 @@ GKC::GKC(Setup *_setup) : setup(_setup)  {
 
     // Load Vlasov Solver
     if(vlasov_type == "None" ) check(-1, DMESG("No Vlasov Solver Selected"));
-    //    (vlasov_type == "Blitz"  ) vlasov     = new VlasovBlitz  (grid, parallel, setup, fileIO, geometry, fftsolver);
-//#ifdef GKC_CILK
-    else if(vlasov_type == "Cilk"  ) vlasov     = new VlasovCilk  (grid, parallel, setup, fileIO, geometry, fftsolver);
-//#endif
+    else if(vlasov_type == "Cilk"  ) vlasov     = new VlasovCilk  (grid, parallel, setup, fileIO, geometry, fftsolver, bench);
+    else if(vlasov_type == "Aux"  ) vlasov      = new VlasovAux   (grid, parallel, setup, fileIO, geometry, fftsolver, bench);
+    else if(vlasov_type == "Optim" ) vlasov     = new VlasovOptim (grid, parallel, setup, fileIO, geometry, fftsolver, bench);
     else   check(-1, DMESG("No such Fields Solver"));
 
 
@@ -136,14 +139,19 @@ GKC::GKC(Setup *_setup) : setup(_setup)  {
 
     //timeIntegration = new TimeIntegration_PETSc(setup, grid, parallel, vlasov, fields, eigenvalue);
     timeIntegration = new TimeIntegration(setup, grid, parallel, vlasov, fields, eigenvalue, bench);
+  
+    // Optimize values to speed up computation
+    bench->bench(vlasov, fields);
     
-    printSettings();	
+    printSettings();   
     setup->check_config();
 
 }
-	       
+          
 
 int GKC::mainLoop()   {
+
+
 
    if (Helios_Type == "IVP") {
  
@@ -154,14 +162,13 @@ int GKC::mainLoop()   {
             bench->start("MainLoop");
             for(; control->checkOK(timing, timeIntegration->maxTiming);){
         
-        	    double dt = timeIntegration->solveTimeStep(vlasov, fields, particles, timing);        
-         	    // #pragma single
-         	    event->checkEvent(timing, vlasov, fields);
-         	    analysis->writeData(timing, dt);
-         	    fields->writeData(timing, dt);
-         	    visual->writeData(timing, dt);
+               double dt = timeIntegration->solveTimeStep(vlasov, fields, particles, timing);        
+                event->checkEvent(timing, vlasov, fields);
+                analysis->writeData(timing, dt);
+                fields->writeData(timing, dt);
+                visual->writeData(timing, dt);
                     // OK Time Step finished
- 		    }
+           }
           bench->stop("MainLoop");
 
    
@@ -169,7 +176,7 @@ int GKC::mainLoop()   {
 
    }  
    else if(Helios_Type == "Eigenvalue") {
-	eigenvalue->solve(vlasov, fields, visual, control);
+   eigenvalue->solve(vlasov, fields, visual, control);
 
    } else  check(-1, DMESG("No Such Helios.Type Solver"));
 
@@ -206,12 +213,11 @@ void GKC::printSettings() {
   
     time_t start_time = std::time(0); 
   infoStream 
-            << PACKAGE_NAME << "(version " << PACKAGE_VERSION <<") : " << std::ctime(&start_time)         
+            << "Welcome from " << PACKAGE_NAME << " (" << PACKAGE_VERSION <<")  " << PACKAGE_BUGREPORT <<  "      Date :  " << std::ctime(&start_time)         
             << "-------------------------------------------------------------------------------" << std::endl
             << *grid << *plasma << *fileIO << *setup << *vlasov  << *fields << *geometry << *init << *parallel << *fftsolver << *timeIntegration;
-            infoStream << *control << std::endl;
+            infoStream << *control << *bench << std::endl;
             infoStream << "-------------------------------------------------------------------------------" << std::endl << std::endl << std::flush;
-
 
    parallel->print(infoStream.str());
 

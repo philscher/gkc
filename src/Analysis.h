@@ -71,24 +71,24 @@ class Analysis : public IfaceGKC {
    Fields *fields;
    FFTSolver *fft;
    Geometry *geo;
-   Array1d  initialEkin, dT;
-   Array2c spectrumXZ, spectrumYZ, spectrumXY;
-   Array3d pSpec, pPhase;
-   Array3z pFreq;
-   Array2d heatFluxKy;
-   Array3z A_xyz;
-   Array3z phi_k;
-   Array4d A4;
-   Array4z A4_z;
+   Array1R  initialEkin, dT;
+   Array2C spectrumXZ, spectrumYZ, spectrumXY;
+   Array3R pSpec, pPhase;
+   Array3C pFreq;
+   Array2R heatFluxKy;
+   Array3C A_xyz;
+   Array3C phi_k;
+   Array4R A4;
+   Array4C A4_z;
 
-   template<typename tV, typename tM> cmplxd  F (int  x, int y, int z, tV v, tM m, int s) {
+   template<typename tV, typename tM> Complex  F (int  x, int y, int z, tV v, tM m, int s) {
 
       if (plasma->global == false)               return sum(vlasov->f(x,y,z,v,m,s) + vlasov->f0(x,y,z,v,m,s));
       else                                       return sum(vlasov->f(x,y,z,v,m,s));
 
    }
 
-   template<typename tV, typename tM> cmplxd  dF(int  x, int y, int z, tV v, tM m, int s) {
+   template<typename tV, typename tM> Complex  dF(int  x, int y, int z, tV v, tM m, int s) {
 
     if (plasma->global == false) return sum(vlasov->f(x,y,z,v,m,s));
     else                         return sum(vlasov->f(x,y,z,v,m,s) - vlasov->f0(x,y,z,v,m,s));
@@ -114,7 +114,7 @@ class Analysis : public IfaceGKC {
    *  @return double Array of Power density spectra in direction dir
    *
    **/
-   Array3d getPowerSpectrum();
+   Array3R getPowerSpectrum();
     
    /** \brief Calculate the kinetic Energy for particles
    *  
@@ -172,11 +172,11 @@ class Analysis : public IfaceGKC {
    *  \f]
    *
    **/
-   Array4z getHeatFlux      (int species=TOTAL);
+   Array4C getHeatFlux      (int species=TOTAL);
 
    double  getTotalHeatFlux      (int species=TOTAL);
     
-   Array3d getHeatFluxKy      (int species=TOTAL);
+   Array3R getHeatFluxKy      (int species=TOTAL);
     
    /**
    *  calculates and returns the heat flux across magnetic flux surfaces
@@ -190,7 +190,7 @@ class Analysis : public IfaceGKC {
    **/
    double getTotalParticleFlux   ( int species=TOTAL);
     
-   Array3d getParticleFluxKy ( int species=TOTAL);
+   Array3R getParticleFluxKy ( int species=TOTAL);
 
    /**
    *
@@ -207,16 +207,16 @@ class Analysis : public IfaceGKC {
    void getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEnergy);
     
    int updateSpectrum      (unsigned int dir);
-   Array2c getSpectrum(unsigned int dir);
+   Array2C getSpectrum(unsigned int dir);
 
    double getMaxTimeStep(Timing timing, int dir=DIR_ALL, const double maxCFL=0.4);
 
-   Array4d getNumberDensity(const bool total=true);
-   Array4d getMomentumParallel();
-   Array4z getTemperatureParallel();
-   Array4d getTemperatureOthogonal();
-   Array4d getHeatFluxOrthogonal();
-   Array4d getHeatFluxParallel ();
+   Array4R getNumberDensity(const bool total=true);
+   Array4R getMomentumParallel();
+   Array4C getTemperatureParallel();
+   Array4R getTemperatureOthogonal();
+   Array4R getHeatFluxOrthogonal();
+   Array4R getHeatFluxParallel ();
 
    void initDataOutput(Setup *setup, FileIO *fileIO) ;
    int  writeData(Timing timing, double dt);

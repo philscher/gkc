@@ -21,7 +21,8 @@
 #include "Geometry.h"
 
 
-#define SPECIES_MAX 8
+// Excluding adiabatic species
+#define SPECIES_MAX 4
 /**
 *   @brief Hold information about the plasma with species and normalizations
 *
@@ -86,13 +87,13 @@ class Plasma : public IfaceGKC {
      /**
      *  Temperature profile
      **/
-     Array1d T;
+     Array1R T;
    
      /**
      *  Density profile
      *
      **/ 
-     Array1d n;
+     Array1R n;
    
    } _Species;
 

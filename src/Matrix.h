@@ -37,22 +37,22 @@ class Matrix
   public:
   virtual Matrix(int _n_local, int _n_global, int dir, Parallel *_parallel);
   virtual void checkAndAssemble() ;
-  virtual void setValue(int col, int row, cmplxd value);
+  virtual void setValue(int col, int row, Complex value);
   virtual void assemble() ;
   virtual void setZero() ;
   
   
   //// Operator overloading /////////////
-  virtual friend Matrix& operator+=(Matrix &A, cmplxd a) ;
+  virtual friend Matrix& operator+=(Matrix &A, Complex a) ;
   virtual friend Matrix& operator+=(Matrix &A, Matrix &B) ;
   virtual friend Matrix& operator*(Matrix &A, Matrix &B) ;
-  virtual friend Matrix& operator+(Matrix &A, cmplxd a) ;
-  virtual friend Matrix& operator*(cmplxd a, Matrix &A) ;
+  virtual friend Matrix& operator+(Matrix &A, Complex a) ;
+  virtual friend Matrix& operator*(Complex a, Matrix &A) ;
   virtual friend Matrix& operator*(double &a, Matrix &A) ;
   virtual friend Matrix& operator*(Matrix &A, double &a) ;
-  virtual friend Matrix& operator*(Matrix &A, cmplxd a) {
-  inline cmplxd& Matrix::operator() (int row, int col)
-  virtual void addDiagonal(cmplxd a) {
+  virtual friend Matrix& operator*(Matrix &A, Complex a) {
+  inline Complex& Matrix::operator() (int row, int col)
+  virtual void addDiagonal(Complex a) {
   virtual void reduce(int dir);
 
 };

@@ -15,19 +15,16 @@
 
 
 TimeIntegration::TimeIntegration(Setup *setup, Grid *grid, Parallel *_parallel, Vlasov *vlasov, Fields *fields, Eigenvalue *eigenvalue, Benchmark *_bench) 
-  : parallel(_parallel), bench(_bench) {
+  : parallel(_parallel), bench(_bench) 
+{
 
     start_time = std::time(0); 
     timeIntegrationScheme = setup->get("Helios.TimeIntegration", "Explicit_RK4");
 
-
-    
-    linearSafetyFactor  = setup->get("Helios.LinearSafetyFactor", 0.8);
-
-     linearTimeStep = setup->get("Helios.LinearTimeStep", "Eigenvalue");
-    
-    useCFL         = setup->get("Helios.useCFL", 1);
-    maxCFLNumber   = setup->get("Helios.maxCFLNumber", 0.4);
+    linearSafetyFactor  = setup->get("Helios.LinearSafetyFactor", 0.9);
+    linearTimeStep      = setup->get("Helios.LinearTimeStep"    , "Eigenvalue");
+    useCFL              = setup->get("Helios.useCFL"            , 1);
+    maxCFLNumber        = setup->get("Helios.maxCFLNumber"      , 0.4);
     
     
     maxTiming.time = setup->get("Helios.MaxTime", -1.);
@@ -41,6 +38,7 @@ TimeIntegration::TimeIntegration(Setup *setup, Grid *grid, Parallel *_parallel, 
 
 void TimeIntegration::setMaxLinearTimeStep(Eigenvalue *eigenvalue, Vlasov *vlasov, Fields *fields, const double lin_dt)
 {
+
   if(lin_dt <= 0.) {
     if     (linearTimeStep == "CFL"       ) maxLinearTimeStep = vlasov->getMaxTimeStep(DIR_V, maxCFLNumber);
     else if(linearTimeStep == "Eigenvalue") maxLinearTimeStep = getMaxTimeStepFromEigenvalue(eigenvalue->getMaxAbsEigenvalue(vlasov, fields));
@@ -51,13 +49,18 @@ void TimeIntegration::setMaxLinearTimeStep(Eigenvalue *eigenvalue, Vlasov *vlaso
 
 }
 
-double TimeIntegration::getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv)
+double TimeIntegration::getMaxTimeStepFromEigenvalue(Complex max_abs_eigv)
 {
 
         parallel->print("Using maximum absolute eigenvaue for timestep calulcations");
 
         // simple assume simple RK-4
-	    return (2.96 * linearSafetyFactor /  abs(max_abs_eigv));
+        double max_scheme_eigv = 0.;
+        if      (timeIntegrationScheme == "Explicit_RK4") max_scheme_eigv = 2.96;
+        else if (timeIntegrationScheme == "Explicit_RK4") max_scheme_eigv = 2.30;
+        else    check(-1, DMESG("Max Stable Eigenvalue not defined"));
+       
+        return (max_scheme_eigv * linearSafetyFactor /  abs(max_abs_eigv));
 
 };
 
@@ -66,7 +69,7 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv)
             // OK, we assume only posiitive timesteps ffor now
   
             // set maximum timestep. We reduce intial timsteps in case  initial condition is violant (for right side take care of overflow)
-        	if(useCFL == true) dt = min(maxLinearTimeStep, vlasov->getMaxTimeStep(DIR_XY, maxCFLNumber)) ; //* ((timing.step <= 100) ? min(1., 1.e-3 * (timing.step)) : 1));
+           if(useCFL == true) dt = min(maxLinearTimeStep, vlasov->getMaxTimeStep(DIR_XY, maxCFLNumber)) ; //* ((timing.step <= 100) ? min(1., 1.e-3 * (timing.step)) : 1));
 
             if     (timeIntegrationScheme == "Explicit_RK4" ) solveTimeStepRK4 (fields, vlasov, particles, timing, dt);
             else if(timeIntegrationScheme == "Explicit_RK3" ) solveTimeStepRK3 (fields, vlasov, particles, timing, dt);
@@ -87,7 +90,7 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv)
         
         // Runge-Kutta step 1
         const double rk_1[] = { 0., 1., 0.};
-	     fields->solve(vlasov->f0,vlasov->f, timing);
+        fields->solve(vlasov->f0,vlasov->f, timing);
         vlasov ->solve(fields, vlasov->f  , vlasov->fs, 0.5e0*dt , 1, rk_1 , BOUNDARY_DIRTY);
         particles->integrate(vlasov, fields, 1);
         
@@ -100,7 +103,7 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv)
     
         // Runge-Kutta step 3
         const double rk_3[] = { 1., 2., 0.};
-	     fields->solve(vlasov->f0,vlasov->fss, timing);
+   fields->solve(vlasov->f0,vlasov->fss, timing);
         vlasov ->solve(fields, vlasov->fss, vlasov->fs,  dt      , 3, rk_3, BOUNDARY_DIRTY);
         particles->integrate(vlasov, fields, 3);
 
@@ -119,18 +122,18 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv)
         // Runge-Kutta step 1
         const double rk_1[] = { 0., 1., 0.};
         fields->solve(vlasov->f0,vlasov->f, timing);
-        vlasov ->solve(fields, vlasov->f  , vlasov->fs, 0.5e0*dt , 1, rk_1, BOUNDARY_DIRTY);
+        vlasov ->solve(fields, vlasov->f  , vlasov->fs, 1./3. * dt , 1, rk_1, BOUNDARY_DIRTY);
 
 
         // Runge-Kutta step 2
-        const double rk_2[] = { 1., 4., -1./2.};
+        const double rk_2[] = { 1./3., 0., 0.};
         fields->solve(vlasov->f0,vlasov->fs, timing);
-        vlasov ->solve(fields, vlasov->fs , vlasov->fss, 2.*dt, 2, rk_2, BOUNDARY_DIRTY);
+        vlasov ->solve(fields, vlasov->fs , vlasov->fss, 2./3. *dt, 2, rk_2, BOUNDARY_DIRTY);
 
         // Runge-Kutta step 3
         const double rk_3[] = { 1., 0., 1.};
-        fields->solve(vlasov->f0,vlasov->fs, timing);
-        vlasov ->solve(fields, vlasov->fss, vlasov->f,  dt/6. , 3, rk_3, BOUNDARY_DIRTY);
+        fields->solve(vlasov->f0,vlasov->fss, timing);
+        vlasov ->solve(fields, vlasov->fss, vlasov->f,  3./4. * dt , 3, rk_3, BOUNDARY_DIRTY);
         
    };
       
@@ -179,7 +182,6 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv)
 
 int TimeIntegration::writeTimeStep(Timing timing, Timing maxTiming, double dt) {
         
-//         TerminalIO::print(
          if(parallel->myRank == 0) {
                    std::cout << "\r"   << "Steps  : " << timing.step  << "/" << maxTiming.step 
                    << "       Time : " << timing.time << "/" << maxTiming.time << "  dt  : " << dt 

@@ -21,9 +21,9 @@
 
 #include "FileAttr.h"
 
-	/* Helper function for collisional operator as defined in 
-	*  PhD Thesis of Merz
-	*/
+   /* Helper function for collisional operator as defined in 
+   *  PhD Thesis of Merz
+   */
 class Collisions {
     
     /*
@@ -54,8 +54,8 @@ public:
     void calculateCollisions() {
 
   
-       cmplxd df_dm[NmLD];
-       cmplxd df_dv[NmLD];
+       Complex df_dm[NmLD];
+       Complex df_dv[NmLD];
 
       // perform CD-4 derivative for dphi_dx , and dphi_dy
       for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k= NkyLlD; y_k <= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
@@ -64,7 +64,7 @@ public:
         for(int v = NvLlD; v <= NvLuD; v++) { for(int m  = NmLlD ;   m <= NmLuD ; m++  ) { 
 
 
-                const cmplxd df_dv = (8.  *(f[s][m][z][y_k][x][v+1] - f[s][m][z][y_k][x][v-1]) - (f[s][m][z][y_k][x][v+2] - f[s][m][z][y_k][x][v-2]))/(12.*dv);
+                const Complex df_dv = (8.  *(f[s][m][z][y_k][x][v+1] - f[s][m][z][y_k][x][v-1]) - (f[s][m][z][y_k][x][v+2] - f[s][m][z][y_k][x][v-2]))/(12.*dv);
                 df_dm[v][m] = (8.  *(f[s][m+1][z][y_k][x][v] - f[s][m-1][z][y_k][x][v]) - (f[s][m+2][z][y_k][x][v] - f[s][m-2][z][y_k][x][v]))/(12.*dm);
 
 
@@ -127,28 +127,28 @@ public:
 // will probably be moved to Vlasov soon, why not by multiderivative , so I don't have to mess
 //  up the interface and it is still clean, also need some boundaries ?
     /**
-	 * Derivative of the error function 
+    * Derivative of the error function 
      * By definition
      *  \f[ Derf(x) = \frac{d erf(x)}{dx} = \frac{2}{\sqrt{\pi}} \exp\left(-x^2 \right)  \f]
      * */
-	inline double Derf(const double x) { return 2./sqrt(M_PI)*exp(-pow2(x)); };
+   inline double Derf(const double x) { return 2./sqrt(M_PI)*exp(-pow2(x)); };
 
 
     /**
      *  Calculates helper functions
      *  \f[ F_1(x) = x \frac{d erf(x)}{dx} + \left( 2 x^2 - \right) erf(x) \f]
      * */
-	inline double F1(const double x) { return x*Derf(x) + (2. * pow2(x) - 1.) * erf(x); };
+   inline double F1(const double x) { return x*Derf(x) + (2. * pow2(x) - 1.) * erf(x); };
     /**
      *  Calculates helper functions
      *  \f[ F_2(x) = \left( 1 - \frac{2}{3} x^2 \right) erf(x) - x \frac{d erf}{dx} \f]
      * */
-	inline double F2(const double x) { return (1.-2./3.*pow2(x)) * erf(x) - x* Derf(x); };
+   inline double F2(const double x) { return (1.-2./3.*pow2(x)) * erf(x) - x* Derf(x); };
     /**
      *  Calculates helper functions
      *  \f[ F_2(x) = F_1(x) + 3 F_2(x) \f]
      * */
-	inline double F3(const double x) { return F1(x)+3.*F2(x); };
+   inline double F3(const double x) { return F1(x)+3.*F2(x); };
 
     
    

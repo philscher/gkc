@@ -76,7 +76,7 @@ int main(int argc, char **argv)
             case 'v' : gkcFlags      |= Setup::GKC_VERBOSE;
                        break;
             case 's' : gkcFlags      |= Setup::GKC_STATISTICS;
-		               setup_scalingFileName = std::string(optarg);
+                     setup_scalingFileName = std::string(optarg);
                        break;
             case 'f' : gkcFlags      |= Setup::GKC_OVERWRITE;
                        break;
@@ -93,7 +93,7 @@ int main(int argc, char **argv)
 
     int process_pid = getpid();
     // Get simulation properties and setupurations
-	Setup *setup    = new Setup(argc, argv, setup_filename, setup_decomposition, setup_Xoptions, setup_ExArgv, process_pid, gkcFlags);
+   Setup *setup    = new Setup(argc, argv, setup_filename, setup_decomposition, setup_Xoptions, setup_ExArgv, process_pid, gkcFlags);
 
     
     /***********************************************************
@@ -108,7 +108,7 @@ int main(int argc, char **argv)
     if(process_rank == MASTER_PROCESS) std::cout << "Running main loop" << std::endl;
     //#pragma omp parallel reduction(+:GKC_status)
     GKC_status = gkc->mainLoop();
-    	
+       
     if (GKC_status == GKC_SUCCESS) {
               if(process_rank == MASTER_PROCESS) std::cout << "Simulation finished normally ... " << std::endl;
      }
@@ -120,12 +120,12 @@ int main(int argc, char **argv)
     // in case for scaling we want to collect some basic statistics about the running
    
     if((gkcFlags & Setup::GKC_STATISTICS) && (process_rank == 0)) {
-	int numThreads=1;
+   int numThreads=1;
 #ifdef GKC_PARALLEL_OPENMP
-	#pragma omp parallel
-	{
-		numThreads = omp_get_num_threads();
-	}	
+   #pragma omp parallel
+   {
+      numThreads = omp_get_num_threads();
+   }   
 #endif
         ofstream scalingFile(setup_scalingFileName.c_str(), ios::out | ios::app);
         scalingFile << setup_decomposition << ":" << numThreads << " " << end_sim_time - start_sim_time << std::endl;

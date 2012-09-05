@@ -46,11 +46,11 @@ class Matrix_FD_Stencil
                     // use 4th order Central Difference stencil (1./12 h^2) [ -1 16 -30 16 -1 ]
                     const double h_2   = 12. * pow2(dx);
                     
-                    const cmplxd val_dx2_diag = geo->g_xx(x  ,z) * ( 30./h_2);
-                    const cmplxd val_dx2_p1   = geo->g_xx(x+1,z) * (-16./h_2);
-                    const cmplxd val_dx2_m1   = geo->g_xx(x-1,z) * (-16./h_2);
-                    const cmplxd val_dx2_p2   = geo->g_xx(x+2,z) * (  1./h_2);
-                    const cmplxd val_dx2_m2  =  geo->g_xx(x-2,z) * (  1./h_2);
+                    const Complex val_dx2_diag = geo->g_xx(x  ,z) * ( 30./h_2);
+                    const Complex val_dx2_p1   = geo->g_xx(x+1,z) * (-16./h_2);
+                    const Complex val_dx2_m1   = geo->g_xx(x-1,z) * (-16./h_2);
+                    const Complex val_dx2_p2   = geo->g_xx(x+2,z) * (  1./h_2);
+                    const Complex val_dx2_m2  =  geo->g_xx(x-2,z) * (  1./h_2);
                 
                     ierr = MatSetValue(A, idx, idx, val_dx2_diag, INSERT_VALUES);
                 
@@ -65,10 +65,10 @@ class Matrix_FD_Stencil
                     // use 4th order Central Difference stencil (1./12 h^2) [ -1 16 -30 16 -1 ]
                     const double h_1   = 12. * pow2(dx);
                     
-                    const cmplxd val_dx1_p1   = geo->g_xy(x+1, z) * (  8./h_1);
-                    const cmplxd val_dx1_m1   = geo->g_xy(x-1, z) * (- 8./h_1);
-                    const cmplxd val_dx1_p2   = geo->g_xy(x+2, z) * (- 1./h_1);
-                    const cmplxd val_dx1_m2  =  geo->g_xy(x-2, z) * (  1./h_1);
+                    const Complex val_dx1_p1   = geo->g_xy(x+1, z) * (  8./h_1);
+                    const Complex val_dx1_m1   = geo->g_xy(x-1, z) * (- 8./h_1);
+                    const Complex val_dx1_p2   = geo->g_xy(x+2, z) * (- 1./h_1);
+                    const Complex val_dx1_m2  =  geo->g_xy(x-2, z) * (  1./h_1);
                 
                 
                     if ( (x < NxGuD-1)) ierr = MatSetValue(A, idx, idx+1, val_dx1_p1, ADD_VALUES);
@@ -86,7 +86,7 @@ class Matrix_FD_Stencil
 
     };
     
-    static cmplxd D_2O2(Mat &A, std::function<double (double)> g, int order = 4 , bool periodic=false) {
+    static Complex D_2O2(Mat &A, std::function<double (double)> g, int order = 4 , bool periodic=false) {
     
           int idx_l, idx_u;
           PetscErrorCode ierr = MatGetOwnershipRange(A,&idx_l,&idx_u);
@@ -100,8 +100,8 @@ class Matrix_FD_Stencil
                
                   if(order == 2) {
 
-                  const cmplxd val_p1  =  g(x+1) * ( 1./h);
-                  const cmplxd val_m1  =  g(x-1) * (-1./h);
+                  const Complex val_p1  =  g(x+1) * ( 1./h);
+                  const Complex val_m1  =  g(x-1) * (-1./h);
 
                   // why we have to set sub / sup when Matrix is symmetric ? Recheck
                   if ( (x < NxGuD-1)) ierr = MatSetValue(A, idx, idx+1, val_p1, INSERT_VALUES);
@@ -120,10 +120,10 @@ class Matrix_FD_Stencil
                     // use 4th order Central Difference stencil (1./12 h^2) [ -1 16 -30 16 -1 ]
                     const double h   = 12. * pow2(dx);
                     
-                    const cmplxd val_p1   = g(x+1) * (  8./h);
-                    const cmplxd val_m1   = g(x-1) * (- 8./h);
-                    const cmplxd val_p2   = g(x+2) * (- 1./h);
-                    const cmplxd val_m2  =  g(x-2) * (  1./h);
+                    const Complex val_p1   = g(x+1) * (  8./h);
+                    const Complex val_m1   = g(x-1) * (- 8./h);
+                    const Complex val_p2   = g(x+2) * (- 1./h);
+                    const Complex val_m2  =  g(x-2) * (  1./h);
                 
                 
                     if ( (x < NxGuD-1)) ierr = MatSetValue(A, idx, idx+1, val_p1, INSERT_VALUES);
@@ -142,7 +142,7 @@ class Matrix_FD_Stencil
 
     };
     
-    static cmplxd D_1O2(Mat &A, std::function<double (double)> g, int order =4 , bool periodic=false) {
+    static Complex D_1O2(Mat &A, std::function<double (double)> g, int order =4 , bool periodic=false) {
     
           int idx_l, idx_u;
           PetscErrorCode ierr = MatGetOwnershipRange(A,&idx_l,&idx_u);
@@ -156,9 +156,9 @@ class Matrix_FD_Stencil
                
                   if(order == 2) {
 
-                  const cmplxd val_diag = g(x  ) * ( 2./h);
-                  const cmplxd val_p1  =  g(x+1) * (-1./h);
-                  const cmplxd val_m1  =  g(x-1) * (-1./h);
+                  const Complex val_diag = g(x  ) * ( 2./h);
+                  const Complex val_p1  =  g(x+1) * (-1./h);
+                  const Complex val_m1  =  g(x-1) * (-1./h);
 
                   // Set D [ S_ D S^]
                   ierr = MatSetValue(A, idx, idx, val_diag, INSERT_VALUES);
@@ -180,11 +180,11 @@ class Matrix_FD_Stencil
                     // use 4th order Central Difference stencil (1./12 h^2) [ -1 16 -30 16 -1 ]
                     const double h   = 12. * pow2(dx);
                     
-                    const cmplxd val_diag = g(x  ) * ( 30./h);
-                    const cmplxd val_p1   = g(x+1) * (-16./h);
-                    const cmplxd val_m1   = g(x-1) * (-16./h);
-                    const cmplxd val_p2   = g(x+2) * (  1./h);
-                    const cmplxd val_m2  =  g(x-2) * (  1./h);
+                    const Complex val_diag = g(x  ) * ( 30./h);
+                    const Complex val_p1   = g(x+1) * (-16./h);
+                    const Complex val_m1   = g(x-1) * (-16./h);
+                    const Complex val_p2   = g(x+2) * (  1./h);
+                    const Complex val_m2  =  g(x-2) * (  1./h);
                 
                     ierr = MatSetValue(A, idx, idx, val_diag, INSERT_VALUES);
                 
@@ -220,8 +220,8 @@ class Matrix_FD_Stencil
                   // use 2nd order Central Difference stencil h^{-2} [ 1 -2 1]
                   const double h   = pow2(dx);
                 
-                  const cmplxd val_diag = (2./h - ky2);
-                  const cmplxd val_pm1  = -1./h;
+                  const Complex val_diag = (2./h - ky2);
+                  const Complex val_pm1  = -1./h;
 
 
                   // Set D [ S_ D S^]
@@ -247,9 +247,9 @@ class Matrix_FD_Stencil
                     // use 4th order Central Difference stencil (1./12 h^2) [ -1 16 -30 16 -1 ]
                     const double h   = 12. * pow2(dx);
                     
-                    const cmplxd val_diag = (30./h - ky2);
-                    const cmplxd val_pm1  = - 16./h;
-                    const cmplxd val_pm2  = 1./h;
+                    const Complex val_diag = (30./h - ky2);
+                    const Complex val_pm1  = - 16./h;
+                    const Complex val_pm2  = 1./h;
                 
                     ierr = MatSetValue(A, idx, idx, val_diag, INSERT_VALUES);
                 
@@ -264,10 +264,10 @@ class Matrix_FD_Stencil
                     // use 6th order Central Difference stencil (1./180 h^2) [ 2 -27 270 -490 270 -27 2 ]
                     const double h   = 180. * pow2(dx);
                     
-                    const cmplxd val_diag =  (490./h - ky2);
-                    const cmplxd val_pm1  = - 270./h;
-                    const cmplxd val_pm2  = +  27./h;
-                    const cmplxd val_pm3  = -   2./h;
+                    const Complex val_diag =  (490./h - ky2);
+                    const Complex val_pm1  = - 270./h;
+                    const Complex val_pm2  = +  27./h;
+                    const Complex val_pm3  = -   2./h;
                 
                     ierr = MatSetValue(A, idx, idx, val_diag, INSERT_VALUES);
                 

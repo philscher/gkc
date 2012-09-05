@@ -40,16 +40,15 @@
 **/
 class Geometry2D : public Geometry
 {
-  Array1d By;
+  Array1R By;
   std::string shear_str;
   std::string By_str;
 
 
  public:
-  double theta, shear, kz;
-
-
-
+  double theta, ///< Angle to the magnetic field
+         shear, ///< Magnetic field shear
+         kz;    ///< Constant wavenumber factor
 
   Geometry2D(Setup *setup, FileIO *fileIO) : Geometry(setup, fileIO)  {
  
@@ -124,7 +123,7 @@ class Geometry2D : public Geometry
    *   Get the value of shear at position x, which is constant for sheared slab geometry 
    *
    **/
-   inline cmplxd get_kp(const int x, const cmplxd ky, const int z) const  { return ky * By(x) + cmplxd(0., kz); };
+   inline CComplex get_kp(const int x, const CComplex ky, const int z) const  { return ky * By(x) ; };//+ _Imaginary * kz; };
   
   
    double nu (const int x) { return 0.; };

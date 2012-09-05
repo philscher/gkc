@@ -31,7 +31,7 @@ class SpecialMath
    *
    *
    **/ 
-   static double sign(const double T) { return ((T >= 0.) ? 1. : -1); }
+   __attribute__((vector)) static double sign(const double T) { return ((T >= 0.) ? 1. : -1); }
    /**
    * C has remainder modulo operator, we need real one
    **/ 
@@ -42,7 +42,7 @@ class SpecialMath
    *  @image html Bessel_J0.png
    *
    **/
-   static inline double BesselJ0(const double x) { return j0(x); };
+   __attribute__((vector)) static inline double BesselJ0(const double x) { return j0(x); };
 
    /**
    *  @brief Modified bessel function of zeroth order
@@ -51,9 +51,9 @@ class SpecialMath
    *  @todo any better approach ?
    *
    */
-   static inline double BesselI0( const double x )
+   __attribute__((vector)) static inline double BesselI0( const double x )
    {
-
+     // Note performant ... or ?
      double ax,ans;
 
      if ((ax=fabs(x)) < 3.75) {
@@ -66,7 +66,6 @@ class SpecialMath
           +y*(-0.2057706e-1+y*(0.2635537e-1+y*(-0.1647633e-1
           +y*0.392377e-2))))))));
      }
-     
      return ans;
    }
 
@@ -121,12 +120,21 @@ class SpecialMath
    *  @brief Modified bessel function of first order
    *  @image html GK_1mG0_Pade.png
    *
+   *  Defined as 
+   *    \f[
+   *        1 - \Gamma_{0,P} = b / \left( 1+ b \right).
+   *    \f]
+   *
+   *  Note :
+   *
+   *  The corresponding drift-kinetic analog for $b \ll 1$ would be 
+   *  $ 1 - \Gamma_{0,DK} = b $.
+   *
    **/
-   static inline  double _1mGamma0_Pade(const double b, bool gyro=true) 
+   __attribute__((vector)) static inline  double _1mGamma0_Pade(const double b) 
    {
 
-    if(gyro) return  b / ( 1.e0 + b);
-    else     return  b;
+    return  b / ( 1.e0 + b);
 
    };
 
@@ -177,8 +185,8 @@ class SpecialMath
    **/
    static inline  double I1sp(const double b) 
    {
-	   const double i = 1.;
-	   return  -2. * i *  BesselI1(i * b)/b ;
+      const double i = 1.;
+      return  -2. * i *  BesselI1(i * b)/b ;
    };
 
 

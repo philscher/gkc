@@ -53,7 +53,7 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
   // get Constext
     std::cout << "\r"   << "Iteration  : " << GL_iter++ << std::flush;
 
-    cmplxd *x_F1, *y_F1; 
+    Complex *x_F1, *y_F1; 
    
  
     VecGetArrayRead(Vec_x, (const PetscScalar **) &x_F1);
@@ -63,8 +63,8 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
    // we can built wrapper around this and directly pass it
    for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
    for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD   ; m   <= NmLuD ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
-   	
-	        GL_vlasov->fs(x,y_k,z,v,m,s) = x_F1[n++];
+      
+           GL_vlasov->fs(x,y_k,z,v,m,s) = x_F1[n++];
 
    }}} }}}
 
@@ -78,7 +78,7 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
    for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
    for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD   ; m   <= NmLuD ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
 
-	    y_F1[n++] = GL_vlasov->fss(x,y_k,z,v,m,s); 
+       y_F1[n++] = GL_vlasov->fss(x,y_k,z,v,m,s); 
 
    }}} }}}
  
@@ -89,9 +89,9 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
    return 0; // return 0 (success) required for PETSc
 }
 
-cmplxd* PETScMatrixVector::getCreateVector(Grid *grid, Vec &Vec_x) {
+Complex* PETScMatrixVector::getCreateVector(Grid *grid, Vec &Vec_x) {
 
-    cmplxd *xp;
+    Complex *xp;
 
     VecCreateMPI(MPI_COMM_WORLD, grid->getLocalSize(), grid->getGlobalSize(), &Vec_x);
     VecAssemblyBegin(Vec_x);

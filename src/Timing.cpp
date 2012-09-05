@@ -98,13 +98,13 @@
             int minutes = secs / (60      ); secs -= minutes *  60       ;
             int seconds = secs;
       
-	    std::stringstream ss;
+       std::stringstream ss;
             
             if(days > 0   )  ss << days    << "d ";
             if(hours > 0  )  ss << hours   << "h ";
             if(minutes > 0)  ss << minutes << "m ";
             if(seconds > 0)  ss << seconds << "s ";
 
-	    return ss.str();
+       return ss.str();
    };
 

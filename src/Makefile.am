@@ -2,22 +2,22 @@ bin_PROGRAMS = gkc
 
 gkc_SOURCES = main.cpp GKC.cpp FileIO.cpp Fields.cpp Fields/FieldsFFT.cpp Setup.cpp Grid.cpp  \
                  Parallel.cpp Vlasov.cpp Event.cpp\
-                 Collisions.cpp  Vlasov/Vlasov_Cilk.cpp Analysis.cpp  Init.cpp Control.cpp\
-         		 Plasma.cpp Special/LA.cpp Timing.cpp TestParticle.cpp TimeIntegration.cpp \
-    	         FFTSolver.cpp Transport.cpp Visualization/Visualization_Data.cpp
+                 Collisions.cpp  Vlasov/Vlasov_Cilk.cpp Vlasov/Vlasov_Aux.cpp Vlasov/Vlasov_Optim.cpp Analysis.cpp  Init.cpp Control.cpp\
+                 Plasma.cpp Special/LA.cpp Timing.cpp TestParticle.cpp TimeIntegration.cpp \
+                FFTSolver.cpp Transport.cpp Visualization/Visualization_Data.cpp Benchmark.cpp
  
 # compile FFT
-gkc_SOURCES += FunctionParser/fparser.cc
+gkc_SOURCES += external/FunctionParser/fparser.cc
 
-AM_CPPFLAGS     = -ggdb -O3 -Wall -Wno-unknown-pragmas  -I$(DIR_HDF5)/include/ -I$(DIR_BLITZ)/include  -I./FFT -I./Geometry -I./Special -I./TimeIntegration -I./Fields
+AM_CPPFLAGS     = -ggdb -O3 -Wall -Wno-unknown-pragmas  -I$(DIR_HDF5)/include/ -I$(DIR_BLITZ)/include -I./external  -I./FFT -I./Geometry -I./Special -I./TimeIntegration -I./Fields
 gkc_LDFLAGS  = -L$(DIR_HDF5)/lib/ -L$(DIR_BLITZ)/lib
 gkc_LDADD    =   -lblitz $(DIR_HDF5)/lib/libhdf5_hl.a $(DIR_HDF5)/lib/libhdf5.a  -lz 
  
-EXTRA_DIST      =  GKC.h FileIO.h Vlasov/Vlasov_Blitz.h Vlasov/Vlasov_Cilk.h Vlasov.h Fields.h Fields/FieldsFFT.h\
+EXTRA_DIST      =  GKC.h FileIO.h Vlasov/Vlasov_Cilk.h Vlasov/Vlasov_Aux.h Vlasov/Vlasov_Optim.h Vlasov.h Fields.h Fields/FieldsFFT.h\
                    Fields/FieldsFEM.h Setup.h Grid.h Parallel.h Init.h \
-	           Global.h Setup.h Analysis.h  Collisions.h Geometry  FFTSolver.h FEM/FEMSolver.h Fourier.h FunctionParser \
-	           gkc.doxygen  Plasma.h FFT/ Timing.h Integration.h Special/GaussWeights.h Control.h Geometry.h Benchmark.h \
-	           SHDF5/FileAttr.h SHDF5/TableAttr.h TimeIntegration.h Visualization.h Special/LA.h Special/HermitePoly.h
+              Global.h Setup.h Analysis.h  Collisions.h Geometry  FFTSolver.h FEM/FEMSolver.h Fourier.h FunctionParser \
+              gkc.doxygen  Plasma.h FFT/ Timing.h Integration.h Special/GaussWeights.h Control.h Geometry.h Benchmark.h \
+              external/SHDF5/FileAttr.h external/SHDF5/TableAttr.h TimeIntegration.h Visualization.h Special/LA.h Special/HermitePoly.h
 
 
 if SHARED

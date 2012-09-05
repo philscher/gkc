@@ -124,7 +124,7 @@ class GeometrySA : public Geometry
    
    /**
    *   \f[
-   * 		K_x = - 2 \frac{L_\perp}{R_0} \sin{(z)}		     
+   *       K_x = - 2 \frac{L_\perp}{R_0} \sin{(z)}           
    *   \f]
    *
    *   see Dannert PHD
@@ -135,7 +135,7 @@ class GeometrySA : public Geometry
    
    /**
    *   \f[
-   * 		K_y = - 2 \frac{L_\perp}{R_0} \left( \cos{(z)} + \hat{s} z \sin{(z)} \right)		     
+   *       K_y = - 2 \frac{L_\perp}{R_0} \left( \cos{(z)} + \hat{s} z \sin{(z)} \right)           
    *   \f]
    *
    *   see Dannert PHD

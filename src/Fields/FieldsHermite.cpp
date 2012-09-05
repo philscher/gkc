@@ -56,7 +56,7 @@ FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileI
         Matrix Matrix_Gamma0    (NxLD, grid->NxGD, DIR_X, parallel);
         Matrix Matrix_PoissonLHS(NxLD, grid->NxGD, DIR_X, parallel);
 
-        int integrationOrder = setup->get("Fields.Hermite.DoubleGyroIntegrationOrder", 33);
+        int integrationOrder = setup->get("Fields.Hermite.DoubleGyroIntegrationOrder", 9);
         
         Integrate GRQuad("Gauss-Laguerre", integrationOrder);
 
@@ -83,8 +83,8 @@ FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileI
                    // ToDO : what if BT != 1 ??!!
                    const double BT = plasma->B0 / plasma->species(s).T0; 
 
-                   // no exp in case of Laguerre intergration const cmplxd w  = BT * exp(- BT * mu) * GRQuad.w(n); 
-                   const cmplxd w  = BT * GRQuad.w(n); 
+                   // no exp in case of Laguerre intergration const Complex w  = BT * exp(- BT * mu) * GRQuad.w(n); 
+                   const Complex w  = BT * GRQuad.w(n); 
                
                    Matrix *GyroM = getGyroAveragingMatrix(mu/BT, y_k, z, s);
                     
@@ -126,61 +126,52 @@ FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileI
 }
 
 
-Array4z FieldsHermite::g2yroAverage(Array4z A4, int m, int s, const int nField, bool gyroField)  
+void FieldsHermite::gyroAverage(Array4C In, Array4C Out, const int m, const int s, const bool gyroField)  
 {
-
-    std::cout << "Performing GyroAverag" << std::endl;
-
-        cmplxd *vec_X, *vec_XAvrg;
+        Complex *vec_X, *vec_XAvrg;
 
         // Create Matrix
         // Is it possible to fill array at once ?! otherwise parallelization efficiency will be bad
-        for(int    z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
+        for(int    z = NzLlD; z <= NzLuD; z++) {  omp_for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
         
         for(int nField = 1; nField <= plasma->nfields; nField++) {
     
             VecGetArray    (GyroVector_X, (PetscScalar **) &vec_X);
-            for(int x = NxLlD, n = 0; x <= NxLuD; x++)  vec_X[n++] = A4(x,y_k,z,nField);
+            for(int x = NxLlD, n = 0; x <= NxLuD; x++)  vec_X[n++] = In(x,y_k,z,nField);
             VecRestoreArray(GyroVector_X, &vec_X);
        
             MatMult(GyroMatrix(y_k,z,m,s)->getMat(), GyroVector_X, GyroVector_XAvrg);
            
             VecGetArrayRead    (GyroVector_XAvrg, (const PetscScalar **) &vec_XAvrg);
-            for(int x=NxLlD, n = 0; x <= NxLuD; x++)  B4(x,y_k,z,nField) = vec_XAvrg[n++]; 
+            for(int x=NxLlD, n = 0; x <= NxLuD; x++)  Out(x,y_k,z,nField) = vec_XAvrg[n++]; 
             VecRestoreArrayRead(GyroVector_XAvrg, (const PetscScalar **) &vec_XAvrg);
         
         }
         
         } } 
 
-       return B4(RxLD, RkyLD, RzLD, RFields); 
+       return;
+
+};
 
 
-    };
-
-
-cmplxd FieldsHermite::getElements(const int x, const int n, const double r, int y_k, const int z) {
+Complex FieldsHermite::getElements(const int x, const int n, const double r, int y_k, const int z) {
   
         const double ky = fft->ky(y_k);
          // Assign the lambda expression that adds two numbers to an auto variable.
-         auto Integrand = [=] (double alpha) -> cmplxd { 
+         auto Integrand = [=] (double alpha) -> Complex { 
            
-            /*
-             *
-             *  Linearize the metric, take care of the errors (Lapillone, 2009, PhD, Thesis).
-             *  (Do we use covariant or contra-variant metric ?!)
-             *
-             *
-             *  g^2     = g^{xx} g^{yy} - (g_{xy})^2
-             * 
-             *  rho_x   = sqrt{g_{xx}} \rho \cos{(\alpha)}
-             *  rho_y   = frac{g_{xy}}{\sqrt{g_{xx}}} rho \cos{(\alpha}} 
-             *              + \frac{g}{\sqrt{g_{xx}} \rho sin{(\alpha)}
-
-             **/
+            /////////////////////////////////////////////////////////////////////////////////////
+            // Linearize the metric, take care of the errors (Lapillone, 2009, PhD, Thesis).
+            //  (Do we use covariant or contra-variant metric ?!)
+            //
+            //  g^2     = g^{xx} g^{yy} - (g_{xy})^2
+            // 
+            //  rho_x   = sqrt{g_{xx}} \rho \cos{(\alpha)}
+            //  rho_y   = frac{g_{xy}}{\sqrt{g_{xx}}} rho \cos{(\alpha}} 
+            //              + \frac{g}{\sqrt{g_{xx}} \rho sin{(\alpha)}
+            //
             const double g = sqrt( geo->g_xx(x,z) * geo->g_yy(x,z) - pow2(geo->g_xy(x,z)) );
-
-        
 
 
             const double r_x = sqrt(geo->g_xx(x, z)) * r * cos(alpha);
@@ -193,7 +184,7 @@ cmplxd FieldsHermite::getElements(const int x, const int n, const double r, int 
 
             if( ((X(x) - r_x) <= X(NxGlD)) || ((X(x) - r_x) >= X(NxGuD))) return 0.;
 
-            return Lambda(X(x) - r_x, n) * exp(cmplxd(0.,1.) * ky * r_y);
+            return Lambda(X(x) - r_x, n) * exp(Complex(0.,1.) * ky * r_y);
 
         };
         
@@ -205,19 +196,24 @@ cmplxd FieldsHermite::getElements(const int x, const int n, const double r, int 
 FieldsHermite::~FieldsHermite()
 {
 
+
+  // shutdown PETSc !?
 }
 
 
 
-Array4z FieldsHermite::solveFieldEquations(Array4z Qn, Timing timing) 
+//Array4C FieldsHermite::solveFieldEquations(Array4C Qn, Timing timing) 
+void FieldsHermite::solveFieldEquations(CComplex Q     [plasma->nfields][NxLD][NkyLD][Nz],
+                         CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz])
 {
    
    // for 3 fields phi and B_perp are coupled and need to be solved differently
-   if( solveEq & Field::phi) solvePoissonEquation  (Q(RxLD, RkyLD, RzLD, Field::phi));
+   if( solveEq & Field::phi) solvePoissonEquation  (Fields::Q(RxLD, RkyLD, RzLD, Field::phi));
    if( solveEq & Field::Ap ) check(-1, DMESG("Not Implemented"));
    if( solveEq & Field::Bpp) check(-1, DMESG("Not Implemented"));
     
-   return Field0(RxLD, RkyLD, RzLD, RFields);
+   return;
+   //return Field0(RxLD, RkyLD, RzLD, RFields);
 
 }
 
@@ -289,9 +285,9 @@ void FieldsHermite::printOn(ostream &output) const {
    }
  
 
-Array3z FieldsHermite::solvePoissonEquation(Array3z rho)
+void FieldsHermite::solvePoissonEquation(Array3C rho)
     {
-      cmplxd *vec_Q, *vec_Field;
+      Complex *vec_Q, *vec_Field;
       
       for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {
 
@@ -304,13 +300,10 @@ Array3z FieldsHermite::solvePoissonEquation(Array3z rho)
             VecGetArrayRead    (GyroVector_XAvrg, (const PetscScalar **) &vec_Field);
             for(int x=NxLlD, n = 0; x <= NxLuD; x++) Field0(x, y_k, z, Field::phi) = vec_Field[n++]; 
             VecRestoreArrayRead(GyroVector_XAvrg, (const PetscScalar **) &vec_Field);
-        
-
-
 
         } }
 
-        return rho;
+        return;
 
     };
            
@@ -322,11 +315,11 @@ Matrix* FieldsHermite::getGyroAveragingMatrix(const double mu, const int y_k, co
            
            // fill martrix
            for(int x = NxLlD; x <= NxLuD; x++) { for(int n = NxLlD; n <= NxLuD; n++) {
-     	
+        
               const double rho_t2  = plasma->species(s).T0 * plasma->species(s).m / (pow2(plasma->species(s).q) * plasma->B0); 
-     	      const double lambda2 = 2. * mu * rho_t2;
+              const double lambda2 = 2. * mu * rho_t2;
                 
-              const cmplxd value  = getElements(x, n, sqrt(lambda2), y_k, z);
+              const Complex value  = getElements(x, n, sqrt(lambda2), y_k, z);
 
               // Note that our domain starts at NxGlD, while PETSc col/row @ 0
               M->setValue(x - NxGlD, n - NxGlD, value);
@@ -342,9 +335,9 @@ Matrix* FieldsHermite::getGyroAveragingMatrix(const double mu, const int y_k, co
 
 
 // not implemented
-void FieldsHermite::calculateFieldEnergy(Array4z Q, double& phi, double& Ap, double& Bp) 
+void FieldsHermite::calculateFieldEnergy(Array4C Q, double& phi, double& Ap, double& Bp) 
 {
-
+   phi = 0.; Ap = 0.; Bp = 0.;
 
    return ;
 };

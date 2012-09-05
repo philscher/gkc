@@ -85,8 +85,8 @@ class FileIO : public IfaceGKC
 
 
 public:
-	/** Flush all data to disk to prevent corruption */
-	void flush(Timing timing, double dt);
+   /** Flush all data to disk to prevent corruption */
+   void flush(Timing timing, double dt);
    
    hid_t timing_mspace, species_tid;
    

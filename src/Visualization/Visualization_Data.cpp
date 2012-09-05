@@ -56,7 +56,8 @@ Visualization_Data::Visualization_Data(Grid *grid, Parallel *parallel, Setup *se
      
      
      
-     bool phiWrite = (parallel->Coord(DIR_VMS) == 0) && (Z(NzLlD) == 0.);
+     bool phiWrite = (parallel->Coord[DIR_VMS] == 0) && (Z(NzLlD) == 0.);
+
      hsize_t offset0[] = { 0, 0, 0, 0, 0,  0, 0};
     
      hsize_t timing_chunkdim[] = {1}; hsize_t timing_maxdim[] = {H5S_UNLIMITED};

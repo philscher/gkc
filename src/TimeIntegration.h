@@ -31,36 +31,35 @@
 /**
 *    @brief Class which handles explicit time intergration
 *
-*    @todo This class is actually not used, instead we
-*          hardwired it into the Vlasov solver, how to fix this ?
-*          (efficiently)
 *
-   * The maximum TimeStep is defined from istability consideration of the Time Integration
-   * method. Following  Karniadakis(2009), Parallel Scientific Computing in C++, it is defined
-   * by the Eigenvalue problem
-   * \f[ \frac{dU}{dt} = \lambda U \f]
-   * for Runge-Kutta Time Step we get
-   * \f[
-   *    U^{n+1} = U^n + \frac{1}{2} \delta t \left[ X_1 + X_2 + 2 X_3 + X_4  \right] 
-   * \f]
-   * with growth factor \f[ G = [ 1 + ... + \frac{\lambda^4 dt^4}{24} ] \f] 
-   * thus we get the stability aarea by solving following equation
-   * \f[ 
-   *    1 + \mu + \frac{\mu^2}{2} + \frac{\mu^3}{6} + \frac{\mu^4}{24} = e^{i \theta}
-   * \f]
-   *
-   * we can apply it also also to other  
-   * with maximum mu
-   *
-   *       Integration Scheme  max(|\f$ \mu \f$|) 
-   *             RK-1   | 2.0
-   *             RK-2   | 2.197
-   *             RK-3   | 2.537
-   *             RK-4   | 2.96
-   *            SRK-4   |
-   *
+*    The maximum TimeStep is defined from istability consideration of the Time Integration
+*    method. Following  Karniadakis(2009), Parallel Scientific Computing in C++, it is defined
+*    by the Eigenvalue problem
+*    \f[ 
+*        \frac{dU}{dt} = \lambda U 
+*    \f]
+*    for Runge-Kutta Time Step we get
+*    \f[
+*       U^{n+1} = U^n + \frac{1}{2} \delta t \left[ X_1 + X_2 + 2 X_3 + X_4  \right] 
+*    \f]
+*    with growth factor \f[ G = [ 1 + ... + \frac{\lambda^4 dt^4}{24} ] \f] 
+*    thus we get the stability aarea by solving following equation
+*    \f[ 
+*       1 + \mu + \frac{\mu^2}{2} + \frac{\mu^3}{6} + \frac{\mu^4}{24} = e^{i \theta}
+*    \f]
 *
-*/
+*    we can apply it also also to other  
+*    with maximum mu
+*
+*       Integration Scheme  max(|\f$ \mu \f$|) 
+*             RK-1   | 2.0
+*             RK-2   | 2.197
+*             RK-3   | 2.537
+*             RK-4   | 2.96
+*            SRK-4   |
+*
+*
+**/
 class TimeIntegration  : public IfaceGKC{
    std::string linearTimeStep;
  protected:
@@ -88,32 +87,32 @@ class TimeIntegration  : public IfaceGKC{
    *
    *   @param   max_abs_eigv maximum absolute eigenvalue
    *   @return               maximum linear timestep
-   */ 
-   double getMaxTimeStepFromEigenvalue(cmplxd max_abs_eigv);
+   **/ 
+   double getMaxTimeStepFromEigenvalue(Complex max_abs_eigv);
 
    /**
    * 
    * @brief solves the current timestep using predefined integration scheme
    *
-   */
+   **/
    virtual double solveTimeStep(Vlasov *vlasov, Fields *fields, TestParticles *particles, Timing &timing);
    
    /**
    *   Constructor
    *
-   */ 
+   **/ 
    TimeIntegration(Setup *setup, Grid *grid, Parallel *parallel, Vlasov *vlasov, Fields *fields, Eigenvalue *eigenvalue, Benchmark *bench);
 
    /**
    *
    *
-   */
+   **/
    int writeTimeStep(Timing timing, Timing maxTiming, double dt);
 
    /**
    *    @brief ?
    *
-   */
+   **/
    void setMaxLinearTimeStep(Eigenvalue *eigenvalue, Vlasov *vlasov, Fields *fields, const double lin_dt = 0.);
    
     
@@ -137,9 +136,16 @@ class TimeIntegration  : public IfaceGKC{
    *    To save computational time, calculation of k_1 and the update to y_{n+1} is performed
    *    at the last timestep.
    *
+   *    RK-4 integration is probably the best choice, between tradeoff of computational cost 
+   *    and maximum allowed time step for linear runs. E.g. alltough RK-3 scheme has a 33% 
+   *    lower computational cost, maximum linear time-step is also reduced by 30%. 
+   *    However, non-linear timestep is resctricted by the ExB velocity to fullfill the
+   *    CFL condition. Thus in case time integration error can be neglected, RK-3 is the
+   *    better choice.
+   *
    *    @image html TimeIntegration_RK4_Stability.png
    *
-   */
+   **/
    void solveTimeStepRK4(Fields *fields, Vlasov *vlasov,TestParticles *particles, Timing timing, double  dt);
 
    /**
@@ -158,7 +164,7 @@ class TimeIntegration  : public IfaceGKC{
    *    at the last timestep.
    *
    *    @image html TimeIntegration_RK3_Stability.png
-   */
+   **/
    void solveTimeStepRK3(Fields *fields, Vlasov *vlasov,TestParticles *particles, Timing timing, double  dt);
 
    /**
@@ -168,24 +174,24 @@ class TimeIntegration  : public IfaceGKC{
    *    @image html TimeIntegration_RK2_Stability.png
    *
    *
-   */
+   **/
    void solveTimeStepRK2(Fields *fields, Vlasov *vlasov,TestParticles *particles, Timing timing, double  dt);
 
    /**
    *    Solve Gyro-kinetic equation using explicit Heun's method  (second order) Integration 
    *    (unstable scheme)
-   */
+   **/
    void solveTimeStepHeun(Fields *fields, Vlasov *vlasov,TestParticles *particles, Timing timing, double  dt);
 
    /**
    *    Eigenvalues caluclation do not require an timestep integration
    *
-   */
+   **/
    void solveTimeStepEigen(Fields *fields, Vlasov *vlasov,Timing timing, double  dt);
         
    /**
    *
-   */
+   **/
    virtual void printOn(ostream &output) const ;
    
 };

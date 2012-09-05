@@ -48,7 +48,7 @@ Eigenvalue_SLEPc::Eigenvalue_SLEPc(FileIO *fileIO, Setup *setup, Grid *grid, Par
       EPSSetProblemType(EigvSolver, EPS_NHEP);
       EPSSetOperators(EigvSolver, A_F1, PETSC_NULL);
     
-    // Krylov-Schur most promising one, Power does not converge
+      // Krylov-Schur most promising one, Power does not converge
       EPSSetType(EigvSolver, EPSKRYLOVSCHUR);
       
       // use e.g. -x "-st_shift 0.2" to set more properties
@@ -59,7 +59,7 @@ Eigenvalue_SLEPc::Eigenvalue_SLEPc(FileIO *fileIO, Setup *setup, Grid *grid, Par
 
 
 
-cmplxd Eigenvalue_SLEPc::getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields) 
+Complex Eigenvalue_SLEPc::getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields) 
 {
     
     EPSSetWhichEigenpairs(EigvSolver, EPS_LARGEST_MAGNITUDE);
@@ -78,9 +78,9 @@ cmplxd Eigenvalue_SLEPc::getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields)
     EPSGetConverged(EigvSolver, &nconv);
 
     Vec    Vec_F1;   
-    cmplxd *x_Vec_F1 = PETScMatrixVector::getCreateVector(grid, Vec_F1);//, DIR_ALL);
+    Complex *x_Vec_F1 = PETScMatrixVector::getCreateVector(grid, Vec_F1);//, DIR_ALL);
    
-    cmplxd eigv, eigv_dummy;
+    Complex eigv, eigv_dummy;
     if(nconv > 0) MatGetVecs(A_F1, PETSC_NULL, &Vec_F1);
     EPSGetEigenpair(EigvSolver, 0, &eigv, &eigv_dummy, Vec_F1, Vec_F1);
 
@@ -106,7 +106,7 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
     // init intial solution vector 
     if(1 == 0) {
         Vec Vec_init;
-        cmplxd *init_x = PETScMatrixVector::getCreateVector(grid, Vec_init);
+        Complex *init_x = PETScMatrixVector::getCreateVector(grid, Vec_init);
     
         for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
         for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD   ; m   <= NmLuD ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
@@ -142,15 +142,15 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
     Vec    Vec_F1, Vec_F1_dummy;   
 
     std::cout << "Number of Converged Eigenvalues : " << nconv << std::endl;
-	    
-    cmplxd  *x_F1; 
+       
+    Complex  *x_F1; 
     if(nconv > 0) MatGetVecs(A_F1, PETSC_NULL, &Vec_F1);
 
 
     //////////////////////////    Read Out Results /////////////////////
     for(int m = 0; m < nconv; m++) {
           
-            cmplxd eigv, eigv_dummy;
+            Complex eigv, eigv_dummy;
             EPSGetEigenpair(EigvSolver, m, &eigv, &eigv_dummy, Vec_F1, Vec_F1_dummy);
 
 
@@ -160,10 +160,10 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
             //eigvTable.AbsoluteError  = error;
             EPSComputeRelativeError(EigvSolver,m, &eigvTable.AbsoluteError);
             
-    	   EVTable->append(&eigvTable);
+          EVTable->append(&eigvTable);
             
             // Get EigenVector (Phase Space function) and calculate corresponding potentials
-  	    VecGetArray(Vec_F1, &x_F1);
+         VecGetArray(Vec_F1, &x_F1);
 
             // copy whole phase space function (waste but starting point) (important due to bounday conditions
            // we can built wrapper around this and directly pass it
@@ -190,7 +190,7 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
   
   
 Eigenvalue_SLEPc::~Eigenvalue_SLEPc() {
- 	
+    
     MatDestroy(&A_F1);
     EPSDestroy(&EigvSolver);
 
@@ -212,8 +212,8 @@ void Eigenvalue_SLEPc::printOn(ostream &output) const {
 
 void Eigenvalue_SLEPc::initDataOutput(Setup *setup, FileIO *fileIO) 
 {
-//	auto groupID = fileIO->newGroup(bla, fileIO);
-	eigvGroupID = fileIO->newGroup(fileIO->getFileID(), "Eigenvalue");
+//   auto groupID = fileIO->newGroup(bla, fileIO);
+   eigvGroupID = fileIO->newGroup(fileIO->getFileID(), "Eigenvalue");
 
     // ********************* setup Table for EigenValues *****************
     EigenValue EigVal_table;

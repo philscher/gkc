@@ -44,8 +44,7 @@ int NvGlD, NvGuD, NvGlB, NvGuB;
 int NmGlD, NmGuD, NmGlB, NmGuB; 
 int NsGlD, NsGuD, NsGlB, NsGuB; 
 
-Array1d X, Y, Z, V, M;
-Array2d T, N;
+Array1R X, Y, Z, V, M;
 
 
   double Lx, Ly, Lz, Lv, Lm;
@@ -107,36 +106,38 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
        RkyLD.setRange(NkyLlD,NkyLuD);
 
 
+    // Set Domain for all processes
+
        // Number of Ghost/Halo cells
        NxGC = 2 ;    NyGC = 2 ;    NzGC = 2 ;    NvGC = 2 ; 
 
     // Set local (L) lower (l) and upper (u) bounds
-    NxLlD = (NxGuD - NxGlD + 1)/parallel->decomposition(DIR_X) * parallel->Coord(DIR_X) + NxGC + 1;
-    NxLuD = (NxGuD - NxGlD + 1)/parallel->decomposition(DIR_X) * (parallel->Coord(DIR_X)+1) + NxGC;
+    NxLlD = (NxGuD - NxGlD + 1)/parallel->decomposition[DIR_X] * parallel->Coord[DIR_X] + NxGC + 1;
+    NxLuD = (NxGuD - NxGlD + 1)/parallel->decomposition[DIR_X] * (parallel->Coord[DIR_X]+1) + NxGC;
     NxLlB=NxLlD - NxGC; NxLuB=NxLuD + NxGC;
 
-    NyLlD = (NyGuD - NyGlD + 1)/parallel->decomposition(DIR_Y) * parallel->Coord(DIR_Y) + NyGC + 1;
-    NyLuD = (NyGuD - NyGlD + 1)/parallel->decomposition(DIR_Y) * (parallel->Coord(DIR_Y)+1) + NyGC;
+    NyLlD = (NyGuD - NyGlD + 1)/parallel->decomposition[DIR_Y] * parallel->Coord[DIR_Y] + NyGC + 1;
+    NyLuD = (NyGuD - NyGlD + 1)/parallel->decomposition[DIR_Y] * (parallel->Coord[DIR_Y]+1) + NyGC;
     NyLlB=NyLlD - NyGC; NyLuB=NyLuD + NyGC;
 
-    NzLlD = (NzGuD - NzGlD + 1)/parallel->decomposition(DIR_Z) * parallel->Coord(DIR_Z) + NzGC + 1;
-    NzLuD = (NzGuD - NzGlD + 1)/parallel->decomposition(DIR_Z) * (parallel->Coord(DIR_Z)+1) + NzGC;
+    NzLlD = (NzGuD - NzGlD + 1)/parallel->decomposition[DIR_Z] * parallel->Coord[DIR_Z] + NzGC + 1;
+    NzLuD = (NzGuD - NzGlD + 1)/parallel->decomposition[DIR_Z] * (parallel->Coord[DIR_Z]+1) + NzGC;
     NzLlB =  NzLlD - NzGC; NzLuB=NzLuD + NzGC;
     
     // Settings for V
-    NvLlD = (NvGuD - NvGlD + 1)/parallel->decomposition(DIR_V) *  parallel->Coord(DIR_V) + NvGC + 1;
-    NvLuD = (NvGuD - NvGlD + 1)/parallel->decomposition(DIR_V) * (parallel->Coord(DIR_V) + 1) + NvGC;
+    NvLlD = (NvGuD - NvGlD + 1)/parallel->decomposition[DIR_V] *  parallel->Coord[DIR_V] + NvGC + 1;
+    NvLuD = (NvGuD - NvGlD + 1)/parallel->decomposition[DIR_V] * (parallel->Coord[DIR_V] + 1) + NvGC;
     NvLlB=NvLlD - NvGC; NvLuB=NvLuD + NvGC;
     
     // Settings for S (no boundary cells)
-    NmLlD = (NmGuD - NmGlD + 1)/parallel->decomposition(DIR_M) *  parallel->Coord(DIR_M) + 1;
-    NmLuD = (NmGuD - NmGlD + 1)/parallel->decomposition(DIR_M) * (parallel->Coord(DIR_M) + 1) ;
+    NmLlD = (NmGuD - NmGlD + 1)/parallel->decomposition[DIR_M] *  parallel->Coord[DIR_M] + 1;
+    NmLuD = (NmGuD - NmGlD + 1)/parallel->decomposition[DIR_M] * (parallel->Coord[DIR_M] + 1) ;
     NmLlB = NmLlD; NmLuB = NmLuD; 
 
 
     // Settings for S (no boundary cells)
-    NsLlD = (NsGuD - NsGlD + 1)/parallel->decomposition(DIR_S) *  parallel->Coord(DIR_S) + 1;
-    NsLuD = (NsGuD - NsGlD + 1)/parallel->decomposition(DIR_S) * (parallel->Coord(DIR_S) + 1) ;
+    NsLlD = (NsGuD - NsGlD + 1)/parallel->decomposition[DIR_S] *  parallel->Coord[DIR_S] + 1;
+    NsLuD = (NsGuD - NsGlD + 1)/parallel->decomposition[DIR_S] * (parallel->Coord[DIR_S] + 1) ;
     NsLlB = NsLlD; NsLuB = NsLuD; 
 
 
@@ -274,12 +275,12 @@ void Grid::initDataOutput(FileIO *fileIO) {
          check(H5LTset_attribute_int(gridGroup, ".", "Ns", &Ns, 1), DMESG("Attribute"));
          
 
- 	// set Lengths
-	check(H5LTset_attribute_double(gridGroup, ".", "X", &X(NxGlD), Nx), DMESG("Attribute"));
-//	check(H5LTset_attribute_double(gridGroup, ".", "Y", &Y(NyGlD), Ny), DMESG("Attribute"));
-	check(H5LTset_attribute_double(gridGroup, ".", "Z", &Z(NzGlD), Nz), DMESG("Attribute"));
-	check(H5LTset_attribute_double(gridGroup, ".", "V", &V(NvGlD), Nv), DMESG("Attribute"));
-	check(H5LTset_attribute_double(gridGroup, ".", "M", &M(NmGlD), Nm), DMESG("Attribute"));
+    // set Lengths
+   check(H5LTset_attribute_double(gridGroup, ".", "X", &X(NxGlD), Nx), DMESG("Attribute"));
+//   check(H5LTset_attribute_double(gridGroup, ".", "Y", &Y(NyGlD), Ny), DMESG("Attribute"));
+   check(H5LTset_attribute_double(gridGroup, ".", "Z", &Z(NzGlD), Nz), DMESG("Attribute"));
+   check(H5LTset_attribute_double(gridGroup, ".", "V", &V(NvGlD), Nv), DMESG("Attribute"));
+   check(H5LTset_attribute_double(gridGroup, ".", "M", &M(NmGlD), Nm), DMESG("Attribute"));
          
     H5Gclose(gridGroup);
 

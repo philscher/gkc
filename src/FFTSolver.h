@@ -32,7 +32,7 @@ enum FFT_DIR    {FFT_NO=0, FFT_FORWARD=1, FFT_BACKWARD=2 };
 *  @brief type of transform
 *  @todo  avoid global scope 
 **/
-enum FFT_FLAGS  {FFT_DUMMY=0, FFT_XYZ=1, FFT_X=2, FFT_XY=4, FFT_Y=16, FFT_AA=32, FFT_FIELDS=64};
+enum FFT_FLAGS  {FFT_DUMMY=0, FFT_XYZ=1, FFT_X=2, FFT_XY=4, FFT_Y=16, FFT_AA=32, FFT_FIELDS=64, FFT_X_FIELDS=128, FFT_Y_FIELDS=256, FFT_Y_PSF=512, FFT_Y_NL=1024};
 
 
 /** 
@@ -52,7 +52,7 @@ class FFTSolver : public IfaceGKC {
    /**  We can suppress various modes, this is set in the setup of the fields.
    *   and sets the Fourier mode to zero. Move to FFT solver.
    */
-   int suppressModes(Array4z k2Out, const int field=1);
+   int suppressModes(Array4C k2Out, const int field=1);
    void parseSuppressMode(const std::string &value, std::vector<int> &suppressMode);
 
   protected:
@@ -98,7 +98,7 @@ class FFTSolver : public IfaceGKC {
    *  Gives \f[ k_x = \frac{2\pi}{L_x} * x_k \f] Fourier wavenumber.
    *  We use fttw ordering ([k_0, k_1, ..., k_Nyq, -k_{Ny-1}, -k_{Ny-2}, ...., -k_{-1} ]
    **/
-   inline double  kx(const int x_k) { return 2.*M_PI/Lx * ((x_k <= Nx/2) ? x_k : x_k - Nx); }
+   static inline double  kx(const int x_k) { return 2.*M_PI/Lx * ((x_k <= Nx/2) ? x_k : x_k - Nx); }
 
    /**
    *  Gives \f[ k_y = \frac{2\pi}{L_y} * y_k \f] Fourier wavenumber
@@ -106,7 +106,7 @@ class FFTSolver : public IfaceGKC {
    *  Half modes in k_y due to hermitian symmetry. We use c2r transform thus only positive
    *  values are reqtuied
    */
-   inline double  ky(const int y_k) { return 2.*M_PI/Ly * y_k; };
+   static inline double  ky(const int y_k) { return 2.*M_PI/Ly * y_k; };
 
 
    /** Normalization factors in N3(Nx,Ny,Nz), N2(Nx,Ny) and Norm_X(Nx)  */
@@ -133,8 +133,8 @@ class FFTSolver : public IfaceGKC {
    *
    *  @note that this is uses a real-to-complex and complex-to-real transform
    **/
-   Array4d rYIn, rYOut;
-   Array4z kYOut, kYIn;
+   Array2R rYIn, rYOut;
+   Array2C kYOut, kYIn;
    int Y_kyLlD, Y_kyLuD , Y_NyLlD , Y_NyLuD;
    Range Y_RkyL , Y_RyLD;
    // @}
@@ -146,8 +146,10 @@ class FFTSolver : public IfaceGKC {
    *  Transforms the field equations \f$ A(x,k_y, z, n) rightarrow A(k_x, k_y, z,n) \f$,
    *  which is needs on e.g. the Poisson's equation.
    **/
-   Array4z rXIn, rXOut, kXOut, kXIn;
+   Array4C rXIn, rXOut, kXOut, kXIn;
 
+
+   static int X_NkxL;
    int K1xLlD, K1xLuD;
    int K1yLlD, K1yLuD;
    Range Rk1xL, Rk1yL;
@@ -171,7 +173,7 @@ class FFTSolver : public IfaceGKC {
    *   @param nstacked   depreceated
    *
    **/
-   virtual int solve(const int type, const int direction, const int nstacked=1) = 0;
+   virtual void solve(const int type, const int direction, void *in=nullptr, void *out=nullptr) = 0;
 
    /**
    *   @brief  returns the FFT library name in use
@@ -193,7 +195,7 @@ class FFTSolver : public IfaceGKC {
    *  @param R Result C(x,y_k,z) = A B
    *
    **/
-   virtual Array3z multiply(Array3z &A, Array3z &B, Array3z  &R) = 0;
+   virtual Array3C multiply(Array3C &A, Array3C &B, Array3C  &R) = 0;
   
 };
 

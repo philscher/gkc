@@ -45,7 +45,7 @@ class Eigenvalue : public IfaceGKC {
    **/
    struct EigenValue {
     
-     cmplxd EigenValue   ; ///< the eigenvalue
+     Complex EigenValue   ; ///< the eigenvalue
      double AbsoluteError; ///< the absolute error
 
    };
@@ -79,7 +79,7 @@ class Eigenvalue : public IfaceGKC {
    *         the maximum stable linear timestep
    *
    **/
-   virtual cmplxd getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields) = 0;
+   virtual Complex getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields) = 0;
 
   protected :
   

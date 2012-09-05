@@ -37,12 +37,12 @@ class Eigenvalue_SLEPc : public Eigenvalue {
 
     EPS EigvSolver;  ///< The eigensolver context
 
-    cmplxd tolerance; ///< Set Tolerence of the solution
+    Complex tolerance; ///< Set Tolerence of the solution
     
     Mat A_F1;         ///< The Matrix Context
     
     TableAttr *EVTable; ///< Eigenvalue Table
-	
+   
     hid_t eigvGroupID; ///< HDF-5 reference to Eigenvalue group
 
 public:
@@ -67,7 +67,7 @@ public:
    * Get Maximum Absolute Eigenvalue 
    *
    **/
-  cmplxd getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields);
+  Complex getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields);
 
 protected :
   /**

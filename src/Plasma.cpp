@@ -12,9 +12,7 @@
  */
 
 
-
 #include "Plasma.h"
-
 
 // plasma defined global
 Plasma *plasma;
@@ -33,11 +31,20 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
       global  = setup->get("Plasma.Global",   0 );
       
       cs      = setup->get("Plasma.cs",   1. );
-      
+     
+      std::string type = setup->get("Plasma.Type", "phi");
+/* 
+      if     (type == "phi"      ) nfields = 1;
+      else if(type == "phi,Ap"   ) nfields = 2;
+      else if(type == "phi,Ap,Bp") nfields = 3;
+      else   check(-1, DMESG("So such Plasma.Type"));
+
+ * */   
+      nfields  = (setup->get("Plasma.Bp", 0 ) == 1) ? 3 : nfields;
       nfields  = ((beta > 0.e0)  ? 2 : 1);
       nfields  = (setup->get("Plasma.Bp", 0 ) == 1) ? 3 : nfields;
       
-      // adiabatic species
+      /////////////////   parse  adiabatic species ///////////////////////////
       std::string species_name = setup->get("Plasma.Species0.Name"  , "Unnamed") + " (adiab.)";
       snprintf(species(0).name, sizeof(species_name.c_str()), "%s", species_name.c_str());
       
@@ -50,7 +57,7 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
       species(0).w_n     = setup->get("Plasma.Species0.Phase"      , 0.0 );
       species(0).w_T     = 0.;
       
-      // Parse Kinetic species
+      ////////////////////////     Parse Kinetic species   //////////////////
       for(int s = 1; s <= SPECIES_MAX; s++) { 
 
         std::string key          = "Plasma.Species" + Num2String(s); 
@@ -98,14 +105,15 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
 
       }   
 
-        // make some simple checks
-        
+        ////////////////////////   // make some simple checks
         //Total charge density
         double rho0_tot = 0.;
         for(int s = 0; s <= NsGuD; s++) rho0_tot += species(s).q * species(s).n0;
         if(rho0_tot != 0.) check(setup->get("Plasma.checkTotalCharge", -1), DMESG("VIOLATING charge neutrality, check species q * n ! Exciting...")); 
 
-      initDataOutput(fileIO);
+
+
+       initDataOutput(fileIO);
 
     };
 
@@ -153,7 +161,8 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
          hid_t species_type[]        = { fileIO->s256_tid        , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE      , H5T_NATIVE_DOUBLE      , H5T_NATIVE_DOUBLE             };
          const char *species_names[] = { "Name"                  , "Charge"             , "Mass"               , "Density"            , "w_T"                  , "w_n"                  , "Collision"                   };
 
-         check(H5TBmake_table("SpeciesTable", fileIO->getFileID(), "Species", (hsize_t) 7, (hsize_t) 0, sizeof(Species), (const char**) species_names,
+         // Note : +1 for adiabatic species
+         check(H5TBmake_table("SpeciesTable", fileIO->getFileID(), "Species", (hsize_t) SPECIES_MAX+1, (hsize_t) 0, sizeof(Species), (const char**) species_names,
                                species_offset, species_type, 32, NULL, 0, &species(0) ), DMESG("H5Tmake_table : Species"));
         
          // create table for all included species

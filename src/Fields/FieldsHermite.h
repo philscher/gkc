@@ -77,7 +77,7 @@ class FieldsHermite : public FieldsFFT {
    *    Please Document Me !
    *
    **/
-  Array4z              B4;
+  Array4C              B4;
   /**
    *    Please Document Me !
    *
@@ -101,17 +101,18 @@ protected:
    *    Please Document Me !
    *
    **/
-  virtual Array4z solveFieldEquations(Array4z fields, Timing timing) ;
+  void solveFieldEquations(CComplex Q     [plasma->nfields][NxLD][NkyLD][Nz],
+                           CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz]);
   /**
    *    Please Document Me !
    *
    **/
-  virtual Array3z solvePoissonEquation(Array3z rho)   ;//override;
+  virtual void solvePoissonEquation(Array3C rho)   ;//override;
   /**
    *    Please Document Me !
    *
    **/
-  virtual Array4z g2yroAverage(Array4z A4, int m, int s, const int nField, bool gyroField);// override;
+  void gyroAverage(Array4C In, Array4C Out, const int m, const int s, const bool forward);// override;
     
 private:
   /**
@@ -130,7 +131,7 @@ private:
    *    Please Document Me !
    *
    **/
-    cmplxd getElements(const int i, const int n, const double r, const int y_k, const int z);
+    Complex getElements(const int i, const int n, const double r, const int y_k, const int z);
   /**
    *    Please Document Me !
    *
@@ -153,7 +154,7 @@ public:
   *    @brief calculates the field energy
   *
   **/ 
-  void calculateFieldEnergy(Array4z Q, double& phi, double& Ap, double& Bp);
+  void calculateFieldEnergy(Array4C Q, double& phi, double& Ap, double& Bp);
  
 protected:
   /**

@@ -37,9 +37,8 @@ class Transport {
 
    Transport(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Analysis *analysis);
 
-  
-  
-  void update(Vlasov *vlasov);
+   void update(Vlasov *vlasov);
+
 protected:
 
         virtual void printOn(ostream &output) const {

@@ -22,9 +22,9 @@ bool force_exit = false;
 Control::Control(Setup *setup, Parallel *_parallel, Analysis *_analysis) : parallel(_parallel), analysis(_analysis) {
 
         // set our control file, this is same for all processes and set to mpi root process id 
-	if (setup->get("Control.useControlFile", 0)) {
+   if (setup->get("Control.useControlFile", 0)) {
         cntrl_file_name   = "gkc_" + Setup::number2string(parallel->master_process_id) + ".stop";
-	} else cntrl_file_name = "";
+   } else cntrl_file_name = "";
         maxKineticEnergy  = setup->get("Control.MaxKineticEnergy", 1.e355);
         maxElectricEnergy = setup->get("Control.MaxElectricEnergy", 1.e355);
         maxMagneticEnergy = setup->get("Control.MaxMagneticEnergy", 1.e355);
@@ -55,13 +55,13 @@ Control::~Control() {
 int control_triggered_signal=0;
 
 void signal_handler(int sig)
-	{
+   {
     switch(sig) {
       case(SIGFPE)  :  std::cerr << "Floating point exception occured. Exiting" << std::endl;
                        // we have to unmask the signal otherwie program will slow down
                        control_triggered_signal |= SIGFPE;
                        //delete helios;
-                       //abort();
+                       abort();
                        //signal(SIGFPE, SIG_IGN);
                        // now we raise SIGUSR1 which is propagetaed by mpirun to other processes
                        //raise(SIGUSR2);
@@ -90,7 +90,7 @@ void signal_handler(int sig)
 
     if(force_exit == true) check(-1, DMESG("Signal received and \"force exit\" set"));
 }
-	
+   
 #ifdef OS_DARWIN
 #include <Accelerate/Accelerate.h>
 #include <xmmintrin.h>
@@ -120,7 +120,7 @@ void Control::setSignalHandler() {
 //#endif
 
 #ifdef OS_DARWIN 
-	    _mm_setcsr( _MM_MASK_MASK &~  (_MM_MASK_OVERFLOW | _MM_MASK_INVALID | _MM_MASK_DIV_ZERO) );
+       _mm_setcsr( _MM_MASK_MASK &~  (_MM_MASK_OVERFLOW | _MM_MASK_INVALID | _MM_MASK_DIV_ZERO) );
 #endif
 
 

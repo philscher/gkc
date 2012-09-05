@@ -13,38 +13,43 @@
 
 #include "FFTSolver.h"
 
+int FFTSolver::X_NkxL;
+
 
 void FFTSolver::setNormalizationConstants() {
 
 
-	// find out normalization (assume constant normalization accors boundaries)
-    // Real -> Complex (Fourier sapce) transform
-    rYIn(NxLlD, RyLD, NzLlD, 1) = 1.;
-		
-    solve(FFT_Y, FFT_FORWARD, NxLD * NzLD);
-	Norm_Y_Forward = real(kYOut(NxLlD, 0, NzLlD, 1));		
+   // find out normalization (assume constant normalization accors boundaries)
+        // Real -> Complex (Fourier sapce) transform
+      rYIn(NxLlD, RyLD) = 1.;
+      
+    solve(FFT_Y, FFT_FORWARD, rYIn.data(), kYOut.data());
+   Norm_Y_Forward = real(kYOut(NxLlD, 0));      
 
 
     // Complex (Fourier sapce) -> Real transform
-    kYIn(RxLD, RkyLD, RzLD, 1) = 0.; kYIn(NxLlD, NkyLlD, NzLlD, 1) = 1.;
-	solve(FFT_Y, FFT_BACKWARD,  NxLD * NzLD);
-	Norm_Y_Backward = rYOut(NxLlD, NyLlD, NzLlD, 1);
-        
+    kYIn(RxLD, RkyLD) = 0.; kYIn(NxLlD, NkyLlD) = 1.;
+    solve(FFT_Y, FFT_BACKWARD, kYIn.data(), rYOut.data());
+   Norm_Y_Backward = rYOut(NxLlD, NyLlD);
+       
+
+
+
     // Real -> Complex (Fourier sapce) transform
-	rXIn(RxLD, NkyLlD, NzLlD, 1) = 1.;
-	solve(FFT_X, FFT_FORWARD, NkyLD * NzLD);
-	Norm_X_Forward = (K1xLlD == 0) ? real(kXOut(0, NkyLlD, NzLlD, 1)) : 0.;		
+   rXIn(RxLD, NkyLlD, NzLlD, 1) = 1.;
+   solve(FFT_X_FIELDS, FFT_FORWARD, rXIn.data());
+   Norm_X_Forward = (K1xLlD == 0) ? real(kXOut(0, NkyLlD, NzLlD, 1)) : 0.;      
 
 
     // Complex (Fourier sapce) -> Real transform
     kXIn(Rk1xL, RkyLD, RzLD, 1) = 0.; if(K1xLlD == 0) kXIn(0, NkyLlD, NzLlD, 1) = 1.;
-	solve(FFT_X, FFT_BACKWARD,  NkyLD * NzLD);
-	Norm_X_Backward = real(rXOut(NxLlD, NkyLlD, NzLlD, 1));
-		
+   solve(FFT_X_FIELDS, FFT_BACKWARD, kXOut.data());
+   Norm_X_Backward = real(rXOut(NxLlD, NkyLlD, NzLlD, 1));
+      
     // broadcast normalization to all nodes
     parallel->barrier();
-    parallel->send(Norm_Y_Forward, parallel->Coord(DIR_ALL) == 0); parallel->send(Norm_Y_Backward, parallel->Coord(DIR_ALL) == 0);
-    parallel->send(Norm_X_Forward, parallel->Coord(DIR_ALL) == 0); parallel->send(Norm_X_Backward, parallel->Coord(DIR_ALL) == 0);
+    parallel->send(Norm_Y_Forward, parallel->Coord[DIR_ALL] == 0); parallel->send(Norm_Y_Backward, parallel->Coord[DIR_ALL] == 0);
+    parallel->send(Norm_X_Forward, parallel->Coord[DIR_ALL] == 0); parallel->send(Norm_X_Backward, parallel->Coord[DIR_ALL] == 0);
     parallel->barrier();
 
 };
@@ -89,19 +94,19 @@ void FFTSolver::parseSuppressMode(const std::string &value, std::vector<int> &su
 
 
 // BUG : Input SuppressModeX = 0 does not work (Crashes)
-int FFTSolver::suppressModes(Array4z A, const int field) 
+int FFTSolver::suppressModes(Array4C A, const int field) 
 {
 
   // suppress x,y, z - Modes
   vector<int>::const_iterator mode;
 
   for(mode = suppressModeX.begin(); (!suppressModeX.empty()) && (mode <= suppressModeX.end()) ; mode++) { 
-	if((*mode < K1xLlD) || (*mode > K1xLuD)) continue;
+   if((*mode < K1xLlD) || (*mode > K1xLuD)) continue;
     A(*mode, RkyLD, RzLD, RFields) = 1.e-128;
   }
 //  for(mode = suppressModeY.begin(); mode <= suppressModeY.end(); mode++) {
   for(mode = suppressModeY.begin(); (!suppressModeY.empty()) && (mode <= suppressModeY.end()) ; mode++) { 
-	    if((*mode < NkyLlD) || (*mode > NkyLuD)) continue;
+       if((*mode < NkyLlD) || (*mode > NkyLuD)) continue;
         A(Rk1xL, *mode, RzLD, RFields) = 1.e-128;
   }
 

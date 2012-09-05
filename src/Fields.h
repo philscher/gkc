@@ -26,6 +26,9 @@
 #include "Timing.h"
 #include "Plasma.h"
 
+
+extern int GC2, GC4, Nq;
+
 /**
 *  @brief defined offset to access field variables
 *
@@ -91,11 +94,11 @@ class Fields : public IfaceGKC {
    *  @todo : current version does not need to communicate Y
    *          direction. Thus remove. 
    */
-   Array6z  SendXu, SendYu, SendZu, SendXl, SendYl, SendZl; 
+   Array6C  SendXu, SendYu, SendZu, SendXl, SendYl, SendZl; 
    /**
    *  @brief please document me
    */
-   Array6z  RecvXu, RecvYu, RecvZu, RecvXl, RecvYl, RecvZl;
+   Array6C  RecvXu, RecvYu, RecvZu, RecvXl, RecvYl, RecvZl;
 
 protected:
 
@@ -119,22 +122,6 @@ protected:
    */
    int solveEq;
 
-   /** 
-   *  @brief Performs the gyro-average for variable stored in FFT->r3In
-   */
-   Array1z  phi_yz;
-
-   /** 
-   *  Calculation of the ITG potential.
-   * solve the averaged Poisson equation over y-z plane only for FFT
-   * n this should be OK. For slab geometry this is k(kx,0,0) !
-   * Result is given in Fourier space which is only k_x dependent. For solving
-   * the fields equation, we need to substract it from the adiabatic repsonse, but
-   * only for(ky=0, kz=0) modes !!!.
-   *
-   * @todo : This is implementation dependent. Does need to be as an extra function.
-   */
-   virtual Array1z calcFluxSurfAvrg(Array4z n) = 0;
 
 public:
    /** 
@@ -153,7 +140,10 @@ public:
    *  @param s  index for species
    *
    */
-   virtual Array3z calculateChargeDensity         (Array6z f0,  Array6z f, const int m, const int s);
+   void calculateChargeDensity(CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                               CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                               CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz]   ,
+                               const int m, const int s) ;
 
    /**
    * @brief Calculates the parallel current density \f$ j_\parallel(x,y_k,z;\mu,\sigma) \f$.
@@ -173,7 +163,10 @@ public:
    *  @param s  index for species
    *
    */
-   virtual Array3z calculateParallelCurrentDensity(Array6z f0, Array6z f, const int m, const int s );
+   void calculateParallelCurrentDensity(CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                        CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                        CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz],
+                                        double   V  [NvGB], const int m, const int s) ;
 
    /**
    *  Calculates the perpendicular current density \f$ j_\perp(x,y_k,z;\mu,\sigma) \f$
@@ -193,7 +186,11 @@ public:
    *  @param m  index for perpendicular velocity \f$ \mu = M(m)\f$
    *  @param s  index for species
    */
-   virtual Array3z calculatePerpendicularCurrentDensity(Array6z f0, Array6z f, const int m, const int s );
+   //virtual Array3C calculatePerpendicularCurrentDensity(Array6C f0, Array6C f, const int m, const int s );
+   virtual void  calculatePerpendicularCurrentDensity(CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                                      CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                                      CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz],
+                                                      double M[NmGB],  const int m, const int s); 
 
 
    /**
@@ -202,26 +199,8 @@ public:
    *  @param Q current source terms
    * 
    */
-   virtual Array4z solveFieldEquations(Array4z Q, Timing timing) = 0;
-
-   /**
-   *    @brief virtual function to solve the Poisson equation for \f$ \phi \f$
-   * 
-   */
-   virtual Array3z solvePoissonEquation(Array3z rho)= 0;
-
-   /**
-   *
-   *    @brief virtual function to solve the Ampere equation for \f$ A_{1\parallel} \f$
-   *  
-   */
-   virtual Array3z solveAmpereEquation(Array3z j) = 0;
-
-   /**
-   *    @brief virtual function to solve the Ampere equation for \f$ B_{1\parallel} \f$
-   */
-   virtual Array3z solveBParallelEquation(Array3z j) = 0;
-   
+   virtual void solveFieldEquations(CComplex Q     [plasma->nfields][NxLD][NkyLD][Nz],
+                                    CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz]) = 0;
 
    /**
    *    @brief calculate Field energy
@@ -229,17 +208,21 @@ public:
    *    calculates The field energy
    *
    */
-   virtual void calculateFieldEnergy(Array4z Q, double& phi, double& Ap, double& Bp) = 0;
-
+   virtual void calculateFieldEnergy(Array4C Q, double& phi, double& Ap, double& Bp) = 0;
 
 public:
-  
    /** Sets the boundary
    *  @brief  update boundaries for the gyro-averaged field which arises due to domain
    *          decomposition
-   *  @param  A Current gyro-averaged field  \f[ A(x,y,z,\mu, \sigma) \f] 
    */ 
-   int setBoundary(Array6z  A);
+   void updateBoundary(); 
+   void updateBoundary(
+                       CComplex Field [plasma->nfields][NsLD][NmLD][NzLB][NkyLD][NxLB+4], 
+                       CComplex SendXl[plasma->nfields][NsLD][NmLD][NzLD][NkyLD][GC4     ], CComplex SendXu[plasma->nfields][NsLD][NmLD][NzLD][NkyLD][GC4   ],
+                       CComplex RecvXl[plasma->nfields][NsLD][NmLD][NzLD][NkyLD][GC4     ], CComplex RecvXu[plasma->nfields][NsLD][NmLD][NzLD][NkyLD][GC4   ],
+                       CComplex SendZl[plasma->nfields][NsLD][NmLD][GC2   ][NkyLD][NxLD  ], CComplex SendZu[plasma->nfields][NsLD][NmLD][  GC2][NkyLD][NxLD],
+                       CComplex RecvZl[plasma->nfields][NsLD][NmLD][GC2   ][NkyLD][NxLD  ], CComplex RecvZu[plasma->nfields][NsLD][NmLD][  GC2][NkyLD][NxLD]);
+
    
    /**
    *  @brief please document me
@@ -274,28 +257,30 @@ public:
    *  @param gyroField true if forward transformation, false if backward transformation
    *
    */
-   virtual Array4z gyroAverage(Array4z fields, int m, int s, int nField, bool gyroField=false) = 0;
+   virtual void gyroAverage(Array4C In, Array4C Out, const int m, const int s, const bool forward) = 0;
   
    /**
    *  @brief four-dimensional array hold the source terms in drift-coordinates.
    *
    *  @note  Q stand for the German Quellterme (translated : source terms).
    */
-   Array4z  Q;
+   Array4C  Q;
+
+   Array4C Qm;
    /**
    *  @brief four-dimensional array hold the field terms in drift-coordinates.
    */
-   Array4z  Field0;
+   Array4C  Field0;
    
    /**
    *  @brief gyro-averaged field quantities as \f$ \left( <\phi>, <A_{1\parallel}>, <B_{1\parallel}> \right)\f$
    */
-   Array6z  Field;
+   Array6C  Field;
    
    /**
    *  @brief please document me
    */
-   Array5z  phi, Ap, Bp;
+   Array5C  phi, Ap, Bp;
    
    /**
    * 
@@ -332,7 +317,7 @@ public:
    *
    *
    */
-   int solve(Array6z f0, Array6z  f, Timing timing=0);
+   void solve(Array6C f0, Array6C  f, Timing timing=0);
 
    /**
    *  @brief set which equation to solve if one field is assumed to be fixed
@@ -362,17 +347,17 @@ protected:
    /**
    *  @brief please document me
    */
-  	FileAttr *FA_phi, *FA_Ap, *FA_Bp, *FA_phiTime;
+     FileAttr *FA_phi, *FA_Ap, *FA_Bp, *FA_phiTime;
 
    /**
    *  @brief please document me
    */
-  	Timing dataOutputFields;
+     Timing dataOutputFields;
 
    /**
    *  @brief please document me
    */
-  	void initDataOutput(Setup *setup, FileIO *fileIO);
+     void initDataOutput(Setup *setup, FileIO *fileIO);
    
    /**
    *  @brief please document me
