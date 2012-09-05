@@ -1,17 +1,21 @@
 
      GKC (GyroKinetic Code) is a local, delta-f gyro-kinetic 
-     code. Currently support is restricted to
+     code. Currently features are 
       
-     * Various geometrie (sheared, shearless, toroidal [untested])
+     * Various geometries (sheared, shearless, toroidal)
      * multiple species support 
      * fully electro-magnetic code (warning untested)  
-     * Interfaces for various field and vlasov solvers
-     * Prelimenary support for global simulations
+     * Interfaces for various field and Vlasov solvers
+     * Preliminary support for global simulations
      * hybrid parallelization (MPI and OpenMP) 
  
-     Alltough it is not featurich as other gyro-kinetic codes,
+     However, handle with care, as the code is still experimental
+     and benchmark to other codes is still pending.
+
+
+     Although it is not feature-rich as other gyro-kinetic codes,
      it provides an object-oriented approach using C++. Thus
-     the emphasis is on simplicity and readbility using abstraction.
+     the emphasis is on simplicity and readability using abstraction.
  
      (A little technical notes)
   
@@ -23,10 +27,6 @@
         calls to MPI functions are not necessary. Function 
         overloading is provided to achieve a common interface.
         
-        Future work : Show parallelization rate on Helios for CBC
-         
-        Vectorization support is assured by using proper phragmas
-      
    
      Notes on data output :
    
@@ -35,35 +35,40 @@
      
      Notes on Speed :
   
-        Fortran is popular in numerical science comunnities due to
+        Fortran is popular in numerical science communities due to
         it's power of handling multi-dimensional arrays, as well the
         many mathematical functions it supports.
   
         However, the lack of templates, function overloading, pointers
-        and classes (allhough some of these features are now supported
-        by the Fortran-03 standard) makes the code difficulat to read.
+        and classes (although some of these features are now supported
+        by the Fortran-03 standard) makes Fortran code difficult to read
+        and extend.
         Additionally for most function calls speed is not of a concern
-        e.g. in the intialization phase - or consist of a library call
+        e.g. in the initialization phase - or consist of a library call
         to MPI, FFT routine, PETSc, HDF-5 etc. Using Profiling,
-        we concluded that about 80% of the computationalis spend in the
+        we concluded that about 80% of the computational spend in the
         Vlasov equation solver, and 10% in the underlying FFT solver,
         with only a minor fraction (around %5) inside other GKC classes.
-        
-        To handle multiple dimension in C++ this code makes use of 
-        blitz++ (blitz.sourceforge.net), a meta-template library, which
-        promised to allow speed comparable to Fortran. However, we
-        observe a speed of only 40% using blitz-0.9. Thus for the Vlasov
-        equation, implementation in Fortra-03 and Intel-Cilk Array Notation 
-        is provided. Overall the speed compared to a native Fortran 
-        implementation varies between (95-105%).
-     
+       
+        To handle multiple dimension in C++ this code makes use of
+        use of CEAN (C/C++ Extension for Array Notation) supported
+        by Intel C/C++ (12.1) and GCC (4.8) onwards as part
+        of Cilk Plus. Additionally C99 complex numbers are used.
+        This makes the code non C++ standard conform, and probably
+        would not compile using other compilers and non x86 platforms.
+        Hopefully, other compiler vendor will support it in the near
+        future.
+
+        CEAN greatly simplifies using multi-dimensional arrays in C++
+        and a proper vectorization of array manipulations.
+
         
     Notes on License :
         The code is license under the GNU Public License Version 3 ( or
-        at your opintion any later version). You are free to use the code 
+        at your opinion any later version). You are free to use the code 
         for your research. Referencing the code, citing the code or
         making the authors of this code co-authors is NOT required. 
-        Altough depending on your
+        Although depending on your
         choice highly appreciated, and will benefit further development.
  
  
