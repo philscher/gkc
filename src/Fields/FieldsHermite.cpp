@@ -18,7 +18,7 @@
 #include "Special/HermiteInterpolation.h"
 #include "Special/Integrate.h"
 #include "Special/GaussRadauWeights.h"
-#include "SpecialMatrix.h"
+#include "Matrix/SpecialMatrix.h"
 
 #include "Tools.h"
 

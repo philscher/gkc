@@ -25,8 +25,8 @@
 
 #include "FieldsFFT.h"
 
-#include "MatrixSolver.h"
-#include "MatrixPETSc.h"
+#include "Matrix/MatrixSolver.h"
+#include "Matrix/MatrixPETSc.h"
 
 
 static char FieldsHermite_help[] = "Help for PETSc Interface not available, please look up gkc & PETSc manual.";

@@ -7,7 +7,7 @@
      * fully electro-magnetic code (warning untested)  
      * Interfaces for various field and Vlasov solvers
      * Preliminary support for global simulations
-     * hybrid parallelization (MPI and OpenMP) 
+     * 3-stage parallelization (Vectorization, OpenMP and MPI) 
  
      However, handle with care, as the code is still experimental
      and benchmark to other codes is still pending.
@@ -21,11 +21,11 @@
   
      Notes on parallelization :
     
-        The code uses OpenMP (for poloidal direction only) and MPI
-        to achieve a high parallelization rate. The Parallel class
-        provides an abstraction for most MPI function, thus direct
-        calls to MPI functions are not necessary. Function 
+        The code uses OpenMP and MPI to achieve a high parallelization rate.
+        The Parallel class provides an abstraction for most MPI function, 
+        thus direct calls to MPI functions are not necessary. Function 
         overloading is provided to achieve a common interface.
+        Current vectorization is optimzed for AVX instruction set.
         
    
      Notes on data output :
@@ -64,11 +64,8 @@
 
         
     Notes on License :
+
         The code is license under the GNU Public License Version 3 ( or
-        at your opinion any later version). You are free to use the code 
-        for your research. Referencing the code, citing the code or
-        making the authors of this code co-authors is NOT required. 
-        Although depending on your
-        choice highly appreciated, and will benefit further development.
+        at your opinion any later version). 
  
  
