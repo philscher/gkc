@@ -167,24 +167,57 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
                 data_Y_rOut = (double *)  fftw_alloc_real   (4*NyLD*(NxLD+8));
                 data_Y_rIn  = (double *)  fftw_alloc_real   (4*NyLD*(NxLD+8));
                 
-                GeneralArrayStorage<2> storage_rY; storage_rY.ordering() = secondDim, firstDim; storage_rY.base() = NxLlD, NyLlD;
+                // Original GeneralArrayStorage<2> storage_rY; storage_rY.ordering() = secondDim, firstDim; storage_rY.base() = NxLlD, NyLlD;
+                GeneralArrayStorage<2> storage_rY; storage_rY.ordering() = firstDim, secondDim; storage_rY.base() = NxLlD, NyLlD;
                 Array2R rYIn_t   ( data_Y_rIn,  shape(NxLD+8, NyLD), neverDeleteData, storage_rY); rYIn .reference(rYIn_t ) ; rYIn  = 0.; 
                 Array2R rYOut_t  ( data_Y_rOut, shape(NxLD+8, NyLD), neverDeleteData, storage_rY); rYOut.reference(rYOut_t) ; rYOut = 0.;
                 
-                GeneralArrayStorage<2> storage_cY; storage_cY.ordering() = secondDim, firstDim; storage_cY.base() = NxLlD, NkyLlD;
+                // Original GeneralArrayStorage<2> storage_cY; storage_cY.ordering() = secondDim, firstDim; storage_cY.base() = NxLlD, NkyLlD;
+                GeneralArrayStorage<2> storage_cY; storage_cY.ordering() = firstDim, secondDim; storage_cY.base() = NxLlD, NkyLlD;
                 Array2C kYOut_t  (data_Y_kOut, shape(NxLD+8, NkyLD), neverDeleteData, storage_cY); kYOut.reference(kYOut_t ) ; kYOut = 0.; 
                 Array2C kYIn_t   (data_Y_kIn , shape(NxLD+8, NkyLD), neverDeleteData, storage_cY); kYIn .reference(kYIn_t  ) ; kYIn  = 0.;
                    
                 //                                                  howmany                                  stride distance
                 //  leave space for boundary conditions
-                plan_YForward_Field  = fftw_plan_many_dft_r2c(1, &NyLD, NxLD+8,                 rYIn.data(), NULL, 1, NyLD+4,  (fftw_complex*) kYOut.data(), NULL, 1, NkyLD, perf_flag);
-                plan_YBackward_Field = fftw_plan_many_dft_c2r(1, &NyLD, NxLD+8, (fftw_complex*) kYIn.data(), NULL, 1, NkyLD,                  rYOut.data(), NULL, 1, NyLD , perf_flag);
+                // 
+                //   kYIn[Nky][Nx]
+                //
+                //   [ y0x0 y0x1 y0x2 ... ] [y1x0 y1x1 y1x2 ...] [y2x0 y2x1 ... ] ...
+                //
+                //   thus our FFT routine has stride of NxLD, however our output is same
+                //
+                //   [ y0x0 y0x1 y0x2 ... ] [y1x0 y1x1 y1x2 ...] [y2x0 y2x1 ... ] ...
+                //
+                //   
+                //    from fftw3-doc :
+                //
+                //       fftw_plan fftw_plan_many_dft(int rank, const int *n, int howmany,
+                //                                    fftw_complex *in, const int *inembed,
+                //                                    int istride, int idist,
+                //                                    fftw_complex *out, const int *onembed,
+                //                                    int ostride, int odist,
+                //                                    int sign, unsigned flags);
+                //
+                //      location of input : in + k * idist
+                //      The stride parameters indicate that the j-th element of the input or output arrays is
+                //      located at j*istride 
+                //
+                //
+                //   Thus :
+                //           X is on fast dimension, thus our fourier mode is the stride NxLD+BD
+                //           Distance for the next mode is thus 1          
+                //
+
+                //plan_YForward_Field  = fftw_plan_many_dft_r2c(1, &NyLD, NxLD+8,                 rYIn.data(), NULL, 1, NyLD,  (fftw_complex*) kYOut.data(), NULL, 1, NkyLD, perf_flag);
+                //plan_YBackward_Field = fftw_plan_many_dft_c2r(1, &NyLD, NxLD+8, (fftw_complex*) kYIn.data(), NULL, 1, NkyLD,                  rYOut.data(), NULL, 1, NyLD , perf_flag);
+                plan_YBackward_Field = fftw_plan_many_dft_c2r(1, &NyLD, NxLD+8, (fftw_complex*) kYIn.data(), NULL, NxLD+8, 1,                 rYOut.data(), NULL, NxLD+8, 1, perf_flag);
                 
-                plan_YForward_PSF    = fftw_plan_many_dft_r2c(1, &NyLD, NxLB  ,                 rYIn.data(), NULL, 1, NyLD ,  (fftw_complex*) kYOut.data(), NULL, 1, NkyLD, perf_flag);
-                plan_YBackward_PSF   = fftw_plan_many_dft_c2r(1, &NyLD, NxLB  , (fftw_complex*) kYIn.data(), NULL, 1, NkyLD,                  rYOut.data(), NULL, 1, NyLD , perf_flag);
+                //plan_YForward_PSF    = fftw_plan_many_dft_r2c(1, &NyLD, NxLB  ,                 rYIn.data(), NULL, 1, NyLD ,  (fftw_complex*) kYOut.data(), NULL, 1, NkyLD, perf_flag);
+                //plan_YBackward_PSF   = fftw_plan_many_dft_c2r(1, &NyLD, NxLB  , (fftw_complex*) kYIn.data(), NULL, 1, NkyLD,                  rYOut.data(), NULL, 1, NyLD , perf_flag);
+                plan_YBackward_PSF   = fftw_plan_many_dft_c2r(1, &NyLD, NxLB  , (fftw_complex*) kYIn.data(), NULL, NxLB, 1,                 rYOut.data(), NULL, NxLB, 1, perf_flag);
                 
-                plan_YForward_NL    = fftw_plan_many_dft_r2c(1, &NyLD, NxLD  ,                 rYIn.data(), NULL, 1, NyLD ,  (fftw_complex*) kYOut.data(), NULL, 1, NkyLD, perf_flag);
-                plan_YBackward_NL   = fftw_plan_many_dft_c2r(1, &NyLD, NxLD  , (fftw_complex*) kYIn.data(), NULL, 1, NkyLD,                  rYOut.data(), NULL, 1, NyLD , perf_flag);
+                plan_YForward_NL    = fftw_plan_many_dft_r2c(1, &NyLD, NxLD,                 rYIn.data(), NULL, NxLD , 1, (fftw_complex*) kYOut.data(), NULL, NxLD, 1, perf_flag);
+                plan_YBackward_NL   = fftw_plan_many_dft_c2r(1, &NyLD, NxLD, (fftw_complex*) kYIn.data(), NULL, NxLD,  1,                rYOut.data(), NULL, NxLD , 1, perf_flag);
                 
 
 

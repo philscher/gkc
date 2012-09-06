@@ -652,17 +652,20 @@ int Analysis::writeData(Timing timing, double dt)
 
             // write out to Terminal/File
             std::stringstream messageStream;
-            messageStream << "Step : " << scalarValues.timestep      << "  Time " << scalarValues.time        
-           << " Field : (phi)" << scalarValues.phiEnergy  << "   (Ap)" << scalarValues.ApEnergy  <<  " (Bp) " << scalarValues.BpEnergy << std::endl; 
+            messageStream << std::endl << std::endl << "Analysis | " << std::setprecision(3);
+            messageStream << " Field Energy : (phi) " << scalarValues.phiEnergy  << "  (Ap) " << scalarValues.ApEnergy  <<  "  (Bp) " << scalarValues.BpEnergy << std::endl; 
             double charge = 0., kinetic_energy=0.;
             for(int s = NsGlD; s <= NsGuD; s++) {
-                            messageStream << plasma->species(s).name << "   N :" << scalarValues.particle_number[s-1]  << "  Kinetic Energy : " << scalarValues.kinetic_energy[s-1] ;
+                            messageStream << "         | " << 
+
+                             plasma->species(s).name << "   N : " << scalarValues.particle_number[s-1]  << "  Kinetic Energy: " << scalarValues.kinetic_energy[s-1] ;
                             messageStream << "   Particle Flux :" << scalarValues.particle_flux[s-1]    << "  Heat Flux : " << scalarValues.heat_flux[s-1] << std::endl;
                             charge += plasma->species(s).q  * scalarValues.particle_number[s-1];
                             kinetic_energy += scalarValues.kinetic_energy[s-1];
             }
-            messageStream << std::endl << "------------------------------------------------------------------" <<
-                                        std::endl << "Total Energy " << kinetic_energy+scalarValues.phiEnergy + scalarValues.ApEnergy + scalarValues.BpEnergy << "    Total Charge = " << ((plasma->species(0).n0 != 0.) ? 0. : charge) << std::endl;  
+            messageStream << //"------------------------------------------------------------------" <<
+                "         |  Total Energy " << kinetic_energy+scalarValues.phiEnergy + scalarValues.ApEnergy + scalarValues.BpEnergy << "    Total Charge = " << ((plasma->species(0).n0 != 0.) ? 0. : charge) 
+                << std::endl;  
             parallel->print(messageStream.str());
       
       }

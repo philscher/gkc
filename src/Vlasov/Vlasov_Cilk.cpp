@@ -29,7 +29,7 @@ VlasovCilk::VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *
 }
 
 
-int VlasovCilk::solve(std::string equation_type, Fields *fields, Array6C _fs, Array6C _fss, double dt, int rk_step, const double rk[3], int user_boundary_type) 
+int VlasovCilk::solve(std::string equation_type, Fields *fields, Array6C _fs, Array6C _fss, double dt, int rk_step, const double rk[3]) 
 {
   if(0);
   else if(equation_type == "Vlasov_EM") Vlasov_EM((A6zz) _fs.dataZero(), (A6zz) _fss.dataZero(), (A6zz) f0.dataZero(), (A6zz) f.dataZero(), (A6zz) ft.dataZero(), 
@@ -43,27 +43,51 @@ int VlasovCilk::solve(std::string equation_type, Fields *fields, Array6C _fs, Ar
 }
 
 
-void VlasovCilk::calculatePoissonBracket(CComplex Xi        [NzLB][NkyLD][NxLB][NvLB ],
-                                         CComplex  f [NsLD][NmLD ][NzLB][NkyLD][NxLB][NvLB],
+/*
+struct my_float {
+          float number;
+}  __attribute__((aligned(0x1000)));
+}
+ my_float a[4] = { ...} 
+ aligned them all
+
+Nice stuff http://stackoverflow.com/questions/841433/gcc-attribute-alignedx-explanation
+           http://stackoverflow.com/questions/3876758/working-around-the-char-array-on-stack-align-problem
+           godd bless sof
+
+*/
+
+
+// take care, for electro-static simulations, G & Xi are null pointers (for e-m f&phi respectively)
+void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][NkyLD][NxLB  ][NvLB],  // in case of e-m
+                                         const CComplex Xi              [NzLB][NkyLD][NxLB+4][NvLB],  // in case of e-m
+                                         const CComplex  f [NsLD][NmLD ][NzLB][NkyLD][NxLB  ][NvLB],  // in case of e-s
+                                         const CComplex phi[NsLD][NmLD ][NzLB][NkyLD][NxLB+4],        // in case of e-s
                                          const int z, const int m, const int s,
-                                         CComplex ExB[NxLD][NkyLD][NvLD], double Xi_max[3])
+                                         CComplex ExB[NkyLD][NxLD][NvLD], double Xi_max[3], const bool electroMagnetic)
 {
    // phase space function & Poisson bracket
-   const double fft_Norm = fft->Norm_Y_Backward * fft->Norm_Y_Backward * fft->Norm_Y_Forward;
+   const double _kw_fft_Norm = 1./(fft->Norm_Y_Backward * fft->Norm_Y_Backward * fft->Norm_Y_Forward);
 
+//   std::cout << "norm  : " << std::setprecision(9) << _kw_fft_Norm;
    // align arrays, allocate on stack, (TAKE care of stackoverflow, if happens allocated
    // dynamically with alloc in Constructor)
    // Speed should not be a concern, as allocation happends instantenously 
    // however, check this, what about alignement ?
+   // how to deal with indexes ?
+   // from stackoverflow guru : http://stackoverflow.com/questions/161053/c-which-is-faster-stack-allocation-or-heap-allocation
+   // Stack is hot, as it probably resides direclty in cache. Good. 
+   // Hope stackoverflow is right and we dont get a stackoverflow...
    CComplex  xky_Xi [NkyLD][NxLD+8];
    CComplex  xky_f1 [NkyLD][NxLD+4];
    CComplex  xky_ExB[NkyLD][NxLD  ];
 
-   double    xy_Xi    [NkyLD][NxLD+8];
-   double    xy_dXi_dy[NyLD] [NxLD+8];
-   double    xy_dXi_dx[NyLD] [NxLD+8];
-   double    xy_f1    [NyLD] [NxLD+4];
-   double    xy_ExB   [NyLD] [NxLD  ];
+   // having different extend suckz, sorry
+   double    xy_Xi    [NyLD+8][NxLD+8]; // extended BC 
+   double    xy_dXi_dy[NyLD+4][NxLD+4]; // normal BC
+   double    xy_dXi_dx[NyLD+4][NxLD+4];
+   double    xy_f1    [NyLD+4][NxLD+4];
+   double    xy_ExB   [NyLD  ][NxLD  ];
 
    const double _kw_12_dx = 1./(12.*dx), _kw_12_dy=1./(12.*dy);
    const double _kw_24_dx = 1./(24.*dx), _kw_24_dy=1./(24.*dy);
@@ -71,63 +95,74 @@ void VlasovCilk::calculatePoissonBracket(CComplex Xi        [NzLB][NkyLD][NxLB][
    // stride is not good
    for(int v=NvLlD; v<=NvLuD;v++) { 
 
-        // Transform Xi to real space   
-        xky_Xi[:][:] = Xi[z][NkyLlD:NkyLD][NxLlD-4:NxLD+8][v];
+        // Transform Xi to real space  
         
-        fft->solve(FFT_BACKWARD, FFT_Y_FIELDS, (CComplex *) xky_Xi, xy_Xi);
+        // In case of electro-static simulations Xi[x][k_y] and no v-dependence
+        // for electro-static field this has to be calculated only once
+        if(electroMagnetic || (v == NvLlD)) {
+
+        if(electroMagnetic) xky_Xi[:][:] =  Xi      [z][NkyLlD:NkyLD][NxLlD-4:NxLD+8][v];
+        else                xky_Xi[:][:] = phi[s][m][z][NkyLlD:NkyLD][NxLlD-4:NxLD+8]   ;
        
-        // Boundary in Y (In X is not necessary as we transformed it too)
-        xy_Xi[NkyLuD+1:2][NxLB+1] =  xy_Xi[NyLlD  :2][NxLB+1];
-        xy_Xi[NkyLlD-1:2][NxLB+1] =  xy_Xi[NyLuD-1:2][NxLB+1];
+        // boundary sucks
+        fft->solve(FFT_Y_FIELDS, FFT_BACKWARD, (CComplex *) xky_Xi, &xy_Xi[4][0]);
+       
+        // Boundary in Y (in X is not necessary as we transform it too)
+        xy_Xi[0     :4][:] =  xy_Xi[NyLD-1:4][:];
+        xy_Xi[NyLD+3:4][:] =  xy_Xi[4:4     ][:];
 
-        // perform CD-4 derivative for dphi_dx , and dphi_dy
-        omp_for(int y=NyLlD-2; y<= NyLuD+2;y++) { simd_for(int x=NxLlD-2; x<= NxLuD+2;x++)  {
+        // perform CD-4 derivative for dphi_dx , and dphi_dy (Note, we have extendend GC in X&Y)
+        omp_for(int y=2; y< NyLD+6;y++) { simd_for(int x=2; x< NyLD+6;x++)  {
 
-         xy_dXi_dx[y][x] = (8.*(xy_Xi[y][x+1] - xy_Xi[y][x-1]) - (xy_Xi[y][x+2] - xy_Xi[y][x-2])) * _kw_12_dx;
-         xy_dXi_dy[y][x] = (8.*(xy_Xi[y+1][x] - xy_Xi[y-1][x]) - (xy_Xi[y+2][x] - xy_Xi[y-2][x])) * _kw_12_dy;
+         xy_dXi_dx[y-2][x-2] = (8.*(xy_Xi[y][x+1] - xy_Xi[y][x-1]) - (xy_Xi[y][x+2] - xy_Xi[y][x-2])) * _kw_12_dx;
+         xy_dXi_dy[y-2][x-2] = (8.*(xy_Xi[y+1][x] - xy_Xi[y-1][x]) - (xy_Xi[y+2][x] - xy_Xi[y-2][x])) * _kw_12_dy;
             
 
         } } 
         
-
         // get maximum value to calculate CFL condition 
         // OPTIM : (is there sec_reduce_max_abs ? if not create)
         Xi_max[DIR_Y] = max(Xi_max[DIR_Y], max(__sec_reduce_max(xy_dXi_dx[:][:]), -__sec_reduce_min(xy_dXi_dx[:][:])));
         Xi_max[DIR_X] = max(Xi_max[DIR_X], max(__sec_reduce_max(xy_dXi_dy[:][:]), -__sec_reduce_min(xy_dXi_dy[:][:])));
         
-        // for electro-static field this has to be calculated only once
 
-        xky_f1[:][:] = f[s][m][z][NkyLlD:NkyLD][NxLlB:NxLB][v];
-        fft->solve(FFT_BACKWARD, FFT_Y_PSF, (CComplex *) xky_f1, xy_f1);
+        }
+
+        if(electroMagnetic) xky_f1[:][:] = G      [z][NkyLlD:NkyLD][NxLlB:NxLB][v];
+        else                xky_f1[:][:] = f[s][m][z][NkyLlD:NkyLD][NxLlB:NxLB][v];
+
+        fft->solve(FFT_Y_PSF, FFT_BACKWARD, (CComplex *) xky_f1, &xy_f1[2][0]);
 
         // Boundary in Y (In X is not necessary as we transformed it too), take care of FFT-boundary conditions
-        xy_f1[NkyLuD+1:2][NxLB+1] =  xy_f1[NyLlD  :2][NxLB+1];
-        xy_f1[NkyLlD-1:2][NxLB+1] =  xy_f1[NyLuD-1:2][NxLB+1];
-         
-       
-     /////////////////   calculate cross terms using Morinishi scheme (Arakawa type)  [ phi, F1]  /////////////////////
-     omp_for(int y=NyLlD; y<=NyLuD;y++) { simd_for(int x= NxLlD; x <= NxLuD; x++) {
+        xy_f1[NyLD+1:2][:] =  xy_f1[2     :2][:];
+        xy_f1[0     :2][:] =  xy_f1[NyLD-1:2][:];
 
-            const double dXi_dy__dG_dx =  ( 8.* ( (  xy_dXi_dy[y][x] + xy_dXi_dy[y][x+1]) * xy_f1[y][x+1]) 
-                                                 - ( xy_dXi_dy[y][x] + xy_dXi_dy[y][x-1]) * xy_f1[y][x-1])
-                                            - (  ( ( xy_dXi_dy[y][x] + xy_dXi_dy[y][x+2]) * xy_f1[y][x+2]) 
-                                            -      ( xy_dXi_dy[y][x] + xy_dXi_dy[y][x-2]) * xy_f1[y][x-2]) * _kw_24_dx     ;
+     /////////////////   calculate cross terms using Morinishi scheme (Arakawa type) [Xi,G] (or [phi,F1])  /////////////////////
+      
+     omp_for(int y=2; y < NyLD+2;y++) { simd_for(int x=2; x < NxLD+2; x++) {
+
+            const double dXi_dy__dG_dx =  ( 8. * ( (xy_dXi_dy[y][x] + xy_dXi_dy[y][x+1]) * xy_f1[y][x+1]
+                                                 - (xy_dXi_dy[y][x] + xy_dXi_dy[y][x-1]) * xy_f1[y][x-1])
+                                            -    ( (xy_dXi_dy[y][x] + xy_dXi_dy[y][x+2]) * xy_f1[y][x+2]
+                                                 - (xy_dXi_dy[y][x] + xy_dXi_dy[y][x-2]) * xy_f1[y][x-2]) ) * _kw_24_dx;
             
-            const double dXi_dx__dG_dy =  ( 8.* ( (  xy_dXi_dx[y][x] + xy_dXi_dx[y+1][x]) * xy_f1[y+1][x]) 
-                                                 - ( xy_dXi_dx[y][x] + xy_dXi_dx[y-1][x]) * xy_f1[y-1][x])
-                                            - (  ( ( xy_dXi_dx[y][x] + xy_dXi_dx[y+2][x]) * xy_f1[y+2][x]) 
-                                            -      ( xy_dXi_dx[y][x] + xy_dXi_dx[y-2][x]) * xy_f1[y-2][x]) * _kw_24_dy     ;
+            const double dXi_dx__dG_dy =  ( 8. * ( (xy_dXi_dx[y][x] + xy_dXi_dx[y+1][x]) * xy_f1[y+1][x]
+                                                 - (xy_dXi_dx[y][x] + xy_dXi_dx[y-1][x]) * xy_f1[y-1][x])
+                                            -    ( (xy_dXi_dx[y][x] + xy_dXi_dx[y+2][x]) * xy_f1[y+2][x] 
+                                                 - (xy_dXi_dx[y][x] + xy_dXi_dx[y-2][x]) * xy_f1[y-2][x]) ) * _kw_24_dy;
             
-            // Take care of normalization : A*sqrt(N) * B*sqrt(N) 
-            xy_ExB[y][x]  = (dXi_dy__dG_dx - dXi_dx__dG_dy)/fft_Norm;
+            // Take care of Fourier normalization : A*sqrt(N) * B*sqrt(N) 
+           xy_ExB[y-2][x-2]  = -(dXi_dy__dG_dx - dXi_dx__dG_dy) * _kw_fft_Norm;
       } } // x,y
    
-      fft->solve(FFT_FORWARD, FFT_Y_NL, xy_ExB, (CComplex *) xky_ExB);
+      fft->solve(FFT_Y_NL, FFT_FORWARD, xy_ExB, (CComplex *) xky_ExB);
 
       // Done - stores the non-linear terms ExB
-      ExB[:][:][v] = xky_ExB[:][:];
+      // large stride ... fuck ...
+      ExB[NkyLlD:NkyLD][NxLlD:NxLD][v] = xky_ExB[:][:];
+
    }
-   
+  
     
    return;
 
@@ -140,7 +175,7 @@ void VlasovCilk::setupXiAndG(
                            const CComplex phi [NsLD][NmLD ][NzLB][NkyLD][NxLB+4],
                            const CComplex Ap  [NsLD][NmLD ][NzLB][NkyLD][NxLB+4],
                            const CComplex Bp  [NsLD][NmLD ][NzLB][NkyLD][NxLB+4],
-                           CComplex Xi        [NzLB][NkyLD][NxLB][NvLB ],
+                           CComplex Xi        [NzLB][NkyLD][NxLB+4][NvLB ],
                            CComplex G         [NzLB][NkyLD][NxLB][NvLB ],
                            const double V[NvGB], const double M[NmGB],
                            const int m, const int s) 
@@ -181,17 +216,17 @@ void VlasovCilk::setupXiAndG(
 
 
 void VlasovCilk::Vlasov_EM(
-                           CComplex   g       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB], // Current step phase-space function
-                           CComplex   h      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Phase-space function for next step
+                                 CComplex g  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB], // Current step phase-space function
+                                 CComplex h  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Phase-space function for next step
                            const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                                 CComplex ft [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                            const CComplex Ap [NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                            const CComplex Bp [NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           CComplex Xi                    [NzLB][NkyLD][NxLB][NvLB],
-                           CComplex G                     [NzLB][NkyLD][NxLB][NvLB],
-                           CComplex ExB                         [NkyLD][NxLB][NvLB],
+                                 CComplex Xi             [NzLB][NkyLD][NxLB+4][NvLB],
+                                 CComplex G              [NzLB][NkyLD][NxLB  ][NvLB],
+                                 CComplex ExB                  [NkyLD][NxLD  ][NvLB],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3])
 { 
@@ -214,16 +249,16 @@ void VlasovCilk::Vlasov_EM(
       
 
       for(int m=NmLlD; m<= NmLuD;m++) { 
- 
+
+          // Calculate before z loop as we use dg_dz and dXi_dz derivative
           setupXiAndG(g, f0 , phi, Ap, Bp, Xi, G, V, M, m , s);
        
-         // calculate for estimation of CFL condition
          for(int z=NzLlD; z<= NzLuD;z++) { 
            
            
-         // rk_step == 0 for eigenvalue calculations
-         if(nonLinear && (rk_step == 0)) calculatePoissonBracket(Xi, g, s, m, z, ExB, Xi_max); 
-         // what about parallel non-linearity ?     
+         // calculate non-linear term (rk_step == 0 for eigenvalue calculations)
+         // CFL condition is calculated inside calculatePoissonBracket
+         if(nonLinear && (rk_step != 0)) calculatePoissonBracket(G, Xi, g, phi, z, m, s, ExB, Xi_max, true); 
            
          omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
            
@@ -270,15 +305,16 @@ void VlasovCilk::Vlasov_EM(
         
         const CComplex dg_dt = 
             
-          Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - sub)) * f0_ * Xi_ * ky           // Driving Term
-          - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0) * 
-            (geo->Kx(x,z) * dG_dx - geo->Ky(x,z) * ky * G_)                                   // Magnetic curvature term
-          //- alpha * pow2(V[v]) * plasma->beta * plasma->w_p * G_ * ky
-          -  CoJB *  alpha * V[v]* dG_dz                                                      // Landau damping term
-          + alpha  / 2. * M[m] * geo->dB_dz(x,z) * dg_dv                                     // Magnetic mirror term    
+                ExB[y_k][x][v]                                                                 // Non-linear ( array is zero for linear simulations) 
+          + Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - sub)) * f0_ * Xi_ * ky         // Driving Term
+          - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0) *                                   
+            (geo->Kx(x,z) * dG_dx - geo->Ky(x,z) * ky * G_)                                    // Magnetic curvature term
+          //- alpha * pow2(V[v]) * plasma->beta * plasma->w_p * G_ * ky                        // Plasma pressure gradient
+          -  CoJB *  alpha * V[v]* dG_dz                                                       // Landau damping term
+          + alpha  / 2. * M[m] * geo->dB_dz(x,z) * dg_dv                                       // Magnetic mirror term    
           + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * geo->Kx(x,z) * 
           ((w_n + w_T * (pow2(V[v]) + M[m] * B0)/Temp - sub) * dG_dx + sigma * dphi_dx * f0_); // ??
-           + collisionBeta  * (g_  + alpha * V[v] * dg_dv + v2_rms * ddg_dvv);               // Lennard-Bernstein Collision term
+           + collisionBeta  * (g_  + alpha * V[v] * dg_dv + v2_rms * ddg_dvv);                 // Lennard-Bernstein Collision term
 
           
         //////////////////////////// Vlasov End ////////////////////////////

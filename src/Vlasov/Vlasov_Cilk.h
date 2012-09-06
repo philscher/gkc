@@ -52,10 +52,12 @@ class VlasovCilk : public Vlasov {
    *
    *
    **/
-  void calculatePoissonBracket(CComplex Xi[NzLB][NkyLD][NxLB][NvLB ],
-                               CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                               const int z, const int m, const int s,
-                               CComplex NL[NxLD][NkyLD][NvLD], double Xi_max[3]);
+   void calculatePoissonBracket(const CComplex  G              [NzLB][NkyLD][NxLB  ][NvLB],   // in case of e-m
+                                const CComplex Xi              [NzLB][NkyLD][NxLB+4][NvLB],   // in case of e-m
+                                const CComplex  f [NsLD][NmLD ][NzLB][NkyLD][NxLB  ][NvLB],   // in case of e-s
+                                const CComplex phi[NsLD][NmLD ][NzLB][NkyLD][NxLB+4]      ,   // in case of e-s
+                                const int z, const int m, const int s                     ,
+                                CComplex ExB[NkyLD][NxLD][NvLD], double Xi_max[3], const bool electroMagnetic);
 
 
    /**
@@ -143,7 +145,7 @@ class VlasovCilk : public Vlasov {
    *    Please Document Me !
    *
    **/
-   virtual int solve(std::string equation_tyoe, Fields *fields, Array6C fs, Array6C fss, double dt, int rk_step, const double rk[3], int user_boundary_type=BOUNDARY_CLEAN);
+   virtual int solve(std::string equation_tyoe, Fields *fields, Array6C fs, Array6C fss, double dt, int rk_step, const double rk[3]);
    
  
   protected :

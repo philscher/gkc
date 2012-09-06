@@ -35,7 +35,7 @@ VlasovOptim::VlasovOptim(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO
 }
 
 
-int VlasovOptim::solve(std::string equation_type, Fields *fields, Array6C _fs, Array6C _fss, double dt, int rk_step, const double rk[3], int user_boundary_type) 
+int VlasovOptim::solve(std::string equation_type, Fields *fields, Array6C _fs, Array6C _fss, double dt, int rk_step, const double rk[3]) 
 {
  
   if((equation_type == "2D_ES")) {

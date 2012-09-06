@@ -34,9 +34,8 @@ ft(GKCStorage), G(GKCStorage4), Xi(GKCStorage4),    f1(GKCStorage), nonLinearTer
    allocate(RxLD, RkyLD, RB  , RvLD, RmLD, RsLD, SendZu, SendZl, RecvZu, RecvZl);
    allocate(RxLD, RkyLD, RzLD, RB  , RmLD, RsLD, SendVu, SendVl, RecvVu, RecvVl);
 
-   equation_type       = setup->get("Vlasov.Equation", "2D_ES");        
-   nonLinear = setup->get("Vlasov.NonLinear", 0);
-
+   equation_type       = setup->get("Vlasov.Equation" , "2D_ES");        
+   nonLinear           = setup->get("Vlasov.NonLinear", 0      );
 
    std::string dir_string[] = { "X", "Y", "Z", "V", "M", "S" };
    
@@ -44,8 +43,6 @@ ft(GKCStorage), G(GKCStorage4), Xi(GKCStorage4),    f1(GKCStorage), nonLinearTer
    for(int dir = DIR_X ; dir <= DIR_S ; dir++) hyper_visc[dir] = setup->get("Vlasov.HyperViscosity." + dir_string[dir]   ,  0.0);
        
    
-   // needed for CFL condition
-   //Xi_max.resize(Range(DIR_X, DIR_Z)); Xi_max = 0.;
    collisions = new Collisions(grid, parallel, setup, fileIO, geo, fft);
     
 }
@@ -62,7 +59,7 @@ int Vlasov::solve(Fields *fields, Array6C  _fs, Array6C  _fss, double dt, int rk
 {
 
    // use static function
-   
+   useNonBlockingBoundary = false; 
    // Need boundary_isclean to avoid deadlock at first iteration
    if((boundary_isclean == false) && useNonBlockingBoundary) setBoundary(f_boundary, BOUNDARY_RECV);
   
@@ -114,7 +111,7 @@ void Vlasov::setBoundary(Array6C A, int boundary_type)
    // Z-Boundary 
    if(Nz > 1) for(int x=NxLlD; x<= NxLuD;x++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
            
-            const Complex a = newComplex(0., 2. * M_PI * (2.* M_PI/Ly) * y_k);
+            //const Complex a = newComplex(0., 2. * M_PI * (2.* M_PI/Ly) * y_k);
             
             SendZl[:][:][:][:][y_k][x-3] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD  :2][y_k][x][NvLlD:NvLD]; //* exp( ((NzLlD == NzGlD) ? a : 0. ) *geo->nu(x));
             SendZu[:][:][:][:][y_k][x-3] = g[NsLlD:NsLD][NmLlD:NmLD][NzLuD-1:2][y_k][x][NvLlD:NvLD]; //* (exp(-((Complex) ((NzLlD == NzGlD) ? a : 0.) * geo->nu(x)))));
@@ -179,56 +176,6 @@ void Vlasov::setBoundary(Array6C A, int boundary_type)
 
 
 
-/* 
-void Vlasov::setBoundary(Array6C  A , int boundary_type) {
-
-   // We do not need to communicate for M and S as we do not have boundary cells
-   
-   // X-Boundary
-   SendXl(RB, RkyLD, RzLD, RvLD, RmLD, RsLD) = A(Range(NxLlD  , NxLlD+1), RkyLD, RzLD, RvLD, RmLD, RsLD);
-   SendXu(RB, RkyLD, RzLD, RvLD, RmLD, RsLD) = A(Range(NxLuD-1, NxLuD  ), RkyLD, RzLD, RvLD, RmLD, RsLD);
-   parallel->updateNeighbours(SendXu, SendXl, RecvXu, RecvXl, DIR_X);
-  
-   // Y-Boundary not required
-
-   // Z-Boundary 
-   if(Nz > 1)  for(int x=NxLlD; x<= NxLuD;x++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
-           
-            const Complex a = newComplex(0., 2. * M_PI * (2.* M_PI/Ly) * y_k);
-
-            SendZl(x, y_k, RB, RvLD, RmLD, RsLD) = A(x, y_k, Range(NzLlD  , NzLlD+1), RvLD, RmLD, RsLD) * exp( ((NzLlD == NzGlD) ? a : 0. ) *geo->nu(x));
-            SendZu(x, y_k, RB, RvLD, RmLD, RsLD) = A(x, y_k, Range(NzLuD-1, NzLuD  ), RvLD, RmLD, RsLD) * exp(-((NzLuD == NzGuD) ? a : 0. ) *geo->nu(x));
-
-  } }
-
-   parallel->updateNeighbours(SendZu, SendZl, RecvZu, RecvZl, DIR_Z);
-  
-
-   // Decomposition in velocity is rather unlikely, so ingore (for now) 
-   if(parallel->decomposition[DIR_V] > 1) {
-#ifdef GKC_PARALLEL_MPI
-      SendVl(RxLD, RkyLD,  RzLD, RB, RmLD, RsLD) = A(RxLD, RkyLD, RzLD, Range(NvLlD  , NvLlD+1), RmLD, RsLD);
-      SendVu(RxLD, RkyLD,  RzLD, RB, RmLD, RsLD) = A(RxLD, RkyLD, RzLD, Range(NvLuD-1, NvLuD  ), RmLD, RsLD);
-      parallel->updateNeighbours(SendVu, SendVl, RecvVu, RecvVl, DIR_V);
-#else
-      check(-1, DMESG("decompositionn in Y, but compiled without MPI support"));
-#endif 
-   } else {
-          //- alpha * pow2(V[v]) * plasma->beta * plasma->w_p * G_ * ky
-      A(RxLD, RkyLD, RzLD, Range(NvGlB  , NvGlB+1), RmLD, RsLD) = 0.e0;
-      A(RxLD, RkyLD, RzLD, Range(NvGuD+1, NvGuB  ), RmLD, RsLD) = 0.e0;
-   }
-
-   // For the Vlasov equation non-blocking IO is possible (Poisson eq. does not need boundary values)
-//   if      (boundary_type == BOUNDARY_CLEAN) cleanBoundary(A);
-//   else if (boundary_type == BOUNDARY_DIRTY) boundary_isclean = false;
-//   else    check(-1, DMESG("Vlasov : Only clean/dirty values are allowed"));
-
-   return;
-
-}
- * */
-        
 double Vlasov::getMaxTimeStep(int dir, const double maxCFL) 
 {
  // simplify !
@@ -305,30 +252,3 @@ void Vlasov::printOn(ostream &output) const
 };
 
 
-/* 
-void Vlasov::cleanBoundary(Array6C A)
-{
-   // now wait until MPI communication finished and arrays are updated
-   parallel->updateNeighboursBarrier();
-   
-   //Field[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlB-2:4][NvLlD:NvLD] = RecvXl[:][:][:][:][:][:];
-   //Field[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLuD+1:4][NvLlD:NvLD] = RecvXu[:][:][:][:][:][:];
-    
-   A(Range(NxLlB  , NxLlD-1), RkyLD, RzLD, RvLD, RmLD, RsLD) = RecvXl(RB, RkyLD, RzLD, RvLD, RmLD, RsLD);
-   A(Range(NxLuD+1, NxLuB  ), RkyLD, RzLD, RvLD, RmLD, RsLD) = RecvXu(RB, RkyLD, RzLD, RvLD, RmLD, RsLD);
-     
-   if(Nz > 1) {
-       A(RxLD, RkyLD, Range(NzLlB  , NzLlB+1), RvLD, RmLD, RsLD) = RecvZl(RxLD, RkyLD, RB, RvLD, RmLD, RsLD);
-       A(RxLD, RkyLD, Range(NzLuD+1, NzLuB  ), RvLD, RmLD, RsLD) = RecvZu(RxLD, RkyLD, RB, RvLD, RmLD, RsLD);
-   }
-
-   if(parallel->decomposition[DIR_V] > 1) {
-       A(RxLD, RkyLD, RzLD, Range(NvLlB  , NvLlB+1), RmLD, RsLD) = RecvVl(RxLD, RkyLD, RzLD, RB, RmLD, RsLD);
-       A(RxLD, RkyLD, RzLD, Range(NvLuD+1, NvLuB  ), RmLD, RsLD) = RecvVu(RxLD, RkyLD, RzLD, RB, RmLD, RsLD); 
-   }
-   
-   boundary_isclean = true;
-
-   return;
-}
- * */

@@ -109,7 +109,7 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
         //Total charge density
         double rho0_tot = 0.;
         for(int s = 0; s <= NsGuD; s++) rho0_tot += species(s).q * species(s).n0;
-        if(rho0_tot != 0.) check(setup->get("Plasma.checkTotalCharge", -1), DMESG("VIOLATING charge neutrality, check species q * n ! Exciting...")); 
+        if(rho0_tot > 1.e-9) check(setup->get("Plasma.checkTotalCharge", -1), DMESG("VIOLATING charge neutrality, check species q * n ! Exciting...")); 
 
 
 

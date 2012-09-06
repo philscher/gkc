@@ -182,10 +182,11 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(Complex max_abs_eigv)
 
 int TimeIntegration::writeTimeStep(Timing timing, Timing maxTiming, double dt) {
         
+  // should I use flush ? For many CPU maybe not good.
          if(parallel->myRank == 0) {
-                   std::cout << "\r"   << "Steps  : " << timing.step  << "/" << maxTiming.step 
-                   << "       Time : " << timing.time << "/" << maxTiming.time << "  dt  : " << dt 
-                   << std::flush;
+                   std::cout    << "\r" << "Steps  : " << timing.step  << "/" << maxTiming.step 
+                                        << "  Time : " << timing.time  << "/" << maxTiming.time <<
+                   std::setprecision(3) <<   "  dt : " << dt << std::flush; 
                   if(timing.step % 20 == 0)  std::cout << Timing::getRemainingTimeString(timing, maxTiming, start_time);
          }
 

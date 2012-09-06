@@ -41,7 +41,6 @@
 class Geometry2D : public Geometry
 {
   Array1R By;
-  std::string shear_str;
   std::string By_str;
 
 
@@ -130,7 +129,7 @@ class Geometry2D : public Geometry
 
 
    void printOn(ostream& output) const {
-         output   << "Geometry   |  Sheared Slab   By : " << By_str  << " Shear : " << shear_str << " Theta : "  <<  theta << std::endl;
+         output   << "Geometry   |  Sheared Slab   By : " << By_str  << " Shear : " << shear << " Theta : "  <<  theta << std::endl;
    };
 
    void initDataOutput(hid_t geometryGroup) {

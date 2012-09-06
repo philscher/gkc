@@ -20,20 +20,19 @@ void FFTSolver::setNormalizationConstants() {
 
 
    // find out normalization (assume constant normalization accors boundaries)
-        // Real -> Complex (Fourier sapce) transform
+        // Real -> Complex (Fourier space) transform
       rYIn(NxLlD, RyLD) = 1.;
       
-    solve(FFT_Y_NL, FFT_FORWARD, rYIn.data(), kYOut.data());
-   Norm_Y_Forward = real(kYOut(NxLlD, 0));      
+     solve(FFT_Y_NL, FFT_FORWARD, rYIn.data(), kYOut.data());
+     Norm_Y_Forward = real(kYOut(NxLlD, 0));      
 
 
-    // Complex (Fourier sapce) -> Real transform
-    kYIn(RxLD, RkyLD) = 0.; kYIn(NxLlD, NkyLlD) = 1.;
-    solve(FFT_Y_NL, FFT_BACKWARD, kYIn.data(), rYOut.data());
-   Norm_Y_Backward = rYOut(NxLlD, NyLlD);
-       
-
-
+     // Complex (Fourier sapce) -> Real transform
+     kYIn(RxLD, RkyLD) = 0.; kYIn(NxLlD, NkyLlD) = 1.;
+     solve(FFT_Y_NL, FFT_BACKWARD, kYIn.data(), rYOut.data());
+     Norm_Y_Backward = rYOut(NxLlD, NyLlD);
+    
+     std::cout << "Forward/Backward : " <<  Norm_Y_Backward << " " << Norm_Y_Forward << std::endl;
 
     // Real -> Complex (Fourier sapce) transform
    rXIn(RxLD, NkyLlD, NzLlD, 1) = 1.;

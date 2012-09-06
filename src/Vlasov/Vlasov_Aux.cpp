@@ -41,14 +41,14 @@ VlasovAux::VlasovAux(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fi
 }
 
 
-int VlasovAux::solve(std::string equation_type, Fields *fields, Array6C f_in, Array6C f_out, double dt, int rk_step, const double rk[3], int user_boundary_type) 
+int VlasovAux::solve(std::string equation_type, Fields *fields, Array6C f_in, Array6C f_out, double dt, int rk_step, const double rk[3]) 
 {
 
-  // do I need both ?
+  // do I need both, we can stick to e-m ? Speed penality ?
   if(equation_type == "ES")
 
       Vlasov_ES   ((A6zz) f_in.dataZero(), (A6zz) f_out.dataZero()      , (A6zz) f0.dataZero(), (A6zz) f.dataZero(), 
-                   (A6zz) ft.dataZero() , (A6zz) fields->Field.dataZero(), 
+                   (A6zz) ft.dataZero() , (A5zz) fields->phi.dataZero(), 
                    (A3zz) nonLinearTerms.dataZero(), X.dataZero(), V.dataZero(), M.dataZero(), dt, rk_step, rk);
 
   else if(equation_type == "EM")
@@ -78,8 +78,8 @@ void VlasovAux::Vlasov_ES(
                            const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex Fields[plasma->nfields][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           CComplex       NL                   [NkyLD][NxLD][NvLD],
+                           const CComplex phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           CComplex       NL                   [NkyLD][NxLD  ][NvLD],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3])
 { 
@@ -110,8 +110,8 @@ void VlasovAux::Vlasov_ES(
       
       for(int m=NmLlD; m<= NmLuD;m++) { for(int z=NzLlD; z<= NzLuD;z++) { 
       
-        // won't work as Xi is not calculated for electro-static simulations !
-        // if(nonLinear && (rk_step == 0)) calculatePoissonBracket(Xi, fs, s, m, z, ExB, Xi_max); 
+         // calculate non-linear term (rk_step == 0 for eigenvalue calculations)
+         if(nonLinear && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, phi, z, m, s, NL, Xi_max, false); 
        
 
       omp_for(int y_k=NkyLlD; y_k <= NkyLuD; y_k++) { 
@@ -123,8 +123,8 @@ void VlasovAux::Vlasov_ES(
        
            CComplex eta_kp2_phi = 0;
            if(isGyro1) { // first order approximation for gyro-kinetics
-//           const CComplex ddphi_dx_dx = (16. *(phi[s][m][z][y_k][x+1] + phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] + phi[s][m][z][y_k][x-2]) - 30.*phi[s][m][z][y_k][x]) * _kw_12_dx_dx;
-//           eta_kp2_phi                = 0.5 * w_T  * ( ky*ky * phi[s][m][z][y_k][x] + ddphi_dx_dx ); 
+             const CComplex ddphi_dx_dx = (16. *(phi[s][m][z][y_k][x+1] + phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] + phi[s][m][z][y_k][x-2]) - 30.*phi[s][m][z][y_k][x]) * _kw_12_dx_dx;
+             eta_kp2_phi                = 0.5 * w_T  * ( ky*ky * phi[s][m][z][y_k][x] + ddphi_dx_dx ); 
            }
              
            const CComplex kp = geo->get_kp(x, ky, z);
@@ -136,7 +136,7 @@ void VlasovAux::Vlasov_ES(
 
 
 
-             const CComplex phi_     = Fields[Field::phi][s][m][z][y_k][x];
+             const CComplex phi_     = phi[s][m][z][y_k][x];
              
              //updateCFL(dphi_dx, ky*phi_, 0.);
        
@@ -154,11 +154,11 @@ void VlasovAux::Vlasov_ES(
             ///////////////   The time derivative of the Vlasov equation      //////////////////////
        
             const CComplex dg_dt = 
-
-            ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])*kw_T  - sub)) * f0_ * phi_    // Driving term (Temperature/Density gradient)
-                + eta_kp2_phi * f0_ )                                             // Contributions from gyro-1 (0 if not neq Gyro-1)
-             - alpha  * V[v]* kp  * ( g + sigma * phi_ * f0_)                     // Linear Landau damping
-             + collisionBeta  * (g  + alpha * V[v] * dfs_dv + v2_rms * ddfs_dv);  // Lennard-Bernstein Collision term
+                NL[y_k][x][v]                                                         // Non-linear ( array is zero for linear simulations) 
+             +  ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])*kw_T  - sub)) * f0_ * phi_    // Driving term (Temperature/Density gradient)
+             +  eta_kp2_phi * f0_ )                                                   // Contributions from gyro-1 (0 if not neq Gyro-1)
+             -  alpha  * V[v]* kp  * ( g + sigma * phi_ * f0_)                        // Linear Landau damping
+             +  collisionBeta  * (g  + alpha * V[v] * dfs_dv + v2_rms * ddfs_dv);     // Lennard-Bernstein Collision term
          
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         
@@ -206,7 +206,8 @@ void VlasovAux::Vlasov_2D_Island(
 
       for(int m=NmLlD; m<=NmLuD; m++) {
 
-       //if(calculate_nonLinear && (rk_step != 0)) calculatePoissonBracket(fields->Ap, _fs,m, s);
+         // calculate non-linear term (rk_step == 0 for eigenvalue calculations)
+         //if(nonLinear && (rk_step != 0)) calculatePoissonBracket(G, Xi, g, phi, z, m, s, ExB, Xi_max, true); 
 
       for(int z=NzLlD; z<= NzLuD;z++) {  omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
 
@@ -354,7 +355,7 @@ void VlasovAux::Vlasov_EM(
                            const CComplex Ap [NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
                            const CComplex Bp [NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
                            CComplex    nonLinear               [NkyLD][NxLD  ][NvLD],
-                           CComplex Xi       [NzLB][NkyLD][NxLB][NvLB],
+                           CComplex Xi       [NzLB][NkyLD][NxLB+4][NvLB],
                            CComplex G        [NzLB][NkyLD][NxLB][NvLB],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3])

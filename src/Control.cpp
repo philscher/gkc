@@ -125,10 +125,6 @@ void Control::setSignalHandler() {
 
 
 
-
-
-
-
 };
 
 
@@ -145,17 +141,17 @@ bool Control::checkOK(Timing timing, Timing maxTiming) {
       // check for some physical limits exceeded
       double phiEnergy, ApEnergy, BpEnergy;
       analysis->getFieldEnergy(phiEnergy, ApEnergy, BpEnergy);
-//      cntrl.check(phiEnergy <= maxElectricEnergy , "(2) Kinetic Energy is over Maximum");
-      cntrl.check( phiEnergy <= maxElectricEnergy, "(2) Electric Energy is over Maximum");
-      //cntrl.check( ApEnergy <= maxElectricEnergy, "(2) Electric Energy is over Maximum");
-//      cntrl.check( BpEnergy <= maxMagneticEnergy, "(2) Magnetic Energy is over Maximum");
+      
+      cntrl.check( phiEnergy <= maxElectricEnergy, "(2) Electric Energy is over Maximum"     );
+      //cntrl.check( ApEnergy  <= maxApEnergy      , "(2) Magnetic (Ap) Energy is over Maximum");
+      //cntrl.check( BpEnergy  <= maxMagneticEnergy, "(2) Magnetic (Bp) Energy is over Maximum");
       
       // check Signals
-      cntrl.check(!(control_triggered_signal & SIGINT ), "(3) Interrupted by SIGINT");
+      cntrl.check(!(control_triggered_signal & SIGINT ), "(3) Interrupted by SIGINT" );
       cntrl.check(!(control_triggered_signal & SIGTERM), "(3) Interrupted by SIGTERM");
       cntrl.check(!(control_triggered_signal & SIGUSR1), "(3) Interrupted by SIGUSR1");
       cntrl.check(!(control_triggered_signal & SIGUSR2), "(3) Interrupted by SIGUSR2");
-      cntrl.check(!(control_triggered_signal & SIGFPE), "(3) Interrupted by SIGUSR2");
+      cntrl.check(!(control_triggered_signal & SIGFPE ), "(3) Interrupted by SIGUSR2");
 
 
       // FIXME no bool datatype available 

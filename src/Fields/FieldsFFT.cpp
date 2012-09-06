@@ -175,7 +175,6 @@ void FieldsFFT::gyroFull(Array4C In, Array4C Out,
                          CComplex kXIn [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
                          const int m, const int s, const bool gyroFields)  
 {
-   //wtf if(!(do_gyro && (parallel->Coord(DIR_V) == 0) && plasma->species(s).doGyro)) Out=In;
    
    // Test if gyro-field is OK !     
    fft->solve(FFT_X_FIELDS, FFT_FORWARD, In.data());
