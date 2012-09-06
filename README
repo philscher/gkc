@@ -4,7 +4,7 @@
       
      * Various geometries (sheared, shearless, toroidal)
      * multiple species support 
-     * fully electro-magnetic code (warning untested)  
+     * fully electromagnetic code (warning untested)  
      * Interfaces for various field and Vlasov solvers
      * Preliminary support for global simulations
      * 3-stage parallelization (Vectorization, OpenMP and MPI) 
@@ -25,7 +25,7 @@
         The Parallel class provides an abstraction for most MPI function, 
         thus direct calls to MPI functions are not necessary. Function 
         overloading is provided to achieve a common interface.
-        Current vectorization is optimzed for AVX instruction set.
+        Current vectorization is optimized for AVX instruction set.
         
    
      Notes on data output :
