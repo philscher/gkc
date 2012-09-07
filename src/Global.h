@@ -45,11 +45,8 @@ typedef _Complex double      Complex;
 typedef double               Real   ;
 inline Real abs(Complex A) { return 1.; };
 inline Complex exp(Complex A) { return 1.; };
+//#define newComplex(A,B) (A + B)
 
-//#define newComplex(A,B) A + B * I
-//#define _Complex_I ((double _Complex){0, 1})
-#define newComplex(A,B) (A + B)
-//#define Complex(A,B) (A + B)
 #else
 #include <complex>
 typedef std::complex<double> Complex;  
@@ -89,14 +86,16 @@ using namespace blitz;
  *
  *   HANDLE WITH CARE !
  **/
-#define omp_for  _Pragma("omp parallel for") for
+#define omp_for     _Pragma("omp parallel for") for
+// warning This is an OpenMP 3.0 function, is it possible to check for it ? (_OPENMP)
+#define omp_for_C2  _Pragma("omp parallel for collapse(2)") for
+#define omp_for_C3  _Pragma("omp parallel for collapse(3)") for
+// for vectorization support, see 
 #define simd_for _Pragma("simd") for
 
 
 
 // DIR_SIZE has to be the number of elements, excluding DIR_SIZE
-//enum Direction : int {DIR_X=0, DIR_Y, DIR_Z, DIR_V, DIR_M, DIR_S, DIR_ALL, DIR_XYZ, DIR_VMS, DIR_MS, DIR_FFT, DIR_YZVMS, DIR_VM, DIR_YZ, DIR_XYZVM, DIR_XY, DIR_XMS, DIR_XM, DIR_SIZE};
-///enum Direction : int {DIR_X=0, DIR_Y, DIR_Z, DIR_V, DIR_M, DIR_S, DIR_ALL, DIR_XYZ, DIR_VMS, DIR_MS, DIR_VM, DIR_XYZVM, DIR_XY, DIR_XMS, DIR_XM, DIR_SIZE};
 enum Direction : int {DIR_X=0, DIR_Y, DIR_Z, DIR_V, DIR_M, DIR_S, DIR_ALL, DIR_XYZ, DIR_VMS, DIR_MS, DIR_VM, DIR_XY, DIR_XYZVM, DIR_SIZE};
 
       

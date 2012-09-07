@@ -252,8 +252,10 @@ void VlasovCilk::Vlasov_EM(
 
           // Calculate before z loop as we use dg_dz and dXi_dz derivative
           setupXiAndG(g, f0 , phi, Ap, Bp, Xi, G, V, M, m , s);
-       
-         for(int z=NzLlD; z<= NzLuD;z++) { 
+      
+          // Nested Parallelism (PoissonBracket variables are allocated on stack)
+          // Cannot collapse as we have no perfetly nested loops
+         omp_for(int z=NzLlD; z<= NzLuD;z++) { 
            
            
          // calculate non-linear term (rk_step == 0 for eigenvalue calculations)
@@ -270,7 +272,7 @@ void VlasovCilk::Vlasov_EM(
             const CComplex ky = (CComplex (0. + 1.j)) * fft->ky(y_k);
 
      
-      for(int v=NvLlD; v<= NvLuD;v++) {
+      simd_for(int v=NvLlD; v<= NvLuD;v++) {
         
 
           
