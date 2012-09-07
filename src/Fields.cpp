@@ -140,9 +140,10 @@ void Fields::calculateChargeDensity(CComplex f0         [NsLD][NmLD][NzLB][NkyLD
    // In case of a full-f simulation the Maxwellian is subtracted
 
    // re-normalize with \f[ \hat{v}^3
-   const double pqnB_dvdm = M_PI * plasma->species(s).n0 * plasma->species(s).q   * plasma->B0 * dv * grid->dm(m) ;
+   //const double pqnB_dvdm = M_PI * plasma->species(s).n0 * plasma->species(s).q   * plasma->B0 * dv * grid->dm(m) ;
+   const double pqnB_dvdm = M_PI * plasma->species(s).q   * plasma->B0 * dv * grid->dm(m) ;
     
-   for(int z=NzLlD; z<= NzLuD;z++) {  omp_for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
+   omp_for_C2(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
               Field0[Q::rho][z][y_k][x] = ( __sec_reduce_add(f [s][m][z][y_k][x][NvLlD:NvLD]) 
                         - (plasma->global ? __sec_reduce_add(f0[s][m][z][y_k][x][NvLlD:NvLD]) : 0)) * pqnB_dvdm;
@@ -162,7 +163,7 @@ void Fields::calculateParallelCurrentDensity(CComplex f0[NsLD][NmLD][NzLB][NkyLD
   
    const double qa_dvdm = plasma->species(s).q * plasma->species(s).alpha  * plasma->B0 * M_PI * dv * grid->dm(m) ;
    
-   for(int z=NzLlD; z<= NzLuD;z++) {  omp_for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
+   omp_for_C2(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
                 Field0[Q::jp][z][y_k][x] = -__sec_reduce_add(V[NvLlD:NvLD] * f[s][m][z][y_k][x][NvLlD:NvLD]) * qa_dvdm;
 

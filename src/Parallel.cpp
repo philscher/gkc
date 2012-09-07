@@ -335,7 +335,8 @@ MPI_Op Parallel::getMPIOp(int op) {
 #ifdef GKC_PARALLEL_MPI
 MPI_Datatype Parallel::getMPIDataType(const std::type_info &T) {
     MPI_Datatype type=0;
-    if     (T == typeid(Complex)) type = MPI_DOUBLE_COMPLEX;
+    if     (T == typeid( Complex)) type = MPI_DOUBLE_COMPLEX;
+    else if(T == typeid(CComplex)) type = MPI_DOUBLE_COMPLEX;
     else if(T == typeid(double)) type = MPI_DOUBLE;
     else if(T == typeid(int   )) type = MPI_INT;
     else if(T == typeid(long long)) type = MPI_LONG_LONG;

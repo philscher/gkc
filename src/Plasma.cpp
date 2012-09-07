@@ -92,7 +92,9 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
                 species(s).n(x) = n_parser.Eval(&X(x));///sum(exp(-M));
                 species(s).T(x) = T_parser.Eval(&X(x));
                 } 
-            } else {
+            } 
+           
+            else {
                 species(s).w_T = setup->get(key + ".w_T", 0.0 );
                 species(s).w_n = setup->get(key + ".w_n", 0.0 );
                 species(s).n   = species(s).n0;
@@ -103,15 +105,16 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
 
         species(s).update(geo, cs);
 
+        std::cout << species(s).name << " n : " << species(s).n0 << " n(x)" << species(s).n << std::endl; 
+
       }   
 
         ////////////////////////   // make some simple checks
         //Total charge density
         double rho0_tot = 0.;
         for(int s = 0; s <= NsGuD; s++) rho0_tot += species(s).q * species(s).n0;
-        if(rho0_tot > 1.e-9) check(setup->get("Plasma.checkTotalCharge", -1), DMESG("VIOLATING charge neutrality, check species q * n ! Exciting...")); 
 
-
+        if(rho0_tot > 1.e-8) check(setup->get("Plasma.checkTotalCharge", -1), DMESG("VIOLATING charge neutrality, check species q * n and TOTAL_SPECIES! Exciting...")); 
 
        initDataOutput(fileIO);
 

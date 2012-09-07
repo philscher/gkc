@@ -3,16 +3,11 @@
  *
  *       Filename:  FileAttr.h
  *
- *    Description:  
+ *    Description: Wrapper for using HDF-5 with CArray
  *
- *        Version:  1.0
- *        Created:  05/08/2011 03:38:16 PM
- *       Revision:  none
- *       Compiler:  gcc
+ *         Author: Paul P. Hilscher (2010-), 
  *
- *         Author:  YOUR NAME (), 
- *        Company:  
- *
+ *        License: GPLv3+
  * =====================================================================================
  */
 
@@ -21,39 +16,45 @@
 
 class FileAttr
 {
+  
   void copy(hsize_t dim[], hsize_t dim_2[]) {for(int n=0;n<n_dim; n++) dim[n] = dim_2[n];};
-  int n_dim;
-  bool do_write;
-  hid_t      dset, plist, mspace, type_id;
-  std::string name;
-  hsize_t    dim[7], maxdim[7], chunkdim[7], offset[7]; 
+  int n_dim;                               ///< number of dimensions
+  hid_t      dataset_hdf,                  ///< HDF-5 Dataset identifiers
+             propery_hdf, 
+             memory_space_hdf, 
+             typeId_hdf; 
+  std::string name;                        ///< Name of array
+
+  hsize_t  dim[7],                         ///< Dimension of Array
+           maxdim[7],                      ///< Maximum dimnesion of array 
+           chunkdim[7],                    ///< Chunk size of current process 
+           offset[7];                      ///< (Boundary) Offset 
+  bool do_write;                           ///< Does process write to data
 
   public: 
 
-  FileAttr(std::string _name, hid_t group, int n_dim, hsize_t _dim[], hsize_t mdim[], hsize_t cdim[], hsize_t moffset[], hsize_t chunkBdim[], hsize_t _offset[],   bool _write, hid_t _type_id = H5T_NATIVE_DOUBLE) : n_dim(n_dim), do_write(_write), type_id(_type_id), name(_name)
+  FileAttr(std::string _name, hid_t group, int n_dim, hsize_t _dim[], hsize_t mdim[], hsize_t cdim[], hsize_t moffset[], hsize_t chunkBdim[], hsize_t _offset[],   
+           bool _write, hid_t _typeId_hdf = H5T_NATIVE_DOUBLE) : n_dim(n_dim), do_write(_write), typeId_hdf(_typeId_hdf), name(_name)
   {
      copy(dim, _dim); copy(maxdim, mdim); copy(chunkdim, cdim);
-
-     mspace = check( H5Screate_simple(n_dim, chunkBdim, NULL) , DMESG(name + " : Creating Memspace Failed"));
+    
+    
+     memory_space_hdf = check( H5Screate_simple(n_dim, chunkBdim, NULL) , DMESG(name + " : Creating Mememory_space_hdf Failed"));
      hsize_t  stride1[7] = { 1, 1, 1, 1, 1, 1, 1};
-     check(H5Sselect_hyperslab(mspace, H5S_SELECT_SET, moffset, stride1, chunkdim, NULL), DMESG(name + " : Selecting Memspace Hyperslab"));
-     if(do_write == false) H5Sselect_none(mspace);
+     check(H5Sselect_hyperslab(memory_space_hdf, H5S_SELECT_SET, moffset, stride1, chunkdim, NULL), DMESG(name + " : Selecting Mememory_space_hdf Hyperslab"));
+     if(do_write == false) H5Sselect_none(memory_space_hdf);
      
-     plist = H5P_DEFAULT; 
-#ifdef HELIOS_PARALLEL_MPI
-     plist = H5Pcreate(H5P_DATASET_XFER);
-     H5Pset_dxpl_mpio(plist, H5FD_MPIO_COLLECTIVE);
+     propery_hdf = H5P_DEFAULT; 
+#ifdef USE_MPI
+     propery_hdf = H5Pcreate(H5P_DATASET_XFER);
+     H5Pset_dxpl_mpio(propery_hdf, H5FD_MPIO_COLLECTIVE);
 #endif
-//   };
-
-//   int create(hid_t group, const char *path_name, hsize_t _offset[], bool no_preallocate=true)
-//   {
-   //     if(no_preallocate) dim[n_dim-1] = 0;
+        
         copy(offset, _offset);
         hid_t dspace = check ( H5Screate_simple(n_dim, dim, maxdim) , DMESG(name + " : Creating Dataspace for scalarValue X"));
         hid_t dcpl   = H5Pcreate (H5P_DATASET_CREATE);
         H5Pset_chunk(dcpl, n_dim, chunkdim);
-        dset = check(H5Dcreate2(group, _name.c_str(), type_id, dspace, H5P_DEFAULT, dcpl, H5P_DEFAULT), DMESG(name + " H5Dcreate2 : x_temp_dset"));
+        dataset_hdf = check(H5Dcreate2(group, _name.c_str(), typeId_hdf, dspace, H5P_DEFAULT, dcpl, H5P_DEFAULT), DMESG(name + " H5Dcreate2 : x_temp_dset"));
         H5Pclose(dcpl); H5Sclose(dspace);
 
     }; 
@@ -68,12 +69,12 @@ class FileAttr
           dim[n_dim-1] += increase;
           offset[n_dim-1]+= increase;
           
-          check( H5Dextend (dset, dim) , DMESG("Extending PSF")); 
-          hid_t dspace = H5Dget_space (dset);
+          check( H5Dextend (dataset_hdf, dim) , DMESG("Extending PSF")); 
+          hid_t dspace = H5Dget_space (dataset_hdf);
           hsize_t  stride1[7] = { 1, 1, 1, 1, 1, 1, 1};
           check ( H5Sselect_hyperslab (dspace, H5S_SELECT_SET, offset, stride1, chunkdim, NULL), DMESG(name + " : Selecting Hyperslab for PowerSpectrumY"));
           if(do_write == false) H5Sselect_none(dspace); 
-          check(  H5Dwrite(dset, type_id, mspace, dspace, plist, data)  , DMESG(name + " : H5DWrite Dataset"));
+          check(  H5Dwrite(dataset_hdf, typeId_hdf, memory_space_hdf, dspace, propery_hdf, data)  , DMESG(name + " : H5DWrite Dataset"));
           H5Sclose(dspace);
         
           return GKC_SUCCESS;
@@ -81,9 +82,9 @@ class FileAttr
 
 
    ~FileAttr() {
-       check( H5Dclose(dset),   DMESG(name + " : H5Dclose"));
-       check( H5Pclose(plist),   DMESG(name + " H5Pclose"));
-       check( H5Sclose(mspace),   DMESG(name + " H5Pclose"));
+       check( H5Dclose(dataset_hdf),    DMESG(name + " : H5Dclose"));
+       check( H5Pclose(propery_hdf),   DMESG(name + " H5Pclose"));
+       check( H5Sclose(memory_space_hdf),  DMESG(name + " H5Pclose"));
    };
 
 };

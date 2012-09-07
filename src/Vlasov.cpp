@@ -128,8 +128,8 @@ void Vlasov::setBoundary(Array6C A, int boundary_type)
        SendVu[:][:][:][:][:][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD][NvLuD-1:2]; 
        parallel->updateNeighbours(Vlasov::SendVu, Vlasov::SendVl, Vlasov::RecvVu, Vlasov::RecvVl, DIR_V);
   } else {
-       g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD][NvLlD  :2] = 0.;
-       g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD][NvLuD-1:2] = 0.;
+       g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD][NvLlB  :2] = 0.;
+       g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD][NvLuD+1:2] = 0.;
   }
 
 

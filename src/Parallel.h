@@ -206,17 +206,34 @@ struct NeighbourDir {
    *   @brief Allreduce over direction dir
    *
    **/
-   template<class T>  T  collect(T x, int op = OP_SUM, int dir=DIR_ALL, bool allreduce=true)
+   template<class T>  T  collect(T x, int op = OP_SUM, int dir=DIR_ALL, int N=1, bool allreduce=true)
    {
 #ifdef GKC_PARALLEL_MPI
      T global_dValue;
      // we need allreduce instead of reduce because H5TB need all process to have the same value
-     check(MPI_Allreduce(&x, &global_dValue, 1, getMPIDataType(typeid(T)), getMPIOp(op), Comm[dir]), DMESG("MPI_Reduce")); 
+     check(MPI_Allreduce(&x, &global_dValue, N, getMPIDataType(typeid(T)), getMPIOp(op), Comm[dir]), DMESG("MPI_Reduce")); 
      return global_dValue; 
 #endif
      return x; 
    }
+   
+   /**
+   *   @brief Allreduce over direction dir
+   *
+   **/
+   template<class T>  void  collect(T *x, int op = OP_SUM, int dir=DIR_ALL, int N=1, bool allreduce=true)
+   {
+#ifdef GKC_PARALLEL_MPI
+     // we need allreduce instead of reduce because H5TB need all process to have the same value
+     check(MPI_Allreduce(MPI_IN_PLACE, x, N, getMPIDataType(typeid(T)), getMPIOp(op), Comm[dir]), DMESG("MPI_Reduce")); 
+#endif
+     return;
+   }
 
+   /**
+   *  @Depreciated
+   *
+   **/
    template<typename T, int W> Array<T,W> collect(Array<T,W> A, int op=OP_SUM, int dir=DIR_ALL, bool allreduce=true) {
 #ifdef GKC_PARALLEL_MPI
      // Return immediately if we don't decompose in this direction

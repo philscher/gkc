@@ -21,6 +21,7 @@
 #include "Geometry.h"
 
 
+// BUG : if SPECIES_MAX >= 8 HDF-5 gives bus error 
 // Excluding adiabatic species
 #define SPECIES_MAX 4
 /**

@@ -190,6 +190,7 @@ void VlasovAux::Vlasov_2D_Island(
   
     const CComplex imag = ((CComplex) (0. + 1.j));
 
+  const double _kw_12_dx_dx = 1./(12.*dx*dx);
 
     for(int s = NsLlD; s <= NsLuD; s++) {
         
@@ -202,6 +203,8 @@ void VlasovAux::Vlasov_2D_Island(
       const double sub   = (plasma->species(s).doGyro) ? 3./2. : 1./2.;
 
       const double v2_rms = 1.;//pow2(alpha);
+      
+      bool isGyro1 = (plasma->species(s).gyroModel == "Gyro-1");
 
 
       for(int m=NmLlD; m<=NmLuD; m++) {
@@ -280,6 +283,12 @@ void VlasovAux::Vlasov_2D_Island(
             
         //const Complex kp = 0. ; //geo->get_kp(x, ky, z);
         const CComplex kp = geo->shear * ky * X[x];
+           
+        CComplex eta_kp2_phi = 0;
+           if(isGyro1) { // first order approximation for gyro-kinetics
+             const CComplex ddphi_dx_dx = (16. *(phi[s][m][z][y_k][x+1] + phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] + phi[s][m][z][y_k][x-2]) - 30.*phi[s][m][z][y_k][x]) * _kw_12_dx_dx;
+             eta_kp2_phi                = 0.5 * w_T  * ( ky*ky * phi[s][m][z][y_k][x] + ddphi_dx_dx ); 
+           }
 
                // velocity space magic
         simd_for(int v=NvLlD; v<= NvLuD;v++) {
@@ -308,6 +317,7 @@ void VlasovAux::Vlasov_2D_Island(
         register const CComplex Island_A_F1 =  dMagIs_dx * (ky_m1 * fs_m1  + ky_p1 * fs_p1 )  -  MagIs  * ky_1 *  (dfs_dx_m1  - dfs_dx_p1 )  ;
 
 
+             
    
         /////////// Collisions ////////////////////////////////////////////////////////////////////
 
@@ -317,18 +327,12 @@ void VlasovAux::Vlasov_2D_Island(
 
         /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
         const CComplex dg_dt = 
-             // Island
-             - alpha * V[v] * (Island_A_F1 + sigma * Island_A_phi * F0) +   
-             // driving term
-             ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])/Temp  - sub)) * F0 * phi_
-
-             // add first order gyro-average term (zero when full-gyro)
-                 )//    + 0.5 * w_T  * k2_phi[1][z][y_k][x] * F0)
-              // Landau Damping term 
-           - alpha  * V[v]* kp  * ( g + sigma * phi_ * F0);
-            // collisional term
-            + collisionBeta * (g  + V[v] * dfs_dv + v2_rms * ddfs_dvv)
-           + nonLinear[y_k][x][v]
+               nonLinear[y_k][x][v]                                              // non-linear term
+             - alpha * V[v] * (Island_A_F1 + sigma * Island_A_phi * F0) +        // Island term
+             ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])/Temp  - sub)) * F0 * phi_)  // Driving term
+            +  eta_kp2_phi * F0                                                 // Contributions from gyro-1 (0 if not neq Gyro-1)
+           - alpha  * V[v]* kp  * ( g + sigma * phi_ * F0);                      // Landau Damping term 
+            + collisionBeta * (g  + V[v] * dfs_dv + v2_rms * ddfs_dvv);          // Collisional term
           ;
 
         // screen out Nyquiest frequeny
