@@ -13,6 +13,14 @@
 
 #include "Analysis.h"
 
+extern "C" double cabs(CComplex z);
+extern "C" double creal(CComplex z);
+extern "C" double cimag(CComplex z);
+extern "C" double carg(CComplex z);
+//extern "C" double atan2(double x, double y);
+
+
+
 enum SpecDir   {SPEC_NO=-1, SPEC_XY=0, SPEC_XZ=1, SPEC_YZ=2};
 
 
@@ -24,7 +32,7 @@ Analysis::Analysis(Parallel *_parallel, Vlasov *_vlasov, Fields *_fields, Grid *
 
        // set initial energy
        initialEkin.resize(Range(TOTAL, NsGuD)); initialEkin = 0.e0;
-       for(int s=NsLlD; s<= NsLuD; s++)  initialEkin(s) = getKineticEnergy(s);
+       for(int s=NsLlD; s<= NsLuD; s++)  initialEkin(s) = getKineticEnergy((A6zz) vlasov->f0.dataZero(), V.dataZero(), M.dataZero(), s);
        initialEkin(TOTAL) = sum(initialEkin(RsLD));
        
        // Spectrum
@@ -32,9 +40,6 @@ Analysis::Analysis(Parallel *_parallel, Vlasov *_vlasov, Fields *_fields, Grid *
 //       if(setup->dirSpectrumAvrg & SPEC_YZ)  spectrumYZ.resize(fft->RkyL, fft->RkzL); spectrumYZ = 0.0;
 //       if(setup->dirSpectrumAvrg & SPEC_XY)  spectrumXY.resize(fft->RkxL, fft->RkyL); spectrumXY = 0.0;
 
-     pSpec.resize(Range((int) DIR_X, (int) DIR_Y), RFields, Range(0, max(Nky,Nx)));
-     pPhase.resize(Range((int) DIR_X, (int) DIR_Y), RFields, Range(0, max(Nky,Nx)));
-     pFreq.resize(Range((int) DIR_X, (int) DIR_Y), RFields, Range(0, max(Nky,Nx)));
     
      A_xyz.resize(RxLD, RkyLD, RzLD); A_xyz = 0.;
 
@@ -54,98 +59,89 @@ Analysis::~Analysis() {
 
 }
 
-// calculate phi_rms (root mean square)
- Array3R Analysis::getPowerSpectrum() {
-        
-   
-           pSpec = 0.e0;
-          // We need to take care that the FFT output is of for e.g. an 8 number sequence [0, 1, 2, 3, 4,-3,-2,-1]
-          // The z-value are complex conjugate to each other, so fftw does not include them ( but we do need to have a factor of 2 ?!)
-          // Note : Because we take the power, we need to multiply not by 2 but by 4 (for Z)
+ 
 
-         if(parallel->Coord[DIR_VMS] == 0) {
+void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_NkxL], 
+                                CComplex  Field0 [Nq][NzLD][NkyLD][NxLD]      ,
+                                double    pSpecX [plasma->nfields][Nx/2], double pSpecY [plasma->nfields][Nky],
+                                double    pPhaseX[plasma->nfields][Nx/2], double pPhaseY[plasma->nfields][Nky])
+{
 
+  double   pSpec[plasma->nfields][Nx];
+  CComplex pFreq[plasma->nfields][Nx];
 
-            //fft->rXIn(RxLD, RkyLD, RzLD, RFields) = fields->Field0(RxLD, RkyLD, RzLD,RFields);
-            fft->solve(FFT_X_FIELDS, FFT_FORWARD, fields->Field0.data());
+  // Note :  take care that the FFT output is of for e.g. an 8 number sequence [0, 1, 2, 3, 4,-3,-2,-1]
+  // Note : atan2 is not a linear function, thus phase has to be calculated at last
+  if(parallel->Coord[DIR_VMS] == 0) {
 
-            
-             // check if domains are valid
-            
-             for(int n = 1; n <= plasma->nfields; n++) {
-            
-                // Power spectrum for X // calculate power of each mode (layout depends on real2complex or complex2complex transf.)
-                for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
-                      pSpec((int) DIR_X, n, x_k) = 
-                        //sum(pow2(abs(fft->kXOut(x_k, RkyLD, RzLD, n))));
-                       //)) +  sum(pow2(abs(imag(fft->kXOut(x_k, RkyLD, RzLD, n))))))/fft->Norm_X;
-                        (sum(pow2(abs(real(fft->kXOut(x_k, RkyLD, RzLD, n))))) +  sum(pow2(abs(imag(fft->kXOut(x_k, RkyLD, RzLD, n))))))/fft->Norm_X;
-                      pFreq((int) DIR_X, n, x_k) =  sum(fft->kXOut(x_k, RkyLD, RzLD, n))/fft->Norm_X;
-                        
-                }
-            
-                // Power Spectrum Y
-                 for(int y_k = NkyLlD; y_k <=  NkyLuD ; y_k++) { 
-                   // simplify this
-                   pSpec((int) DIR_Y, n, y_k) = sum(pow2(abs(real(fields->Field0(RxLD,y_k,RzLD, n))))) + sum(pow2(abs(imag((fields->Field0(RxLD,y_k,RzLD, n)))))); 
-                   //pSpec((int) DIR_Y, n, y_k) = sum(pow2(abs(fields->Field0(RxLD,y_k,RzLD, n))));
-                   pFreq((int) DIR_Y, n, y_k) = sum(fields->Field0(RxLD,y_k,RzLD, n));
-                 }
-            }
-                
-             // get normalized phi_rms)
-             parallel->collect(pSpec, OP_SUM, DIR_XYZ);        
-             parallel->collect(pFreq, OP_SUM, DIR_XYZ);        
-             pSpec = sqrt(pSpec);
-
-             //calculate the phase
-             pPhase = atan2(imag(pFreq), real(pFreq));
-         }
+    // Note : We have domain decomposition in X but not in Y
+    fft->solve(FFT_X_FIELDS, FFT_FORWARD, fields->Field0.data());
          
+    for(int n = 1; n <= plasma->nfields; n++) {
+                
+      // Mode power & Phase shifts for X (domain decomposed)
+      omp_for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD; x_k++) {
 
-         // map back from fftw [k0, k1, k2, ..., k_Ny, -k_(N/y-2), ... -k_1]
-          for(int x_k = 1; x_k < Nx/2; x_k++) pSpec((int) DIR_X, RFields, x_k) += pSpec((int) DIR_X, RFields, Nx-x_k);
-          //for(int y_k = 1; y_k < Ny  ; y_k++) pSpec((int) DIR_Y, RFields, y_k) += pSpec((int) DIR_Y, RFields, Ny-y_k);
+        pSpec[n-1][x_k] = sqrt(__sec_reduce_add(cabs(kXOut[n][NzLlD:NzLD][NkyLlD:NkyLD][x_k]))/fft->Norm_X); 
+        pFreq[n-1][x_k] =      __sec_reduce_add(     kXOut[n][NzLlD:NzLD][NkyLlD:NkyLD][x_k] )/fft->Norm_X;
+        
+      }
+            
+      
+      // Mode power & Phase shifts for Y (not decomposed)
+      omp_for(int y_k = NkyLlD; y_k <=  NkyLuD ; y_k++) { 
+        
+        pSpecY [n-1][y_k] = sqrt(__sec_reduce_add(cabs(Field0[n][NzLlD:NzLD][y_k][NxLlD:NxLD]))); 
+        pPhaseY[n-1][y_k] = carg(__sec_reduce_add(     Field0[n][NzLlD:NzLD][y_k][NxLlD:NxLD]));
+      }
+      
+    }
+             
+    // Finalized calculations for x-domain (decomposed and negative frequency modes)
 
-         return pSpec;
+    // Sum up with X-values from other processes
+    parallel->collect(&pSpec[0][0], OP_SUM, DIR_XYZ, Nq * Nx);        
+    parallel->collect(&pFreq[0][0], OP_SUM, DIR_XYZ, Nq * Nx);        
+         
+    // map back from fftw [k0, k1, k2, ..., k_Ny, -k_(N/y-2), ... -k_1]
+    for(int x_k = 1; x_k < Nx/2; x_k++) pFreq [:][x_k] = pFreq[:][Nx-x_k];
+    for(int x_k = 1; x_k < Nx/2; x_k++) pSpec [:][x_k] = pSpec[:][Nx-x_k];
+
+    pPhaseX[:][0:Nx/2] = carg(pFreq[:][0:Nx/2]);
+    pSpecX [:][0:Nx/2] =      pSpec[:][0:Nx/2];
+         
+  } // if DIR_XYZ
+
+         return;
 };
 
 
-    // get kinetic Energy, if species = -1, we calculate the total kinetic energy tn the domain
-    double Analysis::getKineticEnergy(int sp) {
+
+
+
+
+
+
+// get kinetic Energy, if species = -1, we calculate the total kinetic energy tn the domain
+double Analysis::getKineticEnergy(const CComplex f[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], const double V[NvGB], const double M[NmGB], const int s) {
       
        double kineticEnergy=0.e0;
      
-       for(int s = NsLlD; s <= NsLuD ; s++) { 
-        
-            //const double v2_d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * dm * dXYZ;
-            const double v2_d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * dm * grid->dXYZ * plasma->species(s).scale_v ;
+       //const double v2_d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * dm * dXYZ;
+       const double v2_d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * dm * grid->dXYZ * plasma->species(s).scale_v ;
+              
+       #pragma omp parallel for reduction(+:kineticEnergy) collapse (3)
+       for(int m=NmLlD; m<= NmLuD;m++) { for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
+              
 
-//            for(int x=NxLlD; x<= NxLuD;x++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int z=NzLlD; z<= NzLuD;z++) {
-            for(int x=NxLlD; x<= NxLuD;x++) { for(int z=NzLlD; z<= NzLuD;z++) {
-
-            //  for(int v=NvLlD; v<= NvLuD                               ;v++) kineticEnergy += real(vlasov->f0(x,0,z,v,RmLD,s) + vlasov->f(x, 0, z, v, RmLD, s))  * (pow2(V(v))) * v2_d6Z;
-           //   for(int m=NmLlD; plasma->species(s).doGyro && (m<= NmLuD);m++) kineticEnergy += real(vlasov->f0(x,0,z,RvLD, m, s) + vlasov->f(x, 0, z, RvLD, m, s)) * M(m) * plasma->B0;
-            /* 
-              if(y_k == 0) {
-                //for(int v=NvLlD; v<= NvLuD                               ;v++) kineticEnergy += abs(sum(vlasov->f0(x,0,z,v,RmLD,s) + vlasov->f(x, y_k, z, v, RmLD, s)))  * (pow2(V(v))) * v2_d6Z;
-                for(int v=NvLlD; v<= NvLuD                               ;v++) kineticEnergy += abs(sum(vlasov->f0(x,0,z,v,RmLD,s) + vlasov->f(x, y_k, z, v, RmLD, s)))  * (pow2(V(v))) * v2_d6Z;
-//                for(int m=NmLlD; plasma->species(s).doGyro && (m<= NmLuD);m++) kineticEnergy += abs(sum(vlasov->f0(x,0,z,RvLD, m, s) + vlasov->f(x, y_k, z, RvLD, m, s))) * M(m) * plasma->B0;
-              } else {
-                for(int v=NvLlD; v<= NvLuD                               ;v++) kineticEnergy += abs(sum(vlasov->f(x, y_k, z, v, RmLD, s)))  * (pow2(V(v))) * v2_d6Z;
-//                for(int m=NmLlD; plasma->species(s).doGyro && (m<= NmLuD);m++) kineticEnergy += abs(sum(vlasov->f(x, y_k, z, RvLD, m, s))) * M(m) * plasma->B0;
+              for(int v=NvLlD; v<=NvLuD; v++) { 
+                 kineticEnergy += cabs(__sec_reduce_add(f[s][m][NzLlD:NzLD][y_k][NxLlD:NxLD][v]) * pow2(V[v]) * v2_d6Z);
               }
-             * */
-              // phase is not important only y_k=0 is, 
-                //for(int v=NvLlD; v<= NvLuD                               ;v++) kineticEnergy += real(sum(vlasov->f(x, y_k, z, v, RmLD, s)))  * (pow2(V(v))) * v2_d6Z;
-                for(int v=NvLlD; v<= NvLuD                               ;v++) kineticEnergy += real(sum(vlasov->f(x, 0, z, v, RmLD, s)))  * (pow2(V(v))) * v2_d6Z;
-              // for initial and local
-//              for(int v=NvLlD; v<= NvLuD;v++) kineticEnergy += sum(vlasov->f0(x, y, z, v, RmLD, s))  * pow2(V(v)) * v2_d6Z;
-//              for(int m=NmLlD; plasma->species(s).doGyro && (m<= NmLuD);m++) kineticEnergy += sum(vlasov->f0(x, y, z, RvLD, m, s)) * M(m) * plasma->B0;
+              kineticEnergy += cabs(__sec_reduce_add(f[s][m][NzLlD:NzLD][y_k][NxLlD:NxLD][NvLlD:NvLD]) * M[m]) * v2_d6Z;
 
-      }}}  // }
+       } } } 
 
-//      return  (parallel->collect(kineticEnergy, OP_SUM, DIR_ALL) - initialEkin(sp))/((initialEkin(sp) == 0.) ? 1. : initialEkin(sp));
+      // return  (parallel->collect(kineticEnergy, OP_SUM, DIR_ALL) - initialEkin(sp))/((initialEkin(sp) == 0.) ? 1. : initialEkin(sp));
       return  parallel->collect(kineticEnergy, OP_SUM, DIR_ALL);
 
     };
@@ -163,6 +159,8 @@ double Analysis::getEntropy(int sp)
   return 0.; 
    double entropy = 0.e0;
    for(int s = NsLlD; s <= NsLuD ; s++) { 
+                //entropy += grid->dXYZV * abs(pow2(sum(vlasov->f(RxLD, RkyLD, RzLD, RvLD, RmLD, s) 
+                //                            - vlasov->f0 (RxLD, RkyLD, RzLD, RvLD, RmLD, s)))/ sum(vlasov->f0(RxLD, RkyLD, RzLD, RvLD, RmLD, s)));
                 entropy += grid->dXYZV * abs(pow2(sum(vlasov->f(RxLD, RkyLD, RzLD, RvLD, RmLD, s) 
                                             - vlasov->f0 (RxLD, RkyLD, RzLD, RvLD, RmLD, s)))/ sum(vlasov->f0(RxLD, RkyLD, RzLD, RvLD, RmLD, s)));
    }
@@ -170,23 +168,22 @@ double Analysis::getEntropy(int sp)
    return parallel->collect(entropy);
 };
 
-double Analysis::getParticelNumber(int sp) 
+double Analysis::getParticleNumber(const CComplex f[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], const int s)
 { 
    double number = 0.e0;
         
-   //for(int s = ((sp == TOTAL) ? NsLlD : sp); s <= NsLuD && ((sp != TOTAL) ? s == sp : true)  ; s++) { 
-   for(int s = NsLlD; s <= NsLuD ; s++) { for(int m = NmLlD; m <= NmLuD; m++) { 
+   for(int m = NmLlD; m <= NmLuD; m++) { 
    
-     //const double d6Z = plasma->B0 * dv * dm * dXYZ; 
-     const double pnB_d6Z = M_PI * plasma->species(s).n0 * plasma->B0 * dv * grid->dm(m) ;
+    const double pnB_d6Z = M_PI  * plasma->B0 * dv * grid->dm(m) * grid->dXYZV;
    
-   for(int x=NxLlD; x<= NxLuD;x++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int z=NzLlD; z<= NzLuD;z++){
+    #pragma omp parallel for reduction(+:number)
+    for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
 
-               number +=  abs(F(x, y_k, z, RvLD, RmLD, s)) * pnB_d6Z;
+               number +=  __sec_reduce_add(f[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][y_k][NxLlD:NxLD][NvLlD:NvLD]) * pnB_d6Z;
 
-  }}} }}
+     }  }
 
-        return parallel->collect(number, OP_SUM);
+    return parallel->collect(number, OP_SUM);
 };
 
 
@@ -199,7 +196,9 @@ Array4R Analysis::getNumberDensity(const bool total) {
 
     for(int x=NxLlD; x<= NxLuD;x++) { for(int y=NkyLlD; y<= NkyLuD;y++) { for(int z=NzLlD; z<= NzLuD;z++){
 
-       A4(x,y,z,s) = abs(F(x, y, z, RvLD, RmLD, s))*d6Z;
+//       A4(x,y,z,s) = abs(F(x, y, z, RvLD, RmLD, s))*d6Z;
+ //      A4(x,y,z,s) = ( __sec_reduce_add(f [s][m][z][y_k][x][NvLlD:NvLD]) 
+ //                       - (plasma->global ? __sec_reduce_add(f0[s][m][z][y_k][x][NvLlD:NvLD]) : 0)) * pqnB_dvdm;
 
     }}} } 
 
@@ -366,9 +365,6 @@ Array3R Analysis::getHeatFluxKy(int sp)
     //
   for(int s = NsLlD; s <= NsLuD; s++) {
       for(int z=NzLlD; z<= NzLuD;z++){ for(int x=NxLlD; x  <= NxLuD ;  x++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
-//      std::cout << "x : " << x << " y_k : " << y_k << " z : " << z << " --->  : " << A4_z(x,y_k, z, s) << std::endl;
-//      :redo
-//      :redo
 //
       }}}}
     for(int s = NsLlD; s <= NsLuD; s++) {
@@ -611,17 +607,26 @@ int Analysis::writeData(Timing timing, double dt)
            writeMessage("Data I/O : Moments output");
 
       }
-      if (timing.check(dataOutputStatistics, dt)       )   {
-      // Ugly and error-prone
-      getPowerSpectrum();
-      Array2R pSpecX(Range(1, plasma->nfields), Range(0, Nx/2)); pSpecX(Range(1, plasma->nfields), Range(0, Nx/2)) = pSpec((int) DIR_X, Range(1, plasma->nfields), Range(0, Nx/2));
-      Array2R pSpecY(Range(1, plasma->nfields), Range(0, Nky)); pSpecY(Range(1, plasma->nfields), Range(0, Nky)) = pSpec((int) DIR_Y, Range(1, plasma->nfields), Range(0, Nky));
-      
-      Array2R pPhaseX(Range(1, plasma->nfields), Range(0, Nx/2)); pPhaseX(Range(1, plasma->nfields), Range(0, Nx/2)) = pPhase((int) DIR_X, Range(1, plasma->nfields), Range(0, Nx/2));
-      Array2R pPhaseY(Range(1, plasma->nfields), Range(0, Nky)) ; pPhaseY(Range(1, plasma->nfields), Range(0, Nky))  = pPhase((int) DIR_Y, Range(1, plasma->nfields), Range(0, Nky));
 
-      FA_grow_x->write( pSpecX.data()); FA_grow_y->write( pSpecY.data()); FA_grow_t->write(&timing);
-      FA_freq_x->write(pPhaseX.data()); FA_freq_y->write(pPhaseY.data()); FA_freq_t->write(&timing);
+      if (timing.check(dataOutputStatistics, dt)       )   {
+     
+        // Stack allocation (size ok ?)
+      double pSpecX [plasma->nfields] [Nx/2], pSpecY [plasma->nfields] [Nky ],
+             pPhaseX[plasma->nfields] [Nx/2], pPhaseY[plasma->nfields] [Nky ];
+
+
+      getPowerSpectrum((A4zz) fft->kXOut.dataZero(), (A4zz) fields->Field0.dataZero(), pSpecX, pSpecY, pPhaseX, pPhaseY);
+      //Array2R pSpecX(Range(1, plasma->nfields), Range(0, Nx/2)); pSpecX(Range(1, plasma->nfields), Range(0, Nx/2)) = pSpec((int) DIR_X, Range(1, plasma->nfields), Range(0, Nx/2));
+      //Array2R pSpecY(Range(1, plasma->nfields), Range(0, Nky)); pSpecY(Range(1, plasma->nfields), Range(0, Nky)) = pSpec((int) DIR_Y, Range(1, plasma->nfields), Range(0, Nky));
+      //Array2R pPhaseX(Range(1, plasma->nfields), Range(0, Nx/2)); pPhaseX(Range(1, plasma->nfields), Range(0, Nx/2)) = pPhase((int) DIR_X, Range(1, plasma->nfields), Range(0, Nx/2));
+      //Array2R pPhaseY(Range(1, plasma->nfields), Range(0, Nky)) ; pPhaseY(Range(1, plasma->nfields), Range(0, Nky))  = pPhase((int) DIR_Y, Range(1, plasma->nfields), Range(0, Nky));
+
+      // Seperatly writing ? Hopefully it is buffered ... (passing stack pointer ... OK ?)
+      FA_grow_x->write( &pSpecX[0][0] ); FA_grow_y->write(&pSpecY[0][0]); FA_grow_t->write(&timing);
+      FA_freq_x->write( &pPhaseX[0][0]); FA_freq_y->write(&pPhaseY[0][0]); FA_freq_t->write(&timing);
+      
+      //FA_grow_x->write( pSpecX.data()); FA_grow_y->write( pSpecY.data()); FA_grow_t->write(&timing);
+      //FA_freq_x->write(pPhaseX.data()); FA_freq_y->write(pPhaseY.data()); FA_freq_t->write(&timing);
 
 
       // Heat Flux
@@ -642,18 +647,18 @@ int Analysis::writeData(Timing timing, double dt)
 
             //  Get scalar Values for every species
             for(int s = NsGlD; s <= NsGuD; s++) {
-                scalarValues.particle_number[s-1]  = getParticelNumber(s)                           ;
-                scalarValues.entropy        [s-1]  = getEntropy(s)                                  ;
-                scalarValues.kinetic_energy [s-1]  = getKineticEnergy(s)                            ;
-                scalarValues.particle_flux  [s-1]  = getTotalParticleFlux(s)                             ;
-                scalarValues.heat_flux      [s-1]  = getTotalHeatFlux(s)                                 ;
+                scalarValues.particle_number[s-1]  = getParticleNumber((A6zz) vlasov->f.dataZero(), s);
+                scalarValues.entropy        [s-1]  = getEntropy(s)                               ;
+                scalarValues.kinetic_energy [s-1]  = getKineticEnergy((A6zz) vlasov->f.dataZero(), V.dataZero(), M.dataZero(), s) ;
+                scalarValues.particle_flux  [s-1]  = getTotalParticleFlux(s)                     ;
+                scalarValues.heat_flux      [s-1]  = getTotalHeatFlux(s)                         ;
             }
             SVTable->append(&scalarValues);
 
             // write out to Terminal/File
             std::stringstream messageStream;
             messageStream << std::endl << std::endl << "Analysis | " << std::setprecision(3);
-            messageStream << " Field Energy : (phi) " << scalarValues.phiEnergy  << "  (Ap) " << scalarValues.ApEnergy  <<  "  (Bp) " << scalarValues.BpEnergy << std::endl; 
+            messageStream << "Field Energy : (phi) " << scalarValues.phiEnergy  << "  (Ap) " << scalarValues.ApEnergy  <<  "  (Bp) " << scalarValues.BpEnergy << std::endl; 
             double charge = 0., kinetic_energy=0.;
             for(int s = NsGlD; s <= NsGuD; s++) {
                             messageStream << "         | " << 
@@ -664,7 +669,7 @@ int Analysis::writeData(Timing timing, double dt)
                             kinetic_energy += scalarValues.kinetic_energy[s-1];
             }
             messageStream << //"------------------------------------------------------------------" <<
-                "         |  Total Energy " << kinetic_energy+scalarValues.phiEnergy + scalarValues.ApEnergy + scalarValues.BpEnergy << "    Total Charge = " << ((plasma->species(0).n0 != 0.) ? 0. : charge) 
+                "         | Total Energy " << kinetic_energy+scalarValues.phiEnergy + scalarValues.ApEnergy + scalarValues.BpEnergy << "    Total Charge = " << ((plasma->species(0).n0 != 0.) ? 0. : charge) 
                 << std::endl;  
             parallel->print(messageStream.str());
       
@@ -721,6 +726,33 @@ int Analysis::writeData(Timing timing, double dt)
 
   }
  */
+
+
+// separately we set MPI struct
+void Analysis::setMPIStruct()
+{
+/*  
+   long long int 
+
+   MPI_Aint mpi_addr_SV;
+   MPI_Aint mpi_addr_SV_timestep;
+
+   addr_struct = (long long int) &_ScalarValues;
+   addr_struct = (long long int) &_ScalarValues.timestep;
+
+   MPI_Get_address(&_ScalarValues         , &mpi_addr_SV         );
+   MPI_Get_address(&_ScalarValues.timestep, &mpi_addr_SV_timestep);
+
+   types[] = { MPI_DOUBLE };
+
+   blocklengths[] = { 1 };
+
+   displacements[] = { mpi_addr_SV - mpi_addr_SV };
+
+   MPI_Type_create_struct(1, blocklengths, displacements, types, &mpi_SV_t);
+*/
+
+};
 
 
 

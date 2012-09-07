@@ -39,6 +39,7 @@
 class Analysis : public IfaceGKC {
 
    hid_t analysisGroup;
+
    /// scalarValue - Structure to store scalar data.
    typedef struct ScalarValues
    { 
@@ -52,6 +53,10 @@ class Analysis : public IfaceGKC {
       double entropy        [SPECIES_MAX];
       double heat_flux      [SPECIES_MAX];
       double particle_flux  [SPECIES_MAX];
+
+      // Below are variables not included in HDF-5 file
+
+
    } _ScalarValues;
 
    /// Moments Variables 
@@ -73,29 +78,19 @@ class Analysis : public IfaceGKC {
    Geometry *geo;
    Array1R  initialEkin, dT;
    Array2C spectrumXZ, spectrumYZ, spectrumXY;
-   Array3R pSpec, pPhase;
-   Array3C pFreq;
    Array2R heatFluxKy;
    Array3C A_xyz;
    Array3C phi_k;
    Array4R A4;
    Array4C A4_z;
 
-   template<typename tV, typename tM> Complex  F (int  x, int y, int z, tV v, tM m, int s) {
-
-      if (plasma->global == false)               return sum(vlasov->f(x,y,z,v,m,s) + vlasov->f0(x,y,z,v,m,s));
-      else                                       return sum(vlasov->f(x,y,z,v,m,s));
-
-   }
-
-   template<typename tV, typename tM> Complex  dF(int  x, int y, int z, tV v, tM m, int s) {
-
-    if (plasma->global == false) return sum(vlasov->f(x,y,z,v,m,s));
-    else                         return sum(vlasov->f(x,y,z,v,m,s) - vlasov->f0(x,y,z,v,m,s));
-
-   }
- 
+   
    Timing dataOutputStatistics, dataOutputMoments;
+
+
+   // MPI structures
+   void setMPIStruct();
+
 
   public:
 
@@ -111,10 +106,26 @@ class Analysis : public IfaceGKC {
    *         decomposition are required very minor modification need to be done
    *         for this function.
    *
+   *         Calculates the power of each mode and corresponding phase (better do in
+   *         post processing ?)
+   *
+   *         Power \f[ abs(\F(n, x,k_y) )^2 \f]
+   *         Phase \f[ arctan2(\F(n,x,k_y)) \f]
+   *
+   *         where $n=\phi,A_{1\parallel}, B_{1\parallel}$.
+   *
+   *
    *  @return double Array of Power density spectra in direction dir
    *
    **/
-   Array3R getPowerSpectrum();
+ void getPowerSpectrum(CComplex  kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL], 
+                       CComplex Field0[Nq][NzLD][NkyLD][NxLD]             , 
+                       double   pSepcX [plasma->nfields][Nx/2]            , 
+                       double   pSpecY [plasma->nfields][Nky ]            ,
+                       double   pPhaseX[plasma->nfields][Nx/2]            , 
+                       double   pPhaseY[plasma->nfields][Nky ]           );
+
+
     
    /** \brief Calculate the kinetic Energy for particles
    *  
@@ -142,12 +153,15 @@ class Analysis : public IfaceGKC {
    *
    * @return   the total energy of species
    **/
-   double getKineticEnergy (int species=TOTAL);
-   
+   double getKineticEnergy(const CComplex f[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], const double V[NvGB], const double M[NmGB], const int s);
+  
+   /**
+   *   Calculate entropy using Imadera et al.
+   *
+   **/
    double getEntropy       (int species=TOTAL);
    
-   double getParticelNumber(int species=TOTAL);
-
+   double getParticleNumber(const CComplex fs [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], const int sp);
 
 
    /** Calculates the temperature, note the 
@@ -217,6 +231,8 @@ class Analysis : public IfaceGKC {
    Array4R getTemperatureOthogonal();
    Array4R getHeatFluxOrthogonal();
    Array4R getHeatFluxParallel ();
+
+   //  Data-I/0 stuff
 
    void initDataOutput(Setup *setup, FileIO *fileIO) ;
    int  writeData(Timing timing, double dt);
