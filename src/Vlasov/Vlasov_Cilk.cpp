@@ -58,6 +58,21 @@ Nice stuff http://stackoverflow.com/questions/841433/gcc-attribute-alignedx-expl
 */
 
 
+
+
+// Align arrays, allocate on stack, (TAKE care of stackoverflow, if happens allocated
+// dynamically with alloc in Constructor)
+// Speed should not be a concern, as allocation happends instantenously 
+// however, check this, what about alignement ?
+// how to deal with indexes ?
+// from stackoverflow guru : http://stackoverflow.com/questions/161053/c-which-is-faster-stack-allocation-or-heap-allocation
+// Stack is hot, as it probably resides direclty in cache. Good. 
+// Hope stackoverflow is right and we dont get a stackoverflow...
+//
+// Stack variables are alligned per default on 8 bytes (at least for SSE2+ CPUs)
+// Can be controlled on gcc with  -mpreferred-stack-boundary=n
+// See : http://stackoverflow.com/questions/1061818/stack-allocation-padding-and-alignment
+
 // take care, for electro-static simulations, G & Xi are null pointers (for e-m f&phi respectively)
 void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][NkyLD][NxLB  ][NvLB],  // in case of e-m
                                          const CComplex Xi              [NzLB][NkyLD][NxLB+4][NvLB],  // in case of e-m
@@ -69,15 +84,6 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
    // phase space function & Poisson bracket
    const double _kw_fft_Norm = 1./(fft->Norm_Y_Backward * fft->Norm_Y_Backward * fft->Norm_Y_Forward);
 
-//   std::cout << "norm  : " << std::setprecision(9) << _kw_fft_Norm;
-   // align arrays, allocate on stack, (TAKE care of stackoverflow, if happens allocated
-   // dynamically with alloc in Constructor)
-   // Speed should not be a concern, as allocation happends instantenously 
-   // however, check this, what about alignement ?
-   // how to deal with indexes ?
-   // from stackoverflow guru : http://stackoverflow.com/questions/161053/c-which-is-faster-stack-allocation-or-heap-allocation
-   // Stack is hot, as it probably resides direclty in cache. Good. 
-   // Hope stackoverflow is right and we dont get a stackoverflow...
    CComplex  xky_Xi [NkyLD][NxLD+8];
    CComplex  xky_f1 [NkyLD][NxLD+4];
    CComplex  xky_ExB[NkyLD][NxLD  ];

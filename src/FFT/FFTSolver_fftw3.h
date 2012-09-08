@@ -86,7 +86,8 @@ class FFTSolver_fftw3 : public FFTSolver
    **/
    void solve(const int type, const int direction, void *in=nullptr, void *out=nullptr);
    
-   Array3C  multiply(Array3C &A, Array3C &B, Array3C  &R);
+   void multiply(const CComplex A[NkyLlD][NxLD], const CComplex B[NkyLlD][NxLD],
+                 CComplex R[NkyLlD][NxLD]);
    
 
 

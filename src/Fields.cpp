@@ -15,6 +15,7 @@
 #include "Fields.h"
 
 
+
 Range RFields;
 
 int GC2, GC4, Nq;
@@ -221,14 +222,13 @@ void Fields::updateBoundary(
        
    // Z-Boundary (N z-we need to connect the magnetic field lines)
    // (For 2-d space simulations (x,y) boundaries are not required)
-   if(Nz > 1)  for(int x=NxLlD; x<= NxLuD;x++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
+   if(Nz > 1) omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
 
         const CComplex a = ((CComplex) 0. + 1.j) *  (2.*M_PI * (2.* M_PI/Ly) * y_k);
       
-        //SendZl(x, y_k, RB, RmLD, RsLD, RFields) = A(x, y_k, Range(NzLlD  , NzLlD+1), RmLD, RsLD, RFields) * exp( ((NzLuD == NzGuD) ? a : 0.) * geo->nu(x));
-        //SendZu(x, y_k, RB, RmLD, RsLD, RFields) = A(x, y_k, Range(NzLuD-1, NzLuD  ), RmLD, RsLD, RFields) * exp(-((NzLlD == NzGlD) ? a : 0.) * geo->nu(x));
-        SendZl[:][:][:][:][y_k][x-3] = Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD  :2][y_k][x] ;//* (reinterpret_cast<CComplex> (exp( ((Complex) ((NzLuD == NzGuD) ? a : 0.) * geo->nu(x)))));
-        SendZu[:][:][:][:][y_k][x-3] = Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLuD-1:2][y_k][x] ;//* (reinterpret_cast<CComplex> (exp(-((Complex) ((NzLlD == NzGlD) ? a : 0.) * geo->nu(x)))));
+        // NzLlD == NzGlD -> Connect only physcial boundaries after mode made one loop 
+        SendZl[:][:][:][:][y_k][x-3] = Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD  :2][y_k][x] * cexp( ((NzLuD == NzGuD) ? a : 0.) * geo->nu(x));
+        SendZu[:][:][:][:][y_k][x-3] = Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLuD-1:2][y_k][x] * cexp(-((NzLlD == NzGlD) ? a : 0.) * geo->nu(x));
 
    } }
    

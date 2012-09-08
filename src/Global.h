@@ -46,6 +46,10 @@ typedef double               Real   ;
 inline Real abs(Complex A) { return 1.; };
 inline Complex exp(Complex A) { return 1.; };
 //#define newComplex(A,B) (A + B)
+extern "C" double cabs (CComplex z);
+extern "C" double creal(CComplex z);
+extern "C" double cimag(CComplex z);
+extern "C" double carg (CComplex z);
 
 #else
 #include <complex>
@@ -62,6 +66,13 @@ typedef _Complex double CComplex;
 
 #define _Imaginary ((CComplex) (0.+1.j)); 
 //typedef (__extension__ 1.0i) Imaginary; 
+
+extern "C" double cabs  (CComplex z);
+extern "C" double creal (CComplex z);
+extern "C" double cimag (CComplex z);
+extern "C" double carg  (CComplex z);
+extern "C" CComplex conj(CComplex z);
+extern "C" CComplex cexp (CComplex z);
 
 
 typedef blitz::Array<Complex, 1>  Array1C;

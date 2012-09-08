@@ -20,6 +20,7 @@
 
 
 // Replace asap with C99 function or so
+/*
 extern CComplex conj(CComplex c) {
    
      struct _Z{ double re; double im; };
@@ -29,7 +30,10 @@ extern CComplex conj(CComplex c) {
 
     return c; 
 };
- 
+*/
+
+
+
   
 VlasovAux::VlasovAux(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *fft, Benchmark *_bench)    
 : VlasovCilk(_grid, _parallel, _setup, fileIO, _geo, fft, _bench) 
@@ -127,6 +131,7 @@ void VlasovAux::Vlasov_ES(
              eta_kp2_phi                = 0.5 * w_T  * ( ky*ky * phi[s][m][z][y_k][x] + ddphi_dx_dx ); 
            }
              
+           // Sign has no influence on result ...
            const CComplex kp = geo->get_kp(x, ky, z);
 
          //#pragma unroll(8)
@@ -136,15 +141,12 @@ void VlasovAux::Vlasov_ES(
 
 
 
-             const CComplex phi_     = phi[s][m][z][y_k][x];
+             const CComplex phi_   = phi[s][m][z][y_k][x];
              
-             //updateCFL(dphi_dx, ky*phi_, 0.);
-       
+            const  CComplex g      = fs [s][m][z][y_k][x][v];
+            const  CComplex f0_    = f0 [s][m][z][y_k][x][v];
 
-            const  CComplex g    = fs [s][m][z][y_k][x][v];
-            const  CComplex f0_  = f0 [s][m][z][y_k][x][v];
-
-            const CComplex dfs_dv   = (8.  *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))*_kw_12_dv;
+            const CComplex dfs_dv  = (8.  *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))*_kw_12_dv;
             const CComplex ddfs_dv = (16. *(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) - 30.*fs[s][m][z][y_k][x][v]) * _kw_12_dv_dv;
         
             // hyperdiffusion terms

@@ -80,19 +80,17 @@ class Analysis : public IfaceGKC {
    Vlasov *vlasov;
    Grid   *grid;
    Fields *fields;
-   FFTSolver *fft;
+   FFTSolver *fft;   ///< required for heat flux calculations
    Geometry *geo;
-   Array1R  initialEkin, dT;
+
+
+   Array1R  initialEkin;//, dT;
    Array2C spectrumXZ, spectrumYZ, spectrumXY;
    Array2R heatFluxKy;
-   Array3C A_xyz;
-   Array3C phi_k;
-   Array4R A4;
    Array4C A4_z;
-
    
-   Timing dataOutputStatistics, dataOutputMoments;
-
+   Timing dataOutputStatistics, ///< Timing to define output of scalarValues
+          dataOutputMoments;    ///< Timing to define output of moments
 
    // MPI structures
    void setMPIStruct();
@@ -169,6 +167,10 @@ class Analysis : public IfaceGKC {
    
    double getParticleNumber(const CComplex fs [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], const int sp);
 
+   void calculateScalarValues(const CComplex f[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
+                              const double V[NvGB], const double M[NmGB], const int s,
+                              ScalarValues &SV); 
+
 
    /** Calculates the temperature, note the 
    * 
@@ -192,11 +194,13 @@ class Analysis : public IfaceGKC {
    *  \f]
    *
    **/
-   Array4C getHeatFlux      (int species);
+   void getParticleHeatFlux(const int m, const int s, 
+                            CComplex ParticleFlux[NkyLD][NxLD], CComplex HeatFlux[NkyLD][NxLD],
+                            const CComplex f[NsLB][NmLB][NzLB][NkyLB][NxLB][NvLB],
+                            const CComplex phi[NsLD][NmLD][NzLD][NkyLD][NxLB+4],
+                            const double V[NvGB], const double M[NmGB]);
 
    double  getTotalHeatFlux      (int species);
-    
-   Array3R getHeatFluxKy      (int species);
     
    /**
    *  calculates and returns the heat flux across magnetic flux surfaces
@@ -209,8 +213,8 @@ class Analysis : public IfaceGKC {
    *  Ref : Dannert PhD Thesis
    **/
    double getTotalParticleFlux   ( int species);
-    
-   Array3R getParticleFluxKy ( int species);
+   
+
 
    int updateSpectrum      (unsigned int dir);
    Array2C getSpectrum(unsigned int dir);
@@ -227,7 +231,7 @@ class Analysis : public IfaceGKC {
    **/ 
    void getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEnergy);
 
-   double getMaxTimeStep(Timing timing, int dir=DIR_ALL, const double maxCFL=0.4);
+   //double getMaxTimeStep(Timing timing, int dir=DIR_ALL, const double maxCFL=0.4);
 
    //////////////// Calculate Moments (4-dimensional s,x,y_k,z) ////////////////////////
 
@@ -255,7 +259,7 @@ class Analysis : public IfaceGKC {
 
 
 
-   //  Data-I/0 stuff
+   //////////////////////////////////  Data-I/0 stuff ////////////////////////////////////////
 
    void initDataOutput(Setup *setup, FileIO *fileIO) ;
    int  writeData(Timing timing, double dt);

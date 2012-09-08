@@ -176,7 +176,7 @@ public:
          w[k] =  0.5 * h  * M_PI * cosh(k * h) / pow2(cosh(0.5 * M_PI * sinh( k *h))) ;
       }
 
-      return integrate(func, a, b, n, Radau_weights[n].points, Radau_weights[n].weights);
+      return integrate(func, a, b, n, x, w);
 
   }
 

@@ -412,39 +412,44 @@ void FFTSolver_fftw3::transposeFields(CComplex *In, CComplex *T)
 
 };
   */     
-// Note : We need to take care of aliasing
-Array3C FFTSolver_fftw3::multiply(Array3C &A, Array3C &B, Array3C  &R) 
+
+
+
+
+
+// Nice, no X-parallelization required !!
+void FFTSolver_fftw3::multiply(const CComplex A[NkyLD][NxLD], const CComplex B[NkyLD][NxLD],
+                               CComplex R[NkyLD][NxLD])
 {
-   return R; 
-   // Array A : Copy Values to larger AA-Array (set larger values to zero)
-   AA_kYIn = 0.;
-   for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) AA_kYIn(RxLD, y_k, RzLD, 1) = A(RxLD, y_k, RzLD); 
-   fftw_execute(plan_AA_YBackward);
+   int NkyLD_AA  = 3 * NkyLD / 2       , 
+       AA_NkyLlD = NkyLlD              , 
+       AA_NkyLuD = NkyLlD + NkyLD_AA -1;
 
+   int AA_NyLD  = 2 * NkyLD_AA - 2;
 
-   AA_rYIn(RxLD, AA_RyLD, RzLD, 1) = AA_rYOut(RxLD, AA_RyLD, RzLD, 1);
+   // Create antialiased arrays and copy and transform to real space
+   CComplex AA_A[AA_NkyLD][NxLD];
+   double   RS_A[AA_NyLD ][NxLD], RS_B[AA_NyLD ][NxLD];
    
-   // Array B : Copy Values to larger AA-Array (set larger values to zero)
-   AA_kYIn = 0.;
-   for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) AA_kYIn(RxLD, y_k, RzLD, 1) = B(RxLD, y_k, RzLD); 
-   fftw_execute(plan_AA_YBackward);
+ 
+   // Copy to larger Anti-Aliased array and transform to real space
+   AA_A[NkyLlD:NkyLD][:] = A[NkyLlD:NkyLD][:];
+   fftw_execute_dft_c2r(plan_AA_YBackward, (fftw_complex *) AA_A, (double *) RS_A);
 
+   AA_A[NkyLlD:NkyLD][:] = B[NkyLlD:NkyLD][:];
+   fftw_execute_dft_c2r(plan_AA_YBackward, (fftw_complex *) AA_A, (double *) RS_B);
 
    //////////////////////// Real Space (multiply values) /////////////////// 
    
-   const double fft_Norm = 1.5 * Norm_Y_Forward * pow2(Norm_Y_Backward);
+   const double _kw_fft_Norm = 1./(1.5 * Norm_Y_Forward * pow2(Norm_Y_Backward));
    
-   for(int z=NzLlD; z<=NzLuD;z++) { for(int y=AA_NyLlD; y<=AA_NyLuD;y++) { for(int x= NxLlD; x <= NxLuD; x++) {
-    AA_rYIn(x,y,z,1) *= AA_rYOut(x,y,z,1) / fft_Norm;
-   }}}
+   RS_A[:][:] *= RS_B[:][:] * _kw_fft_Norm;
    
    //////////////////////// End Real Space (multiply values) /////////////////// 
+  
+   fftw_execute_dft_r2c(plan_AA_YForward, (double *) RS_A, (fftw_complex *) R);
    
-   fftw_execute(plan_AA_YForward);
-   
-   // Array R : Copy Result back to array
-   for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) R(RxLD, y_k, RzLD) = AA_kYOut(RxLD, y_k, RzLD,1); 
-   return R;
+   return;
 
 };
 

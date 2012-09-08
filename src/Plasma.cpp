@@ -105,7 +105,7 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
 
         species(s).update(geo, cs);
 
-        std::cout << species(s).name << " n : " << species(s).n0 << " n(x)" << species(s).n << std::endl; 
+       // std::cout << species(s).name << " n : " << species(s).n0 << " n(x)" << species(s).n << std::endl; 
 
       }   
 

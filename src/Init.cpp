@@ -160,7 +160,6 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    // Perform gyro-average of the fields
    for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) {
         
-       	//fields->gyroAverage(fields->Field0(RxLD,RkyLD, RzLD, RFields), fields->Field(RxLD, RkyLD, RzLD, m , s, RFields), m, s, Field::phi);
        	fields->gyroAverage(fields->Field0, fields->Field(RxLD, RkyLD, RzLD, m , s, RFields), m, s, true);
    
    }}

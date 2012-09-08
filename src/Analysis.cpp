@@ -13,10 +13,6 @@
 
 #include "Analysis.h"
 
-extern "C" double cabs (CComplex z);
-extern "C" double creal(CComplex z);
-extern "C" double cimag(CComplex z);
-extern "C" double carg (CComplex z);
 
 
 
@@ -24,8 +20,8 @@ enum SpecDir   {SPEC_NO=-1, SPEC_XY=0, SPEC_XZ=1, SPEC_YZ=2};
 
 
 Analysis::Analysis(Parallel *_parallel, Vlasov *_vlasov, Fields *_fields, Grid *_grid, Setup *_setup, FFTSolver *_fft, FileIO *fileIO, Geometry *_geo) : 
-  parallel(_parallel),setup(_setup), vlasov(_vlasov), grid(_grid), fields(_fields), geo(_geo),  fft(_fft),
-     A4(FortranArray<4>()), A4_z(FortranArray<4>())
+ 
+parallel(_parallel),setup(_setup), vlasov(_vlasov), grid(_grid), fields(_fields), geo(_geo),  fft(_fft), A4_z(FortranArray<4>())
 
 {
 
@@ -40,18 +36,15 @@ Analysis::Analysis(Parallel *_parallel, Vlasov *_vlasov, Fields *_fields, Grid *
 //       if(setup->dirSpectrumAvrg & SPEC_XY)  spectrumXY.resize(fft->RkxL, fft->RkyL); spectrumXY = 0.0;
 
     
-     A_xyz.resize(RxLD, RkyLD, RzLD); A_xyz = 0.;
-
-     A4.resize(RxLD, RkyLD, RzLD, RsLD);
      A4_z.resize(RxLD, RkyLD, RzLD, RsLD);
-
        
      initDataOutput(setup, fileIO);
 }
 
 
 
-Analysis::~Analysis() {
+Analysis::~Analysis() 
+{
 
    closeData();
     
@@ -82,7 +75,6 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
 
         pSpec[n-1][x_k] = sqrt(__sec_reduce_add(cabs(kXOut[n][NzLlD:NzLD][NkyLlD:NkyLD][x_k]))/fft->Norm_X); 
         pFreq[n-1][x_k] =      __sec_reduce_add(     kXOut[n][NzLlD:NzLD][NkyLlD:NkyLD][x_k] )/fft->Norm_X;
-        
       }
             
       
@@ -117,15 +109,82 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
 //////////////////////// Calculate scalar values ///////////////////////////
 
 
+void Analysis::calculateScalarValues(const CComplex f[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
+                                       const double V[NvGB], const double M[NmGB], const int s,
+                                       ScalarValues &scalarValues) 
 
-// note the hear flux rate have to be calculted after getkinetic energy
-// this should go hand-in-hand with the temperature calculation
+{
+  
+    for(int s = NsGlD; s <= NsGuD; s++) { for(int m=NmLlD; m<= NmLuD;m++) {
+      
+    
+    ////////////////////////////// Calculate Particle Number ////////////////////////
+    const double pn_d6Z = M_PI  * dv * grid->dm(m) * grid->dXYZV;
+   
+    double number = 0.e0;
+    #pragma omp parallel for reduction(+:number)
+    for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
+
+               number +=  __sec_reduce_add(f[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][y_k][NxLlD:NxLD][NvLlD:NvLD]) * pn_d6Z;
+    } 
+
+    //////////// Calculate Kinetic Energy  //////////////////////////
+    
+    double kineticEnergy=0.e0;
+    const double v2_d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * dm * grid->dXYZ * plasma->species(s).scale_v ;
+              
+    #pragma omp parallel for reduction(+:kineticEnergy) collapse (2)
+    for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
+             
+             for(int v=NvLlD; v<=NvLuD; v++) { 
+                 kineticEnergy += cabs(__sec_reduce_add(f[s][m][NzLlD:NzLD][y_k][NxLlD:NxLD][v]) * pow2(V[v]) * v2_d6Z);
+             }
+             // What about perpendicular energy ? Include ??
+             //kineticEnergy    += cabs(__sec_reduce_add(f[s][m][NzLlD:NzLD][y_k][NxLlD:NxLD][NvLlD:NvLD]) * M[m]) * v2_d6Z;
+
+    } } 
+       // substract initial kientic energy or not ?
+       // return  (parallel->collect(kineticEnergy, OP_SUM, DIR_ALL) - initialEkin(sp))/((initialEkin(sp) == 0.) ? 1. : initialEkin(sp));
+       // return  parallel->collect(kineticEnergy, OP_SUM, DIR_ALL);
+
+    ////////////////////////////// Calculate Entropy ////////////////////////////////////
+    double entropy = 0.e0;
+       
+       // wtf am I doing here ?
+       // entropy += grid->dXYZV * abs(pow2(sum(vlasov->f(RxLD, RkyLD, RzLD, RvLD, RmLD, s) 
+       //          - vlasov->f0 (RxLD, RkyLD, RzLD, RvLD, RmLD, s)))/ sum(vlasov->f0(RxLD, RkyLD, RzLD, RvLD, RmLD, s)));
+        
+
+    /////////////////////////// Calculate Total Heat & Particle Flux ////////////////////////
+    CComplex ParticleFlux[NkyLD][NxLD], HeatFlux[NkyLD][NxLD];
+
+    getParticleHeatFlux(m, s, ParticleFlux, HeatFlux, f, (A5zz) fields->phi.dataZero(), V, M);
+
+    const double particle = cabs(__sec_reduce_add(ParticleFlux[:][:]));
+    const double heat     = cabs(__sec_reduce_add(    HeatFlux[:][:]));
+
+    // so bad .... (looks to ugly, to be the right way ...)
+    #pragma omp atomic
+    scalarValues.entropy        [s-1]  += entropy        ;
+    #pragma omp atomic
+    scalarValues.kinetic_energy [s-1]  += kineticEnergy;
+    #pragma omp atomic
+    scalarValues.particle_flux  [s-1]  += particle;
+    #pragma omp atomic
+    scalarValues.heat_flux      [s-1]  += heat ;
+      
+
+    } } // m, s
+
+    return;
+};
+
 double Analysis::getTotalHeatFlux(int s) 
 {
     double heatFlux = 0.e0;
   // for(int s = ((sp == TOTAL) ? NsLlD : sp); s <= NsLuD && ((sp != TOTAL) ? s == sp : true)  ; s++) heatFlux += sum(getHeatFluxKy(sp));
  //   if((s >= NsLlD) && (s <= NsLuD)) {
-        heatFlux = sum(getHeatFluxKy(s));
+     //   heatFlux = sum(getHeatFluxKy(s));
  //   } 
     return parallel->collect(heatFlux);
 
@@ -145,7 +204,7 @@ double Analysis::getTotalParticleFlux(int s)
 //    if((s >= NsLlD) && (s <= NsLuD)) {
 
         //G(RFields, RsLD, RkyLD) = getParticleFluxKy(s);
-        particleFlux = sum(getParticleFluxKy(s));
+        particleFlux = 0.;//sum(getParticleFluxKy(s));
 
 //    }
     return parallel->collect(particleFlux);
@@ -163,11 +222,13 @@ double Analysis::getKineticEnergy(const CComplex f[NsLD][NmLD][NzLB][NkyLD][NxLB
               
        #pragma omp parallel for reduction(+:kineticEnergy) collapse (3)
        for(int m=NmLlD; m<= NmLuD;m++) { for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
-              
+             
+            // Calculate kinetic energy
+
               for(int v=NvLlD; v<=NvLuD; v++) { 
                  kineticEnergy += cabs(__sec_reduce_add(f[s][m][NzLlD:NzLD][y_k][NxLlD:NxLD][v]) * pow2(V[v]) * v2_d6Z);
               }
-              kineticEnergy += cabs(__sec_reduce_add(f[s][m][NzLlD:NzLD][y_k][NxLlD:NxLD][NvLlD:NvLD]) * M[m]) * v2_d6Z;
+              kineticEnergy    += cabs(__sec_reduce_add(f[s][m][NzLlD:NzLD][y_k][NxLlD:NxLD][NvLlD:NvLD]) * M[m]) * v2_d6Z;
 
        } } } 
 
@@ -183,15 +244,6 @@ double Analysis::getKineticEnergy(const CComplex f[NsLD][NmLD][NzLB][NkyLD][NxLB
 double Analysis::getEntropy(int sp) 
 {
   return 0.; 
-   double entropy = 0.e0;
-   for(int s = NsLlD; s <= NsLuD ; s++) { 
-                //entropy += grid->dXYZV * abs(pow2(sum(vlasov->f(RxLD, RkyLD, RzLD, RvLD, RmLD, s) 
-                //                            - vlasov->f0 (RxLD, RkyLD, RzLD, RvLD, RmLD, s)))/ sum(vlasov->f0(RxLD, RkyLD, RzLD, RvLD, RmLD, s)));
-                entropy += grid->dXYZV * abs(pow2(sum(vlasov->f(RxLD, RkyLD, RzLD, RvLD, RmLD, s) 
-                                            - vlasov->f0 (RxLD, RkyLD, RzLD, RvLD, RmLD, s)))/ sum(vlasov->f0(RxLD, RkyLD, RzLD, RvLD, RmLD, s)));
-   }
-        
-   return parallel->collect(entropy);
 };
 
 
@@ -246,7 +298,7 @@ Array4R Analysis::getMomentumParallel() {
        for(int v=NvLlD; v<= NvLuD;v++)  A4(x,y,z,s) = alpha_s * V(v) * F(x, y, z, v, RmLD, s) * d6Z;
  * */
 
-    return parallel->collect(A4, OP_SUM, DIR_VM);
+    return real(parallel->collect(A4_z, OP_SUM, DIR_VM));
 }
 
 
@@ -283,11 +335,13 @@ void Analysis::getTemperatureParallel(const  CComplex f[NsLB][NmLB][NzLB][NkyLB]
 
 
 Array4R Analysis::getTemperatureOthogonal() {
+
 /* 
     const double d6Z = dXYZV * plasma->B0 * M_PI;
        for(int m=NmLlD; m<= NmLuD;m++)  A4(x,y,z,s) = (M(m) * plasma->B0 - 1.) * F(x, y, z, RvLD, m, s) * d6Z;
  * */
-    return parallel->collect(A4, OP_SUM, DIR_VM);
+    return real(parallel->collect(A4_z, OP_SUM, DIR_VM));
+    
 }
 
 
@@ -295,147 +349,68 @@ Array4R Analysis::getTemperatureOthogonal() {
 
 Array4R Analysis::getHeatFluxParallel() {
 /* 
-    for(int s = NsLlD; s <= NsLuD; s++) {
-
-    const double d6Z = dXYZV * plasma->B0 * M_PI;
-    const double alpha_s = plasma->species(s).q / plasma->species(s).T0;
-
-    for(int x=NxLlD; x<= NxLuD;x++) { for(int y=NyLlD; y<= NyLuD;y++) { for(int z=NzLlD; z<= NzLuD;z++){
-
-
        for(int v=NvLlD; v<= NvLuD;v++)  A4(x,y,z,s) = alpha_s * V(v) * (pow2(V(v)) - 3./2.) * abs(F(x, y, z, v, RmLD, s)) * d6Z;
-
-    }}} }
-
  * */
-    return parallel->collect(A4, OP_SUM, DIR_VM);
+    return real(parallel->collect(A4_z, OP_SUM, DIR_VM));
 }
 
 Array4R Analysis::getHeatFluxOrthogonal() {
 /* 
-    for(int s = NsLlD; s <= NsLuD; s++) {
-
-    const double alpha_s = plasma->species(s).q / plasma->species(s).T0;
-    const double d6Z = dXYZV * plasma->B0 * M_PI;
-
-    for(int x=NxLlD; x<= NxLuD;x++) { for(int y=NyLlD; y<= NyLuD;y++) { for(int z=NzLlD; z<= NzLuD;z++){
-    for(int v=NvLlD; v<= NvLuD;v++) { for(int m=NmLlD; m<= NmLuD;m++)  {
-
-
          A4(x,y,z,s) = alpha_s * V(v) * (M(m) * plasma->B0 - 1.) * F(x, y, z, v, RmLD, s) * d6Z;
-
-    }} }}} }
-
  * */
-    return parallel->collect(A4, OP_SUM, DIR_VM);
+    return real(parallel->collect(A4_z, OP_SUM, DIR_VM));
 }
 
 
-// note the hear flux rate have to be calculted after getkinetic energy
-// this should go hand-in-hand with the temperature calculation
-Array4C Analysis::getHeatFlux(int sp) 
+
+void Analysis::getParticleHeatFlux(const int m, const int s, 
+                                   CComplex ParticleFlux[NkyLD][NxLD], CComplex HeatFlux[NkyLD][NxLD],
+                                   const CComplex   f[NsLB][NmLB][NzLB][NkyLB][NxLB][NvLB],
+                                   const CComplex phi[NsLD][NmLD][NzLD][NkyLD][NxLB+4],
+                                   const double V[NvGB], const double M[NmGB])
 {
-    A4_z = 0.;
 
-    Array3C V2(RxLD, RkyLD, RzLD); 
-    Array3C W2(RxLD, RkyLD, RzLD); 
-   
-   //for(int s = ((sp == TOTAL) ? NsLlD : sp); s <= NsLuD && ((sp != TOTAL) ? s == sp : true)  ; s++) {
-  // for(int s = ((sp == TOTAL) ? NsLlD : sp); (s <= ((sp == TOTAL) ? NsLuD : sp)) && ( (sp >= NsLlD) && (sp <= NsLuD))  ; s++) { 
-  for(int s = NsLlD; s <= NsLuD; s++) {
-      
-      const double d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * dm * grid->dXYZ;
+    const double d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * grid->dm(m) * grid->dXYZ;
 
-      for(int m=NmLlD; m<= NmLuD;m++ ) { 
-      
-        V2 = 0.; W2 = 0.;
-        // multiply in real-space 
-      for(int z=NzLlD; z<= NzLuD;z++){ for(int x=NxLlD; x  <= NxLuD ;  x++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
+    omp_for(int z=NzLlD; z<= NzLuD;z++) { 
+  
+        CComplex ky_phi[NkyLD][NxLD], Particle[NkyLD][NxLD], Energy[NkyLD][NxLD], T[NkyLD][NxLD];
+        
+        omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
+       
+          // Geometry ?!
+          const CComplex ky = ((CComplex) (0. + 1.j))  * fft->ky(y_k);
+        
+          for(int x=NxLlD; x  <= NxLuD ;  x++) { 
 
-            const Complex ky=Complex(0.,-fft->ky(y_k));
               
-            V2(x,y_k,z) = ky * fields->phi(x,y_k,z,m,s);
+              ky_phi[y_k][x] = ky * phi[s][m][z][y_k][x];
         
-             // integrate over velocity space
-             for(int v=NvLlD; v<= NvLuD;v++) W2(x,y_k,z) += (pow2(V(v)) +  M(m) * plasma->B0) * vlasov->f(x, y_k, z, v, m, s) * d6Z;
+              // integrate over velocity space (calculate particle number and temperature)
+                Energy[y_k][x] = __sec_reduce_add((pow2(V[NvLlD:NvLD]) +  M[m] * plasma->B0) * f[s][m][z][y_k][x][NvLlD:NvLD]) * d6Z;
+              Particle[y_k][x] = __sec_reduce_add(                                             f[s][m][z][y_k][x][NvLlD:NvLD]) * d6Z;
 
-         }}}
+         } }
 
-            A4_z(RxLD, RkyLD, RzLD,s) = fft->multiply(V2, W2, A_xyz);
-     
-      } }
-
-    return parallel->collect(A4_z, OP_SUM, DIR_VM);
-
-
-};
-
-
-
-// note the hear flux rate have to be calculted after getkinetic energy
-// this should go hand-in-hand with the temperature calculation
-Array3R Analysis::getHeatFluxKy(int sp) 
-{
-    Array3R Q(RFields, RkyLD, RsLD); Q = 0.;
+         // Multiply electric field with temperature in real space 
+         fft->multiply(ky_phi, Particle, T);
+        
+         // is atomic valid here (how about support, look gcc libatomic)?
+         #pragma omp atomic
+         ParticleFlux[:][:] += T[:][:];
+         
+         // Multiply electric field with temperature in real space 
+         fft->multiply(ky_phi,   Energy, T);
+         #pragma omp atomic
+         HeatFlux[:][:]     += T[:][:];
       
-    getHeatFlux(sp);
-    //
-    for(int s = NsLlD; s <= NsLuD; s++) {
-        
-       for(int z=NzLlD; z<= NzLuD;z++) { for(int x=NxLlD; x  <= NxLuD ;  x++) { Q(Field::phi, RkyLD, s) +=  abs(A4_z(x, RkyLD,z,s)) ; }}
-                 
-    }
-   return Q; 
-
-};
-
-
-
-
-
-Array3R  Analysis::getParticleFluxKy(int sp) 
-{
-    Array3R G(RFields, RkyLD, RsLD); G = 0.;
+    } // add for z,m
     
-    Array3C V2(RxLD, RkyLD, RzLD); V2 = 0.;
-    Array3C W2(RxLD, RkyLD, RzLD); W2 = 0.;
-   
-  for(int s = NsLlD; s <= NsLuD; s++) {
-      
-      const double d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * dm * grid->dXYZ;
+    return;
 
-        for(int m=NmLlD; m<= NmLuD;m++ ) { for(int z=NzLlD; z<= NzLuD;z++){ 
-      
-        // multiply in real-space 
-        for(int x=NxLlD; x  <= NxLuD ;  x++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
-
-            const Complex ky=Complex(0.,-fft->ky(y_k));
-              
-            V2(x,y_k,z) = ky * fields->phi(x,y_k,z,m,s);
-        
-             // integrate over velocity space
-             W2(x,y_k,z) = sum(vlasov->f(x, y_k, z, RvLD, m, s)) * d6Z;
-         }} 
-
-           // V2(RxLD, RkyLD, RzLD) = 
-           fft->multiply(V2, W2, A_xyz);
-      
-            // sum over x and z
-            for(int x=NxLlD; x  <= NxLuD ;  x++) { G(Field::phi, RkyLD, s) +=  abs(A_xyz(x, RkyLD,z)) ; }
-                 
-        } }
-   }
-
-
-    
-   return parallel->collect(G);
 
 };
 
-      
-
-
- 
         
 int Analysis::updateSpectrum(unsigned int dir) {
        /* 
@@ -462,6 +437,7 @@ int Analysis::updateSpectrum(unsigned int dir) {
         * */ 
         return GKC_SUCCESS;
    };
+
 
 ////////////////////////     Calculate x-dependent values     /////////////////////
 
@@ -634,8 +610,8 @@ int Analysis::writeData(Timing timing, double dt)
       scalarValues.particle_number[s-1]  = getParticleNumber((A6zz) vlasov->f.dataZero(), s);
       scalarValues.entropy        [s-1]  = getEntropy(s)                               ;
       scalarValues.kinetic_energy [s-1]  = getKineticEnergy((A6zz) vlasov->f.dataZero(), V.dataZero(), M.dataZero(), s) ;
-      scalarValues.particle_flux  [s-1]  = getTotalParticleFlux(s)                     ;
-      scalarValues.heat_flux      [s-1]  = getTotalHeatFlux(s)                         ;
+      scalarValues.particle_flux  [s-1]  = 0.; 
+      scalarValues.heat_flux      [s-1]  = 0.;
     }
       
     

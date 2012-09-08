@@ -195,7 +195,8 @@ class FFTSolver : public IfaceGKC {
    *  @param R Result C(x,y_k,z) = A B
    *
    **/
-   virtual Array3C multiply(Array3C &A, Array3C &B, Array3C  &R) = 0;
+   virtual void multiply(const CComplex A[NkyLlD][NxLD], const CComplex B[NkyLlD][NxLD],
+                               CComplex R[NkyLlD][NxLD]) = 0;
   
 };
 

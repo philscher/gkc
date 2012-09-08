@@ -111,10 +111,11 @@ void Vlasov::setBoundary(Array6C A, int boundary_type)
    // Z-Boundary 
    if(Nz > 1) for(int x=NxLlD; x<= NxLuD;x++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
            
-            //const Complex a = newComplex(0., 2. * M_PI * (2.* M_PI/Ly) * y_k);
+            const CComplex a = ((CComplex) 0. + 1.j) *  (2.*M_PI * (2.* M_PI/Ly) * y_k);
             
-            SendZl[:][:][:][:][y_k][x-3] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD  :2][y_k][x][NvLlD:NvLD]; //* exp( ((NzLlD == NzGlD) ? a : 0. ) *geo->nu(x));
-            SendZu[:][:][:][:][y_k][x-3] = g[NsLlD:NsLD][NmLlD:NmLD][NzLuD-1:2][y_k][x][NvLlD:NvLD]; //* (exp(-((Complex) ((NzLlD == NzGlD) ? a : 0.) * geo->nu(x)))));
+            // NzLlD == NzGlD -> Connect only physcial boundaries after mode made one loop 
+            SendZl[:][:][:][:][y_k][x-3] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD  :2][y_k][x][NvLlD:NvLD] * cexp( ((NzLlD == NzGlD) ? a : 0.) * geo->nu(x));
+            SendZu[:][:][:][:][y_k][x-3] = g[NsLlD:NsLD][NmLlD:NmLD][NzLuD-1:2][y_k][x][NvLlD:NvLD] * cexp(-((NzLlD == NzGlD) ? a : 0.) * geo->nu(x));
                
   } }
   parallel->updateNeighbours(Vlasov::SendZu, Vlasov::SendZl, Vlasov::RecvZu, Vlasov::RecvZl, DIR_Z);

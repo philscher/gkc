@@ -330,7 +330,8 @@ double FieldsFFT::sum_qqnT_1mG0(const double k2_p)
       const double qqnT   = plasma->species(s).n0 * pow2(plasma->species(s).q)/plasma->species(s).T0;
       const double rho_t2 = plasma->species(s).T0  * plasma->species(s).m / pow2(plasma->species(s).q * plasma->B0);
        
-      g0 += qqnT * SpecialMath::_1mGamma0_Pade( rho_t2 * k2_p);
+      //g0 += qqnT * SpecialMath::_1mGamma0_Pade( rho_t2 * k2_p);
+      g0 += qqnT * SpecialMath::_1mGamma0( rho_t2 * k2_p);
         
    }
    return g0;
