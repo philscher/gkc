@@ -300,9 +300,10 @@ class FieldsFFT : public Fields {
   
   /**
   *    @brief calculates the field energy
-  *
+  * 
+  *    @todo according to what ? Cite idomura
   **/ 
-  void calculateFieldEnergy(Array4C Q, double& phi, double& Ap, double& Bp);
+  void getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEnergy);
   
 protected:
 

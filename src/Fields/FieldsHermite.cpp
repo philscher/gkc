@@ -335,9 +335,9 @@ Matrix* FieldsHermite::getGyroAveragingMatrix(const double mu, const int y_k, co
 
 
 // not implemented
-void FieldsHermite::calculateFieldEnergy(Array4C Q, double& phi, double& Ap, double& Bp) 
+void FieldsHermite::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEnergy) 
 {
-   phi = 0.; Ap = 0.; Bp = 0.;
+   phiEnergy = 0.; ApEnergy = 0.; BpEnergy = 0.;
 
    return ;
 };

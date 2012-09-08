@@ -35,7 +35,7 @@ extern int GC2, GC4, Nq;
 *         \f$ \phi          \f$ electric potential
 *         \f$ A_{1\parallel}\f$ parallel magnetic vector potential 
 *         \f$ B_{1\parallel}\f$ parallel magnetic field
-*/
+**/
 namespace Field { const int phi=1, Ap=2, Bp=3, Bpp=4; }
 
 /**
@@ -45,7 +45,7 @@ namespace Field { const int phi=1, Ap=2, Bp=3, Bpp=4; }
 *         \f$ \rho        \f$ charge density
 *         \f$ j_\parallel \f$ parallel current density
 *         \f$ j_\perp     \f$ perpendicular current density
-*/
+**/
 namespace Q     { const int rho=1, jp=2, jo=3; }
 
 /**
@@ -85,7 +85,7 @@ namespace Q     { const int rho=1, jp=2, jo=3; }
 *           Integration.cpp (move to grid).
 *   
 *
-*/
+**/
 class Fields : public IfaceGKC {
   
    /**
@@ -93,33 +93,33 @@ class Fields : public IfaceGKC {
    *
    *  @todo : current version does not need to communicate Y
    *          direction. Thus remove. 
-   */
+   **/
    Array6C  SendXu, SendYu, SendZu, SendXl, SendYl, SendZl; 
    /**
    *  @brief please document me
-   */
+   **/
    Array6C  RecvXu, RecvYu, RecvZu, RecvXl, RecvYl, RecvZl;
 
 protected:
 
    /**
    *  @brief please document me
-   */
+   **/
    Grid *grid;
    
    /**
    *  @brief please document me
-   */
+   **/
    Parallel *parallel;
    
    /**
    *  @brief Geometry interface
-   */
+   **/
    Geometry *geo;
   
    /**
    *  @brief please document me
-   */
+   **/
    int solveEq;
 
 
@@ -139,7 +139,7 @@ public:
    *  @param m  index for perpendicular velocity \f$ \mu = M(m)  \f$
    *  @param s  index for species
    *
-   */
+   **/
    void calculateChargeDensity(CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz]   ,
@@ -162,7 +162,7 @@ public:
    *  @param m  index for perpendicular velocity \f$ \mu = M(m)\f$
    *  @param s  index for species
    *
-   */
+   **/
    void calculateParallelCurrentDensity(CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                         CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                         CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz],
@@ -185,8 +185,8 @@ public:
    *  @param f  Current phase-space distribution
    *  @param m  index for perpendicular velocity \f$ \mu = M(m)\f$
    *  @param s  index for species
-   */
-   //virtual Array3C calculatePerpendicularCurrentDensity(Array6C f0, Array6C f, const int m, const int s );
+   *
+   **/
    virtual void  calculatePerpendicularCurrentDensity(CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                                       CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                                       CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz],
@@ -197,8 +197,10 @@ public:
    *  @brief Solves the field equation from the source terms.
    *  
    *  @param Q current source terms
+   *
+   *  @note pure virtual function
    * 
-   */
+   **/
    virtual void solveFieldEquations(CComplex Q     [plasma->nfields][NxLD][NkyLD][Nz],
                                     CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz]) = 0;
 
@@ -207,14 +209,17 @@ public:
    *
    *    calculates The field energy
    *
-   */
-   virtual void calculateFieldEnergy(Array4C Q, double& phi, double& Ap, double& Bp) = 0;
+   *    @out phiEnergy  Total Energy of electric field
+   *    @out ApEnergy   total energy of perpendicular magnetic fieled (perturbation)
+   *    @out BpEnergy   total energy of parallell magnetic field (perturbation)
+   **/
+   virtual void getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEnergy) = 0;
 
 public:
    /** Sets the boundary
    *  @brief  update boundaries for the gyro-averaged field which arises due to domain
    *          decomposition
-   */ 
+   **/ 
    void updateBoundary(); 
    void updateBoundary(
                        CComplex Field [plasma->nfields][NsLD][NmLD][NzLB][NkyLD][NxLB+4], 
@@ -226,7 +231,7 @@ public:
    
    /**
    *  @brief please document me
-   */
+   **/
    std::string  ApPerturbationStr;
   
    /**
@@ -256,30 +261,30 @@ public:
    *  @param nField    specify which field (not used)
    *  @param gyroField true if forward transformation, false if backward transformation
    *
-   */
+   **/
    virtual void gyroAverage(Array4C In, Array4C Out, const int m, const int s, const bool forward) = 0;
   
    /**
    *  @brief four-dimensional array hold the source terms in drift-coordinates.
    *
    *  @note  Q stand for the German Quellterme (translated : source terms).
-   */
+   **/
    Array4C  Q;
 
    Array4C Qm;
    /**
    *  @brief four-dimensional array hold the field terms in drift-coordinates.
-   */
+   **/
    Array4C  Field0;
    
    /**
    *  @brief gyro-averaged field quantities as \f$ \left( <\phi>, <A_{1\parallel}>, <B_{1\parallel}> \right)\f$
-   */
+   **/
    Array6C  Field;
    
    /**
    *  @brief please document me
-   */
+   **/
    Array5C  phi, Ap, Bp;
    
    /**
@@ -295,34 +300,34 @@ public:
    *   \f[ Yeb = Y \hat{\epsilon}_{geo} \beta  \f]
    *
    *   @cite Dannert_2006:PhDThesis, where which chapter ... ?
-   */
+   **/
    double Yeb;
   
    /**
    *
    * Constructor
    *
-   */
+   **/
    Fields(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry *geo);
   
    /**
    *
    *   Destructor
    *
-   */
+   **/
    virtual ~Fields();
   
    /**
    *  @brief solve the field equations
    *
    *
-   */
+   **/
    void solve(Array6C f0, Array6C  f, Timing timing=0);
 
    /**
    *  @brief set which equation to solve if one field is assumed to be fixed
    *
-   */
+   **/
    int getSolveEq() const { return solveEq; };
 
    /**
@@ -339,34 +344,34 @@ public:
    *  fileh5.root.Fields.Bp [z, y_k, x, frame]
    *  fileh5.root.Fields.Timing[frame]
    *
-   */ 
+   **/ 
    virtual void writeData(Timing timing, double dt);
 
 protected:
 
    /**
    *  @brief please document me
-   */
-     FileAttr *FA_phi, *FA_Ap, *FA_Bp, *FA_phiTime;
+   **/
+   FileAttr *FA_phi, *FA_Ap, *FA_Bp, *FA_phiTime;
 
    /**
    *  @brief please document me
-   */
-     Timing dataOutputFields;
+   **/
+   Timing dataOutputFields;
 
    /**
    *  @brief please document me
-   */
-     void initDataOutput(Setup *setup, FileIO *fileIO);
+   **/
+   void initDataOutput(Setup *setup, FileIO *fileIO);
    
    /**
    *  @brief please document me
-   */
+   **/
    void closeData();
 
    /**
    *  @brief please document me
-   */
+   **/
    virtual void printOn(ostream &output) const ;
 };
 

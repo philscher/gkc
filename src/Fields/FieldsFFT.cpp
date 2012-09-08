@@ -264,7 +264,7 @@ void FieldsFFT::printOn(ostream &output) const
 }
 
 
-void FieldsFFT::calculateFieldEnergy(Array4C Q, double& phiEnergy, double& ApEnergy, double& BpEnergy)
+void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEnergy)
 {
       phiEnergy = 0.; ApEnergy = 0.; BpEnergy = 0.;
 

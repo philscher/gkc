@@ -17,7 +17,6 @@
 #include "Global.h"
 
 #include "Setup.h"
-#include "config.h"
 #include "Parallel.h"
 #include "Grid.h"
 #include "Vlasov.h"
@@ -26,14 +25,20 @@
 #include "Timing.h"
 #include "Plasma.h"
 
-#define TOTAL 0
-
-
 /**
 *    @brief Data analysis and output
 *
 *
+*    @note This kitchen is a fucking mess [(c) Ramsay] !!! Clean up & polish
 *
+*
+*    Parallelization, 
+*
+*    @todo Writting operations are done step-by-step, is HDF-5 buffering them and
+*          perform all at once, do we have to set some options, or does it not
+*          buffer at all ?
+*
+*    @todo Write MPI reduce operations
 *
 **/
 class Analysis : public IfaceGKC {
@@ -41,7 +46,7 @@ class Analysis : public IfaceGKC {
    hid_t analysisGroup;
 
    /// scalarValue - Structure to store scalar data.
-   typedef struct ScalarValues
+   typedef struct ScalarValues_t
    { 
       int    timestep;
       double time;
@@ -55,9 +60,10 @@ class Analysis : public IfaceGKC {
       double particle_flux  [SPECIES_MAX];
 
       // Below are variables not included in HDF-5 file
+      // however also included in MPI reduce operation
 
 
-   } _ScalarValues;
+   } ScalarValues;
 
    /// Moments Variables 
    FileAttr *FA_Mom_Density, *FA_mom_up, *FA_Mom_Tp, *FA_mom_To, *FA_mom_qp, *FA_mom_qo, * FA_mom_QES, *FA_Mom_Time, *FA_Mom_HeatFlux;
@@ -159,7 +165,7 @@ class Analysis : public IfaceGKC {
    *   Calculate entropy using Imadera et al.
    *
    **/
-   double getEntropy       (int species=TOTAL);
+   double getEntropy       (int s);
    
    double getParticleNumber(const CComplex fs [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], const int sp);
 
@@ -186,11 +192,11 @@ class Analysis : public IfaceGKC {
    *  \f]
    *
    **/
-   Array4C getHeatFlux      (int species=TOTAL);
+   Array4C getHeatFlux      (int species);
 
-   double  getTotalHeatFlux      (int species=TOTAL);
+   double  getTotalHeatFlux      (int species);
     
-   Array3R getHeatFluxKy      (int species=TOTAL);
+   Array3R getHeatFluxKy      (int species);
     
    /**
    *  calculates and returns the heat flux across magnetic flux surfaces
@@ -202,35 +208,52 @@ class Analysis : public IfaceGKC {
    * 
    *  Ref : Dannert PhD Thesis
    **/
-   double getTotalParticleFlux   ( int species=TOTAL);
+   double getTotalParticleFlux   ( int species);
     
-   Array3R getParticleFluxKy ( int species=TOTAL);
+   Array3R getParticleFluxKy ( int species);
 
-   /**
-   *
-   *  Get electrostatic field energy, note that the field energy consist of various contributions
-   *  depending on what kind of simulations are performed. This is
-   *
-   *  \f[
-   *         \Gamma_{es} = - \left< F_{j1} k_y \phi(x,y_k,z,m,s) d^3 \right> 
-   *  \f]
-   *
-   *  Ref : Dannert PhD Thesis
-   *
-   **/
-   void getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEnergy);
-    
    int updateSpectrum      (unsigned int dir);
    Array2C getSpectrum(unsigned int dir);
+   
+   /**
+   *    Get the field energy
+   *
+   *    @note internally it is just deliagting it to the
+   *    Fields class.
+   *
+   *    @todo find out if this is a bad habit for programm design.
+   *          I would guess so.
+   *
+   **/ 
+   void getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEnergy);
 
    double getMaxTimeStep(Timing timing, int dir=DIR_ALL, const double maxCFL=0.4);
 
-   Array4R getNumberDensity(const bool total=true);
-   Array4R getMomentumParallel();
-   Array4C getTemperatureParallel();
+   //////////////// Calculate Moments (4-dimensional s,x,y_k,z) ////////////////////////
+
+   /**
+   *   What for is this exactly ?
+   *
+   **/
+   
+   void getTemperatureParallel(const  CComplex f[NsLB][NmLB][NzLB][NkyLB][NxLB][NvLB],
+                                      CComplex A4_z[NsLD][NzLD][NkyLD][NxLD], 
+                               const double V[NvGB], const double M[NmGB]);
    Array4R getTemperatureOthogonal();
    Array4R getHeatFluxOrthogonal();
    Array4R getHeatFluxParallel ();
+   
+   void getNumberDensity(const  CComplex f[NsLB][NmLB][NzLB][NkyLB][NxLB][NvLB],
+                                CComplex D[NsLD][NzLD][NkyLD][NxLD], 
+                         const double V[NvGB], const double M[NmGB]);
+   Array4R getMomentumParallel();
+
+
+   //////////// Calculate X-Dependent variables ( 2-dimensional species & X) /////////////
+
+
+
+
 
    //  Data-I/0 stuff
 

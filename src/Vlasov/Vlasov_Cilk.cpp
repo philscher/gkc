@@ -83,8 +83,8 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
    CComplex  xky_ExB[NkyLD][NxLD  ];
 
    // having different extend suckz, sorry
-   double    xy_Xi    [NyLD+8][NxLD+8]; // extended BC 
-   double    xy_dXi_dy[NyLD+4][NxLD+4]; // normal BC
+   double  __declspec(align(32))  xy_Xi    [NyLD+8][NxLD+8]; // extended BC 
+   double  __declspec(align(32))  xy_dXi_dy[NyLD+4][NxLD+4]; // normal BC
    double    xy_dXi_dx[NyLD+4][NxLD+4];
    double    xy_f1    [NyLD+4][NxLD+4];
    double    xy_ExB   [NyLD  ][NxLD  ];

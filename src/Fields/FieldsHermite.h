@@ -154,7 +154,7 @@ public:
   *    @brief calculates the field energy
   *
   **/ 
-  void calculateFieldEnergy(Array4C Q, double& phi, double& Ap, double& Bp);
+  void getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEnergy);
  
 protected:
   /**
