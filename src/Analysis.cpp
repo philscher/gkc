@@ -27,7 +27,7 @@ parallel(_parallel),setup(_setup), vlasov(_vlasov), grid(_grid), fields(_fields)
 
        // set initial energy
        initialEkin.resize(Range(0, NsGuD)); initialEkin = 0.e0;
-       for(int s=NsLlD; s<= NsLuD; s++)  initialEkin(s) = getKineticEnergy((A6zz) vlasov->f0.dataZero(), V.dataZero(), M.dataZero(), s);
+       //for(int s=NsLlD; s<= NsLuD; s++)  initialEkin(s) = 0. ;//getKineticEnergy((A6zz) vlasov->f0.dataZero(), V.dataZero(), M.dataZero(), s);
        initialEkin(0) = sum(initialEkin(RsLD));
        
        // Spectrum
@@ -158,11 +158,12 @@ void Analysis::calculateScalarValues(const CComplex f[NsLD][NmLD][NzLB][NkyLD][N
     /////////////////////////// Calculate Total Heat & Particle Flux ////////////////////////
     CComplex ParticleFlux[NkyLD][NxLD], HeatFlux[NkyLD][NxLD];
 
-    getParticleHeatFlux(m, s, ParticleFlux, HeatFlux, f, (A5zz) fields->phi.dataZero(), V, M);
+    // BUG :  gives BUSERROR
+    // getParticleHeatFlux(m, s, ParticleFlux, HeatFlux, f, (A5zz) fields->phi.dataZero(), V, M);
 
-    const double particle = cabs(__sec_reduce_add(ParticleFlux[:][:]));
-    const double heat     = cabs(__sec_reduce_add(    HeatFlux[:][:]));
-
+    const double particle = 0.; //cabs(__sec_reduce_add(ParticleFlux[:][:]));
+    const double heat     = 0.; //cabs(__sec_reduce_add(    HeatFlux[:][:]));
+    
     // so bad .... (looks to ugly, to be the right way ...)
     #pragma omp atomic
     scalarValues.entropy        [s-1]  += entropy        ;
@@ -179,92 +180,7 @@ void Analysis::calculateScalarValues(const CComplex f[NsLD][NmLD][NzLB][NkyLD][N
     return;
 };
 
-double Analysis::getTotalHeatFlux(int s) 
-{
-    double heatFlux = 0.e0;
-  // for(int s = ((sp == TOTAL) ? NsLlD : sp); s <= NsLuD && ((sp != TOTAL) ? s == sp : true)  ; s++) heatFlux += sum(getHeatFluxKy(sp));
- //   if((s >= NsLlD) && (s <= NsLuD)) {
-     //   heatFlux = sum(getHeatFluxKy(s));
- //   } 
-    return parallel->collect(heatFlux);
 
-};
-
-
-double Analysis::getTotalParticleFlux(int s) 
-{
-      
-    double particleFlux = 0.e0;
-   
-    //for(int s = ((sp == TOTAL) ? NsLlD : sp); s <= NsLuD && ((sp != TOTAL) ? s == sp : true)  ; s++) particleFlux += sum(getParticleFluxKy(sp)); 
-    //for(int s = ((sp == TOTAL) ? NsLlD : sp); s <= NsLuD && ((sp != TOTAL) ? s == sp : true)  ; s++)
-
-//    Array3R G(RFields, RsGD, RkyLD); G = 0.;
-    
-//    if((s >= NsLlD) && (s <= NsLuD)) {
-
-        //G(RFields, RsLD, RkyLD) = getParticleFluxKy(s);
-        particleFlux = 0.;//sum(getParticleFluxKy(s));
-
-//    }
-    return parallel->collect(particleFlux);
-
-};
-
-
-double Analysis::getKineticEnergy(const CComplex f[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
-                                  const double V[NvGB], const double M[NmGB], const int s) 
-{
-      
-       double kineticEnergy=0.e0;
-     
-       const double v2_d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * dm * grid->dXYZ * plasma->species(s).scale_v ;
-              
-       #pragma omp parallel for reduction(+:kineticEnergy) collapse (3)
-       for(int m=NmLlD; m<= NmLuD;m++) { for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
-             
-            // Calculate kinetic energy
-
-              for(int v=NvLlD; v<=NvLuD; v++) { 
-                 kineticEnergy += cabs(__sec_reduce_add(f[s][m][NzLlD:NzLD][y_k][NxLlD:NxLD][v]) * pow2(V[v]) * v2_d6Z);
-              }
-              kineticEnergy    += cabs(__sec_reduce_add(f[s][m][NzLlD:NzLD][y_k][NxLlD:NxLD][NvLlD:NvLD]) * M[m]) * v2_d6Z;
-
-       } } } 
-
-       // substract initial kientic energy or not ?
-      // return  (parallel->collect(kineticEnergy, OP_SUM, DIR_ALL) - initialEkin(sp))/((initialEkin(sp) == 0.) ? 1. : initialEkin(sp));
-      return  parallel->collect(kineticEnergy, OP_SUM, DIR_ALL);
-
-};
-
-   
-
-
-double Analysis::getEntropy(int sp) 
-{
-  return 0.; 
-};
-
-
-
-double Analysis::getParticleNumber(const CComplex f[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], const int s)
-{ 
-   double number = 0.e0;
-        
-   for(int m = NmLlD; m <= NmLuD; m++) { 
-   
-     const double pn_d6Z = M_PI  * dv * grid->dm(m) * grid->dXYZV;
-   
-     #pragma omp parallel for reduction(+:number)
-     for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
-
-               number +=  __sec_reduce_add(f[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][y_k][NxLlD:NxLD][NvLlD:NvLD]) * pn_d6Z;
-
-     }  }
-
-     return parallel->collect(number, OP_SUM);
-};
 
 
 ///////////////////////////////// Calculate Moments  /////////////////////////////////////////////////
@@ -605,15 +521,8 @@ int Analysis::writeData(Timing timing, double dt)
     fields->getFieldEnergy(scalarValues.phiEnergy, scalarValues.ApEnergy, scalarValues.BpEnergy);
     
     //  Get scalar Values for every species ( this is bad calculate them alltogether)
-    for(int s = NsGlD; s <= NsGuD; s++) {
-    
-      scalarValues.particle_number[s-1]  = getParticleNumber((A6zz) vlasov->f.dataZero(), s);
-      scalarValues.entropy        [s-1]  = getEntropy(s)                               ;
-      scalarValues.kinetic_energy [s-1]  = getKineticEnergy((A6zz) vlasov->f.dataZero(), V.dataZero(), M.dataZero(), s) ;
-      scalarValues.particle_flux  [s-1]  = 0.; 
-      scalarValues.heat_flux      [s-1]  = 0.;
-    }
-      
+    // gives bus error ?!
+    calculateScalarValues((A6zz) vlasov->f.dataZero(), V.dataZero(), M.dataZero(), 1, scalarValues); 
     
     SVTable->append(&scalarValues);
     

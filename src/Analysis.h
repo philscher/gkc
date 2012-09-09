@@ -153,20 +153,15 @@ class Analysis : public IfaceGKC {
    *
    *  Normalized : Note that \f$ d6Z = m\hat{B} d\mu dv_\parallel \f$
    *
-   * @param species particle species \f$ \sigma \f$
    *
-   * @return   the total energy of species
-   **/
-   double getKineticEnergy(const CComplex f[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], const double V[NvGB], const double M[NmGB], const int s);
-  
-   /**
    *   Calculate entropy using Imadera et al.
    *
+   *
+   *  @param species particle species \f$ \sigma \f$
+   *  @return   the total energy of species
+   *
+   *
    **/
-   double getEntropy       (int s);
-   
-   double getParticleNumber(const CComplex fs [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], const int sp);
-
    void calculateScalarValues(const CComplex f[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
                               const double V[NvGB], const double M[NmGB], const int s,
                               ScalarValues &SV); 
@@ -193,16 +188,6 @@ class Analysis : public IfaceGKC {
    *     Q_s = \left< \int \left(v_\parallel^2 + \mu B  \right) F_sj k_y \phi(x,k_y, z, \mu, s) d^3v \right> 
    *  \f]
    *
-   **/
-   void getParticleHeatFlux(const int m, const int s, 
-                            CComplex ParticleFlux[NkyLD][NxLD], CComplex HeatFlux[NkyLD][NxLD],
-                            const CComplex f[NsLB][NmLB][NzLB][NkyLB][NxLB][NvLB],
-                            const CComplex phi[NsLD][NmLD][NzLD][NkyLD][NxLB+4],
-                            const double V[NvGB], const double M[NmGB]);
-
-   double  getTotalHeatFlux      (int species);
-    
-   /**
    *  calculates and returns the heat flux across magnetic flux surfaces
    *  for species s by
    *  
@@ -211,9 +196,13 @@ class Analysis : public IfaceGKC {
    *  \f]
    * 
    *  Ref : Dannert PhD Thesis
+   *
    **/
-   double getTotalParticleFlux   ( int species);
-   
+   void getParticleHeatFlux(const int m, const int s, 
+                            CComplex ParticleFlux[NkyLD][NxLD], CComplex HeatFlux[NkyLD][NxLD],
+                            const CComplex f[NsLB][NmLB][NzLB][NkyLB][NxLB][NvLB],
+                            const CComplex phi[NsLD][NmLD][NzLD][NkyLD][NxLB+4],
+                            const double V[NvGB], const double M[NmGB]);
 
 
    int updateSpectrum      (unsigned int dir);
@@ -230,8 +219,6 @@ class Analysis : public IfaceGKC {
    *
    **/ 
    void getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEnergy);
-
-   //double getMaxTimeStep(Timing timing, int dir=DIR_ALL, const double maxCFL=0.4);
 
    //////////////// Calculate Moments (4-dimensional s,x,y_k,z) ////////////////////////
 
