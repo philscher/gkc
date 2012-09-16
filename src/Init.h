@@ -50,6 +50,12 @@ class Init   : public IfaceGKC {
    *   @brief document me please
    **/
    void setFieldFromFunction(Setup *setup, Array4C field, int n , std::string func);
+/**
+ *   @brief inits the Maxwellian 
+ **/
+   void initMaxwellian(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                     CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                    const double V[NvGB], const double M[NmGB]);
 
   public :
 

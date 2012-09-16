@@ -131,7 +131,7 @@ void Analysis::calculateScalarValues(const CComplex f[NsLD][NmLD][NzLB][NkyLD][N
     //////////// Calculate Kinetic Energy  //////////////////////////
     
     double kineticEnergy=0.e0;
-    const double v2_d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * dm * grid->dXYZ * plasma->species(s).scale_v ;
+    const double v2_d6Z = M_PI * plasma->species[s].n0 * plasma->species[s].T0 * plasma->B0 * dv * dm * grid->dXYZ * plasma->species[s].scale_v ;
               
     #pragma omp parallel for reduction(+:kineticEnergy) collapse (2)
     for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
@@ -209,7 +209,7 @@ void Analysis::getNumberDensity(const  CComplex f[NsLB][NmLB][NzLB][NkyLB][NxLB]
 Array4R Analysis::getMomentumParallel() {
 /* 
     const double d6Z = dXYZV * plasma->B0 * M_PI;
-    const double alpha_s = plasma->species(s).q / plasma->species(s).T0;
+    const double alpha_s = plasma->species[s].q / plasma->species[s].T0;
 
        for(int v=NvLlD; v<= NvLuD;v++)  A4(x,y,z,s) = alpha_s * V(v) * F(x, y, z, v, RmLD, s) * d6Z;
  * */
@@ -225,7 +225,7 @@ void Analysis::getTemperatureParallel(const  CComplex f[NsLB][NmLB][NzLB][NkyLB]
 
   for(int s = NsLlD; s <= NsLuD; s++) {
 
-      const double d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * dm * grid->dXYZ;
+      const double d6Z = M_PI * plasma->species[s].n0 * plasma->species[s].T0 * plasma->B0 * dv * dm * grid->dXYZ;
 
       omp_for_C3(int m=NmLlD; m<=NmLuD; m++) { for(int z=NzLlD; z<= NzLuD; z++) { for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { 
             
@@ -286,7 +286,7 @@ void Analysis::getParticleHeatFlux(const int m, const int s,
                                    const double V[NvGB], const double M[NmGB])
 {
 
-    const double d6Z = M_PI * plasma->species(s).n0 * plasma->species(s).T0 * plasma->B0 * dv * grid->dm(m) * grid->dXYZ;
+    const double d6Z = M_PI * plasma->species[s].n0 * plasma->species[s].T0 * plasma->B0 * dv * grid->dm(m) * grid->dXYZ;
 
     omp_for(int z=NzLlD; z<= NzLuD;z++) { 
   
@@ -536,14 +536,14 @@ int Analysis::writeData(Timing timing, double dt)
     for(int s = NsGlD; s <= NsGuD; s++) {
     
       messageStream << "         | " << 
-        plasma->species(s).name << "   N : " << scalarValues.particle_number[s-1]  << "  Kinetic Energy: " << scalarValues.kinetic_energy[s-1] ;
+        plasma->species[s].name << "   N : " << scalarValues.particle_number[s-1]  << "  Kinetic Energy: " << scalarValues.kinetic_energy[s-1] ;
       messageStream << "   Particle Flux :" << scalarValues.particle_flux[s-1]    << "  Heat Flux : " << scalarValues.heat_flux[s-1] << std::endl;
-        charge += plasma->species(s).q  * scalarValues.particle_number[s-1];
+        charge += plasma->species[s].q  * scalarValues.particle_number[s-1];
       kinetic_energy += scalarValues.kinetic_energy[s-1];
     }
     
     messageStream << //"------------------------------------------------------------------" <<
-      "         | Total Energy " << kinetic_energy+scalarValues.phiEnergy + scalarValues.ApEnergy + scalarValues.BpEnergy << "    Total Charge = " << ((plasma->species(0).n0 != 0.) ? 0. : charge) 
+      "         | Total Energy " << kinetic_energy+scalarValues.phiEnergy + scalarValues.ApEnergy + scalarValues.BpEnergy << "    Total Charge = " << ((plasma->species[0].n0 != 0.) ? 0. : charge) 
       << std::endl;  
     parallel->print(messageStream.str());
     

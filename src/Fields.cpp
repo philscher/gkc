@@ -141,8 +141,8 @@ void Fields::calculateChargeDensity(CComplex f0         [NsLD][NmLD][NzLB][NkyLD
    // In case of a full-f simulation the Maxwellian is subtracted
 
    // re-normalize with \f[ \hat{v}^3
-   //const double pqnB_dvdm = M_PI * plasma->species(s).n0 * plasma->species(s).q   * plasma->B0 * dv * grid->dm(m) ;
-   const double pqnB_dvdm = M_PI * plasma->species(s).q   * plasma->B0 * dv * grid->dm(m) ;
+   //const double pqnB_dvdm = M_PI * plasma->species[s].n0 * plasma->species[s].q   * plasma->B0 * dv * grid->dm(m) ;
+   const double pqnB_dvdm = M_PI * plasma->species[s].q   * plasma->B0 * dv * grid->dm(m) ;
     
    omp_for_C2(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
@@ -162,7 +162,7 @@ void Fields::calculateParallelCurrentDensity(CComplex f0[NsLD][NmLD][NzLB][NkyLD
                                              double V[NvGB], const int m, const int s          ) 
 {
   
-   const double qa_dvdm = plasma->species(s).q * plasma->species(s).alpha  * plasma->B0 * M_PI * dv * grid->dm(m) ;
+   const double qa_dvdm = plasma->species[s].q * plasma->species[s].alpha  * plasma->B0 * M_PI * dv * grid->dm(m) ;
    
    omp_for_C2(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
@@ -182,7 +182,7 @@ void Fields::calculatePerpendicularCurrentDensity(CComplex f0 [NsLD][NmLD][NzLB]
                                                   double M[NmGB], const int m, const int s          ) 
 {
    
-   const double qan_dvdm = - plasma->species(s).q * plasma->species(s).alpha   * plasma->B0 * M_PI * dv * grid->dm(m) ;
+   const double qan_dvdm = - plasma->species[s].q * plasma->species[s].alpha   * plasma->B0 * M_PI * dv * grid->dm(m) ;
    
    for(int z=NzLlD; z<= NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++){
 

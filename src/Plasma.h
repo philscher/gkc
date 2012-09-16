@@ -133,7 +133,7 @@ class Plasma : public IfaceGKC {
    *   adiabatic species.
    *   @todo check impact on speed
    **/
-   Array<Species, 1>  species;
+   Species species[SPECIES_MAX+1];
    
    /**
    *   Note Species goes from 0 ... SPECIES_MAX, where 0 is an
@@ -149,7 +149,7 @@ class Plasma : public IfaceGKC {
    **/
    virtual ~Plasma() {};
 
-   double cs;  ///<  Sound speed of ions \f$ c_s = \sqrt{\frac{T_{e0}}{m_i}} \f$ 
+   double cs;  ///<  speed of sound of ions \f$ c_s = \sqrt{\frac{T_{e0}}{m_i}} \f$ 
 
 protected:
 
