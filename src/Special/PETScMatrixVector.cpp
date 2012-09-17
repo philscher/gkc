@@ -1,20 +1,17 @@
 /*
  * =====================================================================================
  *
- *       Filename:  PETScMatrixVector.cpp
+ *       Filename: PETScMatrixVector.cpp
  *
- *    Description:  
+ *    Description: Matrix-Scalar multiplication helper for PETSc
  *
- *        Version:  1.0
- *        Created:  02/02/2012 11:50:28 PM
- *       Revision:  none
- *       Compiler:  gcc
+ *         Author: Paul P. Hilscher (2012-), 
  *
- *         Author:  YOUR NAME (), 
- *        Company:  
- *
+ *        License: GPLv3+
  * =====================================================================================
  */
+
+#include "Fields.h"
 
 #include "PETScMatrixVector.h"
 
@@ -33,10 +30,6 @@ int petc_signal_handler(int sig, void *ctx) {
 
 
 
-
-
-
-
 PETScMatrixVector::PETScMatrixVector(Vlasov *vlasov, Fields *fields)
 {
 
@@ -50,42 +43,45 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
 
 {
 
-  // get Constext
+  [=] (CComplex  fs  [NsLD][NmLD ][NzLB][NkyLD][NxLB  ][NvLB],  
+       CComplex  fss [NsLD][NmLD ][NzLB][NkyLD][NxLB  ][NvLB])
+  {
+      
     std::cout << "\r"   << "Iteration  : " << GL_iter++ << std::flush;
 
-    Complex *x_F1, *y_F1; 
-   
+    CComplex *x_F1, *y_F1; 
  
     VecGetArrayRead(Vec_x, (const PetscScalar **) &x_F1);
-    VecGetArray    (Vec_y, (PetscScalar **) &y_F1);
+    VecGetArray    (Vec_y, (PetscScalar **)       &y_F1);
 
     // copy whole phase space function (waste but starting point) (important due to bounday conditions
    // we can built wrapper around this and directly pass it
    for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
    for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD   ; m   <= NmLuD ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
       
-           GL_vlasov->fs(x,y_k,z,v,m,s) = x_F1[n++];
+           fs[s][m][z][y_k][x][v] = x_F1[n++];
 
    }}} }}}
 
    GL_vlasov->setBoundary(GL_vlasov->fs); 
    GL_fields->solve(GL_vlasov->f0,  GL_vlasov->fs); 
+   
    const double rk_0[] = { 0., 0., 0.};
-   //GL_vlasov->f = 0.;
    GL_vlasov->solve(GL_vlasov->getEquationType(), GL_fields, GL_vlasov->fs, GL_vlasov->fss, 1., 0, rk_0);
    
     // copy whole phase space function (waste but starting point) (important due to bounday conditions
    for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
    for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD   ; m   <= NmLuD ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
 
-       y_F1[n++] = GL_vlasov->fss(x,y_k,z,v,m,s); 
+       y_F1[n++] = fss[s][m][z][y_k][x][v];
 
    }}} }}}
  
    VecRestoreArrayRead(Vec_x, (const PetscScalar **) &x_F1);
-   VecRestoreArray    (Vec_y, &y_F1);
+   VecRestoreArray    (Vec_y, (      PetscScalar **) &y_F1);
 
-
+   }((A6zz) GL_vlasov->fs.dataZero(), (A6zz) GL_vlasov->fss.dataZero());
+   
    return 0; // return 0 (success) required for PETSc
 }
 
