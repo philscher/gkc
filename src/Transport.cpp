@@ -55,7 +55,7 @@ void Transport::update(Vlasov *vlasov) {
 
       for(int m = NmLlD; m <= NmLuD; m++) { for(int v = NvLlD; v <= NvLuD; v++) {
         vlasov->f0(x, y_k, z, v, m, s)  =  (n / pow( M_PI*T, 1.5) * exp(-pow2(V(v))) * 
-                    ((plasma->species(s).doGyro == true) ?   exp(- M(m)    * plasma->B0/T) :  T/(plasma->B0)));
+                    ((plasma->species[s].doGyro == true) ?   exp(- M(m)    * plasma->B0/T) :  T/(plasma->B0)));
     } }
 
     // get new Maxwellian

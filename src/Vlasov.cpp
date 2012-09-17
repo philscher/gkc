@@ -182,7 +182,7 @@ double Vlasov::getMaxTimeStep(int dir, const double maxCFL)
  // simplify !
   double v_scale = 0., dt=0.;
   
-  for(int s=NsGlD; s<=NsGuD; s++) v_scale = max(v_scale, plasma->species(s).scale_v);
+  for(int s=NsGlD; s<=NsGuD; s++) v_scale = max(v_scale, plasma->species[s].scale_v);
    
   if     (dir == DIR_X  ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_X]/dx, OP_MAX));
   else if(dir == DIR_Y  ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_Y]/dy, OP_MAX));

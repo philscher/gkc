@@ -140,8 +140,8 @@ public:
    *  @param s  index for species
    *
    **/
-   void calculateChargeDensity(CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                               CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+   void calculateChargeDensity(const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                               const CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz]   ,
                                const int m, const int s) ;
 
@@ -163,10 +163,10 @@ public:
    *  @param s  index for species
    *
    **/
-   void calculateParallelCurrentDensity(CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                        CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+   void calculateParallelCurrentDensity(const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                        const CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                         CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz],
-                                        double   V  [NvGB], const int m, const int s) ;
+                                        const double   V  [NvGB], const int m, const int s) ;
 
    /**
    *  Calculates the perpendicular current density \f$ j_\perp(x,y_k,z;\mu,\sigma) \f$
@@ -187,10 +187,10 @@ public:
    *  @param s  index for species
    *
    **/
-   virtual void  calculatePerpendicularCurrentDensity(CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                                      CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+   virtual void  calculatePerpendicularCurrentDensity(const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                                      const CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                                       CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz],
-                                                      double M[NmGB],  const int m, const int s); 
+                                                      const double M[NmGB],  const int m, const int s); 
 
 
    /**
@@ -263,6 +263,9 @@ public:
    *
    **/
    virtual void gyroAverage(Array4C In, Array4C Out, const int m, const int s, const bool forward) = 0;
+   //virtual void gyroAverage(CComplex Q     [plasma->nfields][NxLD][NkyLD][Nz],
+   //                         CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz],
+   //                        const int m, const int s, const bool forward) = 0;
   
    /**
    *  @brief four-dimensional array hold the source terms in drift-coordinates.

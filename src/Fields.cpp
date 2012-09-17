@@ -132,8 +132,8 @@ void Fields::solve(Array6C f0, Array6C  f, Timing timing)
 }
 
 
-void Fields::calculateChargeDensity(CComplex f0         [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                    CComplex f          [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+void Fields::calculateChargeDensity(const CComplex f0         [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                    const CComplex f          [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                     CComplex Field0     [Nq]        [NzLD][NkyLD][NxLD]      ,
                                     const int m, const int s) 
 {
@@ -156,10 +156,10 @@ void Fields::calculateChargeDensity(CComplex f0         [NsLD][NmLD][NzLB][NkyLD
 
 
 
-void Fields::calculateParallelCurrentDensity(CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                             CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+void Fields::calculateParallelCurrentDensity(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                             const CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                              CComplex Field0[Nq][NzLD][NkyLD][NxLD],
-                                             double V[NvGB], const int m, const int s          ) 
+                                             const double V[NvGB], const int m, const int s          ) 
 {
   
    const double qa_dvdm = plasma->species[s].q * plasma->species[s].alpha  * plasma->B0 * M_PI * dv * grid->dm(m) ;
@@ -176,10 +176,10 @@ void Fields::calculateParallelCurrentDensity(CComplex f0[NsLD][NmLD][NzLB][NkyLD
 
   
 // Note : Did not checked correctness of this function
-void Fields::calculatePerpendicularCurrentDensity(CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                                  CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+void Fields::calculatePerpendicularCurrentDensity(const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                                  const CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                                   CComplex Field0[Nq][NzLD][NkyLD][NxLD],
-                                                  double M[NmGB], const int m, const int s          ) 
+                                                  const double M[NmGB], const int m, const int s          ) 
 {
    
    const double qan_dvdm = - plasma->species[s].q * plasma->species[s].alpha   * plasma->B0 * M_PI * dv * grid->dm(m) ;
