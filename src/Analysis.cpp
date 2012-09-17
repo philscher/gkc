@@ -110,7 +110,7 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
 
 
 void Analysis::calculateScalarValues(const CComplex f[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
-                                       const double V[NvGB], const double M[NmGB], const int s,
+                                     const double V[NvGB], const double M[NmGB], const int s,
                                        ScalarValues &scalarValues) 
 
 {
@@ -148,11 +148,10 @@ void Analysis::calculateScalarValues(const CComplex f[NsLD][NmLD][NzLB][NkyLD][N
        // return  parallel->collect(kineticEnergy, OP_SUM, DIR_ALL);
 
     ////////////////////////////// Calculate Entropy ////////////////////////////////////
-    double entropy = 0.e0;
-       
-       // wtf am I doing here ?
-       // entropy += grid->dXYZV * abs(pow2(sum(vlasov->f(RxLD, RkyLD, RzLD, RvLD, RmLD, s) 
-       //          - vlasov->f0 (RxLD, RkyLD, RzLD, RvLD, RmLD, s)))/ sum(vlasov->f0(RxLD, RkyLD, RzLD, RvLD, RmLD, s)));
+    double entropy = 0.; //abs(pow2( __sec_reduce_add(f [s][m][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD][NvLlD:NvLD] 
+                         //                     - f0[s][m][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD][NvLlD:NvLD])))/
+                         //      __sec_reduce_add(f0[s][m][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD][NvLlD:NvLD]);
+                         // |f - f0|^2/n_0
         
 
     /////////////////////////// Calculate Total Heat & Particle Flux ////////////////////////
@@ -476,7 +475,7 @@ void Analysis::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEne
 
 };
   
-int Analysis::writeData(Timing timing, double dt)
+void Analysis::writeData(Timing timing, double dt)
 
 {
 
@@ -549,7 +548,7 @@ int Analysis::writeData(Timing timing, double dt)
     
   }
   
-  return GKC_SUCCESS;
+  return;
   
 }
 

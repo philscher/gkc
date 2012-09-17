@@ -91,7 +91,8 @@ class FieldsFFT : public Fields {
   * the fields equation, we need to subtract it from the adiabatic response, but
   * only for(ky=0, kz=0) modes !!!.
   **/
-  virtual void calcFluxSurfAvrg(Array4C rho_kykx, Array1C phi_yz);
+  void calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+                        CComplex phi_yz[FFTSolver::X_NkxL]);
 
   /**
   *   @brief Set if Nyquist frequency is removed from FFT spectra
@@ -205,15 +206,6 @@ class FieldsFFT : public Fields {
   */
   void solveBParallelEquation(CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
                               CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields]);
-
-  /**
-  *   @brief holds the flux surface average
-  *
-  *
-  *
-  *
-  */ 
-  Array1C  phi_yz;
 
   public:
 

@@ -86,13 +86,13 @@ int VlasovOptim::solve(std::string equation_type, Fields *fields, Array6C _fs, A
    for(int s = NsLlD; s <= NsLuD; s++) {
         
       // small abbrevations
-      const double w_n   = plasma->species(s).w_n;
-      const double w_T   = plasma->species(s).w_T;
-      const double alpha = plasma->species(s).alpha;
-      const double sigma = plasma->species(s).sigma;
-      const double kw_T  = 1./plasma->species(s).T0;
+      const double w_n   = plasma->species[s].w_n;
+      const double w_T   = plasma->species[s].w_T;
+      const double alpha = plasma->species[s].alpha;
+      const double sigma = plasma->species[s].sigma;
+      const double kw_T  = 1./plasma->species[s].T0;
     
-      const double sub = (plasma->species(s).doGyro) ? 3./2. : 1./2.;
+      const double sub = (plasma->species[s].doGyro) ? 3./2. : 1./2.;
         
       const double v2_rms   = 1.;//pow2(alpha);
 

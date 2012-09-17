@@ -257,14 +257,17 @@ typedef CComplex(*A6zz)[][][][][];
 typedef CComplex(*A5zz)[][][][];
 typedef CComplex(*A4zz)[][][];
 typedef CComplex(*A3zz)[][];
-typedef CComplex(*A2zz)[][];
-typedef CComplex(*A1zz)[];
+typedef CComplex(*A2zz)[];
+//typedef CComplex(*A1zz)[];
+
+typedef Real(*A2rr)[][];
 
 typedef Complex(*A6z)[][][][][];
 typedef Complex(*A5z)[][][][];
 typedef Complex(*A4z)[][][];
 typedef Complex(*A3z)[][];
 typedef Complex(*A2z)[][];
+
 
 
 

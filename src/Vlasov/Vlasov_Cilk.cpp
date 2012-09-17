@@ -72,6 +72,8 @@ Nice stuff http://stackoverflow.com/questions/841433/gcc-attribute-alignedx-expl
 // Stack variables are alligned per default on 8 bytes (at least for SSE2+ CPUs)
 // Can be controlled on gcc with  -mpreferred-stack-boundary=n
 // See : http://stackoverflow.com/questions/1061818/stack-allocation-padding-and-alignment
+// short array[3] __attribute__ ((aligned (__BIGGEST_ALIGNMENT__)));
+// __BIGGEST_ALIGNMENT autmatically uses max alignments sizes supported by vector instructions
 
 // take care, for electro-static simulations, G & Xi are null pointers (for e-m f&phi respectively)
 void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][NkyLD][NxLB  ][NvLB],  // in case of e-m
@@ -188,8 +190,8 @@ void VlasovCilk::setupXiAndG(
 {
 
   // small abbrevations
-  const double alpha = plasma->species(s).alpha;
-  const double sigma = plasma->species(s).sigma;
+  const double alpha = plasma->species[s].alpha;
+  const double sigma = plasma->species[s].sigma;
   
   const double aeb   =  alpha* geo->eps_hat * plasma->beta; 
   const double saeb  =  sigma * alpha * geo->eps_hat * plasma->beta;
@@ -245,13 +247,13 @@ void VlasovCilk::Vlasov_EM(
    for(int s = NsLlD; s <= NsLuD; s++) {
         
       // small abbrevations
-      const double w_n   = plasma->species(s).w_n;
-      const double w_T   = plasma->species(s).w_T;
-      const double alpha = plasma->species(s).alpha;
-      const double sigma = plasma->species(s).sigma;
-      const double Temp  = plasma->species(s).T0;
+      const double w_n   = plasma->species[s].w_n;
+      const double w_T   = plasma->species[s].w_T;
+      const double alpha = plasma->species[s].alpha;
+      const double sigma = plasma->species[s].sigma;
+      const double Temp  = plasma->species[s].T0;
     
-      const double sub = (plasma->species(s).doGyro) ? 3./2. : 1./2.;
+      const double sub = (plasma->species[s].doGyro) ? 3./2. : 1./2.;
       
 
       for(int m=NmLlD; m<= NmLuD;m++) { 

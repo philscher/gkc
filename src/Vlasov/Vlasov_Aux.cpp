@@ -99,17 +99,17 @@ void VlasovAux::Vlasov_ES(
   for(int s = NsLlD; s <= NsLuD; s++) {
         
       // some abbrevations
-      const double w_n   = plasma->species(s).w_n;
-      const double w_T   = plasma->species(s).w_T;
-      const double alpha = plasma->species(s).alpha;
-      const double sigma = plasma->species(s).sigma;
-      const double kw_T  = 1./plasma->species(s).T0;
+      const double w_n   = plasma->species[s].w_n;
+      const double w_T   = plasma->species[s].w_T;
+      const double alpha = plasma->species[s].alpha;
+      const double sigma = plasma->species[s].sigma;
+      const double kw_T  = 1./plasma->species[s].T0;
     
-      const double sub = (plasma->species(s).doGyro) ? 3./2. : 1./2.;
+      const double sub = (plasma->species[s].doGyro) ? 3./2. : 1./2.;
         
       const double v2_rms   = 1.;//pow2(alpha);
   
-      bool isGyro1 = (plasma->species(s).gyroModel == "Gyro-1");
+      bool isGyro1 = (plasma->species[s].gyroModel == "Gyro-1");
 
       
       for(int m=NmLlD; m<= NmLuD;m++) { for(int z=NzLlD; z<= NzLuD;z++) { 
@@ -136,7 +136,8 @@ void VlasovAux::Vlasov_ES(
 
          //#pragma unroll(8)
          //#pragma unroll
-         #pragma  vector nontemporal(fss)
+         //#pragma vector aligned 
+         #pragma vector nontemporal(fss)
          simd_for(int v=NvLlD; v<= NvLuD; v++) { 
 
 
@@ -197,16 +198,16 @@ void VlasovAux::Vlasov_2D_Island(
     for(int s = NsLlD; s <= NsLuD; s++) {
         
       // small abbrevations
-      const double w_n   = plasma->species(s).w_n;
-      const double w_T   = plasma->species(s).w_T;
-      const double alpha = plasma->species(s).alpha;
-      const double sigma = plasma->species(s).sigma;
-      const double Temp  = plasma->species(s).T0;
-      const double sub   = (plasma->species(s).doGyro) ? 3./2. : 1./2.;
+      const double w_n   = plasma->species[s].w_n;
+      const double w_T   = plasma->species[s].w_T;
+      const double alpha = plasma->species[s].alpha;
+      const double sigma = plasma->species[s].sigma;
+      const double Temp  = plasma->species[s].T0;
+      const double sub   = (plasma->species[s].doGyro) ? 3./2. : 1./2.;
 
       const double v2_rms = 1.;//pow2(alpha);
       
-      bool isGyro1 = (plasma->species(s).gyroModel == "Gyro-1");
+      bool isGyro1 = (plasma->species[s].gyroModel == "Gyro-1");
 
 
       for(int m=NmLlD; m<=NmLuD; m++) {
@@ -371,13 +372,13 @@ void VlasovAux::Vlasov_EM(
    for(int s = NsLlD; s <= NsLuD; s++) {
         
       // abbrevations
-      const double w_n   = plasma->species(s).w_n;
-      const double w_T   = plasma->species(s).w_T;
-      const double alpha = plasma->species(s).alpha;
-      const double sigma = plasma->species(s).sigma;
-      const double Temp  = plasma->species(s).T0;
+      const double w_n   = plasma->species[s].w_n;
+      const double w_T   = plasma->species[s].w_T;
+      const double alpha = plasma->species[s].alpha;
+      const double sigma = plasma->species[s].sigma;
+      const double Temp  = plasma->species[s].T0;
     
-      const double sub   = (plasma->species(s).doGyro) ? 3./2. : 1./2.;
+      const double sub   = (plasma->species[s].doGyro) ? 3./2. : 1./2.;
       
 
       for(int m=NmLlD; m<= NmLuD;m++) { 
@@ -416,7 +417,7 @@ void VlasovAux::Vlasov_EM(
     
       //Complex k2_Xi = 0.;
       /* 
-      if(plasma->species(s).gyroModel == "Gyro-1") { 
+      if(plasma->species[s].gyroModel == "Gyro-1") { 
         const Complex ddXi_dx = (16.*(Xi[z][y_k][x+1][v] + Xi[z][y_k][x-1][v]) - (Xi[z][y_k][x+2][v] + Xi[z][y_k][x-2][v]) - 30.*Xi[z][y_k][x][v])/(12.*dx*dx);
         k2_Xi = (ky*ky + ddXi_dx);
      }
@@ -543,7 +544,7 @@ void VlasovAux::Landau_Damping(
 
    for(int s = NsLlD; s <= NsLuD; s++) { for(int m=NmLlD; m<= NmLuD;m++) { 
       
-     const double alpha = plasma->species(s).alpha;
+     const double alpha = plasma->species[s].alpha;
   
        for(int z=NzLlD; z<= NzLuD;z++) {       for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
    omp_for(int x=NxLlD; x<= NxLuD;x++) {  simd_for(int v=NvLlD; v<= NvLuD;v++)         {
@@ -584,13 +585,13 @@ void    VlasovAux::Vlasov_2D_Fullf(
    for(int s = NsLlD; s <= NsLuD; s++) {
         
       // small abbrevations
-      const double w_n   = plasma->species(s).w_n;
-      const double w_T   = plasma->species(s).w_T;
-      const double alpha = plasma->species(s).alpha;
-      const double sigma = plasma->species(s).sigma;
-      const double Temp  = plasma->species(s).T0;
+      const double w_n   = plasma->species[s].w_n;
+      const double w_T   = plasma->species[s].w_T;
+      const double alpha = plasma->species[s].alpha;
+      const double sigma = plasma->species[s].sigma;
+      const double Temp  = plasma->species[s].T0;
     
-      const double sub = (plasma->species(s).doGyro) ? 3./2. : 1./2.;
+      const double sub = (plasma->species[s].doGyro) ? 3./2. : 1./2.;
       
       for(int m=NmLlD; m<= NmLuD;m++) { 
   

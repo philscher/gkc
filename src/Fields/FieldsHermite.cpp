@@ -81,7 +81,7 @@ FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileI
                    const double mu = GRQuad.x(n);
                    
                    // ToDO : what if BT != 1 ??!!
-                   const double BT = plasma->B0 / plasma->species(s).T0; 
+                   const double BT = plasma->B0 / plasma->species[s].T0; 
 
                    // no exp in case of Laguerre intergration const Complex w  = BT * exp(- BT * mu) * GRQuad.w(n); 
                    const Complex w  = BT * GRQuad.w(n); 
@@ -100,14 +100,14 @@ FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileI
 
               Matrix_Gamma0.addDiagonal(1.);
 
-              const double qqnT  = plasma->species(s).n0 * pow2(plasma->species(s).q)/plasma->species(s).T0;
+              const double qqnT  = plasma->species[s].n0 * pow2(plasma->species[s].q)/plasma->species[s].T0;
               Matrix_PoissonLHS += qqnT * Matrix_Gamma0;
            
             }
             Matrix_PoissonLHS.reduce(DIR_S); 
            
            // add adibatic response, solve for correction ?!
-           const double adiab = plasma->species(0).n0 * pow2(plasma->species(0).q)/plasma->species(0).T0;
+           const double adiab = plasma->species[0].n0 * pow2(plasma->species[0].q)/plasma->species[0].T0;
            Matrix_PoissonLHS.addDiagonal(adiab);
            
            MatrixPoissonSolverLHS(y_k, z) = new MatrixSolver(parallel, Matrix_PoissonLHS.getMat(), DIR_X, true, "SuperLU");
@@ -316,7 +316,7 @@ Matrix* FieldsHermite::getGyroAveragingMatrix(const double mu, const int y_k, co
            // fill martrix
            for(int x = NxLlD; x <= NxLuD; x++) { for(int n = NxLlD; n <= NxLuD; n++) {
         
-              const double rho_t2  = plasma->species(s).T0 * plasma->species(s).m / (pow2(plasma->species(s).q) * plasma->B0); 
+              const double rho_t2  = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0); 
               const double lambda2 = 2. * mu * rho_t2;
                 
               const Complex value  = getElements(x, n, sqrt(lambda2), y_k, z);

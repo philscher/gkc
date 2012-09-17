@@ -14,12 +14,12 @@
 #include "FieldsFFT.h"
 #include "Special/SpecialMath.h"
 
+
+
 FieldsFFT::FieldsFFT(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry *geo, FFTSolver *_fft) 
 : Fields(setup, grid, parallel, fileIO,  geo), fft(_fft)
 {
    
-   phi_yz.resize(fft->Rk1xL); phi_yz = 0.;
-
    screenNyquist = setup->get("Fields.screenNyquist", 1);
 } 
 
@@ -62,10 +62,11 @@ void FieldsFFT::solvePoissonEquation(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::
 {
     // Calculate flux-surface averaging
     // Note : how to deal with FFT normalization here ?
-    //if(plasma->species(0).doGyro) phi_yz = calcFluxSurfAvrg(fft->kXOut);
+    // CComplex phi_yz[FFTSolver::X_NkxL];
+    //if(plasma->species[0].doGyro) phi_yz = calcFluxSurfAvrg(fft->kXOut);
     
     // adiabatic response term (if no adiabatic species included n0 = 0)
-    const double adiab = plasma->species(0).n0 * pow2(plasma->species(0).q)/plasma->species(0).T0;
+    const double adiab = plasma->species[0].n0 * pow2(plasma->species[0].q)/plasma->species[0].T0;
     
     omp_for_C2(int z=NzLlD;z<=NzLuD;z++) { for(int y_k=NkyLlD; y_k<=NkyLuD; y_k++) { simd_for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD; x_k++) {
 
@@ -114,7 +115,7 @@ void FieldsFFT::solveBParallelEquation(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver
                                        CComplex kXIn [Nq][NzLD][NkyLD][FFTSolver::X_NkxL])
 {
 
-  const double adiab = plasma->species(0).n0 * pow2(plasma->species(0).q)/plasma->species(0).T0;
+  const double adiab = plasma->species[0].n0 * pow2(plasma->species[0].q)/plasma->species[0].T0;
     
   omp_for_C2(int z=NzLlD; z<=NzLuD;z++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { simd_for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
  
@@ -139,30 +140,33 @@ void FieldsFFT::solveBParallelEquation(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver
 
 
 // Note : This is very unpolished and is it also valid in toroidal case ? 
-void FieldsFFT::calcFluxSurfAvrg(Array4C kXOut, Array1C phi_yz) 
+void FieldsFFT::calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+                                 CComplex phi_yz[FFTSolver::X_NkxL])
 {
 
   if(parallel->Coord[DIR_VMS] != 0) check(-1, DMESG("calcFluxAverg should only be called by XYZ-main nodes"));
    
-  phi_yz = 0.; 
+  phi_yz[:] = 0.; 
 
   // Note : In FFT the ky=0 components carries the offset over y (integrated value), thus
   //        by divinding through the number of points we get the averaged valued
   for(int z=NzLlD; z<=NzLuD;z++) { if((NkyLlD <= 0) && (NkyLuD >= 0)) { for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD; x_k++) {
             
-     if(x_k == 0) { phi_yz(x_k) = (Complex) 0.e0 ; continue; }
+     if(x_k == 0) { phi_yz[x_k] = (CComplex) 0.e0 ; continue; }
           
      const double k2_p = fft->k2_p(x_k,0,z);
      
      const double lhs  = plasma->debye2 * k2_p + sum_qqnT_1mG0(k2_p);
+     
      // A(x_k, 0) is the sum over y, thus A(x_k, 0)/Ny is the average 
-     const Complex rhs  =  kXOut(x_k,0,z, Field::phi)/((double) (grid->NyGD*Nz));
-     phi_yz(x_k) = rhs/lhs;
+     const CComplex rhs  =  kXOut[Field::phi][z][0][x_k]/((double) (grid->NyGD*Nz));
+     
+     phi_yz[x_k] = rhs/lhs;
     
   } } }
 
   // average over z-direction & distribute over y 
-  parallel->collect(phi_yz, OP_SUM, DIR_XYZ);  
+//  parallel->collect(phi_yz, OP_SUM, DIR_XYZ);  
 
   return;
 
@@ -183,7 +187,7 @@ void FieldsFFT::gyroFull(Array4C In, Array4C Out,
    for(int n = 1; n <= Nq; n++) {
       
         // get therma gyro-radius^2 of species and lambda =  2 x b 
-        const double rho_t2  = plasma->species(s).T0 * plasma->species(s).m / (pow2(plasma->species(s).q) * plasma->B0); 
+        const double rho_t2  = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0); 
         const double lambda2 = 2. * M(m) * rho_t2;
 
         // perform gyro-average in Fourier space for rho/phi field
@@ -191,8 +195,8 @@ void FieldsFFT::gyroFull(Array4C In, Array4C Out,
     
          const double k2_p = fft->k2_p(x_k,y_k,z);
           
-          kXIn[n][z][y_k][x_k] = kXOut[n][z][y_k][x_k]/fft->Norm_X * ((n != 3) ? SpecialMath::BesselJ0(sqrt(lambda2 * k2_p)) 
-                                                                               : SpecialMath::BesselI1(sqrt(lambda2 * k2_p)));
+          kXIn[n][z][y_k][x_k] = kXOut[n][z][y_k][x_k]/fft->Norm_X * ((n != 3) ? j0(sqrt(lambda2 * k2_p)) 
+                                                                               : SFL::i1(sqrt(lambda2 * k2_p)));
 
          // According to GENE code the Nyquiest frequency in x is unphysicall and thus needs to be screened out
          // highest modes explodes in kinetic simulations.
@@ -219,7 +223,7 @@ void FieldsFFT::gyroFirst(Array4C In , Array4C Out, const int m, const int s, co
   for(int nField = 1; nField <= Nq; nField++) {
 
     // get therma gyro-radius^2 of species and lambda =  2 x b 
-    const double rho_t2 = plasma->species(s).T0 * plasma->species(s).m / (pow2(plasma->species(s).q) * plasma->B0); 
+    const double rho_t2 = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0); 
 
     for(int z=NzLlD; z<=NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {  simd_for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
     
@@ -247,9 +251,9 @@ void FieldsFFT::gyroFirst(Array4C In , Array4C Out, const int m, const int s, co
 void FieldsFFT::gyroAverage(Array4C In, Array4C Out, const int m, const int s, const bool gyroFields) 
 {
   // check if we should do gyroAvearge
-  if     (plasma->species(s).gyroModel == "Drift" ) Out=In;
-  else if(plasma->species(s).gyroModel == "Gyro"  ) gyroFull (In, Out, (A4zz) fft->kXOut.dataZero(), (A4zz) fft->kXIn.dataZero(), m, s, gyroFields);  
-  else if(plasma->species(s).gyroModel == "Gyro-1") gyroFirst(In, Out, m, s, gyroFields); 
+  if     (plasma->species[s].gyroModel == "Drift" ) Out=In;
+  else if(plasma->species[s].gyroModel == "Gyro"  ) gyroFull (In, Out, (A4zz) fft->kXOut.dataZero(), (A4zz) fft->kXIn.dataZero(), m, s, gyroFields);  
+  else if(plasma->species[s].gyroModel == "Gyro-1") gyroFirst(In, Out, m, s, gyroFields); 
   else   check(-1, DMESG("No such gyro-average Model"));
   
   return;
@@ -293,7 +297,7 @@ void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEn
         // short-circuit contribution for ITG mode 
         Array1C phi_yz(RxLD); phi_yz = 0.;
        /* 
-        if(plasma->species(0).doGyro) {
+        if(plasma->species[0].doGyro) {
           // muss ich wirklich ueber yz mitteln ? nicht summieren ??
        for(int x = NxLlD; x <= NxLuD; x++) phi_yz(x) = sum(fields->phi(x, RyLD, RzLD, 1, 1))/((double) Ny*Nz);
 //       for(int x = NxLlD; x <= NxLuD; x++) phi_yz(x) = sum(fields->phi(x, RyLD, RzLD, 1, 1));
@@ -302,7 +306,7 @@ void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEn
       
         * */ 
         // add Adiabatic contributions
-        const double adiab = plasma->species(0).n0 * pow2(plasma->species(0).q)/plasma->species(0).T0;
+        const double adiab = plasma->species[0].n0 * pow2(plasma->species[0].q)/plasma->species[0].T0;
         for(int x = NxLlD; x <= NxLuD; x++)  phiEnergy += adiab * abs(sum(pow2(phi(x,RkyLD,RzLD, 1, 1) - phi_yz(x))));
      
       }
@@ -327,8 +331,8 @@ double FieldsFFT::sum_qqnT_1mG0(const double k2_p)
 
    for(int s = NsGlD; s <= NsGuD; s++) {
 
-      const double qqnT   = plasma->species(s).n0 * pow2(plasma->species(s).q)/plasma->species(s).T0;
-      const double rho_t2 = plasma->species(s).T0  * plasma->species(s).m / pow2(plasma->species(s).q * plasma->B0);
+      const double qqnT   = plasma->species[s].n0 * pow2(plasma->species[s].q)/plasma->species[s].T0;
+      const double rho_t2 = plasma->species[s].T0  * plasma->species[s].m / pow2(plasma->species[s].q * plasma->B0);
        
       //g0 += qqnT * SpecialMath::_1mGamma0_Pade( rho_t2 * k2_p);
       g0 += qqnT * SpecialMath::_1mGamma0( rho_t2 * k2_p);
@@ -344,8 +348,8 @@ double FieldsFFT::sum_sa2qG0(const double kp_2)
     #pragma simd
     for(int s = NsGlD; s <= NsGuD; s++) {
 
-       const double sa2q   = plasma->species(s).sigma * pow2(plasma->species(s).alpha) * plasma->species(s).q;
-       const double rho_t2 = plasma->species(s).T0 * plasma->species(s).m / (pow2(plasma->species(s).q) * plasma->B0);
+       const double sa2q   = plasma->species[s].sigma * pow2(plasma->species[s].alpha) * plasma->species[s].q;
+       const double rho_t2 = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0);
 
        const double b = rho_t2 * kp_2;
        
@@ -362,8 +366,8 @@ double FieldsFFT::sum_qnB_Delta(const double k2_p)
    
    for(int s = NsGlD; s <= NsGuD; s++) {
 
-      const double qn    = plasma->species(s).q * plasma->species(s).n0;
-      const double rho_t2 = plasma->species(s).T0 * plasma->species(s).m / (pow2(plasma->species(s).q) * plasma->B0);
+      const double qn    = plasma->species[s].q * plasma->species[s].n0;
+      const double rho_t2 = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0);
 
       g0 += qn * SpecialMath::Delta(rho_t2 * k2_p);
    }
@@ -376,8 +380,8 @@ double FieldsFFT::sum_2TnBB_Delta(const double k2_p)
    
    for(int s = NsGlD; s <= NsGuD; s++) {
 
-      const double Tn   = plasma->species(s).T0 * plasma->species(s).n0;
-      const double rho_t2 = plasma->species(s).T0 * plasma->species(s).m / (pow2(plasma->species(s).q) * plasma->B0);
+      const double Tn   = plasma->species[s].T0 * plasma->species[s].n0;
+      const double rho_t2 = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0);
 
       g0 += Tn * SpecialMath::Delta(rho_t2 * k2_p);
    }

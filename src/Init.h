@@ -102,24 +102,23 @@ class Init   : public IfaceGKC {
     *  
     * \f]
     **/ 
-   int PerturbationPSFMode(Vlasov *vlasov, int s = 1, double pre=0.);
+   void PerturbationPSFMode(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                  CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB]);
    /**
    *   @brief document me please
    **/
-   int PerturbationPSFExp(Vlasov *vlasov, int s, double pre);
+   void PerturbationPSFExp(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                 CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB]);
    /**
    *   @brief document me please
    **/
-   int PerturbationPSFNoise(Vlasov *vlasov, int s, double pre);
+   void PerturbationPSFNoise(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                   CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB]);
    /**
    *   @brief document me please
    **/
-   int PerturbationHermitePolynomial(Vlasov *vlasov, int s, double pert, int l);
-
-   /**
-   *   @brief document me please
-   **/
-   double inline Perturbation(int x,int y,int z, const double epsilon_0, const double sigma);
+   int PerturbationHermitePolynomial(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                           CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB]);
 
   protected:
 

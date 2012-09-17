@@ -25,20 +25,15 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
 
    initMaxwellian(setup, (A6zz) vlasov->f0.dataZero(), (A6zz) vlasov->f.dataZero(), V.dataZero(), M.dataZero());
   
-   // set Perturbation
-   for(int s = NsLlD; s <= NsLuD; s++) {
-   
-     // check for predefined perturbations 
+   // check for predefined perturbations
    PerturbationMethod = setup->get("Init.Perturbation", "");
-   if     (PerturbationMethod == "PSFEqualModePower") PerturbationPSFMode (vlasov, s, plasma->global ? 1. : 0.); 
-   else if(PerturbationMethod == "PSFNoise")          PerturbationPSFNoise(vlasov, s, plasma->global ? 1. : 0.);
-   else if(PerturbationMethod == "PSFExp")            PerturbationPSFExp  (vlasov, s, plasma->global ? 1. : 0.);
-   else if(PerturbationMethod == "PSFHermitePoly")    PerturbationHermitePolynomial(vlasov, s, plasma->global ? 1. : 0., setup->get("Init.HermitePolynomial", 0));
-   else if(PerturbationMethod == "NoPerturbation") ;
+
+   if(PerturbationMethod == "NoPerturbation") ;
+   //else if (PerturbationMethod == "PSFEqualModePower") PerturbationPSFMode ((A6zz) vlasov->f0.dataZero, (A6zz) vlasov->f.dataZero()); 
+   else if(PerturbationMethod == "PSFNoise")          PerturbationPSFNoise((A6zz) vlasov->f0.dataZero(), (A6zz) vlasov->f.dataZero()); 
+   else if(PerturbationMethod == "PSFExp")            PerturbationPSFExp  ((A6zz) vlasov->f0.dataZero(), (A6zz) vlasov->f.dataZero()); 
+   //else if(PerturbationMethod == "PSFHermitePoly")    PerturbationHermitePolynomial(vlasov, s, plasma->global ? 1. : 0., setup->get("Init.HermitePolynomial", 0));
    else check(-1, DMESG("No such Perturbation Method"));  
-
-
-   }
    
    ////////////////////////////////////////////// Recheck Charge Neutrality for Perturabtion and correct  /////////////////////////
 
@@ -138,75 +133,13 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    // Boundaries and Done   
    vlasov->setBoundary( vlasov->f0   );
    vlasov->setBoundary( vlasov->f    );
-   fields->updateBoundary(); // fields->Field);
+   fields->updateBoundary(); 
 
 
 };
 
-int Init::PerturbationPSFNoise(Vlasov *vlasov, int s, double pre) {
-    
-    // add s to initialization of RNG due to fast iteration over s (which time is not resolved)
-    ranlib::UniformClosed<double> wNoise;
-    wNoise.seed(System::getTime() + System::getProcessID() + s);
-
-   
-    for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { for(int v = NvLlD; v<=NvLuD; v++) {
-    for(int x = NxLlD; x <= NxLuD; x++) { for(int y = NkyLlD; y <= NkyLuD; y++) { for(int z = NzLlD; z<=NzLuD; z++) {
-      vlasov->f(x,y,z,v,m,s) = vlasov->f(x,y,z,v,m,s) + epsilon_0*(wNoise.random()-0.5e0) * vlasov->f0(x,y,z,v,m,s);
-    }}}}}}
-
-   return GKC_SUCCESS;
-}   
 
 
-int Init::PerturbationPSFExp(Vlasov *vlasov, int s, double pert) {
-   
-   for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { for(int v = NvLlD; v<=NvLuD; v++) {
-   for(int x = NxLlD; x <= NxLuD; x++) { for(int y = NkyLlD; y <= NkyLuD; y++) { for(int z = NzLlD; z<=NzLuD; z++) {
-      vlasov->f(x,y,z,v,m,s) += vlasov->f0(x,y,z,v,m,s) * (pert + Perturbation(x,y,z,1.e-10,0.1));
-   }}}}}}
-  
-   return GKC_SUCCESS;
-}
-
-
-int Init::PerturbationPSFMode(Vlasov *vlasov, int s, double pre) {
- 
-   //  Callculates the phase (of what ??!)
-   auto Phase = [=] (const int q, const int N)  -> double { return 2.*M_PI*((double) (q-1)/N); };
-   // check if value is reasonable
-   if(!((s >= NsLlD) && (s <= NsLuD))) return GKC_SUCCESS; 
-       
-   for(int x = NxLlD; x <= NxLuD; x++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z<=NzLuD; z++) {
-      
-      double pert_x=0., pert_y=0., pert_z=0.;
-      
-      pert_z = (Nz == 1) ? 1. : 0.;
-      //for(int m = 0; m <= Ny/2; m++) pert_y += 1.e-6 * cos(m*(2.*M_PI*Y(y)/Ly   +Phase(m,Ny)));
-      for(int r = 1; r <= Nx/2; r++) pert_x += cos(r*(2.*M_PI*X(x)/Lx)+Phase(r,Nx));//*exp(pow2(M_PI*X(x)/Lx));
-      for(int m = 1; m <= Nky-1; m++) pert_y += 0.;
-      //for(int m = 1; m <= Ny/2; m++) pert_y += exp(pow2(2.*M_PI/Ly*y_k));                                            //     cos(m*(2.*M_PI*Y(y)/Ly)+Phase(m,Ny))*exp(pow2(M_PI*Y(y)/Ly));
-      for(int n = 1; n <= Nz/2; n++) pert_z += cos(n*(2.*M_PI*Z(z)/Lz)+Phase(n,Nz));//*exp(pow2(M_PI*Z(z)/Lz));
-      
-      if(pert_x == 0.) pert_x = 1.;
-      if(pert_y == 0.) pert_y = 1.;
-      if(pert_z == 0.) pert_z = 1.;
-        // for(int r = 1; r <= Nx/2; r++) pert_x +=  cos(r*(2.*M_PI*X(x)/Lx)+Phase(r,Nx));
-        // for(int n = 1; n <= Nz/2; n++) pert_z +=  cos(n*(2.*M_PI*Z(z)/Lz)+Phase(n,Nz));
-        // vlasov->f(x, y, z, RvLD, RmLD, s)  = (pre + (pert_x*pert_y*pert_z)) * vlasov->f0(x,y,z,RvLD, RmLD, s) / (Nx * Ny * Nz);
-        vlasov->f(x, y_k, z, RvLD, RmLD, s)  =  epsilon_0 * (pert_x*pert_y*pert_z) * vlasov->f0(x,y_k,z,RvLD, RmLD, s) * (1./ (Nx * Nky * Nz));
-
-    }}}
-
-   return GKC_SUCCESS;
-}
-
-
-
-double inline Init::Perturbation(int x,int y,int z, const double epsilon_0, const double sigma) {
-
-            return  epsilon_0*exp(-(  pow2(X(x)/Lx) + pow2(Y(y)/Ly - 0.5) + pow2(Z(z)/Lz - 0.5))/(2.*pow2(sigma)));
-}
 
 
 
@@ -249,19 +182,6 @@ void Init::setFieldFromFunction(Setup *setup, Array4C Field0, int n , std::strin
 
 
 
-int Init::PerturbationHermitePolynomial(Vlasov *vlasov, int s, double pert, int l) {
-  
-     const double a =  pow2(0.4); 
-     
-   for(int x = NxLlD; x <= NxLuD; x++) {
-     const double phi_x = Special::HermiteFunction(l, X(x));
-     for(int y = NkyLlD; y <= NkyLuD; y++) { for(int z = NzLlD; z<=NzLuD; z++) {
-   for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { for(int v = NvLlD; v<=NvLuD; v++) {
-      vlasov->f(x,y,z,v,m,s) += epsilon_0 * phi_x *vlasov->f0(x,y,z,v,m,s);
-   }}}}}}
-  
-   return GKC_SUCCESS;
-}
 
 
 void Init::initMaxwellian(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
@@ -308,3 +228,100 @@ void Init::initMaxwellian(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxL
    
   }
 }
+
+
+///////////////////// functions for initial perturbation //////////////////////
+
+
+
+int Init::PerturbationHermitePolynomial(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                              CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB])
+{
+
+     int l = 0; // simple exponential function
+
+     const double a =  pow2(0.4); 
+     
+   for(int s = NsLlD; s <= NsLuD; s++)   { for(int m = NmLlD; m <= NmLuD; m++) { for(int z = NzLlD; z<=NzLuD; z++) {
+   for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) {
+
+     const double phi_x = Special::HermiteFunction(l, X(x));
+     
+     for(int v = NvLlD; v<=NvLuD; v++) {
+      
+      f[s][m][z][y_k][x][v] += epsilon_0 * phi_x * f0[s][m][z][y_k][x][v];
+   }}}}}}
+  
+   return GKC_SUCCESS;
+}
+
+
+void Init::PerturbationPSFNoise(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                      CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB])
+{ 
+    // add s to initialization of RNG due to fast iteration over s (which time is not resolved)
+    for(int s = NsLlD; s <= NsLuD; s++) { 
+
+    std::srand(System::getTime() + System::getProcessID() + s); // provide better inteface (as own class ?!)
+      
+    for(int m   = NmLlD ; m   <= NmLuD ;   m++) { for(int z = NzLlD; z<=NzLuD; z++) {
+    for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { for(int v = NvLlD; v<=NvLuD; v++) {
+
+      const double random_number = static_cast<double>(std::rand()) / RAND_MAX; // get random number [0,1]
+      f[s][m][z][y_k][x][v] += epsilon_0*(random_number-0.5e0) * f0[s][m][z][y_k][x][v];
+
+    }}}}}}
+
+   return;
+}   
+
+void Init::PerturbationPSFExp(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                    CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB])
+{ 
+   const double pert = plasma->global ? 1. : 0.; 
+
+   auto  Perturbation = [=] (int x,int y,int z, const double epsilon_0, const double sigma) -> double {
+            return  epsilon_0*exp(-(  pow2(X(x)/Lx) + pow2(Y(y)/Ly - 0.5) + pow2(Z(z)/Lz - 0.5))/(2.*pow2(sigma))); 
+   };
+
+
+   for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { for(int v = NvLlD; v<=NvLuD; v++) {
+   for(int x = NxLlD; x <= NxLuD; x++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z<=NzLuD; z++) {
+      f[s][m][z][y_k][x][v] += f0[s][m][z][y_k][x][v] * (pert + Perturbation(x,y_k,z,1.e-10,0.1));
+   }}}}}}
+
+   return;
+}
+
+void Init::PerturbationPSFMode(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                     CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB])
+{
+   //  Callculates the phase (of what ??!)
+   auto Phase = [=] (const int q, const int N)  -> double { return 2.*M_PI*((double) (q-1)/N); };
+   // check if value is reasonable
+       
+   for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { for(int v = NvLlD; v<=NvLuD; v++) {
+   for(int x = NxLlD; x <= NxLuD; x++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z<=NzLuD; z++) {
+      
+      double pert_x=0., pert_y=0., pert_z=0.;
+      
+      pert_z = (Nz == 1) ? 1. : 0.;
+      for(int r = 1; r <= Nx/2; r++) pert_x += cos(r*(2.*M_PI*X(x)/Lx)+Phase(r,Nx));//*exp(pow2(M_PI*X(x)/Lx));
+      for(int q = 1; q <= Nky-1; q++) pert_y += 0.;
+      for(int n = 1; n <= Nz/2; n++) pert_z += cos(n*(2.*M_PI*Z(z)/Lz)+Phase(n,Nz));//*exp(pow2(M_PI*Z(z)/Lz));
+      
+      if(pert_x == 0.) pert_x = 1.;
+      if(pert_y == 0.) pert_y = 1.;
+      if(pert_z == 0.) pert_z = 1.;
+        // for(int r = 1; r <= Nx/2; r++) pert_x +=  cos(r*(2.*M_PI*X(x)/Lx)+Phase(r,Nx));
+        // for(int n = 1; n <= Nz/2; n++) pert_z +=  cos(n*(2.*M_PI*Z(z)/Lz)+Phase(n,Nz));
+        // vlasov->f(x, y, z, RvLD, RmLD, s)  = (pre + (pert_x*pert_y*pert_z)) * vlasov->f0(x,y,z,RvLD, RmLD, s) / (Nx * Ny * Nz);
+      
+        f[s][m][z][y_k][x][v] = epsilon_0 * (pert_x*pert_y*pert_z) * f0[s][m][z][y_k][x][v] * (1./ (Nx * Nky * Nz));
+
+    }}} }}}
+
+   return;
+}
+
+

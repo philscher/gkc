@@ -249,7 +249,7 @@ class Analysis : public IfaceGKC {
    //////////////////////////////////  Data-I/0 stuff ////////////////////////////////////////
 
    void initDataOutput(Setup *setup, FileIO *fileIO) ;
-   int  writeData(Timing timing, double dt);
+   void writeData(Timing timing, double dt);
    void closeData();
       
    void printOn(ostream &output) const;
