@@ -29,99 +29,35 @@
 FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry *geo, FFTSolver *fft) 
 : FieldsFFT(setup, grid, parallel,fileIO, geo, fft)
 {
-        // Move to Master PETSc class (create one ...) 
-        PetscInitialize(&setup->argc, &setup->argv, (char *) 0,  FieldsHermite_help);
-        //PetscPopSignalHandler();
- 
-        GyroMatrix.resize(RkyLD, RzLD, RmLD, RsLD); 
-        B4.resize(RxLD, RkyLD, RzLD, RFields); 
-       
       
-        interpolationOrder = setup->get("FieldsHermite.InterpolationOrder", 5);
-
-
-        // Create gyro-averaging matrix Matrix
-        for(int    s = NsLlD; s <= NsLuD; s++) {  for(int   m = NmLlD ; m   <= NmLuD ; m++  ) { 
-        for(int    z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
-        
-          GyroMatrix(y_k, z, m, s) =  getGyroAveragingMatrix(M(m), y_k, z, s);
-          
-        } } } }
-
-
-        ///////////////////////     Create Double GyroAverageMatrix /////////////////////
-        // Note : int_0^infty J cdot J e^{mu} is sensitiv, thus we use higher order matrix
-        //        to setup this matrix (linear matrix) Increase by factor 8
-        MatrixPoissonSolverLHS.resize(RkyLD, RzLD);
-        Matrix Matrix_Gamma0    (NxLD, grid->NxGD, DIR_X, parallel);
-        Matrix Matrix_PoissonLHS(NxLD, grid->NxGD, DIR_X, parallel);
-
-        int integrationOrder = setup->get("Fields.Hermite.DoubleGyroIntegrationOrder", 9);
-        
-        Integrate GRQuad("Gauss-Laguerre", integrationOrder);
-
-         parallel->print("Intializing Double Gyro-Averaging Matrix");
-        
-          for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
-              
-        // Is out matrix hermitian (propably epends on the geometry) ?!
-           Matrix_PoissonLHS.setZero();
-           
-           // Create 1-\Gamma for each species s
-           for(int s = NsLlD; s <= NsLuD; s++) { 
-       
-              Matrix_Gamma0.setZero();
-              
-              //  Perform loop for higher order integration of Double Gyro Average Matrix
-              //
-              // NOT YET Supported by intel: for(int n : Tools::ParallelRange(integrationOrder, parallel, DIR_M)) { 
-              auto v = Tools::ParallelRange(integrationOrder, parallel, DIR_M);
-              for(auto it = v.begin(); it != v.end(); ++it) {
-                   int n = *it;
-                   const double mu = GRQuad.x(n);
-                   
-                   // ToDO : what if BT != 1 ??!!
-                   const double BT = plasma->B0 / plasma->species[s].T0; 
-
-                   // no exp in case of Laguerre intergration const Complex w  = BT * exp(- BT * mu) * GRQuad.w(n); 
-                   const Complex w  = BT * GRQuad.w(n); 
-               
-                   Matrix *GyroM = getGyroAveragingMatrix(mu/BT, y_k, z, s);
-                    
-                   // what about imaginary values
-                   Matrix_Gamma0 += - w * ( (*GyroM) * (*GyroM) );
-
-                   delete GyroM;
-                   // some feedback to used that program is not stalled
-                   std::cout << "*";
+  // Move to Master PETSc class (create one ...) 
   
-                 }
-                 Matrix_Gamma0.reduce(DIR_M);
+  PetscInitialize(&setup->argc, &setup->argv, (char *) 0,  FieldsHermite_help);
+  
+  //PetscPopSignalHandler();
+  
+  GyroMatrix.resize(RkyLD, RzLD, RmLD, RsLD); 
+       
+  interpolationOrder = setup->get("FieldsHermite.InterpolationOrder", 5);
 
-              Matrix_Gamma0.addDiagonal(1.);
+  // Create gyro-averaging matrix Matrix
+  for(int s = NsLlD; s <= NsLuD; s++) {  for(int   m = NmLlD ; m   <= NmLuD ; m++  ) {
+  for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
+        
+    
+      GyroMatrix(y_k, z, m, s) =  getGyroAveragingMatrix(M(m), y_k, z, s);
+          
+      
+  } } } }
 
-              const double qqnT  = plasma->species[s].n0 * pow2(plasma->species[s].q)/plasma->species[s].T0;
-              Matrix_PoissonLHS += qqnT * Matrix_Gamma0;
-           
-            }
-            Matrix_PoissonLHS.reduce(DIR_S); 
-           
-           // add adibatic response, solve for correction ?!
-           const double adiab = plasma->species[0].n0 * pow2(plasma->species[0].q)/plasma->species[0].T0;
-           Matrix_PoissonLHS.addDiagonal(adiab);
-           
-           MatrixPoissonSolverLHS(y_k, z) = new MatrixSolver(parallel, Matrix_PoissonLHS.getMat(), DIR_X, true, "SuperLU");
-
-           // Poisson Matrix (lambda_D2 ) $ g^{xx} D_x^2  + 2 i g^{xy} k_y D_x - g^{yy} k_y^2$
-           // ignore now, only do quasi neutrality.
-        } }
-
-
-       // Create Vectors
-        VecCreateMPI(parallel->Comm[DIR_X], NxLD, grid->NxGD, &GyroVector_X);
-        VecCreateMPI(parallel->Comm[DIR_X], NxLD, grid->NxGD, &GyroVector_XAvrg);
-        VecAssemblyBegin(GyroVector_X    );    VecAssemblyEnd  (GyroVector_X    );
-        VecAssemblyBegin(GyroVector_XAvrg);    VecAssemblyEnd  (GyroVector_XAvrg);
+    
+  setDoubleGyroAverageMatrix(setup);
+        
+  // Create Vectors
+  VecCreateMPI(parallel->Comm[DIR_X], NxLD, grid->NxGD, &GyroVector_X);
+  VecCreateMPI(parallel->Comm[DIR_X], NxLD, grid->NxGD, &GyroVector_XAvrg);
+  VecAssemblyBegin(GyroVector_X    );    VecAssemblyEnd  (GyroVector_X    );
+  VecAssemblyBegin(GyroVector_XAvrg);    VecAssemblyEnd  (GyroVector_XAvrg);
 
 }
 
@@ -204,22 +140,21 @@ FieldsHermite::~FieldsHermite()
 
 //Array4C FieldsHermite::solveFieldEquations(Array4C Qn, Timing timing) 
 void FieldsHermite::solveFieldEquations(CComplex Q     [plasma->nfields][NxLD][NkyLD][Nz],
-                         CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz])
+                                        CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz])
 {
    
    // for 3 fields phi and B_perp are coupled and need to be solved differently
-   if( solveEq & Field::phi) solvePoissonEquation  (Fields::Q(RxLD, RkyLD, RzLD, Field::phi));
+   if( solveEq & Field::phi) solvePoissonEquation  (Q, Field0);
    if( solveEq & Field::Ap ) check(-1, DMESG("Not Implemented"));
    if( solveEq & Field::Bpp) check(-1, DMESG("Not Implemented"));
     
    return;
-   //return Field0(RxLD, RkyLD, RzLD, RFields);
 
 }
 
 
-    // Take care of X[n] overflow
-    double FieldsHermite::Lambda(const double x, const int n) {
+// Take care of X[n] overflow
+double FieldsHermite::Lambda(const double x, const int n) {
         
         // Scale input to [ 0 , 1 ]
         auto N = [=] (const double x, const int n) -> double { return (x-X(n))/dx ; };
@@ -278,34 +213,37 @@ void FieldsHermite::solveFieldEquations(CComplex Q     [plasma->nfields][NxLD][N
         
 //      return nan here
         return 0.;      
-    }
+}
 
 void FieldsHermite::printOn(ostream &output) const {
          output   << "Fields    |  Hermite      Order : "  << interpolationOrder << std::endl;
    }
  
 
-void FieldsHermite::solvePoissonEquation(Array3C rho)
-    {
-      Complex *vec_Q, *vec_Field;
-      
+void FieldsHermite::solvePoissonEquation(const CComplex Q     [plasma->nfields][NxLD][NkyLD][Nz],
+                                               CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz])
+{
+      CComplex *vec_Q, *vec_Field;
+     
+      // how to use OpenMP with PETSc ? (have to use seperated vectors, take care PETSc uses global variables)
+      // we can also use PETSc direclty
       for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {
 
             VecGetArray    (GyroVector_X, (PetscScalar **) &vec_Q);
-            for(int x = NxLlD, n = 0; x <= NxLuD; x++)  vec_Q[n++] = Q(x, y_k, z, Field::phi);
-            VecRestoreArray(GyroVector_X, &vec_Q);
+            for(int x = NxLlD, n = 0; x <= NxLuD; x++)  vec_Q[n++] = Q[Field::phi][z][y_k][x];
+            VecRestoreArray(GyroVector_X, (PetscScalar **) &vec_Q);
        
             MatrixPoissonSolverLHS(y_k, z)->solve(GyroVector_X, GyroVector_XAvrg);
            
             VecGetArrayRead    (GyroVector_XAvrg, (const PetscScalar **) &vec_Field);
-            for(int x=NxLlD, n = 0; x <= NxLuD; x++) Field0(x, y_k, z, Field::phi) = vec_Field[n++]; 
+            for(int x=NxLlD, n = 0; x <= NxLuD; x++) Field0[Field::phi][z][y_k][x] = vec_Field[n++]; 
             VecRestoreArrayRead(GyroVector_XAvrg, (const PetscScalar **) &vec_Field);
 
         } }
 
         return;
 
-    };
+};
            
          
 Matrix* FieldsHermite::getGyroAveragingMatrix(const double mu, const int y_k, const int z, const int s)
@@ -341,3 +279,75 @@ void FieldsHermite::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& 
 
    return ;
 };
+        
+
+void FieldsHermite::setDoubleGyroAverageMatrix(Setup *setup) {
+
+         ///////////////////////     Create Double GyroAverageMatrix /////////////////////
+        // Note : int_0^infty J cdot J e^{mu} is sensitiv, thus we use higher order matrix
+        //        to setup this matrix (linear matrix) Increase by factor 8
+        MatrixPoissonSolverLHS.resize(RkyLD, RzLD);
+        Matrix Matrix_Gamma0    (NxLD, grid->NxGD, DIR_X, parallel);
+        Matrix Matrix_PoissonLHS(NxLD, grid->NxGD, DIR_X, parallel);
+
+        int integrationOrder = setup->get("Fields.Hermite.DoubleGyroIntegrationOrder", 32);
+        
+        Integrate GRQuad("Gauss-Laguerre", integrationOrder);
+
+         parallel->print("Intializing Double Gyro-Averaging Matrix");
+        
+          for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
+              
+        // Is out matrix hermitian (propably epends on the geometry) ?!
+           Matrix_PoissonLHS.setZero();
+           
+           // Create 1-\Gamma for each species s
+           for(int s = NsLlD; s <= NsLuD; s++) { 
+       
+              Matrix_Gamma0.setZero();
+              
+              //  Perform loop for higher order integration of Double Gyro Average Matrix
+              //
+              // NOT YET Supported by intel: for(int n : Tools::ParallelRange(integrationOrder, parallel, DIR_M)) { 
+              auto v = Tools::ParallelRange(integrationOrder, parallel, DIR_M);
+              for(auto it = v.begin(); it != v.end(); ++it) {
+                   int n = *it;
+                   const double mu = GRQuad.x(n);
+                   
+                   // ToDO : what if BT != 1 ??!!
+                   const double BT = plasma->B0 / plasma->species[s].T0; 
+
+                   // no exp in case of Laguerre intergration const Complex w  = BT * exp(- BT * mu) * GRQuad.w(n); 
+                   const Complex w  = BT * GRQuad.w(n); 
+               
+                   Matrix *GyroM = getGyroAveragingMatrix(mu/BT, y_k, z, s);
+                    
+                   // what about imaginary values
+                   Matrix_Gamma0 += - w * ( (*GyroM) * (*GyroM) );
+
+                   delete GyroM;
+                   // some feedback to used that program is not stalled
+                   std::cout << "*";
+  
+                 }
+                 Matrix_Gamma0.reduce(DIR_M);
+
+              Matrix_Gamma0.addDiagonal(1.);
+
+              const double qqnT  = plasma->species[s].n0 * pow2(plasma->species[s].q)/plasma->species[s].T0;
+              Matrix_PoissonLHS += qqnT * Matrix_Gamma0;
+           
+            }
+            Matrix_PoissonLHS.reduce(DIR_S); 
+           
+           // add adibatic response, solve for correction ?!
+           const double adiab = plasma->species[0].n0 * pow2(plasma->species[0].q)/plasma->species[0].T0;
+           Matrix_PoissonLHS.addDiagonal(adiab);
+           
+           MatrixPoissonSolverLHS(y_k, z) = new MatrixSolver(parallel, Matrix_PoissonLHS.getMat(), DIR_X, true, "SuperLU");
+
+           // Poisson Matrix (lambda_D2 ) $ g^{xx} D_x^2  + 2 i g^{xy} k_y D_x - g^{yy} k_y^2$
+           // ignore now, only do quasi neutrality.
+        } }
+          
+}

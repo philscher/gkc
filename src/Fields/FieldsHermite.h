@@ -77,11 +77,6 @@ class FieldsHermite : public FieldsFFT {
    *    Please Document Me !
    *
    **/
-  Array4C              B4;
-  /**
-   *    Please Document Me !
-   *
-   **/
   Vec                  GyroVector_X, GyroVector_XAvrg;
   /**
    *    Please Document Me !
@@ -94,6 +89,7 @@ class FieldsHermite : public FieldsFFT {
    **/
   blitz::Array<MatrixSolver*,2>  MatrixPoissonSolverLHS;
 
+  void setDoubleGyroAverageMatrix(Setup *setup);
 
 protected:   
   
@@ -107,7 +103,8 @@ protected:
    *    Please Document Me !
    *
    **/
-  virtual void solvePoissonEquation(Array3C rho)   ;//override;
+  void solvePoissonEquation(const CComplex Q     [plasma->nfields][NxLD][NkyLD][Nz],
+                                  CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz]);
   /**
    *    Please Document Me !
    *

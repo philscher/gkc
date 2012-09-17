@@ -79,7 +79,7 @@ void FieldsFFT::solvePoissonEquation(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::
           const CComplex rhs  = (kXOut[Q::rho][z][y_k][x_k])/fft->Norm_X; 
           
           kXIn[Field::phi][z][y_k][x_k] = rhs/lhs;
-          
+    
     } } } // z, y_k, x_k
         
     return;    
