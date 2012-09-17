@@ -77,7 +77,7 @@ struct NeighbourDir {
 
    // Some MPI specific stuff
 #ifdef GKC_PARALLEL_MPI
-   Array<NeighbourDir, 1> Talk;
+   NeighbourDir Talk[DIR_S+1];
    MPI_Status stat; 
 
    MPI_Comm Comm[DIR_SIZE];
@@ -121,17 +121,17 @@ struct NeighbourDir {
    *  This assumes all domains to be periodic, except for velocity, which
    *  is assumed to be zero. Thus if rank is MPI_PROC_NULL we set value to zero
    **/
-   template<typename T, int W> int updateNeighbours(Array<T,W>  Sendu,  Array<T,W>  Sendl,  Array<T,W>  Recvu, Array<T,W>  Recvl, int dir) {
+   template<typename T, int W> int updateNeighbours(blitz::Array<T,W>  Sendu,  blitz::Array<T,W>  Sendl,  blitz::Array<T,W>  Recvu, blitz::Array<T,W>  Recvl, int dir) {
         
 #ifdef GKC_PARALLEL_MPI
-     MPI_Irecv(Recvl.data(), Recvl.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_l, Talk(dir).psf_msg_tag[0], Comm[DIR_ALL], &Talk(dir).psf_msg_request[1]);
-     MPI_Isend(Sendu.data(), Sendu.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_u, Talk(dir).psf_msg_tag[0], Comm[DIR_ALL], &Talk(dir).psf_msg_request[0]);
+     MPI_Irecv(Recvl.data(), Recvl.numElements(), getMPIDataType(typeid(T)), Talk[dir].rank_l, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_request[1]);
+     MPI_Isend(Sendu.data(), Sendu.numElements(), getMPIDataType(typeid(T)), Talk[dir].rank_u, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_request[0]);
      
-     if(Talk(dir).rank_u == MPI_PROC_NULL)   Recvl = 0.e0;
+     if(Talk[dir].rank_u == MPI_PROC_NULL)   Recvl = 0.e0;
      
-     MPI_Irecv(Recvu.data(), Recvu.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_u, Talk(dir).psf_msg_tag[1], Comm[DIR_ALL], &Talk(dir).psf_msg_request[3]); 
-     MPI_Isend(Sendl.data(), Sendl.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_l, Talk(dir).psf_msg_tag[1], Comm[DIR_ALL], &Talk(dir).psf_msg_request[2]);
-     if(Talk(dir).rank_l == MPI_PROC_NULL)   Recvu = 0.e0;
+     MPI_Irecv(Recvu.data(), Recvu.numElements(), getMPIDataType(typeid(T)), Talk[dir].rank_u, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_request[3]); 
+     MPI_Isend(Sendl.data(), Sendl.numElements(), getMPIDataType(typeid(T)), Talk[dir].rank_l, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_request[2]);
+     if(Talk[dir].rank_l == MPI_PROC_NULL)   Recvu = 0.e0;
 #endif // GKC_PARALLEL_MPI
      return GKC_SUCCESS;
 
@@ -144,18 +144,18 @@ struct NeighbourDir {
    *  Uses blocking SendRecv operations. 
    *
    **/
-   template<typename T, int W> int updateNeighbours(Array<T,W>  Sendu,  Array<T,W>  Sendl,  Array<T,W>  Recvu, Array<T,W>  Recvl, int dir, bool nonBlocking) {
+   template<typename T, int W> int updateNeighbours(blitz::Array<T,W>  Sendu,  blitz::Array<T,W>  Sendl,  blitz::Array<T,W>  Recvu, blitz::Array<T,W>  Recvl, int dir, bool nonBlocking) {
 #ifdef GKC_PARALLEL_MPI
      
      int msg_tag[] = { 4998 , 4999};
      MPI_Status  msg_status[2];
 
-     MPI_Sendrecv(Sendu.data(), Sendu.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_u, msg_tag[1], 
-                     //Recvl.data(), Recvl.umElements(), getMPIDataType(typeid(T)), Talk(dir).rank_l, msg_tag[1], Comm[dir],  &msg_status[0]);
-                     Recvl.data(), Recvl.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_l, msg_tag[1], Comm[DIR_ALL],  &msg_status[0]);
-     MPI_Sendrecv(Sendl.data(), Sendl.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_l, msg_tag[0], 
-                     //Recvu.data(), Recvu.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_u, msg_tag[0], Comm[dir], &msg_status[1]);
-                     Recvu.data(), Recvu.numElements(), getMPIDataType(typeid(T)), Talk(dir).rank_u, msg_tag[0], Comm[DIR_ALL], &msg_status[1]);
+     MPI_Sendrecv(Sendu.data(), Sendu.numElements(), getMPIDataType(typeid(T)), Talk[dir].rank_u, msg_tag[1], 
+                     //Recvl.data(), Recvl.umElements(), getMPIDataType(typeid(T)), Talk[dir].rank_l, msg_tag[1], Comm[dir],  &msg_status[0]);
+                     Recvl.data(), Recvl.numElements(), getMPIDataType(typeid(T)), Talk[dir].rank_l, msg_tag[1], Comm[DIR_ALL],  &msg_status[0]);
+     MPI_Sendrecv(Sendl.data(), Sendl.numElements(), getMPIDataType(typeid(T)), Talk[dir].rank_l, msg_tag[0], 
+                     //Recvu.data(), Recvu.numElements(), getMPIDataType(typeid(T)), Talk[dir].rank_u, msg_tag[0], Comm[dir], &msg_status[1]);
+                     Recvu.data(), Recvu.numElements(), getMPIDataType(typeid(T)), Talk[dir].rank_u, msg_tag[0], Comm[DIR_ALL], &msg_status[1]);
  
 #endif // GKC_PARALLEL_MPI
      return GKC_SUCCESS;
@@ -169,7 +169,7 @@ struct NeighbourDir {
    *   @todo rename to bcast
    *
    **/
-   template<typename T, int W> int send(Array<T,W> A, int dir=DIR_ALL) {
+   template<typename T, int W> int send(blitz::Array<T,W> A, int dir=DIR_ALL) {
 #ifdef GKC_PARALLEL_MPI
      if(dir <= DIR_S) if(decomposition[dir] == 1) return GKC_SUCCESS;
      // rank differ between communicators, so we should take care of rankFFTMaster
@@ -234,7 +234,7 @@ struct NeighbourDir {
    *  @Depreciated
    *
    **/
-   template<typename T, int W> Array<T,W> collect(Array<T,W> A, int op=OP_SUM, int dir=DIR_ALL, bool allreduce=true) {
+   template<typename T, int W> blitz::Array<T,W> collect(blitz::Array<T,W> A, int op=OP_SUM, int dir=DIR_ALL, bool allreduce=true) {
 #ifdef GKC_PARALLEL_MPI
      // Return immediately if we don't decompose in this direction
      if(dir <= DIR_S) if(decomposition[dir] == 1) return A;

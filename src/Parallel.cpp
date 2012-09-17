@@ -55,19 +55,17 @@ Parallel::Parallel(Setup *setup)
 #ifdef GKC_PARALLEL_MPI
    useMPI = true;
    for(int d=DIR_X;d<DIR_SIZE;d++) Comm[d] = MPI_COMM_NULL;
-   Talk.resize(Range(DIR_X,DIR_S));
-
 
    //////////////////////// Set Message tags, enumerate through ////////////////////////
    int i = 0;
    // do its in one loop ?
    for(int dir = DIR_X; dir <= DIR_S; dir++) {
-        Talk(dir).psf_msg_tag[0] = ++i;
-        Talk(dir).psf_msg_tag[1] = ++i;
+        Talk[dir].psf_msg_tag[0] = ++i;
+        Talk[dir].psf_msg_tag[1] = ++i;
    }
    for(int dir = DIR_X; dir <= DIR_S; dir++) {
-        Talk(dir).phi_msg_tag[0] = ++i;
-        Talk(dir).phi_msg_tag[1] = ++i;
+        Talk[dir].phi_msg_tag[0] = ++i;
+        Talk[dir].phi_msg_tag[1] = ++i;
    }
    
    MPI_Init(&setup->argc,&setup->argv); 
@@ -177,28 +175,28 @@ Parallel::Parallel(Setup *setup)
     int rank = myRank; // is this necessary ?!
     
     // setup communcation ranks for X
-    MPI_Cart_shift(Comm[DIR_ALL], DIR_X, 1, &rank, &Talk(DIR_X).rank_u);
-    MPI_Cart_shift(Comm[DIR_ALL], DIR_X,-1, &rank, &Talk(DIR_X).rank_l);
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_X, 1, &rank, &Talk[DIR_X].rank_u);
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_X,-1, &rank, &Talk[DIR_X].rank_l);
   
     // setup communcation ranks for Y
-    MPI_Cart_shift(Comm[DIR_ALL], DIR_Y, 1, &rank, &Talk(DIR_Y).rank_u);
-    MPI_Cart_shift(Comm[DIR_ALL], DIR_Y,-1, &rank, &Talk(DIR_Y).rank_l);
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_Y, 1, &rank, &Talk[DIR_Y].rank_u);
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_Y,-1, &rank, &Talk[DIR_Y].rank_l);
  
     // setup communcation ranks for Z
-    MPI_Cart_shift(Comm[DIR_ALL], DIR_Z, 1, &rank, &Talk(DIR_Z).rank_u);
-    MPI_Cart_shift(Comm[DIR_ALL], DIR_Z,-1, &rank, &Talk(DIR_Z).rank_l);
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_Z, 1, &rank, &Talk[DIR_Z].rank_u);
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_Z,-1, &rank, &Talk[DIR_Z].rank_l);
 
     // V (not periodic), returns NULL_COMM at the domain ends
-    MPI_Cart_shift(Comm[DIR_ALL], DIR_V, 1, &rank, &Talk(DIR_V).rank_u);
-    MPI_Cart_shift(Comm[DIR_ALL], DIR_V,-1, &rank, &Talk(DIR_V).rank_l);
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_V, 1, &rank, &Talk[DIR_V].rank_u);
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_V,-1, &rank, &Talk[DIR_V].rank_l);
   
     // S (not periodic), returns NULL_COMM at the domain ends
-    MPI_Cart_shift(Comm[DIR_ALL], DIR_M, 1, &rank, &Talk(DIR_M).rank_u);
-    MPI_Cart_shift(Comm[DIR_ALL], DIR_M,-1, &rank, &Talk(DIR_M).rank_l);
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_M, 1, &rank, &Talk[DIR_M].rank_u);
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_M,-1, &rank, &Talk[DIR_M].rank_l);
   
     // M (not periodic), returns NULL_COMM at the domain ends
-    MPI_Cart_shift(Comm[DIR_ALL], DIR_S, 1, &rank, &Talk(DIR_S).rank_u);
-    MPI_Cart_shift(Comm[DIR_ALL], DIR_S,-1, &rank, &Talk(DIR_S).rank_l);
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_S, 1, &rank, &Talk[DIR_S].rank_u);
+    MPI_Cart_shift(Comm[DIR_ALL], DIR_S,-1, &rank, &Talk[DIR_S].rank_l);
  
     // distributed unified id to all processes
     master_process_id = (int) collect((double) (myRank == 0) ? master_process_id : 0, OP_SUM, DIR_ALL);
@@ -245,19 +243,19 @@ int Parallel::updateNeighbours(Array6C  Sendu, Array6C  Sendl, Array6C  Recvu, A
 {
 #ifdef GKC_PARALLEL_MPI
     if(nonBlocking) { 
-        MPI_Irecv(Recvl.data(), Recvl.numElements(), MPI_DOUBLE_COMPLEX, Talk(dir).rank_l, Talk(dir).psf_msg_tag[0], Comm[DIR_ALL], &Talk(dir).psf_msg_request[1]);
-        MPI_Isend(Sendu.data(), Sendu.numElements(), MPI_DOUBLE_COMPLEX, Talk(dir).rank_u, Talk(dir).psf_msg_tag[0], Comm[DIR_ALL], &Talk(dir).psf_msg_request[0]);
-        if(Talk(dir).rank_u == MPI_PROC_NULL)   Recvl = 0.e0;
+        MPI_Irecv(Recvl.data(), Recvl.numElements(), MPI_DOUBLE_COMPLEX, Talk[dir].rank_l, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_request[1]);
+        MPI_Isend(Sendu.data(), Sendu.numElements(), MPI_DOUBLE_COMPLEX, Talk[dir].rank_u, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_request[0]);
+        if(Talk[dir].rank_u == MPI_PROC_NULL)   Recvl = 0.e0;
      
-        MPI_Irecv(Recvu.data(), Recvu.numElements(), MPI_DOUBLE_COMPLEX, Talk(dir).rank_u, Talk(dir).psf_msg_tag[1], Comm[DIR_ALL], &Talk(dir).psf_msg_request[3]); 
-        MPI_Isend(Sendl.data(), Sendl.numElements(), MPI_DOUBLE_COMPLEX, Talk(dir).rank_l, Talk(dir).psf_msg_tag[1], Comm[DIR_ALL], &Talk(dir).psf_msg_request[2]);
-        if(Talk(dir).rank_l == MPI_PROC_NULL)   Recvu = 0.e0;
+        MPI_Irecv(Recvu.data(), Recvu.numElements(), MPI_DOUBLE_COMPLEX, Talk[dir].rank_u, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_request[3]); 
+        MPI_Isend(Sendl.data(), Sendl.numElements(), MPI_DOUBLE_COMPLEX, Talk[dir].rank_l, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_request[2]);
+        if(Talk[dir].rank_l == MPI_PROC_NULL)   Recvu = 0.e0;
     }
     else {
-        MPI_Sendrecv(Sendu.data(), Sendu.numElements(), MPI_DOUBLE_COMPLEX, Talk(dir).rank_u, Talk(dir).psf_msg_tag[1], 
-                     Recvl.data(), Recvl.numElements(), MPI_DOUBLE_COMPLEX, Talk(dir).rank_l, Talk(dir).psf_msg_tag[0], Comm[dir], Talk(dir).msg_status);
-        MPI_Sendrecv(Sendl.data(), Sendl.numElements(), MPI_DOUBLE_COMPLEX, Talk(dir).rank_l, Talk(dir).psf_msg_tag[1], 
-                     Recvu.data(), Recvu.numElements(), MPI_DOUBLE_COMPLEX, Talk(dir).rank_u, Talk(dir).psf_msg_tag[0], Comm[dir], Talk(dir).msg_status);
+        MPI_Sendrecv(Sendu.data(), Sendu.numElements(), MPI_DOUBLE_COMPLEX, Talk[dir].rank_u, Talk[dir].psf_msg_tag[1], 
+                     Recvl.data(), Recvl.numElements(), MPI_DOUBLE_COMPLEX, Talk[dir].rank_l, Talk[dir].psf_msg_tag[0], Comm[dir], Talk[dir].msg_status);
+        MPI_Sendrecv(Sendl.data(), Sendl.numElements(), MPI_DOUBLE_COMPLEX, Talk[dir].rank_l, Talk[dir].psf_msg_tag[1], 
+                     Recvu.data(), Recvu.numElements(), MPI_DOUBLE_COMPLEX, Talk[dir].rank_u, Talk[dir].psf_msg_tag[0], Comm[dir], Talk[dir].msg_status);
     }
       return GKC_SUCCESS;
 }
@@ -266,12 +264,12 @@ int Parallel::updateNeighbours(Array6C  Sendu, Array6C  Sendl, Array6C  Recvu, A
 int Parallel::updateNeighboursBarrier() {
     // BUG what happen if we never sent a message, what does Waitall
 #ifdef GKC_PARALLEL_MPI 
-     if(decomposition[DIR_X] > 1) MPI_Waitall(4, Talk(DIR_X).psf_msg_request, Talk(DIR_X).msg_status);
-     if(decomposition[DIR_Y] > 1) MPI_Waitall(4, Talk(DIR_Y).psf_msg_request, Talk(DIR_Y).msg_status);
-     if(decomposition[DIR_Z] > 1) MPI_Waitall(4, Talk(DIR_Z).psf_msg_request, Talk(DIR_Z).msg_status);
-     if(decomposition[DIR_V] > 1) MPI_Waitall(4, Talk(DIR_V).psf_msg_request, Talk(DIR_V).msg_status);
-//     if(decomposition & DECOMP_M) MPI_Waitall(4, Talk(DIR_M).psf_msg_request, Talk(DIR_M).msg_status);
-//     if(decomposition & DECOMP_S) MPI_Waitall(4, Talk(DIR_S).psf_msg_request, Talk(DIR_S).msg_status);
+     if(decomposition[DIR_X] > 1) MPI_Waitall(4, Talk[DIR_X].psf_msg_request, Talk[DIR_X].msg_status);
+     if(decomposition[DIR_Y] > 1) MPI_Waitall(4, Talk[DIR_Y].psf_msg_request, Talk[DIR_Y].msg_status);
+     if(decomposition[DIR_Z] > 1) MPI_Waitall(4, Talk[DIR_Z].psf_msg_request, Talk[DIR_Z].msg_status);
+     if(decomposition[DIR_V] > 1) MPI_Waitall(4, Talk[DIR_V].psf_msg_request, Talk[DIR_V].msg_status);
+//     if(decomposition & DECOMP_M) MPI_Waitall(4, Talk[DIR_M].psf_msg_request, Talk[DIR_M].msg_status);
+//     if(decomposition & DECOMP_S) MPI_Waitall(4, Talk[DIR_S].psf_msg_request, Talk[DIR_S].msg_status);
 #endif // GKC_PARALLEL_MPI
       return GKC_SUCCESS;
 
@@ -288,25 +286,25 @@ int Parallel::updateNeighbours(Array6C  SendXl, Array6C  SendXu, Array6C  SendYl
       MPI_Request msg_request[12];
       
       // For X-Direction 
-      MPI_Irecv(RecvXl.data(), RecvXl.numElements(), MPI_DOUBLE_COMPLEX, Talk(DIR_X).rank_l, Talk(DIR_X).phi_msg_tag[0], Comm[DIR_ALL], &msg_request[5]); 
-      MPI_Isend(SendXu.data(), SendXu.numElements(), MPI_DOUBLE_COMPLEX, Talk(DIR_X).rank_u, Talk(DIR_X).phi_msg_tag[0], Comm[DIR_ALL], &msg_request[4]);
+      MPI_Irecv(RecvXl.data(), RecvXl.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_X].rank_l, Talk[DIR_X].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[5]); 
+      MPI_Isend(SendXu.data(), SendXu.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_X].rank_u, Talk[DIR_X].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[4]);
       
-      MPI_Irecv(RecvXu.data(), RecvXu.numElements(), MPI_DOUBLE_COMPLEX, Talk(DIR_X).rank_u, Talk(DIR_X).phi_msg_tag[1], Comm[DIR_ALL], &msg_request[7]); 
-      MPI_Isend(SendXl.data(), SendXl.numElements(), MPI_DOUBLE_COMPLEX, Talk(DIR_X).rank_l, Talk(DIR_X).phi_msg_tag[1], Comm[DIR_ALL], &msg_request[6]);
+      MPI_Irecv(RecvXu.data(), RecvXu.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_X].rank_u, Talk[DIR_X].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[7]); 
+      MPI_Isend(SendXl.data(), SendXl.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_X].rank_l, Talk[DIR_X].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[6]);
 
       // For Y-Direction
-      MPI_Irecv(RecvYl.data(), RecvYl.numElements(), MPI_DOUBLE_COMPLEX, Talk(DIR_Y).rank_l, Talk(DIR_Y).phi_msg_tag[0], Comm[DIR_ALL], &msg_request[1]); 
-      MPI_Isend(SendYu.data(), SendYu.numElements(), MPI_DOUBLE_COMPLEX, Talk(DIR_Y).rank_u, Talk(DIR_Y).phi_msg_tag[0], Comm[DIR_ALL], &msg_request[0]);
+      MPI_Irecv(RecvYl.data(), RecvYl.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_Y].rank_l, Talk[DIR_Y].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[1]); 
+      MPI_Isend(SendYu.data(), SendYu.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_Y].rank_u, Talk[DIR_Y].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[0]);
       
-      MPI_Irecv(RecvYu.data(), RecvYu.numElements(), MPI_DOUBLE_COMPLEX, Talk(DIR_Y).rank_u, Talk(DIR_Y).phi_msg_tag[1], Comm[DIR_ALL], &msg_request[3]); 
-      MPI_Isend(SendYl.data(), SendYl.numElements(), MPI_DOUBLE_COMPLEX, Talk(DIR_Y).rank_l, Talk(DIR_Y).phi_msg_tag[1], Comm[DIR_ALL], &msg_request[2]);
+      MPI_Irecv(RecvYu.data(), RecvYu.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_Y].rank_u, Talk[DIR_Y].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[3]); 
+      MPI_Isend(SendYl.data(), SendYl.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_Y].rank_l, Talk[DIR_Y].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[2]);
       
       // For Z-Direction
-      MPI_Irecv(RecvZl.data(), RecvZl.numElements(), MPI_DOUBLE_COMPLEX, Talk(DIR_Z).rank_l, Talk(DIR_Z).phi_msg_tag[0], Comm[DIR_ALL], &msg_request[9]); 
-      MPI_Isend(SendZu.data(), SendZu.numElements(), MPI_DOUBLE_COMPLEX, Talk(DIR_Z).rank_u, Talk(DIR_Z).phi_msg_tag[0], Comm[DIR_ALL], &msg_request[8]);
+      MPI_Irecv(RecvZl.data(), RecvZl.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_l, Talk[DIR_Z].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[9]); 
+      MPI_Isend(SendZu.data(), SendZu.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_u, Talk[DIR_Z].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[8]);
       
-      MPI_Irecv(RecvZu.data(), RecvZu.numElements(), MPI_DOUBLE_COMPLEX, Talk(DIR_Z).rank_u, Talk(DIR_Z).phi_msg_tag[1], Comm[DIR_ALL], &msg_request[11]); 
-      MPI_Isend(SendZl.data(), SendZl.numElements(), MPI_DOUBLE_COMPLEX, Talk(DIR_Z).rank_l, Talk(DIR_Z).phi_msg_tag[1], Comm[DIR_ALL], &msg_request[10]);
+      MPI_Irecv(RecvZu.data(), RecvZu.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_u, Talk[DIR_Z].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[11]); 
+      MPI_Isend(SendZl.data(), SendZl.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_l, Talk[DIR_Z].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[10]);
 
 
       // Ok let's wait here ....
