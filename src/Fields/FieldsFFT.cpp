@@ -60,10 +60,9 @@ void FieldsFFT::solveFieldEquations(CComplex Q     [Nq][NzLD][NkyLD][NxLD],
 void FieldsFFT::solvePoissonEquation(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
                                      CComplex kXIn [Nq][NzLD][NkyLD][FFTSolver::X_NkxL])
 {
-    // Calculate flux-surface averaging
-    // Note : how to deal with FFT normalization here ?
-    // CComplex phi_yz[FFTSolver::X_NkxL];
-    //if(plasma->species[0].doGyro) phi_yz = calcFluxSurfAvrg(fft->kXOut);
+    // Calculate flux-surface averaging  Note : how to deal with FFT normalization here ?
+    CComplex phi_yz[FFTSolver::X_NkxL];
+    if(plasma->species[0].doGyro) calcFluxSurfAvrg(kXOut, phi_yz);
     
     // adiabatic response term (if no adiabatic species included n0 = 0)
     const double adiab = plasma->species[0].n0 * pow2(plasma->species[0].q)/plasma->species[0].T0;
