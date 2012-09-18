@@ -59,7 +59,7 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
       ////////////////////////  set kinetic species   //////////////////
       for(int s = 1; s <= SPECIES_MAX; s++) { 
 
-        std::string key          = "Plasma.Species" + Num2String(s); 
+        std::string key          = "Plasma.Species" + Setup::num2str(s); 
         std::string species_name = setup->get(key + ".Name"  , "Unnamed");
         snprintf(species[s].name, sizeof(species_name.c_str()), "%s", species_name.c_str());
         species[s].m   = setup->get(key + ".Mass"       , 1. );
@@ -137,7 +137,7 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
              output << " T : " << species[s].T_name << " n0 : " << species[s].n_name  <<  std::endl;
             } else {
              output << " T0 : " << species[s].T0 << " n0 : " << species[s].n0 <<
-             "  w_n : " << species[s].w_n << "  w_T : " << species[s].w_T << " Model : " << species[s].gyroModel << " doGyro : " << species[s].doGyro << std::endl;
+             "  w_n : " << species[s].w_n << "  w_T : " << species[s].w_T << " Model : " << species[s].gyroModel << std::endl;
             }
  }
             output <<  "           |  Debye Length^2 : " << debye2 << "   B0 : " << B0 << "  beta : " << beta << "  w_p : " << w_p << std::endl; 

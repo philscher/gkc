@@ -26,7 +26,7 @@ Control::Control(Setup *setup, Parallel *_parallel, Analysis *_analysis) : paral
   gl_parallel = parallel;
         // set our control file, this is same for all processes and set to mpi root process id 
    if (setup->get("Control.useControlFile", 0)) {
-        cntrl_file_name   = "gkc_" + Setup::number2string(parallel->master_process_id) + ".stop";
+        cntrl_file_name   = "gkc_" + Setup::num2str(parallel->master_process_id) + ".stop";
    } else cntrl_file_name = "";
         maxKineticEnergy  = setup->get("Control.MaxKineticEnergy", 1.e355);
         maxElectricEnergy = setup->get("Control.MaxElectricEnergy", 1.e355);
@@ -182,5 +182,5 @@ void Control::runningException(int status, char *error_message) {
 
 void Control::printOn(ostream &output) const 
 {
-            output << "Control    | phi^2 " << (maxElectricEnergy > 0. ? Setup::number2string(maxElectricEnergy) : "off") << std::endl;
+            output << "Control    | phi^2 " << (maxElectricEnergy > 0. ? Setup::num2str(maxElectricEnergy) : "off") << std::endl;
 }

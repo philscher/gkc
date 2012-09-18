@@ -393,12 +393,12 @@ void Parallel::printOn(ostream &output) const {
 
        output << "Parallel   | ";
       
-      if      (useOpenMP) output << " OpenMP (Threads) : " << Num2String(numThreads) ;
-      if      (useOpenCL) output << " OpenCL (Threads) : " << Num2String(numGPUs   ) ;
+      if      (useOpenMP) output << " OpenMP (Threads) : " << Setup::num2str(numThreads) ;
+      if      (useOpenCL) output << " OpenCL (Threads) : " << Setup::num2str(numGPUs   ) ;
       if      (useMPI   ) {
       
            if (decomposition[DIR_X] == 0) output <<  "Automatic" << std::endl;
-           else  output <<  " MPI (processes) : " << Num2String(numProcesses) << std::endl;
+           else  output <<  " MPI (processes) : " << Setup::num2str(numProcesses) << std::endl;
 
        
       output << "           |  Decompostion : " 

@@ -123,7 +123,7 @@ std::vector<std::string> Setup::split(std::string str, std::string delim)
   ExArgv.push_back(0);
 
   config["Parallel.Decomposition"] = setup_decomposition;
-  config["gkc.Process_ID"]      =  number2string(process_id);
+  config["gkc.Process_ID"]      =  num2str(process_id);
      
   std::cout << "---> " << setup_Xoptions << std::endl;
   //////////////////// parse Setup file /////////////////

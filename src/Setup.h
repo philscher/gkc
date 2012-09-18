@@ -70,16 +70,6 @@ public:
    enum GKCCmdLineFlags { GKC_STATISTICS=1, GKC_VERBOSE=2, GKC_OVERWRITE=4, GKC_READ_STDIN=8} ;
  
    /** 
-   *    @brief cast int/double to string
-   **/
-   template<class T> static std::string number2string(T number)
-   {
-       stringstream ss;
-       ss << number;
-       return ss.str();
-   };
- 
-   /** 
    *    @brief cast string representation of double to double
    *
    *    @todo is there any more C++ style way ?
@@ -94,6 +84,16 @@ public:
         if (!(i >> x)) return 0;
         return x;
          * */
+   }
+
+   /**
+   *    @brief Converts a number to std::string
+   *
+   **/ 
+   template<class T> static std::string num2str(T number) {
+      std::stringstream ss;
+      ss << number;
+      return ss.str();
    }
 
    /**

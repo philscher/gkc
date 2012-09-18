@@ -192,12 +192,12 @@ void Init::initMaxwellian(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxL
   for(int s = NsLlD; s <= NsLuD; s++) {
    
     // Initialize Form of f, Ap, phi, and g, we need superposition between genereal f1 pertubration and species dependent
-    std::string perturb_f1s_str = setup->get("Plasma.Species" + Setup::number2string(s) + ".InitF1", "0.");
+    std::string perturb_f1s_str = setup->get("Plasma.Species" + Setup::num2str(s) + ".InitF1", "0.");
     std::string perturb_f1_str  = setup->get("Init.F1", "0.");
     FunctionParser f1s_parser = setup->getFParser();
     check(((f1s_parser.Parse(perturb_f1s_str + "+" +  perturb_f1_str, "x,y,z,v,m") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
                                  
-    const double VOff = 0.;//setup->get("Plasma.Species" + Setup::number2string(s) + ".VelocityOffset", 0.);
+    const double VOff = 0.;//setup->get("Plasma.Species" + Setup::num2str(s) + ".VelocityOffset", 0.);
    
     omp_for_C3(int m = NmLlD; m <= NmLuD; m++) {      for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  
     for(int x = NxLlD; x <= NxLuD; x++)        { 

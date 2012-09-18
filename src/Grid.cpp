@@ -77,7 +77,7 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
     
       int Ny = 2 * Nky - 2;
       
-
+      check(((Nm == 1) && (Lm != 1.)) ? -1 : 0, DMESG("For Nm=1, set Lm = 1 !"));
 
       // Calculate some preknown values
        dx = (Nx > 1) ? Lx/((double) (Nx-1)) : Lx;
@@ -236,8 +236,8 @@ Grid::~Grid () {
 
 void Grid::printOn(ostream &output) const {
     bool do_gyro = Nm > 1 ? true : false;
-         output   << " Domain    |  Lx : " << Lx << "  Ly : " << Ly << "  Lz : " << Lz << "  Lv : " << Lv << ((do_gyro) ? std::string("  Lm : ") + Num2String(Lm) : "") << std::endl
-                  << " Grid      |  Nx : " << Nx << "  Nky : " << Nky << "  Nz : " << Nz << "  Nv : " << Nv << ((do_gyro) ? std::string("  Nμ : ") + Num2String(Nm) : "") << std::endl;
+         output   << " Domain    |  Lx : " << Lx << "  Ly : " << Ly << "  Lz : " << Lz << "  Lv : " << Lv << ((do_gyro) ? std::string("  Lm : ") + Setup::num2str(Lm) : "") << std::endl
+                  << " Grid      |  Nx : " << Nx << "  Nky : " << Nky << "  Nz : " << Nz << "  Nv : " << Nv << ((do_gyro) ? std::string("  Nμ : ") + Setup::num2str(Nm) : "") << std::endl;
      
             
  #ifdef _DEBUG

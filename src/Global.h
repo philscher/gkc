@@ -175,11 +175,6 @@ extern double *X, *Y, *Z, *V, *M, *Z;
 
 
 
-template<typename T> std::string Num2String(T number) {
-    std::stringstream ss;
-    ss << number;
-    return ss.str();
-}
 
 #include "hdf5.h"
 #include "hdf5_hl.h"
