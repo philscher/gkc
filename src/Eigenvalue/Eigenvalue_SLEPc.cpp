@@ -33,11 +33,10 @@ Eigenvalue_SLEPc::Eigenvalue_SLEPc(FileIO *fileIO, Setup *setup, Grid *grid, Par
       // create Matrix Operations
       int subDiv=0;
 
-      // Note : We do not include Zonal Flow (ZF)
-      int local_size  = NxLD       * (NkyLD-1) * NzLD       * NvLD       * NmLD       * NsLD;
-      int global_size = grid->NxGD * (NkyLD-1) * grid->NzGD * grid->NvGD * grid->NmGD * grid->NsGD;
+      // Note : We do not include Zonal Flow (ZF) and Nyquist frequency
+      int local_size  = NxLD       * (NkyLD-2) * NzLD       * NvLD       * NmLD       * NsLD;
+      int global_size = grid->NxGD * (NkyLD-2) * grid->NzGD * grid->NvGD * grid->NmGD * grid->NsGD;
 
-      //MatCreateShell(parallel->Comm[DIR_ALL], grid->getLocalSize(), grid->getLocalSize(), grid->getGlobalSize(), grid->getGlobalSize(), &subDiv, &A_F1);
       MatCreateShell(parallel->Comm[DIR_ALL], local_size, local_size, global_size, global_size, &subDiv, &A_F1);
       MatSetFromOptions(A_F1);
 
@@ -101,14 +100,14 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
     //EPSSetWhichEigenpairs(EigvSolver, EPS_LARGEST_REAL);
     
     //int n_eigv = 2000;//Nx*Nky*Nz*Nv*Nm*Ns;
-    int n_eigv = grid->NxGD * (NkyLD-1) * grid->NzGD * grid->NvGD * grid->NmGD * grid->NsGD;
+    int n_eigv = grid->NxGD * (NkyLD-2) * grid->NzGD * grid->NvGD * grid->NmGD * grid->NsGD;
     EPSSetDimensions(EigvSolver, n_eigv, PETSC_DECIDE, PETSC_DECIDE); 
     // init intial solution vector 
     if(1 == 0) {
         Vec Vec_init;
         Complex *init_x = PETScMatrixVector::getCreateVector(grid, Vec_init);
     
-        for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
+        for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD-1; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
         for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD   ; m   <= NmLuD ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
 
                 init_x[n++] = 1.e-5 * vlasov->f1(x,y_k,z,v,m,s);
@@ -127,8 +126,7 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
     EPSSolve(EigvSolver);
     control->signalForceExit(false);
 
-    
-//EPSSetBalance(EigvSolver, EPS_BALANCE_ONESIDE, 16, 1.e-13);
+    //EPSSetBalance(EigvSolver, EPS_BALANCE_ONESIDE, 16, 1.e-13);
 
     int nconv = 0;
     EPSGetConverged(EigvSolver, &nconv);
@@ -161,13 +159,17 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
             EPSComputeRelativeError(EigvSolver,m, &eigvTable.AbsoluteError);
             
           EVTable->append(&eigvTable);
-            
+          
+          // Skip eigenvalue results if growthrates are smaller than minimum value
+          if(real(eigv) > 1.e-5) { // only write eigenvalues with larger growthrates otherwise ignore
             // Get EigenVector (Phase Space function) and calculate corresponding potentials
-         VecGetArray(Vec_F1, &x_F1);
+           std::cout << "Saving eigenvector : " << eigv << std::endl;
+         
+           VecGetArray(Vec_F1, &x_F1);
 
             // copy whole phase space function (waste but starting point) (important due to bounday conditions
            // we can built wrapper around this and directly pass it
-   for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
+   for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD-1; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
    for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD   ; m   <= NmLuD ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
 
                 vlasov->fs(x,y_k,z,v,m,s) = x_F1[n++];
@@ -179,6 +181,7 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
            VecRestoreArray    (Vec_F1, &x_F1);
         
            visual->writeData(Timing(m,0.), 0., true);
+          }
     }
 
 
@@ -208,11 +211,8 @@ void Eigenvalue_SLEPc::printOn(ostream &output) const {
  /////////////////////////////////// Data I/O Stuff ////////////////
 
 
-
-
 void Eigenvalue_SLEPc::initDataOutput(Setup *setup, FileIO *fileIO) 
 {
-//   auto groupID = fileIO->newGroup(bla, fileIO);
    eigvGroupID = fileIO->newGroup(fileIO->getFileID(), "Eigenvalue");
 
     // ********************* setup Table for EigenValues *****************
@@ -224,9 +224,5 @@ void Eigenvalue_SLEPc::initDataOutput(Setup *setup, FileIO *fileIO)
     const char * EigVal_names  [] = {"Eigenvalue", "Absolute Error"};
 
     EVTable = new TableAttr(eigvGroupID, "EigenValues", 2, EigVal_names, EigVal_offsets, EigVal_types, EigVal_sizes, &EigVal_table);
-
-
-
-
 
 }

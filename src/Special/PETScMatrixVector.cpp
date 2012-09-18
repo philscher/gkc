@@ -56,8 +56,8 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
 
     // copy whole phase space function (waste but starting point) (important due to bounday conditions
    // we can built wrapper around this and directly pass it
-   for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
-   for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD   ; m   <= NmLuD ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
+   for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD-1; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
+   for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD   ; m   <= NmLuD   ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
       
            fs[s][m][z][y_k][x][v] = x_F1[n++];
 
@@ -70,8 +70,8 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
    GL_vlasov->solve(GL_vlasov->getEquationType(), GL_fields, GL_vlasov->fs, GL_vlasov->fss, 1., 0, rk_0);
    
     // copy whole phase space function (waste but starting point) (important due to bounday conditions
-   for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
-   for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD   ; m   <= NmLuD ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
+   for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD-1; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
+   for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD   ; m   <= NmLuD   ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
 
        y_F1[n++] = fss[s][m][z][y_k][x][v];
 
