@@ -47,7 +47,7 @@ RecvXu(FortranArray<6>()), RecvXl(FortranArray<6>()), RecvZu(FortranArray<6>()),
    if(plasma->nfields >= Field::Bp ) { Bp.reference (Field(RxLB4,RkyLD,RzLB,RmLB, RsLB, Field::Bp )); Bp  = 0.; }
     
    //  brackets should be 1/2 but due to numerical errors, we should calculate it ourselves, see Dannert[2] 
-   Yeb = (1./sqrt(M_PI) * sum(pow2(V(RvLD)) * exp(-pow2(V(RvLD)))) * dv) * geo->eps_hat * plasma->beta; 
+   Yeb = (1./sqrt(M_PI) * __sec_reduce_add(pow2(V[NvLlD:NvLD]) * exp(-pow2(V[NvLlD:NvLD]))) * dv) * geo->eps_hat * plasma->beta; 
 
    // Allocate boundary conditions, allocate Send/Recv buffers, note we have 4 ghost cells for X, 0 for Y
    allocate(RB4 , RkyLD, RzLD, RmLD, RsLD, RFields, SendXu, SendXl, RecvXu, RecvXl);
@@ -71,8 +71,8 @@ void Fields::solve(Array6C f0, Array6C  f, Timing timing)
   for(int s = NsLlD, loop=0; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++, loop++) {
 
       if(solveEq & Field::phi) calculateChargeDensity               ((A6zz) f0.dataZero(), (A6zz) f.dataZero(), (A4zz) Field0.dataZero(),               m, s);
-      if(solveEq & Field::Ap ) calculateParallelCurrentDensity      ((A6zz) f0.dataZero(), (A6zz) f.dataZero(), (A4zz) Field0.dataZero(), V.dataZero(), m, s);
-      if(solveEq & Field::Bpp) calculatePerpendicularCurrentDensity ((A6zz) f0.dataZero(), (A6zz) f.dataZero(), (A4zz) Field0.dataZero(), M.dataZero(), m, s);
+      if(solveEq & Field::Ap ) calculateParallelCurrentDensity      ((A6zz) f0.dataZero(), (A6zz) f.dataZero(), (A4zz) Field0.dataZero(), V, m, s);
+      if(solveEq & Field::Bpp) calculatePerpendicularCurrentDensity ((A6zz) f0.dataZero(), (A6zz) f.dataZero(), (A4zz) Field0.dataZero(), M, m, s);
   
       // thus uses AllReduce, Reduce is more effective (with false flag...)
       parallel->collect(Field0, OP_SUM, DIR_V, true); 
@@ -142,7 +142,7 @@ void Fields::calculateChargeDensity(const CComplex f0         [NsLD][NmLD][NzLB]
 
    // re-normalize with \f[ \hat{v}^3
    //const double pqnB_dvdm = M_PI * plasma->species[s].n0 * plasma->species[s].q   * plasma->B0 * dv * grid->dm(m) ;
-   const double pqnB_dvdm = M_PI * plasma->species[s].q   * plasma->B0 * dv * grid->dm(m) ;
+   const double pqnB_dvdm = M_PI * plasma->species[s].q   * plasma->B0 * dv * grid->dm[m] ;
     
    omp_for_C2(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
@@ -162,7 +162,7 @@ void Fields::calculateParallelCurrentDensity(const CComplex f0[NsLD][NmLD][NzLB]
                                              const double V[NvGB], const int m, const int s          ) 
 {
   
-   const double qa_dvdm = plasma->species[s].q * plasma->species[s].alpha  * plasma->B0 * M_PI * dv * grid->dm(m) ;
+   const double qa_dvdm = plasma->species[s].q * plasma->species[s].alpha  * plasma->B0 * M_PI * dv * grid->dm[m] ;
    
    omp_for_C2(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
@@ -182,7 +182,7 @@ void Fields::calculatePerpendicularCurrentDensity(const CComplex f0 [NsLD][NmLD]
                                                   const double M[NmGB], const int m, const int s          ) 
 {
    
-   const double qan_dvdm = - plasma->species[s].q * plasma->species[s].alpha   * plasma->B0 * M_PI * dv * grid->dm(m) ;
+   const double qan_dvdm = - plasma->species[s].q * plasma->species[s].alpha   * plasma->B0 * M_PI * dv * grid->dm[m] ;
    
    for(int z=NzLlD; z<= NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++){
 

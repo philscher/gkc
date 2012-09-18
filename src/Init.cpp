@@ -23,7 +23,7 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    epsilon_0          = setup->get("Init.Epsilon0", 1.e-14); 
    sigma              = setup->get("Init.Sigma"   , 3.e-1); 
 
-   initMaxwellian(setup, (A6zz) vlasov->f0.dataZero(), (A6zz) vlasov->f.dataZero(), V.dataZero(), M.dataZero());
+   initMaxwellian(setup, (A6zz) vlasov->f0.dataZero(), (A6zz) vlasov->f.dataZero(), V, M);
   
    // check for predefined perturbations
    PerturbationMethod = setup->get("Init.Perturbation", "");
@@ -59,8 +59,8 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    
      	for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  for(int x = NxLlD; x <= NxLuD; x++) {
 
-         	//const Complex pos[3] = { X(x), Y(y_k), Z(z) };
-         	const double pos[3] = { X(x), y_k, Z(z) };
+         	//const Complex pos[3] = { X[x], Y(y_k), Z[z] };
+         	const double pos[3] = { X[x], y_k, Z[z] };
          //	fields->Field0 (x,y_k,z,Field::Ap ) = (y_k == 1) ? Complex(sqrt(2.),sqrt(2.)) * Ap_parser.Eval(pos) : 0.;
          //	fields->Field0(x,y_k,z, Field::phi) = Complex(sqrt(2.), sqrt(2.)) * phi_parser.Eval(pos);
   
@@ -84,7 +84,7 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    
      	for(int z = NzLlD; z <= NzLuB; z++) { for(int y = NkyLlD; y <= NkyLuD; y++) {  for(int x = NxLlD; x <= NxLuD; x++) {
 
-         	const double pos[3] = { X(x), Y(y), Z(z) };
+         	const double pos[3] = { X[x], Y[y], Z[z] };
          	fields->Bp(x,y,z,m,s ) = Bp_parser.Eval(pos);
   
      	}}}
@@ -103,7 +103,7 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  for(int x = NxLlD; x <= NxLuD; x++) {
  
                    vlasov->f(x, y_k, z, v, m, s)  = vlasov->f(x,y_k,z,v,m,s)
-                             + ((plasma->nfields >= 2) ? plasma->species[s].sigma * plasma->species[s].alpha * V(v)*geo->eps_hat 
+                             + ((plasma->nfields >= 2) ? plasma->species[s].sigma * plasma->species[s].alpha * V[v]*geo->eps_hat 
                                                          * vlasov->f0(x,y_k,z,v,m,s) * plasma->beta * fields->Ap(x,y_k,z,m,s) : 0.);
    }}} }}}
 
@@ -154,7 +154,7 @@ void Init::setFieldFromDataFile(Setup *setup, Array4C Field0, int n, std::string
 
    for(int z = NzLlD; z <= NzLuD; z++) { for(int y = NkyLlD; y <= NkyLuD; y++) {  for(int x = NxLlD; x <= NxLuD; x++) {
         
-          Field0(x,y,z,n) = reader->getValue(X(x),Y(y),Z(z));
+          Field0(x,y,z,n) = reader->getValue(X[x],Y[y],Z[z]);
 
    }}}
 
@@ -172,7 +172,7 @@ void Init::setFieldFromFunction(Setup *setup, Array4C Field0, int n , std::strin
 
    for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  for(int x = NxLlD; x <= NxLuD; x++) {
 
-      const double pos[3] = { X(x), y_k, Z(z) };
+      const double pos[3] = { X[x], y_k, Z[z] };
 
       if(plasma->nfields >= n) Field0(x,y_k,z,n) = parser.Eval(pos);
 
@@ -216,7 +216,7 @@ void Init::initMaxwellian(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxL
                                  :    T/(plasma->B0)));
 
       // for df
-      double pos[] = {X(x), 0., Z(z), V[v], M[m] };
+      double pos[] = {X[x], 0., Z[z], V[v], M[m] };
       
       f[s][m][z][y_k][x][v] = f1s_parser.Eval(pos)*f0[s][m][z][y_k][x][v];
 
@@ -245,7 +245,7 @@ int Init::PerturbationHermitePolynomial(const CComplex f0[NsLD][NmLD][NzLB][NkyL
    for(int s = NsLlD; s <= NsLuD; s++)   { for(int m = NmLlD; m <= NmLuD; m++) { for(int z = NzLlD; z<=NzLuD; z++) {
    for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) {
 
-     const double phi_x = Special::HermiteFunction(l, X(x));
+     const double phi_x = Special::HermiteFunction(l, X[x]);
      
      for(int v = NvLlD; v<=NvLuD; v++) {
       
@@ -281,7 +281,7 @@ void Init::PerturbationPSFExp(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][N
    const double pert = plasma->global ? 1. : 0.; 
 
    auto  Perturbation = [=] (int x,int y,int z, const double epsilon_0, const double sigma) -> double {
-            return  epsilon_0*exp(-(  pow2(X(x)/Lx) + pow2(Y(y)/Ly - 0.5) + pow2(Z(z)/Lz - 0.5))/(2.*pow2(sigma))); 
+            return  epsilon_0*exp(-(  pow2(X[x]/Lx) + pow2(Y[y]/Ly - 0.5) + pow2(Z[z]/Lz - 0.5))/(2.*pow2(sigma))); 
    };
 
 
@@ -306,15 +306,15 @@ void Init::PerturbationPSFMode(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][
       double pert_x=0., pert_y=0., pert_z=0.;
       
       pert_z = (Nz == 1) ? 1. : 0.;
-      for(int r = 1; r <= Nx/2; r++) pert_x += cos(r*(2.*M_PI*X(x)/Lx)+Phase(r,Nx));//*exp(pow2(M_PI*X(x)/Lx));
+      for(int r = 1; r <= Nx/2; r++) pert_x += cos(r*(2.*M_PI*X[x]/Lx)+Phase(r,Nx));//*exp(pow2(M_PI*X[x]/Lx));
       for(int q = 1; q <= Nky-1; q++) pert_y += 0.;
-      for(int n = 1; n <= Nz/2; n++) pert_z += cos(n*(2.*M_PI*Z(z)/Lz)+Phase(n,Nz));//*exp(pow2(M_PI*Z(z)/Lz));
+      for(int n = 1; n <= Nz/2; n++) pert_z += cos(n*(2.*M_PI*Z[z]/Lz)+Phase(n,Nz));//*exp(pow2(M_PI*Z[z]/Lz));
       
       if(pert_x == 0.) pert_x = 1.;
       if(pert_y == 0.) pert_y = 1.;
       if(pert_z == 0.) pert_z = 1.;
-        // for(int r = 1; r <= Nx/2; r++) pert_x +=  cos(r*(2.*M_PI*X(x)/Lx)+Phase(r,Nx));
-        // for(int n = 1; n <= Nz/2; n++) pert_z +=  cos(n*(2.*M_PI*Z(z)/Lz)+Phase(n,Nz));
+        // for(int r = 1; r <= Nx/2; r++) pert_x +=  cos(r*(2.*M_PI*X[x]/Lx)+Phase(r,Nx));
+        // for(int n = 1; n <= Nz/2; n++) pert_z +=  cos(n*(2.*M_PI*Z[z]/Lz)+Phase(n,Nz));
         // vlasov->f(x, y, z, RvLD, RmLD, s)  = (pre + (pert_x*pert_y*pert_z)) * vlasov->f0(x,y,z,RvLD, RmLD, s) / (Nx * Ny * Nz);
       
         f[s][m][z][y_k][x][v] = epsilon_0 * (pert_x*pert_y*pert_z) * f0[s][m][z][y_k][x][v] * (1./ (Nx * Nky * Nz));

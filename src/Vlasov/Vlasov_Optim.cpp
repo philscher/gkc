@@ -41,7 +41,7 @@ int VlasovOptim::solve(std::string equation_type, Fields *fields, Array6C _fs, A
   if((equation_type == "2D_ES")) {
   Vlasov_2D((A6sz) _fs.dataZero(), (A6sz) _fss.dataZero(), (A6sz) f0.dataZero(), 
             (A6sz) f.dataZero(), (A6sz) ft.dataZero(), (A5sz) fields->phi.dataZero(),
-            (A4sz) nonLinearTerms.dataZero(), X.dataZero(), V.dataZero(), M.dataZero(),
+            (A4sz) nonLinearTerms.dataZero(), X, V, M,
              dt, rk_step, rk);
   }
 

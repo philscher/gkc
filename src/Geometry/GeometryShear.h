@@ -123,11 +123,11 @@ class GeometryShear : public Geometry
    ///  \f$ g_{xx} = 1 \f$
    inline double g_xx(const int x, const int z) { return 1.0;                 };
    ///  \f$ g_{xy} = z / L_s \f$
-   inline double g_xy(const int x, const int z) { return Z(z)/Ls;             }; 
+   inline double g_xy(const int x, const int z) { return Z[z]/Ls;             }; 
    ///  \f$ g_{xz} = 0 \f$
    inline double g_xz(const int x, const int z) { return 0.0;                 };
    ///  \f$ g_{yy} = 1 + \left( \frac{z}{L_s} \right)^2 \f$
-   inline double g_yy(const int x, const int z) { return 1.0 + pow2(Z(z)/Ls); };
+   inline double g_yy(const int x, const int z) { return 1.0 + pow2(Z[z]/Ls); };
    ///  \f$ g_{yz} = 0 \f$
    inline double g_yz(const int x, const int z) { return 0.0;                 };
    ///  \f$ g_{zz} = 1 \f$

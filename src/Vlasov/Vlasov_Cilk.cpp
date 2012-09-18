@@ -36,7 +36,7 @@ int VlasovCilk::solve(std::string equation_type, Fields *fields, Array6C _fs, Ar
                                                   (A5zz) fields->phi.dataZero(), (A5zz) fields->Ap.dataZero(), (A5zz) fields->Bp.dataZero(),
                                                   (A4zz) Xi.dataZero(), (A4zz) G.dataZero(),
                                                   (A3zz) nonLinearTerms.dataZero(),
-                                                  X.dataZero(), V.dataZero(), M.dataZero(),  dt, rk_step, rk);
+                                                  X, V, M,  dt, rk_step, rk);
   else   check(-1, DMESG("No Such Equation"));
 
   return GKC_SUCCESS;
@@ -91,8 +91,12 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
    CComplex  xky_ExB[NkyLD][NxLD  ];
 
    // having different extend suckz, sorry
+   typedef __declspec(align(32)) double double32;
+
+
    double  __declspec(align(32))  xy_Xi    [NyLD+8][NxLD+8]; // extended BC 
-   double  __declspec(align(32))  xy_dXi_dy[NyLD+4][NxLD+4]; // normal BC
+   //double  __declspec(align(32))  xy_dXi_dy[NyLD+4][NxLD+4]; // normal BC
+   double32  xy_dXi_dy[NyLD+4][NxLD+4]; // normal BC
    double    xy_dXi_dx[NyLD+4][NxLD+4];
    double    xy_f1    [NyLD+4][NxLD+4];
    double    xy_ExB   [NyLD  ][NxLD  ];
@@ -206,7 +210,7 @@ void VlasovCilk::setupXiAndG(
 
      Xi[z][y_k][x][v] = phi[s][m][z][y_k][x] - (useAp ? aeb*V[v]*Ap[s][m][z][y_k][x] : 0.) - (useBp ? aeb*M[m]*Bp[s][m][z][y_k][x] : 0.);
      G [z][y_k][x][v] = g[s][m][z][y_k][x][v]  + sigma * Xi[z][y_k][x][v] * f0[s][m][z][y_k][x][v];
- // f1[z][y_k][x][v] = g[s][m][z][y_k][x][v] - (useAp ? saeb * V(v) * f0[s][n][z][y_k][x][v] * Ap[s][m][z][y_k][x] : 0.);
+ // f1[z][y_k][x][v] = g[s][m][z][y_k][x][v] - (useAp ? saeb * V[v] * f0[s][n][z][y_k][x][v] * Ap[s][m][z][y_k][x] : 0.);
       
   }} // v, x
      
@@ -307,7 +311,7 @@ void VlasovCilk::Vlasov_EM(
         // magnetic prefactor defined as  $ \hat{B}_0 / \hat{B}_{0\parallel}^\star = \left[ 1 + \beta_{ref} \sqrt{\frac{\hat{m_\sigma T_{0\sigma}{2}}}}
         // note j0 is calculated and needs to be replaced, or ? no we calculate j1 ne ?!
         const double j0 = 0.;
-        const double Bpre  = 1.; //1./(1. + plasma->beta * sqrt(m * T/2.) * j0 / (q * pow2(geo->B(x,y,z))) * V(v));
+        const double Bpre  = 1.; //1./(1. + plasma->beta * sqrt(m * T/2.) * j0 / (q * pow2(geo->B(x,y,z))) * V[v]);
         const double CoJB = 1./geo->J(x,z);
 
         

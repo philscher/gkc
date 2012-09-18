@@ -27,7 +27,7 @@ parallel(_parallel),setup(_setup), vlasov(_vlasov), grid(_grid), fields(_fields)
 
        // set initial energy
        initialEkin.resize(Range(0, NsGuD)); initialEkin = 0.e0;
-       //for(int s=NsLlD; s<= NsLuD; s++)  initialEkin(s) = 0. ;//getKineticEnergy((A6zz) vlasov->f0.dataZero(), V.dataZero(), M.dataZero(), s);
+       //for(int s=NsLlD; s<= NsLuD; s++)  initialEkin(s) = 0. ;//getKineticEnergy((A6zz) vlasov->f0.dataZero(), V.dataZero(), M, s);
        initialEkin(0) = sum(initialEkin(RsLD));
        
        // Spectrum
@@ -119,7 +119,7 @@ void Analysis::calculateScalarValues(const CComplex f[NsLD][NmLD][NzLB][NkyLD][N
       
     
     ////////////////////////////// Calculate Particle Number ////////////////////////
-    const double pn_d6Z = M_PI  * dv * grid->dm(m) * grid->dXYZV;
+    const double pn_d6Z = M_PI  * dv * grid->dm[m] * grid->dXYZV;
    
     double number = 0.e0;
     #pragma omp parallel for reduction(+:number)
@@ -131,7 +131,7 @@ void Analysis::calculateScalarValues(const CComplex f[NsLD][NmLD][NzLB][NkyLD][N
     //////////// Calculate Kinetic Energy  //////////////////////////
     
     double kineticEnergy=0.e0;
-    const double v2_d6Z = M_PI * plasma->species[s].n0 * plasma->species[s].T0 * plasma->B0 * dv * dm * grid->dXYZ * plasma->species[s].scale_v ;
+    const double v2_d6Z = M_PI * plasma->species[s].n0 * plasma->species[s].T0 * plasma->B0 * dv * grid->dm[m] * grid->dXYZ * plasma->species[s].scale_v ;
               
     #pragma omp parallel for reduction(+:kineticEnergy) collapse (2)
     for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
@@ -148,9 +148,9 @@ void Analysis::calculateScalarValues(const CComplex f[NsLD][NmLD][NzLB][NkyLD][N
        // return  parallel->collect(kineticEnergy, OP_SUM, DIR_ALL);
 
     ////////////////////////////// Calculate Entropy ////////////////////////////////////
-    double entropy = 0.; //abs(pow2( __sec_reduce_add(f [s][m][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD][NvLlD:NvLD] 
-                         //                     - f0[s][m][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD][NvLlD:NvLD])))/
-                         //      __sec_reduce_add(f0[s][m][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD][NvLlD:NvLD]);
+    //- f0[s][m][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD][NvLlD:NvLD])))/
+    double entropy = 0.;//abs(pow2( __sec_reduce_add(f [s][m][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD][NvLlD:NvLD])))/ 
+                        //       __sec_reduce_add(f0[s][m][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD][NvLlD:NvLD]);
                          // |f - f0|^2/n_0
         
 
@@ -191,7 +191,7 @@ void Analysis::getNumberDensity(const  CComplex f[NsLB][NmLB][NzLB][NkyLB][NxLB]
 
     for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { 
 
-       const double pn_d6Z = M_PI  * dv * grid->dm(m) * grid->dXYZV;
+       const double pn_d6Z = M_PI  * dv * grid->dm[m] * grid->dXYZV;
 
     for(int x=NxLlD; x<= NxLuD;x++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int z=NzLlD; z<= NzLuD;z++){
 
@@ -210,7 +210,7 @@ Array4R Analysis::getMomentumParallel() {
     const double d6Z = dXYZV * plasma->B0 * M_PI;
     const double alpha_s = plasma->species[s].q / plasma->species[s].T0;
 
-       for(int v=NvLlD; v<= NvLuD;v++)  A4(x,y,z,s) = alpha_s * V(v) * F(x, y, z, v, RmLD, s) * d6Z;
+       for(int v=NvLlD; v<= NvLuD;v++)  A4(x,y,z,s) = alpha_s * V[v] * F(x, y, z, v, RmLD, s) * d6Z;
  * */
 
     return real(parallel->collect(A4_z, OP_SUM, DIR_VM));
@@ -222,11 +222,12 @@ void Analysis::getTemperatureParallel(const  CComplex f[NsLB][NmLB][NzLB][NkyLB]
                                       const double V[NvGB], const double M[NmGB])
 {
 
-  for(int s = NsLlD; s <= NsLuD; s++) {
+  for(int s = NsLlD; s <= NsLuD; s++) { omp_for(int m=NmLlD; m<=NmLuD; m++) { 
 
-      const double d6Z = M_PI * plasma->species[s].n0 * plasma->species[s].T0 * plasma->B0 * dv * dm * grid->dXYZ;
+    // BUG need to use grid->dm
+      const double d6Z = M_PI * plasma->species[s].n0 * plasma->species[s].T0 * plasma->B0 * dv * grid->dm[m] * grid->dXYZ;
 
-      omp_for_C3(int m=NmLlD; m<=NmLuD; m++) { for(int z=NzLlD; z<= NzLuD; z++) { for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { 
+        omp_for_C2(int z=NzLlD; z<= NzLuD; z++) { for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { 
             
         const Complex ky=Complex(0.,-fft->ky(y_k));
         
@@ -271,7 +272,7 @@ Array4R Analysis::getHeatFluxParallel() {
 
 Array4R Analysis::getHeatFluxOrthogonal() {
 /* 
-         A4(x,y,z,s) = alpha_s * V(v) * (M(m) * plasma->B0 - 1.) * F(x, y, z, v, RmLD, s) * d6Z;
+         A4(x,y,z,s) = alpha_s * V[v] * (M[m] * plasma->B0 - 1.) * F(x, y, z, v, RmLD, s) * d6Z;
  * */
     return real(parallel->collect(A4_z, OP_SUM, DIR_VM));
 }
@@ -285,7 +286,7 @@ void Analysis::getParticleHeatFlux(const int m, const int s,
                                    const double V[NvGB], const double M[NmGB])
 {
 
-    const double d6Z = M_PI * plasma->species[s].n0 * plasma->species[s].T0 * plasma->B0 * dv * grid->dm(m) * grid->dXYZ;
+    const double d6Z = M_PI * plasma->species[s].n0 * plasma->species[s].T0 * plasma->B0 * dv * grid->dm[m] * grid->dXYZ;
 
     omp_for(int z=NzLlD; z<= NzLuD;z++) { 
   
@@ -521,7 +522,8 @@ void Analysis::writeData(Timing timing, double dt)
     
     //  Get scalar Values for every species ( this is bad calculate them alltogether)
     // gives bus error ?!
-    calculateScalarValues((A6zz) vlasov->f.dataZero(), V.dataZero(), M.dataZero(), 1, scalarValues); 
+    calculateScalarValues((A6zz) vlasov->f.dataZero(), (A6zz) vlasov->f0.dataZero(), V, M, 1, scalarValues); 
+
     
     SVTable->append(&scalarValues);
     

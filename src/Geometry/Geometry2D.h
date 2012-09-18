@@ -68,7 +68,7 @@ class Geometry2D : public Geometry
     check(((By_parser.Parse(By_str, "x") == -1) ? 1 : -1), DMESG("Parsing error of shear condition"));
 
     By.resize(Range(NxGlD, NxGuD));
-    for(int x=NxGlD; x <= NxGuD; x++) By(x) = By_parser.Eval(&X(x)) ;
+    for(int x=NxGlD; x <= NxGuD; x++) By(x) = By_parser.Eval(&X[x]) ;
 
 
         // BUG

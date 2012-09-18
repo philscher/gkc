@@ -53,22 +53,22 @@ int VlasovAux::solve(std::string equation_type, Fields *fields, Array6C f_in, Ar
 
       Vlasov_ES   ((A6zz) f_in.dataZero(), (A6zz) f_out.dataZero()      , (A6zz) f0.dataZero(), (A6zz) f.dataZero(), 
                    (A6zz) ft.dataZero() , (A5zz) fields->phi.dataZero(), 
-                   (A3zz) nonLinearTerms.dataZero(), X.dataZero(), V.dataZero(), M.dataZero(), dt, rk_step, rk);
+                   (A3zz) nonLinearTerms.dataZero(), X, V, M, dt, rk_step, rk);
 
   else if(equation_type == "EM")
 
       Vlasov_EM    ((A6zz) f_in.dataZero(), (A6zz) f_out.dataZero(), (A6zz) f0.dataZero(), (A6zz) f.dataZero(),
                    (A6zz) ft.dataZero(), (A5zz) fields->phi.dataZero(), (A5zz) fields->Ap.dataZero(),
                    (A5zz) fields->Bp.dataZero(), (A3zz) nonLinearTerms.dataZero(),
-                   (A4zz) Xi.dataZero(), (A4zz) G.dataZero(), X.dataZero(), V.dataZero(), M.dataZero(), dt, rk_step, rk);
+                   (A4zz) Xi.dataZero(), (A4zz) G.dataZero(), X, V, M, dt, rk_step, rk);
 
   else if(equation_type == "2D_Island") 
     
       Vlasov_2D_Island((A6zz) f_in.dataZero(), (A6zz) f_out.dataZero(), (A6zz) f0.dataZero(), (A6zz) f.dataZero(), 
                     (A6zz) ft.dataZero(), (A5zz) fields->phi.dataZero(), (A3zz) nonLinearTerms.dataZero(),
-                    X.dataZero(), V.dataZero(), M.dataZero(), dt, rk_step, rk);
+                    X, V, M, dt, rk_step, rk);
 
-//  else if(equation_type == "2DLandauDamping") Landau_Damping((A6z) f_in.dataZero(), (A6z) f_out.dataZero(), (A6z) f0.dataZero(), (A6z) f.dataZero(), (A6z) ft.dataZero(), (A5z) fields->phi.dataZero(), (A4z) k2p_phi.dataZero(), (A3z) dphi_dx.dataZero(), X.dataZero(), V.dataZero(), M.dataZero(), fields, dt, rk_step, rk);
+//  else if(equation_type == "2DLandauDamping") Landau_Damping((A6z) f_in.dataZero(), (A6z) f_out.dataZero(), (A6z) f0.dataZero(), (A6z) f.dataZero(), (A6z) ft.dataZero(), (A5z) fields->phi.dataZero(), (A4z) k2p_phi.dataZero(), (A3z) dphi_dx.dataZero(), X.dataZero(), V.dataZero(), M, fields, dt, rk_step, rk);
   else   check(-1, DMESG("No Such Equation"));
 
   return GKC_SUCCESS;
@@ -637,17 +637,17 @@ void    VlasovAux::Vlasov_2D_Fullf(
              nonLinearTerms(x,y_k,v) +
              
              // driving term (use dphi_dy instead of dXi_dy, because v * A does not vanish due to numerical errors)
-             //ky * (-(w_n + w_T * ((pow2(V(v))+ M(m))/Temp  - sub)) * F0 * phi_
-             ky * (-(w_T * pow2(V(v)) )* f0_ * phi_
-                    -(w_n + w_T * (M(m)/Temp  - sub)) * f0_ * phi_)
+             //ky * (-(w_n + w_T * ((pow2(V[v])+ M[m])/Temp  - sub)) * F0 * phi_
+             ky * (-(w_T * pow2(V[v]) )* f0_ * phi_
+                    -(w_n + w_T * (M[m]/Temp  - sub)) * f0_ * phi_)
 
              // add first order gyro-average term (zero when full-gyro)
 //             + 0.5 * w_T  * k2_phi[z][y_k][x] * F0
 
-              // Landau Damping term and parallel ... ? - alpha  * V(v)* geo->get_kp(x)  * ( g + sigma * phi * F0)) 
-           - alpha  * V(v)* kp * ( g_ + sigma * phi_ * f0_ )
+              // Landau Damping term and parallel ... ? - alpha  * V[v]* geo->get_kp(x)  * ( g + sigma * phi * F0)) 
+           - alpha  * V[v]* kp * ( g_ + sigma * phi_ * f0_ )
            // Collisional terms 
-             + collisionBeta * (g_  + V(v) * dfs_dv + v2_rms * ddfs_dvv)
+             + collisionBeta * (g_  + V[v] * dfs_dv + v2_rms * ddfs_dvv)
           ;
 
          
@@ -657,7 +657,7 @@ void    VlasovAux::Vlasov_2D_Fullf(
           //+ Coll(x,y,z,v,m,s);
           //
             // Energy evolution term
-//          + rhoOverLn * 1./mass*(shear * X(x) + theta) * dXi_dy *df1_dv;
+//          + rhoOverLn * 1./mass*(shear * X[x] + theta) * dXi_dy *df1_dv;
 
 
         //////////////////////////// Vlasov End ////////////////////////////

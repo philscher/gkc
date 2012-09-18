@@ -9,7 +9,6 @@ TestParticles::TestParticles(FileIO *fileIO, Setup *setup, Parallel *_parallel) 
  
 
 
-
   /* 
   for(int n = 1; n <= NumberOfParticles; n++) {
 

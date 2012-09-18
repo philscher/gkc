@@ -45,7 +45,7 @@ FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileI
   for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
         
     
-      GyroMatrix(y_k, z, m, s) =  getGyroAveragingMatrix(M(m), y_k, z, s);
+      GyroMatrix(y_k, z, m, s) =  getGyroAveragingMatrix(M[m], y_k, z, s);
           
       
   } } } }
@@ -118,9 +118,9 @@ Complex FieldsHermite::getElements(const int x, const int n, const double r, int
        //     if( ( i <= (NxGlD+1)) || ( i  >= (NxGuD-1))) return 0.;
        //     if( ( n <= (NxGlD+1)) || ( n  >= (NxGuD-1))) return 0.;
 
-            if( ((X(x) - r_x) <= X(NxGlD)) || ((X(x) - r_x) >= X(NxGuD))) return 0.;
+            if( ((X[x] - r_x) <= X[NxGlD]) || ((X[x] - r_x) >= X[NxGuD])) return 0.;
 
-            return Lambda(X(x) - r_x, n) * exp(Complex(0.,1.) * ky * r_y);
+            return Lambda(X[x] - r_x, n) * exp(Complex(0.,1.) * ky * r_y);
 
         };
         
@@ -157,7 +157,7 @@ void FieldsHermite::solveFieldEquations(CComplex Q     [plasma->nfields][NxLD][N
 double FieldsHermite::Lambda(const double x, const int n) {
         
         // Scale input to [ 0 , 1 ]
-        auto N = [=] (const double x, const int n) -> double { return (x-X(n))/dx ; };
+        auto N = [=] (const double x, const int n) -> double { return (x-X[n])/dx ; };
         
         // Hermite Interpolation has to base functions corresponding to 1 and 0 and their derivatives 
         // We use Central Difference n derivative m order stencil (CD_n-m)

@@ -187,7 +187,7 @@ void FieldsFFT::gyroFull(Array4C In, Array4C Out,
       
         // get therma gyro-radius^2 of species and lambda =  2 x b 
         const double rho_t2  = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0); 
-        const double lambda2 = 2. * M(m) * rho_t2;
+        const double lambda2 = 2. * M[m] * rho_t2;
 
         // perform gyro-average in Fourier space for rho/phi field
         for(int z=NzLlD; z<=NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {  simd_for(int x_k=fft->K1xLlD; x_k<=fft->K1xLuD;x_k++) {

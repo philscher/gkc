@@ -88,8 +88,8 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
 
             // we not to normalize N, so that total density is equal in gyro-simulations 
             for(int x = NxLlB; x <= NxLuB; x++) { 
-                species[s].n(x) = n_parser.Eval(&X(x));///sum(exp(-M));
-                species[s].T(x) = T_parser.Eval(&X(x));
+                species[s].n(x) = n_parser.Eval(&X[x]);///sum(exp(-M));
+                species[s].T(x) = T_parser.Eval(&X[x]);
                 } 
             } 
            
@@ -122,8 +122,7 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
      void Plasma::printOn(ostream &output) const {
          output << 
                "Type       | " << (global ? " Global" : "Local") << std::endl
-            << " Cs   : " << cs
-            << "Model      |  " << ((do_gyro) ? "Gyrokinetic Model" : "Driftkinetic Model") << std::endl
+            << " Cs   : " << cs << std::endl 
             << "Species    | ";
             if(species[0].n0 != 0.) { output << "0. " << species[0].name << "  Density : " << species[0].n0 << " Charge : " << species[0].q << 
                                            " Temp : " << species[0].T0 << " FluxAvrg : " << (species[0].doGyro ? "Yes" : "No") << 
@@ -152,7 +151,6 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
          check(H5LTset_attribute_double(plasmaGroup, ".", "beta",  &beta, 1), DMESG("H5LTset_attribute"));
          check(H5LTset_attribute_double(plasmaGroup, ".", "B0",  &B0, 1), DMESG("H5LTset_attribute"));
         // check(H5LTset_attribute_string(plasmaGroup, ".", "Physics", ((plasma->nfields > 1)   ? "Electromagnetic" : "Electrostatic")), DMESG("H5LTset_attribute"));
-         check(H5LTset_attribute_string(plasmaGroup, ".", "Model", ((do_gyro) ? "Gyrokinetic Model" : "Driftkinetic Model")), DMESG("H5LTset_attribute"));
 
          
          

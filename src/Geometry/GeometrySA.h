@@ -95,11 +95,11 @@ class GeometrySA : public Geometry
    ///  \f$ g_{xx} = 1 \f$
    inline double g_xx(const int x, const int z) { return 1.0; };
    ///  \f$ g_{xy} = \frac{\hat{s}}{q_0 R_0} z \f$
-   inline double g_xy(const int x, const int z) { return shear/(q0*R0)*Z(z); }; 
+   inline double g_xy(const int x, const int z) { return shear/(q0*R0)*Z[z]; }; 
    ///  \f$ g_{xx} = 0 \f$
    inline double g_xz(const int x, const int z) { return 0.0; };
    ///  \f$ g_{xx} = 1 + \left(\frac{\hat{s}}{q_0 R_0} \right)^2 z + \left( \epsilon q_0 \right)^2 \f$
-   inline double g_yy(const int x, const int z) { return 1.  + pow2(shear/(q0*R0) * Z(z)) + pow2(eps/q0); };
+   inline double g_yy(const int x, const int z) { return 1.  + pow2(shear/(q0*R0) * Z[z]) + pow2(eps/q0); };
    ///  \f$ g_{xx} = q_0 \epsilon \f$
    inline double g_yz(const int x, const int z) { return q0 / eps; };
    ///  \f$ g_{xx} = \left( q_0 \epsilon \right) \f$
@@ -114,11 +114,11 @@ class GeometrySA : public Geometry
    /// \f$  B = 1 \f$
    double get_B      (const int x, const int z) { return 1.;};
    /// \f$  \partial_x B = \frac{-\hat{B}}{R_0} \cos{(z)}  \f$
-   double get_dB_dx (const int x , const int z) { return - Bhat2 / R0 * cos(Z(z));            };
+   double get_dB_dx (const int x , const int z) { return - Bhat2 / R0 * cos(Z[z]);            };
    /// \f$  \partial_y B = 0 \f$
    double get_dB_dy (const int x, const int z) { return 0.;                                  };
    /// \f$  \partial_x B = -\hat{B} \frac{\epsilon}{q_0 R_0} \cos{(z)}  \f$
-   double get_dB_dz (const int x, const int z) { return - Bhat2 * eps/(q0 * R0) * cos(Z(z)); };
+   double get_dB_dz (const int x, const int z) { return - Bhat2 * eps/(q0 * R0) * cos(Z[z]); };
    ///@}
   
    
@@ -130,7 +130,7 @@ class GeometrySA : public Geometry
    *   see Dannert PHD
    */
    virtual double get_Kx(const int x, const int z)  { 
-        return - 2. * 1./R0 * sin(Z(z));
+        return - 2. * 1./R0 * sin(Z[z]);
    };
    
    /**
@@ -142,7 +142,7 @@ class GeometrySA : public Geometry
    */
    virtual double get_Ky(const int x, const int z)  { 
     
-        return -2. * 1./R0 * ( cos(Z(z)) + ( shear * Z(z)  - alpha * sin(Z(z))) * sin(Z(z)) );
+        return -2. * 1./R0 * ( cos(Z[z]) + ( shear * Z[z]  - alpha * sin(Z[z])) * sin(Z[z]) );
    };
 
 
@@ -154,8 +154,8 @@ class GeometrySA : public Geometry
    *
    *
    */  
-   //inline double nu (const int x) { return  q0 * (1. + shear * (X(x)/R0)); };
-   inline double nu (const int x) { return  -shear * X(x); };
+   //inline double nu (const int x) { return  q0 * (1. + shear * (X[x]/R0)); };
+   inline double nu (const int x) { return  -shear * X[x]; };
 
   protected:
 

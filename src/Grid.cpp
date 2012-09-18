@@ -15,11 +15,13 @@
 #include "Parallel.h"
 #include "Special/Integrate.h"
 
+#include "external/pallocate.h"
+
 // **************** Define Global Variables ************* //
-Range RzLD, RyLD, RkyLD, RxLD, RvLD, RmLD, RsLD; 
-Range RzLB, RyLB, RxLB, RvLB, RmLB, RsLB;
-Range RxLB4, RyLB4;
-Range RB, RB4 ; 
+blitz::Range RzLD, RyLD, RkyLD, RxLD, RvLD, RmLD, RsLD; 
+blitz::Range RzLB, RyLB, RxLB, RvLB, RmLB, RsLB;
+blitz::Range RxLB4, RyLB4;
+blitz::Range RB, RB4 ; 
 
 int NxLlD, NxLuD, NxLlB, NxLuB; 
 int NyLlD, NyLuD, NyLlB, NyLuB; 
@@ -44,14 +46,13 @@ int NvGlD, NvGuD, NvGlB, NvGuB;
 int NmGlD, NmGuD, NmGlB, NmGuB; 
 int NsGlD, NsGuD, NsGlB, NsGuB; 
 
-Array1R X, Y, Z, V, M;
-
+//Array1R X, Y, Z, V, M;
+//Array1R X, Y, V;
+double *X, *Y, *V, *M, *Z;
 
   double Lx, Ly, Lz, Lv, Lm;
   int    Nx, Nky, Nz, Nv, Nm, Ns;
-  double dx, dy, dz, dv,dt, dm;
-
-  bool do_gyro;
+  double dx, dy, dz, dv,dt;
 
 // ************************************************* //
 
@@ -84,7 +85,7 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
        dy = (Ny > 1) ? Ly/((double) (Ny-1)) : Ly;
  //      dz = (Nz > 1) ? Lz/((double) (Nz-1)) : Lz;
        dz = (Nz > 1) ? Lz/((double) (Nz  )) : Lz;
-       dm = (Nm > 1) ? Lm/((double) (Nm-1)) : 1.;
+       //dm = (Nm > 1) ? Lm/((double) (Nm-1)) : 1.;
        dv = (Nv > 1) ? 2.* Lv/ ( (double) (Nv-1)) : Lv;
       
       /* 
@@ -195,29 +196,31 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
     RB4.setRange(0,3);
 
 
+    ///////////////  Set Grid  Domain ////////////
 
    // Init Grid variables (-2, 2) extra points
-    X.resize(Range(NxGlB-2, NxGuB+2));
+    //X.resize(Range(NxGlB-2, NxGuB+2));
     
+    // X
+    pallocate(PRange(NxGlB-2, NxGB+2))(&X);
     bool includeX0Point = setup->get("Grid.IncludeX0Point", 0);
-    for(int x = NxGlB-2; x <= NxGuB+2; x++) X(x) = -  Lx/2. + dx * ( x - NxGC - 1) + ((includeX0Point) ? dx/2. : 0.);
+    for(int x = NxGlB-2; x <= NxGuB+2; x++) X[x] = -  Lx/2. + dx * ( x - NxGC - 1) + ((includeX0Point) ? dx/2. : 0.);
+
+
+    // Use  equidistant grid for Y, Z and V
+    pallocate(PRange(NyGlB  , NyGB))(&Y);
+    for(int y = NyGlB; y <= NyGuB; y++) Y[y] = dy * ( y - NyGC - 1);
+    pallocate(PRange(NzGlB  , NzGB))(&Z);
+    for(int z = NzGlB; z <= NzGuB; z++) Z[z] = dz * ( z - NzGC - 1);
+    pallocate(PRange(NvGlB  , NvGB))(&V);
+    for(int v = NvGlB; v <= NvGuB; v++) V[v] = -  Lv + dv * ( v - NvGlD);
     
-    Y.resize(RyGB); Z.resize(RzGB); V.resize(RvGB);
+    // M For mu we can choose between linear and Gaussian integration
+    pallocate(PRange(NmGlB  , NmGB))(&M, &dm);
+    Integrate integrate("Gauss-Legendre", Nm, 0., Lm);
+    for(int m=NmGlD, n=0; m <= NmGuD; m++, n++) { M[m] = integrate.x(n) ; dm[m] = integrate.w(n); }
 
-    
-    for(int y = NyGlB; y <= NyGuB; y++) Y(y) = dy * ( y - NyGC - 1);
-
-    // Use  equidistant grid for Z and V
-    for(int z = NzGlB; z <= NzGuB; z++) Z(z) = dz * ( z - NzGC - 1);
-    for(int v = NvGlB; v <= NvGuB; v++) V(v) = -  Lv + dv * ( v - NvGlD);
-
-    // For mu we can choose between linear and Gaussian integration
-   M.resize(RmGB); dm.resize(RmGB);
-   Integrate integrate("Gauss-Legendre", Nm, 0., Lm);
-   
-   // copy weights and points
-   for(int m=NmGlD, n=0; m <= NmGuD; m++, n++) { M(m) = integrate.x(n) ; dm(m) = integrate.w(n); }
-
+    //
    dXYZ  = dx * dy * dz;
    dXYZV = dx * dy * dz * dv;
 
@@ -233,6 +236,7 @@ Grid::~Grid () {
 
 
 void Grid::printOn(ostream &output) const {
+    bool do_gyro = Nm > 1 ? true : false;
          output   << " Domain    |  Lx : " << Lx << "  Ly : " << Ly << "  Lz : " << Lz << "  Lv : " << Lv << ((do_gyro) ? std::string("  Lm : ") + Num2String(Lm) : "") << std::endl
                   << " Grid      |  Nx : " << Nx << "  Nky : " << Nky << "  Nz : " << Nz << "  Nv : " << Nv << ((do_gyro) ? std::string("  Nμ : ") + Num2String(Nm) : "") << std::endl;
      
@@ -276,11 +280,11 @@ void Grid::initDataOutput(FileIO *fileIO) {
          
 
     // set Lengths
-   check(H5LTset_attribute_double(gridGroup, ".", "X", &X(NxGlD), Nx), DMESG("Attribute"));
+   check(H5LTset_attribute_double(gridGroup, ".", "X", &X[NxGlD], Nx), DMESG("Attribute"));
 //   check(H5LTset_attribute_double(gridGroup, ".", "Y", &Y(NyGlD), Ny), DMESG("Attribute"));
-   check(H5LTset_attribute_double(gridGroup, ".", "Z", &Z(NzGlD), Nz), DMESG("Attribute"));
-   check(H5LTset_attribute_double(gridGroup, ".", "V", &V(NvGlD), Nv), DMESG("Attribute"));
-   check(H5LTset_attribute_double(gridGroup, ".", "M", &M(NmGlD), Nm), DMESG("Attribute"));
+   check(H5LTset_attribute_double(gridGroup, ".", "Z", &Z[NzGlD], Nz), DMESG("Attribute"));
+   check(H5LTset_attribute_double(gridGroup, ".", "V", &V[NvGlD], Nv), DMESG("Attribute"));
+   check(H5LTset_attribute_double(gridGroup, ".", "M", &M[NmGlD], Nm), DMESG("Attribute"));
          
     H5Gclose(gridGroup);
 

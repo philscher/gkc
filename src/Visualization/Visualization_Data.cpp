@@ -18,8 +18,8 @@
 
     
 
-Visualization_Data::Visualization_Data(Grid *grid, Parallel *parallel, Setup *setup, FileIO *fileIO, Vlasov *_vlasov, Fields *_fields) 
-: Visualization(_vlasov, _fields, grid, setup) 
+Visualization_Data::Visualization_Data(Grid *grid, Parallel *_parallel, Setup *setup, FileIO *fileIO, Vlasov *_vlasov, Fields *_fields) 
+: Visualization(_vlasov, _fields, grid, setup, _parallel) 
 {
 
    // we wanna save only slides
@@ -56,7 +56,7 @@ Visualization_Data::Visualization_Data(Grid *grid, Parallel *parallel, Setup *se
      
      
      
-     bool phiWrite = (parallel->Coord[DIR_VMS] == 0) && (Z(NzLlD) == 0.);
+     bool phiWrite = (parallel->Coord[DIR_VMS] == 0) && (Z[NzLlD] == 0.);
 
      hsize_t offset0[] = { 0, 0, 0, 0, 0,  0, 0};
     
@@ -153,7 +153,7 @@ void Visualization_Data::writeData(Timing timing, double dt, bool force)
       }
 
 
-      writeMessage("Wrote Visual  data ... "); 
+      parallel->print("Wrote Visual  data ... "); 
       }
 }
      
