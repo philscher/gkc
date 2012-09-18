@@ -246,13 +246,18 @@ class FieldsFFT : public Fields {
   *         \f$ B_{1\parallel} \f$.
   *
   *  @param fields    the field or source terms
-  *  @param m         index of magnetic moment
   *  @param s         index to species
   *  @param nField    index of field (phi, jp, jo) not used
   *  @param gyroField forward- or backward transformation
   *
   */
-  void gyroFirst(Array4C In, Array4C Out, const int m, const int s, const bool gyroField=false);
+  void gyroFirst(Array4C In, Array4C Out,
+                CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
+                CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
+                const int s, const bool gyroField=false);  
+  
+  /**
+  *   Constructor
   
   /**
   *   @brief performs gyro-averaging in Fourier space

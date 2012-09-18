@@ -211,15 +211,18 @@ void FieldsFFT::gyroFull(Array4C In, Array4C Out,
 }
 
 
-// This is depracated
-void FieldsFFT::gyroFirst(Array4C In , Array4C Out, const int m, const int s, const bool gyroFields)  
+void FieldsFFT::gyroFirst(Array4C In, Array4C Out,
+                         CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+                         CComplex kXIn [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+                         const int s, const bool gyroFields)  
 {
 
   if(gyroFields==false) Out = In;
 
   fft->solve(FFT_X_FIELDS, FFT_FORWARD, In.data());
            
-  for(int nField = 1; nField <= Nq; nField++) {
+   // solve for all fields at once
+   for(int n = 1; n <= Nq; n++) {
 
     // get therma gyro-radius^2 of species and lambda =  2 x b 
     const double rho_t2 = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0); 
@@ -228,16 +231,15 @@ void FieldsFFT::gyroFirst(Array4C In , Array4C Out, const int m, const int s, co
     
       // perform gyro-average in Fourier space for rho/phi field
       const double k2p_rho2 = fft->k2_p(x_k, y_k, z) * rho_t2;
+          
+      kXIn[n][z][y_k][x_k] = kXOut[n][z][y_k][x_k]/fft->Norm_X * exp(-k2p_rho2); 
 
-      if(m==2) fft->kXIn(x_k,y_k,z, nField) = k2p_rho2 * fft->kXOut(x_k,y_k,z, nField)/fft->Norm_X *  exp(-k2p_rho2);
-      else     fft->kXIn(x_k,y_k,z, nField) =            fft->kXOut(x_k,y_k,z, nField)/fft->Norm_X *  exp(-k2p_rho2);
-
-      // we set Nyquiest frequency to zero, as the ordering of the fftw with only + k_Ny, and non-linearity required both +k_Ny AND -k_Ny
-      if((y_k == Nky-1) && screenNyquist) fft->kXIn(x_k,y_k,z, nField) = 0.;
+      if((y_k == Nky-1) && screenNyquist) kXIn[n][z][y_k][x_k]  = 0.;
             
     } } }
    
-  }
+   }
+
 
   fft->solve(FFT_X_FIELDS, FFT_BACKWARD, Out.data());
   
@@ -252,7 +254,7 @@ void FieldsFFT::gyroAverage(Array4C In, Array4C Out, const int m, const int s, c
   // check if we should do gyroAvearge
   if     (plasma->species[s].gyroModel == "Drift" ) Out=In;
   else if(plasma->species[s].gyroModel == "Gyro"  ) gyroFull (In, Out, (A4zz) fft->kXOut.dataZero(), (A4zz) fft->kXIn.dataZero(), m, s, gyroFields);  
-  else if(plasma->species[s].gyroModel == "Gyro-1") gyroFirst(In, Out, m, s, gyroFields); 
+  else if(plasma->species[s].gyroModel == "Gyro-1") gyroFirst(In, Out, (A4zz) fft->kXOut.dataZero(), (A4zz) fft->kXIn.dataZero(),    s, gyroFields);  
   else   check(-1, DMESG("No such gyro-average Model"));
   
   return;
@@ -292,10 +294,10 @@ void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEn
 
         // Add Polarization term , see Y.Idomura et al., ...., Kinetic siulations of turnbulence plasmas, Eq. (27)
      // modify field energy term to add adiabatic contributions
+        CComplex phi_yz[NxLD]; // RxLD
 
-        // short-circuit contribution for ITG mode 
-        Array1C phi_yz(RxLD); phi_yz = 0.;
        /* 
+        // short-circuit contribution for ITG mode 
         if(plasma->species[0].doGyro) {
           // muss ich wirklich ueber yz mitteln ? nicht summieren ??
        for(int x = NxLlD; x <= NxLuD; x++) phi_yz(x) = sum(fields->phi(x, RyLD, RzLD, 1, 1))/((double) Ny*Nz);
@@ -303,10 +305,10 @@ void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEn
             parallel->collect(phi_yz, OP_SUM, DIR_YZ);
         }
       
-        * */ 
         // add Adiabatic contributions
         const double adiab = plasma->species[0].n0 * pow2(plasma->species[0].q)/plasma->species[0].T0;
-        for(int x = NxLlD; x <= NxLuD; x++)  phiEnergy += adiab * abs(sum(pow2(phi(x,RkyLD,RzLD, 1, 1) - phi_yz(x))));
+        for(int x = NxLlD; x <= NxLuD; x++)  phiEnergy += adiab * abs(__sec_reduce(pow2(phi(x,RkyLD,RzLD, 1, 1) - phi_yz[x-NxLlD])));
+        * */ 
      
       }
         // still HDF-5 is a bit buggy and we need to distribute the value over all nodes
