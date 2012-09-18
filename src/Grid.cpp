@@ -79,7 +79,6 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
       
 
 
-      if(Nm > 1) do_gyro = true;
       // Calculate some preknown values
        dx = (Nx > 1) ? Lx/((double) (Nx-1)) : Lx;
        dy = (Ny > 1) ? Ly/((double) (Ny-1)) : Ly;

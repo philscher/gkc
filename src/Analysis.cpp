@@ -109,7 +109,8 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
 //////////////////////// Calculate scalar values ///////////////////////////
 
 
-void Analysis::calculateScalarValues(const CComplex f[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
+void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
+                                     const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
                                      const double V[NvGB], const double M[NmGB], const int s,
                                        ScalarValues &scalarValues) 
 
@@ -205,7 +206,7 @@ void Analysis::getNumberDensity(const  CComplex f[NsLB][NmLB][NzLB][NkyLB][NxLB]
 };
 
 
-Array4R Analysis::getMomentumParallel() {
+void Analysis::getMomentumParallel() {
 /* 
     const double d6Z = dXYZV * plasma->B0 * M_PI;
     const double alpha_s = plasma->species[s].q / plasma->species[s].T0;
@@ -213,7 +214,7 @@ Array4R Analysis::getMomentumParallel() {
        for(int v=NvLlD; v<= NvLuD;v++)  A4(x,y,z,s) = alpha_s * V[v] * F(x, y, z, v, RmLD, s) * d6Z;
  * */
 
-    return real(parallel->collect(A4_z, OP_SUM, DIR_VM));
+    //return real(parallel->collect(A4_z, OP_SUM, DIR_VM));
 }
 
 
@@ -250,31 +251,31 @@ void Analysis::getTemperatureParallel(const  CComplex f[NsLB][NmLB][NzLB][NkyLB]
 
 
 
-Array4R Analysis::getTemperatureOthogonal() {
+void Analysis::getTemperatureOthogonal() {
 
 /* 
     const double d6Z = dXYZV * plasma->B0 * M_PI;
-       for(int m=NmLlD; m<= NmLuD;m++)  A4(x,y,z,s) = (M(m) * plasma->B0 - 1.) * F(x, y, z, RvLD, m, s) * d6Z;
+       for(int m=NmLlD; m<= NmLuD;m++)  A4(x,y,z,s) = (M[m] * plasma->B0 - 1.) * F(x, y, z, RvLD, m, s) * d6Z;
  * */
-    return real(parallel->collect(A4_z, OP_SUM, DIR_VM));
+//    return real(parallel->collect(A4_z, OP_SUM, DIR_VM));
     
 }
 
 
 //////////////////////// Calculate additional heat fluxes /////////////////////
 
-Array4R Analysis::getHeatFluxParallel() {
+void Analysis::getHeatFluxParallel() {
 /* 
-       for(int v=NvLlD; v<= NvLuD;v++)  A4(x,y,z,s) = alpha_s * V(v) * (pow2(V(v)) - 3./2.) * abs(F(x, y, z, v, RmLD, s)) * d6Z;
+       for(int v=NvLlD; v<= NvLuD;v++)  A4(x,y,z,s) = alpha_s * V[v] * (pow2(V[v]) - 3./2.) * abs(F(x, y, z, v, RmLD, s)) * d6Z;
  * */
-    return real(parallel->collect(A4_z, OP_SUM, DIR_VM));
+  //  return real(parallel->collect(A4_z, OP_SUM, DIR_VM));
 }
 
-Array4R Analysis::getHeatFluxOrthogonal() {
+void Analysis::getHeatFluxOrthogonal() {
 /* 
          A4(x,y,z,s) = alpha_s * V[v] * (M[m] * plasma->B0 - 1.) * F(x, y, z, v, RmLD, s) * d6Z;
  * */
-    return real(parallel->collect(A4_z, OP_SUM, DIR_VM));
+  //  return real(parallel->collect(A4_z, OP_SUM, DIR_VM));
 }
 
 
@@ -484,13 +485,13 @@ void Analysis::writeData(Timing timing, double dt)
 
   if (timing.check(dataOutputMoments, dt)       )   {
 
-    getTemperatureParallel((A6zz ) vlasov->f.dataZero(), (A4zz) A4_z.dataZero(), V.dataZero(), M.dataZero());
+    getTemperatureParallel((A6zz ) vlasov->f.dataZero(), (A4zz) A4_z.dataZero(), V, M);
 //           FA_Mom_Tp->write(A4_z.data());
 //           FA_Mom_HeatFlux->write(getHeatFlux().data());
 //           FA_Mom_Density->write(getNumberDensity().data());
 //           FA_Mom_Density->write(A4_z.data());
 //           FA_Mom_Time->write(&timing);
-    writeMessage("Data I/O : Moments output");
+    parallel->print("Data I/O : Moments output");
     
   }
 

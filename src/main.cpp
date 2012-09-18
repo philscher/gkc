@@ -1,4 +1,4 @@
-#include "config.h"
+#include "Global.h"
 
 #include<string>
 #include<iostream>
@@ -6,10 +6,6 @@
 
 #include "GKC.h"
 
-#include "Global.h"
-
-#undef  __FUNCT__
-#define __FUNCT__ "main"
 
 #include <cstdlib>
    
@@ -18,18 +14,6 @@
 int process_rank;
 GKC *gkc;
 
-
-
-int writeMessage(const char *message) {
-        if(process_rank == 0)     std::cout << std::flush << std::endl << message << std::endl;
-        return 0;
-};
-
-int writeMessage(std::string message) { 
-        if(process_rank == 0)     std::cout << std::flush << std::endl << message << std::endl;
-        return 0;
-};
-  
 
 int main(int argc, char **argv)
 {
@@ -42,15 +26,13 @@ int main(int argc, char **argv)
     
     time(&start_all_time);
 
-
-   
    /***************************************************************************
    * Check command line parameters (note, the user can also 
    * speify PETSc parameters
    */
    int c;
    extern char *optarg;
-//   extern int optind, optopt, opterr;
+   
    std::string setup_filename(""), setup_Xoptions(""), setup_ExArgv("");
    // set it to automatic ?
    std::string setup_decomposition("Auto Decomposition"), setup_scalingFileName("ScalingTime.txt");
@@ -96,25 +78,16 @@ int main(int argc, char **argv)
    Setup *setup    = new Setup(argc, argv, setup_filename, setup_decomposition, setup_Xoptions, setup_ExArgv, process_pid, gkcFlags);
 
     
-    /***********************************************************
-   // Start gkc engine and main loop
-   ***********************************************************/
+   //////////////////    Start gkc engine and main loop /////////////////////
    gkc =  new GKC(setup);
    
   
     time(&start_sim_time);
-    // Mai Loop
-    int GKC_status = 0;
-    if(process_rank == MASTER_PROCESS) std::cout << "Running main loop" << std::endl;
-    //#pragma omp parallel reduction(+:GKC_status)
-    GKC_status = gkc->mainLoop();
-       
-    if (GKC_status == GKC_SUCCESS) {
-              if(process_rank == MASTER_PROCESS) std::cout << "Simulation finished normally ... " << std::endl;
-     }
-    else                                 std::cout << "Simulation failed            ... " << std::endl;
     
-   time(&end_sim_time);
+    //#pragma omp parallel reduction(+:GKC_status)
+    int GKC_status = gkc->mainLoop();
+       
+    time(&end_sim_time);
   
    // write simulation time to file, so we can late investigate it
     // in case for scaling we want to collect some basic statistics about the running

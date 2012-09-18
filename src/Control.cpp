@@ -19,8 +19,11 @@
 
 bool force_exit = false;
 
+Parallel *gl_parallel;
+
 Control::Control(Setup *setup, Parallel *_parallel, Analysis *_analysis) : parallel(_parallel), analysis(_analysis) {
 
+  gl_parallel = parallel;
         // set our control file, this is same for all processes and set to mpi root process id 
    if (setup->get("Control.useControlFile", 0)) {
         cntrl_file_name   = "gkc_" + Setup::number2string(parallel->master_process_id) + ".stop";
@@ -78,10 +81,10 @@ void signal_handler(int sig)
                        std::cout << "SIGTERM" << std::endl;
                        control_triggered_signal |= SIGTERM;
                        break;
-      case(SIGUSR1) :  writeMessage("SIGUSR1 received");
+      case(SIGUSR1) :  gl_parallel->print("SIGUSR1 received");
                        control_triggered_signal |= SIGUSR1;
                        break;
-      case(SIGUSR2) :  writeMessage("SIGUSR2 received");
+      case(SIGUSR2) :  gl_parallel->print("SIGUSR2 received");
                        control_triggered_signal |= SIGUSR2;
                        break;
       default       :  std::cerr << "Unkown signal .... Ignoring\n";
@@ -161,7 +164,7 @@ bool Control::checkOK(Timing timing, Timing maxTiming) {
     }
     
 void Control::printLoopStopReason() {
-        writeMessage(std::string("\nMain Loop finished due to ") + cntrl.getMessage());
+        parallel->print(std::string("\nMain Loop finished due to ") + cntrl.getMessage());
     };
     
 void Control::runningException(int status, char *error_message) {

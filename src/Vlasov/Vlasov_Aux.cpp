@@ -237,8 +237,6 @@ void VlasovAux::Vlasov_2D_Island(
 
              const CComplex dphi_dx  = (8.*(phi[s][m][z][y_k][x+1] - phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] - phi[s][m][z][y_k][x-2]))/(12.*dx)  ;  
 
-             updateCFL(dphi_dx, ky*phi_, 0.);
-             
         /////////////////////////////////////////////////// Magnetic Island Contribution    /////////////////////////////////////////
         
         // NOTE :  at the Nyquist frequency we have no coupling with higher frequencies (actually phi(m=Ny) = 0. anyway)
@@ -396,9 +394,6 @@ void VlasovAux::Vlasov_EM(
 
                const CComplex ky = ((CComplex) (0. + 1.i)) *  fft->ky(y_k);
                const CComplex kp = geo->get_kp(x, ky, z);
-
-               updateCFL(dphi_dx, ky*phi_, 0.);
-
 
    #pragma ivdep
    #pragma vector always 

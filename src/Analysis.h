@@ -162,7 +162,8 @@ class Analysis : public IfaceGKC {
    *
    *
    **/
-   void calculateScalarValues(const CComplex f[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
+   void calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
+                              const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
                               const double V[NvGB], const double M[NmGB], const int s,
                               ScalarValues &SV); 
 
@@ -230,14 +231,15 @@ class Analysis : public IfaceGKC {
    void getTemperatureParallel(const  CComplex f[NsLB][NmLB][NzLB][NkyLB][NxLB][NvLB],
                                       CComplex A4_z[NsLD][NzLD][NkyLD][NxLD], 
                                const double V[NvGB], const double M[NmGB]);
-   Array4R getTemperatureOthogonal();
-   Array4R getHeatFluxOrthogonal();
-   Array4R getHeatFluxParallel ();
+   // depreciated
+   void getTemperatureOthogonal();
+   void getHeatFluxOrthogonal();
+   void getHeatFluxParallel ();
    
    void getNumberDensity(const  CComplex f[NsLB][NmLB][NzLB][NkyLB][NxLB][NvLB],
                                 CComplex D[NsLD][NzLD][NkyLD][NxLD], 
                          const double V[NvGB], const double M[NmGB]);
-   Array4R getMomentumParallel();
+   void getMomentumParallel();
 
 
    //////////// Calculate X-Dependent variables ( 2-dimensional species & X) /////////////

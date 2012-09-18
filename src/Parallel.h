@@ -67,7 +67,7 @@ struct NeighbourDir {
    int Coord[DIR_SIZE];
    
    //! hold the (world) rank of the process
-   int myRank, master_process_id;
+   int myRank, master_process_id; // substitute myRank with mpi_rank
    int master_rank;
    
    //! the total number of threads 

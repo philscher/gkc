@@ -294,7 +294,7 @@ void Fields::writeData(Timing timing, double dt)
       FA_Bp->write(Bp);
       FA_phiTime->write(&timing);
       
-      writeMessage("Wrote Potential data ... "); 
+      parallel->print("Wrote Potential data ... "); 
    }
 
 } 

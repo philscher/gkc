@@ -42,11 +42,11 @@ class Visualization {
 
    Vlasov *vlasov;
    Fields *fields;
-
+   Parallel *parallel;
   public:
 
-   Visualization(Vlasov *_vlasov, Fields *_fields, Grid *_grid, Setup *setup) 
-                : vlasov(_vlasov), fields(_fields) {
+   Visualization(Vlasov *_vlasov, Fields *_fields, Grid *_grid, Setup *setup, Parallel *_parallel) 
+                : vlasov(_vlasov), fields(_fields), parallel(_parallel) {
 
     dataOutputVisual      = Timing( setup->get("DataOutput.Visualization.Step", -1),
                                     setup->get("DataOutput.Visualization.Time", -1.));

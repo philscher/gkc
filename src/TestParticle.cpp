@@ -117,7 +117,7 @@ void TestParticles::initDataOutput(Setup *setup, FileIO *fileIO) {
     FA_X->write(X);
     FA_V->write(V);
         
-    writeMessage("Wrote Tracer data ... "); 
+    parallel->print("Wrote Tracer data ... "); 
 
 }
       

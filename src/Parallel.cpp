@@ -17,6 +17,8 @@
 #include "Global.h"
 #include "Parallel.h"
 
+// BUG find a way to remove them
+extern int process_rank;
 
 #ifdef GKC_PARALLEL_MPI
 

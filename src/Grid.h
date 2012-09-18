@@ -22,6 +22,7 @@
 #include "Global.h"
 
 #include "FileIO.h"
+
 /** 
 *    @brief Size of the computational domain for \f$x,k_y,z, v_\parallel, \mu, \sigma \f$
 *    @image html Grid_BoundaryDomain.png
@@ -38,17 +39,17 @@ class Grid : public IfaceGKC {
        NvGC; ///< Number of ghost cells in v-direction
    ///@}
    
-   Array1R dm; ///< Weights for \f$ \mu(m) \f$
-
+   //Array1R dm; ///< Weights for \f$ \mu(m) \f$
+   double *dm;
   
    /// @name Ranges for computational domain
    ///@{
-   Range RxGB, RyGB, RzGB, RvGB, RmGB, RsGB; ///< The boundary domain
+   blitz::Range RxGB, RyGB, RzGB, RvGB, RmGB, RsGB; ///< The boundary domain
    ///@}
    
    /// @name Ranges for computational domain
    ///@{
-   Range RxGD, RyGD, RzGD, RvGD, RmGD, RsGD; 
+   blitz::Range RxGD, RyGD, RzGD, RvGD, RmGD, RsGD; 
    ///@}
 
    /** \f$ textrm{d}x textrm{d}y textrm{d}z \f$

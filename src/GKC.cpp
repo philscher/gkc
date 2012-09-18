@@ -151,7 +151,7 @@ GKC::GKC(Setup *_setup) : setup(_setup)  {
 
 int GKC::mainLoop()   {
 
-
+   parallel->print("Running main loop");
 
    if (Helios_Type == "IVP") {
  
@@ -180,6 +180,7 @@ int GKC::mainLoop()   {
 
    } else  check(-1, DMESG("No Such Helios.Type Solver"));
 
+   parallel->print("Simulation finished normally ... ");
 
    return GKC_SUCCESS;
 }

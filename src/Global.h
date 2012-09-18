@@ -18,11 +18,7 @@
 
 
 #define GKC_SUCCESS  1
-#define GKC_FAILED   -1
-#define GKC_STOP     2
 #define GKC_WRITE    3
-#define GKC_EXIT     4
-#define GKC_FINISH   5
 
 #include <cilk/cilk.h>
 
@@ -30,33 +26,12 @@
 // Needed in case we include into Fortran
 #if defined(__cplusplus)
 
-
-//#include<sstream>
 #include<string>
-//#include<cstdlib>
-
-
-// Define Scalar types (only for doubles now)
-//#define GKC_C_COMPLEX
-
-#ifdef GKC_C_COMPLEX
-#include <complex.h>
-typedef _Complex double      Complex;  
-typedef double               Real   ;
-inline Real abs(Complex A) { return 1.; };
-inline Complex exp(Complex A) { return 1.; };
-//#define newComplex(A,B) (A + B)
-extern "C" double cabs (CComplex z);
-extern "C" double creal(CComplex z);
-extern "C" double cimag(CComplex z);
-extern "C" double carg (CComplex z);
-
-#else
 #include <complex>
 typedef std::complex<double> Complex;  
 typedef double               Real   ;
 #define newComplex(A,B) Complex(A,B)
-#endif
+
 
 #include<blitz/array.h>
 #include<blitz/allocate.h>
@@ -84,12 +59,10 @@ typedef blitz::Array<Complex, 6>  Array6C;
 
 typedef blitz::Array<double, 1>  Array1R;
 typedef blitz::Array<double, 2>  Array2R;
-typedef blitz::Array<double, 3>  Array3R;
-typedef blitz::Array<double, 4>  Array4R;
-typedef blitz::Array<double, 5>  Array5R;
-typedef blitz::Array<double, 6>  Array6R;
 
 using namespace blitz;
+
+//template<class T> inline T pow2(T x) { return x*x; };
 
 /**
  *   Implicit OpenMP parallelization. Take care, it does not 
@@ -105,11 +78,10 @@ using namespace blitz;
 #define simd_for _Pragma("simd") for
 
 
-
 // DIR_SIZE has to be the number of elements, excluding DIR_SIZE
 enum Direction : int {DIR_X=0, DIR_Y, DIR_Z, DIR_V, DIR_M, DIR_S, DIR_ALL, DIR_XYZ, DIR_VMS, DIR_MS, DIR_VM, DIR_XY, DIR_XYZVM, DIR_SIZE};
+     
 
-      
     inline int check( int status, std::string file, int line, std::string error_text, bool doAbort=false) {
         if(status == -1 ) {
             
@@ -135,13 +107,14 @@ enum Direction : int {DIR_X=0, DIR_Y, DIR_Z, DIR_V, DIR_M, DIR_S, DIR_ALL, DIR_X
         return status;
     }
 
-extern int NkyLlD, NkyLuD;
 
-extern Range RzLD, RyLD, RxLD, RvLD, RmLD, RsLD, RkyLD; 
-extern Range RxLB, RyLB, RzLB, RvLB, RmLB, RsLB;
-extern Range RxLB4, RyLB4; 
-extern Range RB, RB4, RFields ; 
-extern Array1R X, Y, Z, V, M;
+
+/// Deprecated
+extern blitz::Range RzLD, RyLD, RxLD, RvLD, RmLD, RsLD, RkyLD; 
+extern blitz::Range RxLB, RyLB, RzLB, RvLB, RmLB, RsLB;
+extern blitz::Range RxLB4, RyLB4; 
+extern blitz::Range RB, RB4, RFields ; 
+
 
 // define some files for dataoutput
 int writeMessage(const char *message);
@@ -154,9 +127,6 @@ int writeMessage(std::string message);
 #define _D(mesg, value) std::cout << mesg << " " << value << std::endl << std::flush
 
 
-
-
-
 #include "config.h"
 
 
@@ -167,7 +137,9 @@ int writeMessage(std::string message);
 // DO NOT CHANGE THESE VARIABLES BY ANY MEANS OUTSIDE GRID
 // OR CONFIG !!
 
+// Gx[LlD], Gx[LuD], Gx[LuB], Gx[LuD] // should improve speed due to caching
 
+extern int NkyLlD, NkyLuD;
 
 extern int NxLlD, NxLuD, NxLlB, NxLuB; 
 extern int NyLlD, NyLuD, NyLlB, NyLuB; 
@@ -193,21 +165,14 @@ extern int    Nx, Nky, Nz, Nv, Nm, Ns;
 extern int    NxLD, NyLD, NkyLD, NzLD, NvLD, NmLD, NsLD;
 extern int    NxLB, NyLB, NkyLB, NzLB, NvLB, NmLB, NsLB;
 extern int    NxGB, NyGB, NkyGB, NzGB, NvGB, NmGB, NsGB;
-extern double dx, dy, dz, dv, dm;
+extern double dx, dy, dz, dv;
+
+extern double *X, *Y, *Z, *V, *M, *Z;
 
 
 /****************************************************************************/
 
 
-// BUG find a way to remove them
-
-
-extern int process_rank;
-
-
-// extern stuff for Fortran Interface
-//
-extern bool do_gyro;
 
 
 template<typename T> std::string Num2String(T number) {
@@ -248,9 +213,9 @@ extern Plasma *plasma;
 
 
 // needed for signal handling
-extern GeneralArrayStorage<6> GKCStorage;
-extern GeneralArrayStorage<4> GKCStorage4;
-extern GeneralArrayStorage<3> GKCStorage3;
+extern blitz::GeneralArrayStorage<6> GKCStorage;
+extern blitz::GeneralArrayStorage<4> GKCStorage4;
+extern blitz::GeneralArrayStorage<3> GKCStorage3;
 
 
 typedef CComplex(*A6zz)[][][][][];

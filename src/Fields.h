@@ -136,7 +136,7 @@ public:
    *
    *  @param f0 The Maxwellian phase-space background distribution
    *  @param f  Current phase-space distribution
-   *  @param m  index for perpendicular velocity \f$ \mu = M(m)  \f$
+   *  @param m  index for perpendicular velocity \f$ \mu = M[m]  \f$
    *  @param s  index for species
    *
    **/
@@ -159,7 +159,7 @@ public:
    *  
    *  @param f0 The Maxwellian phase-space background distribution
    *  @param f  Currect phase-space distribution
-   *  @param m  index for perpendicular velocity \f$ \mu = M(m)\f$
+   *  @param m  index for perpendicular velocity \f$ \mu = M[m]\f$
    *  @param s  index for species
    *
    **/
@@ -183,7 +183,7 @@ public:
    *
    *  @param f0 The Maxwellian phase-space background distribution
    *  @param f  Current phase-space distribution
-   *  @param m  index for perpendicular velocity \f$ \mu = M(m)\f$
+   *  @param m  index for perpendicular velocity \f$ \mu = M[m]\f$
    *  @param s  index for species
    *
    **/

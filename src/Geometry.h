@@ -48,7 +48,10 @@ protected:
 
 public:
   Array2R Kx, Ky, B, dB_dx, dB_dy, dB_dz, J;
-double eps_hat, C;
+
+  A2rr k2_p;
+
+  double eps_hat, C;
 
   Geometry(Setup *setup, FileIO *fileIO) {
 
