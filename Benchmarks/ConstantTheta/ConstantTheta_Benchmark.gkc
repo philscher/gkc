@@ -1,0 +1,62 @@
+### Set this for gyro-1
+Grid.Lm = 7.
+Grid.Nm = 8
+Plasma.Species1.gyroModel   = Gyro
+
+### Set this for full-gyro
+#Grid.Lm = 1.
+#Grid.Nm = 1
+#Plasma.Species1.gyroModel   = Gyro-1
+
+
+
+
+
+Grid.Nx = 2
+Grid.Nky = 257
+Grid.Nz = 1
+Grid.Nv = 128
+Grid.Ns = 1
+
+
+# scale by sqrt(2.)
+Grid.Lx = 1
+Grid.Ly = 128.
+Grid.Lz = 1.
+Grid.Lv = 4.
+
+
+
+DataOutput.OutputFileName = Constant_Theta_Gyro_01.h5
+
+# try [0.1 0.2 0.3 ]
+Geometry.Theta = 0.1
+
+Vlasov.Equation      = ES
+
+DataOutput.Statistics.Time     =  1.
+
+Plasma.Species0.Name        = Proton
+Plasma.Species0.Charge      = 1.
+Plasma.Species0.Density     = 1. 
+Plasma.Species0.Temperature = 1.
+
+Plasma.Species1.Name        =  Electron
+Plasma.Species1.Density     =  1. 
+Plasma.Species1.Temperature =  1.
+Plasma.Species1.Mass        =  1.
+Plasma.Species1.Charge      = -1.
+Plasma.Species1.w_T         =  6.
+Plasma.Species1.w_n         =  1.
+
+# Required for collapse of CvK modes
+Vlasov.CollisionBeta=1.e-3
+
+Helios.MaxTime     = 400.
+
+Helios.LinearSafetyFactor=0.9
+
+Init.Perturbation = PSFNoise
+Init.Epsilon0     = 1.e-60
+
+
