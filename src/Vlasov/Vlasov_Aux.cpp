@@ -108,10 +108,10 @@ void VlasovAux::Vlasov_ES(
       const double sub = (plasma->species[s].doGyro) ? 3./2. : 1./2.;
         
       const double v2_rms   = 1.;//pow2(alpha);
-  
+ 
       bool isGyro1 = (plasma->species[s].gyroModel == "Gyro-1");
-
-      
+     
+      // Cannot do omp parallelization here (due to nonlinear term ..)
       for(int m=NmLlD; m<= NmLuD;m++) { for(int z=NzLlD; z<= NzLuD;z++) { 
       
          // calculate non-linear term (rk_step == 0 for eigenvalue calculations)
@@ -120,15 +120,16 @@ void VlasovAux::Vlasov_ES(
 
       omp_for(int y_k=NkyLlD; y_k <= NkyLuD; y_k++) { 
              
-         //const CComplex ky = _Imaginary * fft->ky(y_k);
          const CComplex ky = ((CComplex) (0. + 1.j))  * fft->ky(y_k);
              
          for(int x=NxLlD; x<= NxLuD; x++) { 
+         
+           const CComplex phi_   = phi[s][m][z][y_k][x];
        
-           CComplex eta_kp2_phi = 0;
+           CComplex half_eta_kperp2_phi = 0;
            if(isGyro1) { // first order approximation for gyro-kinetics
-             const CComplex ddphi_dx_dx = (16. *(phi[s][m][z][y_k][x+1] + phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] + phi[s][m][z][y_k][x-2]) - 30.*phi[s][m][z][y_k][x]) * _kw_12_dx_dx;
-             eta_kp2_phi                = 0.5 * w_T  * ( ky*ky * phi[s][m][z][y_k][x] + ddphi_dx_dx ); 
+             const CComplex ddphi_dx_dx = (16. *(phi[s][m][z][y_k][x+1] + phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] + phi[s][m][z][y_k][x-2]) - 30.*phi_) * _kw_12_dx_dx;
+             half_eta_kperp2_phi     = 0.5 * w_T  * ( (ky*ky) * phi_ );//+ ddphi_dx_dx ) ; 
            }
              
            // Sign has no influence on result ...
@@ -137,21 +138,17 @@ void VlasovAux::Vlasov_ES(
          //#pragma unroll(8)
          //#pragma unroll
          //#pragma vector aligned 
-         #pragma vector nontemporal(fss)
+         //#pragma vector nontemporal(fss)
          simd_for(int v=NvLlD; v<= NvLuD; v++) { 
 
-
-
-             const CComplex phi_   = phi[s][m][z][y_k][x];
-             
             const  CComplex g      = fs [s][m][z][y_k][x][v];
             const  CComplex f0_    = f0 [s][m][z][y_k][x][v];
 
             const CComplex dfs_dv  = (8.  *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))*_kw_12_dv;
-            const CComplex ddfs_dv = (16. *(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) - 30.*fs[s][m][z][y_k][x][v]) * _kw_12_dv_dv;
+            const CComplex ddfs_dv = (16. *(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) - 30.*g) * _kw_12_dv_dv;
         
             // hyperdiffusion terms
-            //     const Complex d4fs_d4x = (-(fs[s][m][z][y_k][x-2][v] + fs[s][m][z][y_k][x+2][v]) + 4. * (fs[s][m][z][y_k][x-1][v] + fs[s][m][z][y_k][x+1][v]) - 6.*fs[s][m][z][y_k][x][v])/_16_dx4;
+            // const Complex d4fs_d4x = (-(fs[s][m][z][y_k][x-2][v] + fs[s][m][z][y_k][x+2][v]) + 4. * (fs[s][m][z][y_k][x-1][v] + fs[s][m][z][y_k][x+1][v]) - 6.*fs[s][m][z][y_k][x][v])/_16_dx4;
        
        
             ///////////////   The time derivative of the Vlasov equation      //////////////////////
@@ -159,9 +156,9 @@ void VlasovAux::Vlasov_ES(
             const CComplex dg_dt = 
                 NL[y_k][x][v]                                                         // Non-linear ( array is zero for linear simulations) 
              +  ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])*kw_T  - sub)) * f0_ * phi_    // Driving term (Temperature/Density gradient)
-             +  eta_kp2_phi * f0_ )                                                   // Contributions from gyro-1 (0 if not neq Gyro-1)
+             -  half_eta_kperp2_phi * f0_)                                            // Contributions from gyro-1 (0 if not neq Gyro-1)
              -  alpha  * V[v]* kp  * ( g + sigma * phi_ * f0_)                        // Linear Landau damping
-             +  collisionBeta  * (g  + alpha * V[v] * dfs_dv + v2_rms * ddfs_dv);     // Lennard-Bernstein Collision term
+             +  collisionBeta  * (g  + alpha * V[v] * dfs_dv + 2. * ddfs_dv);     // Lennard-Bernstein Collision term
          
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         
@@ -331,7 +328,7 @@ void VlasovAux::Vlasov_2D_Island(
                nonLinear[y_k][x][v]                                              // non-linear term
              - alpha * V[v] * (Island_A_F1 + sigma * Island_A_phi * F0) +        // Island term
              ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])/Temp  - sub)) * F0 * phi_)  // Driving term
-            +  eta_kp2_phi * F0                                                 // Contributions from gyro-1 (0 if not neq Gyro-1)
+            +  eta_kp2_phi * F0      // BUG                                           // Contributions from gyro-1 (0 if not neq Gyro-1)
            - alpha  * V[v]* kp  * ( g + sigma * phi_ * F0);                      // Landau Damping term 
             + collisionBeta * (g  + V[v] * dfs_dv + v2_rms * ddfs_dvv);          // Collisional term
           ;

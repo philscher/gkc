@@ -217,7 +217,7 @@ void FieldsFFT::gyroFirst(Array4C In, Array4C Out,
                          const int s, const bool gyroFields)  
 {
 
-  if(gyroFields==false) Out = In;
+  if(gyroFields==false) { Out = In; return; };
 
   fft->solve(FFT_X_FIELDS, FFT_FORWARD, In.data());
            
@@ -230,9 +230,9 @@ void FieldsFFT::gyroFirst(Array4C In, Array4C Out,
     for(int z=NzLlD; z<=NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {  simd_for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
     
       // perform gyro-average in Fourier space for rho/phi field
-      const double k2p_rho2 = fft->k2_p(x_k, y_k, z) * rho_t2;
+      const double k2p_rhoth2 = fft->k2_p(x_k, y_k, z) * rho_t2;
           
-      kXIn[n][z][y_k][x_k] = kXOut[n][z][y_k][x_k]/fft->Norm_X * exp(-k2p_rho2); 
+      kXIn[n][z][y_k][x_k] = kXOut[n][z][y_k][x_k]/fft->Norm_X * exp(-k2p_rhoth2); 
 
       if((y_k == Nky-1) && screenNyquist) kXIn[n][z][y_k][x_k]  = 0.;
             
@@ -324,7 +324,9 @@ void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEn
 }
 
 
-//////////////// Some Helper functions ////////////////////
+///////////////////////////////////////// Some Helper functions ///////////////////////////////////////////
+
+
 
 double FieldsFFT::sum_qqnT_1mG0(const double k2_p) 
 {

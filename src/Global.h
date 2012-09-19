@@ -18,13 +18,9 @@
 
 
 #define GKC_SUCCESS  1
-#define GKC_WRITE    3
 
 #include <cilk/cilk.h>
 
-
-// Needed in case we include into Fortran
-#if defined(__cplusplus)
 
 #include<string>
 #include <complex>
@@ -59,6 +55,7 @@ typedef blitz::Array<Complex, 6>  Array6C;
 
 typedef blitz::Array<double, 1>  Array1R;
 typedef blitz::Array<double, 2>  Array2R;
+   
 
 using namespace blitz;
 
@@ -81,8 +78,7 @@ using namespace blitz;
 // DIR_SIZE has to be the number of elements, excluding DIR_SIZE
 enum Direction : int {DIR_X=0, DIR_Y, DIR_Z, DIR_V, DIR_M, DIR_S, DIR_ALL, DIR_XYZ, DIR_VMS, DIR_MS, DIR_VM, DIR_XY, DIR_XYZVM, DIR_SIZE};
      
-
-    inline int check( int status, std::string file, int line, std::string error_text, bool doAbort=false) {
+inline int check( int status, std::string file, int line, std::string error_text, bool doAbort=false) {
         if(status == -1 ) {
             
        // check rank from MPI!
@@ -105,7 +101,7 @@ enum Direction : int {DIR_X=0, DIR_Y, DIR_Z, DIR_V, DIR_M, DIR_S, DIR_ALL, DIR_X
     inline bool check( bool status, std::string file, int line, std::string error_text) {
         if(status == false) check( -1, file, line, error_text);
         return status;
-    }
+}
 
 
 
@@ -116,12 +112,6 @@ extern blitz::Range RxLB4, RyLB4;
 extern blitz::Range RB, RB4, RFields ; 
 
 
-// define some files for dataoutput
-int writeMessage(const char *message);
-int writeMessage(std::string message);
-
-
-
 // use assert instead !
 #define DMESG(mesg)  std::string(__FILE__), __LINE__, std::string(mesg)
 #define _D(mesg, value) std::cout << mesg << " " << value << std::endl << std::flush
@@ -129,8 +119,6 @@ int writeMessage(std::string message);
 
 #include "config.h"
 
-
-#endif // __cplusplus
 
 /*************************  Global Variables   ********************************/
 
@@ -218,16 +206,8 @@ typedef CComplex(*A5zz)[][][][];
 typedef CComplex(*A4zz)[][][];
 typedef CComplex(*A3zz)[][];
 typedef CComplex(*A2zz)[];
-//typedef CComplex(*A1zz)[];
 
 typedef Real(*A2rr)[][];
-
-typedef Complex(*A6z)[][][][][];
-typedef Complex(*A5z)[][][][];
-typedef Complex(*A4z)[][][];
-typedef Complex(*A3z)[][];
-typedef Complex(*A2z)[][];
-
 
 
 

@@ -81,7 +81,7 @@ void Fields::solve(Array6C f0, Array6C  f, Timing timing)
       // backward-transformation from gyro-center to drift-center 
       if (parallel->Coord[DIR_V] == 0) {
 
-            gyroAverage(Field0, Qm, m, s, true);            
+            gyroAverage(Field0, Qm, m, s, false);            
             // Lambda function to integrate over m ( for source terms), If loop=0, we overwrite value of Q
            if(loop==0) [=] (CComplex Q[Nq][NzLD][NkyLD][NxLD], CComplex Qm[Nq][NzLD][NkyLD][NxLD]) { Q[:][:][:][:]  = Qm[:][:][:][:]; } ((A4zz) Q.data(), (A4zz) Qm.data()); 
            else        [=] (CComplex Q[Nq][NzLD][NkyLD][NxLD], CComplex Qm[Nq][NzLD][NkyLD][NxLD]) { Q[:][:][:][:] += Qm[:][:][:][:]; } ((A4zz) Q.data(), (A4zz) Qm.data()); 

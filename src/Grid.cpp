@@ -215,9 +215,10 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
     for(int v = NvGlB; v <= NvGuB; v++) V[v] = -  Lv + dv * ( v - NvGlD);
     
     // M For mu we can choose between linear and Gaussian integration
+    // In case of Nm=1 (drift-kinetic, gyro-1st), dm = 1, and M = 0. ! shoudl be automatic ?
     pallocate(PRange(NmGlB  , NmGB))(&M, &dm);
     Integrate integrate("Gauss-Legendre", Nm, 0., Lm);
-    for(int m=NmGlD, n=0; m <= NmGuD; m++, n++) { M[m] = integrate.x(n) ; dm[m] = integrate.w(n); }
+    for(int m=NmGlD, n=0; m <= NmGuD; m++, n++) { M[m] = (Nm == 1) ? 0. : integrate.x(n) ; dm[m] = (Nm ==1) ? 1. : integrate.w(n); }
 
     //
    dXYZ  = dx * dy * dz;

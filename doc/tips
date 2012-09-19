@@ -46,3 +46,4 @@ sysconf ....
 
 # use vim spell checker
 :set spell
+git log --pretty=format:'' | wc -l
