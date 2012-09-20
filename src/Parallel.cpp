@@ -118,32 +118,32 @@ Parallel::Parallel(Setup *setup)
     int coord_master[6] = { 0, 0, 0, 0, 0, 0 };
  
   
-    // Coomunicator for X
+    // Communicator for X
     int remain_dims_X[6] = { true, false, false, false, false, false };         
     MPI_Cart_sub(Comm[DIR_ALL], remain_dims_X, &Comm[DIR_X]);
     MPI_Cart_rank  (Comm[DIR_X], coord_master, &dirMaster[DIR_X]);
     
-    // Coomunicator for Y
+    // Communicator for Y
     int remain_dims_Y[6] = { false, true, false, false, false, false };         
     MPI_Cart_sub(Comm[DIR_ALL], remain_dims_Y, &Comm[DIR_Y]);
     MPI_Cart_rank  (Comm[DIR_Y], coord_master, &dirMaster[DIR_Y]);
     
-    // Coomunicator for Z
+    // Communicator for Z
     int remain_dims_Z[6] = { false, false, true, false, false, false };         
     MPI_Cart_sub(Comm[DIR_ALL], remain_dims_Z, &Comm[DIR_Z]);
     MPI_Cart_rank  (Comm[DIR_Z], coord_master, &dirMaster[DIR_Z]);
     
-    // Coomunicator for V
+    // Communicator for V
     int remain_dim_V[6]   = {false, false, false, true, false ,false};
     MPI_Cart_sub(Comm[DIR_ALL], remain_dim_V, &Comm[DIR_V]);
     MPI_Cart_rank  (Comm[DIR_V], coord_master, &dirMaster[DIR_V]);
 
-    // Coomunicator for M
+    // Communicator for M
     int remain_dim_M[6] = {false, false, false, false, true ,false};
     MPI_Cart_sub(Comm[DIR_ALL], remain_dim_M, &Comm[DIR_M]); 
     MPI_Cart_rank  (Comm[DIR_M], coord_master, &dirMaster[DIR_M]);
 
-    // Coomunicator for S
+    // Communicator for S
     int remain_dim_S[6] = {false, false, false, false, false, true};
     MPI_Cart_sub(Comm[DIR_ALL], remain_dim_S, &Comm[DIR_S]); 
     MPI_Cart_rank  (Comm[DIR_S], coord_master, &dirMaster[DIR_S]);
@@ -389,7 +389,7 @@ void Parallel::print(std::string message) {
 }
 
 
-void Parallel::printOn(ostream &output) const {
+void Parallel::printOn(std::ostream &output) const {
 
        output << "Parallel   | ";
       
