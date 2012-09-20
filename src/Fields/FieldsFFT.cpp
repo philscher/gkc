@@ -262,7 +262,7 @@ void FieldsFFT::gyroAverage(Array4C In, Array4C Out, const int m, const int s, c
 }
 
 
-void FieldsFFT::printOn(ostream &output) const
+void FieldsFFT::printOn(std::ostream &output) const
 {
   Fields::printOn(output);
   output   << "Fields     |  FFT Solver"  << std::endl;
@@ -275,53 +275,56 @@ void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEn
 
       if(parallel->Coord[DIR_VMS] == 0) {
         
-
-        //fft->rXIn(RxLD, RkyLD, RzLD, RFields) = Field0(RxLD,RkyLD, RzLD, RFields);
         fft->solve(FFT_X_FIELDS, FFT_FORWARD, Field0.data());
 
-        // Add only kinetic contributions
-        for(int z=NzLlD; z<=NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { simd_for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
+        // Lambda funtion to use CEAN notation
+        [&](CComplex kXOut [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+            CComplex kXIn  [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+            CComplex Field0[Nq][NzLD][NkyLD][NxLD])
+        {
+
+        // Add only kinetic contributions (check if FFT Norm is correct)
+        //#pragma omp parallel for, collapse(2), reduce(+,phiEnergy,ApEnergy,BpEnergy)
+        for(int z=NzLlD; z<=NzLuD;z++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { simd_for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
               
               const double k2_p = fft->k2_p(x_k,y_k,z);
               
-              if(Nq >= 1) phiEnergy += (plasma->debye2*k2_p + sum_qqnT_1mG0(k2_p)) * pow2(abs(fft->kXOut(x_k,y_k,z,Field::phi)))/fft->Norm_X;
-              if(Nq >= 2) ApEnergy  += (k2_p - Yeb * sum_sa2qG0(k2_p))     * pow2(abs(fft->kXOut(x_k,y_k,z,Field::Ap )))/fft->Norm_X;
+              if(Nq >= 1) phiEnergy += (plasma->debye2*k2_p + sum_qqnT_1mG0(k2_p)) * pow2(cabs(kXOut[Field::phi][z][y_k][x_k]))/fft->Norm_X;
+              if(Nq >= 2) ApEnergy  += (k2_p - Yeb * sum_sa2qG0(k2_p))             * pow2(cabs(kXOut[Field::Ap ][z][y_k][x_k]))/fft->Norm_X;
               if(Nq >= 3) BpEnergy  += 0.;
            
         } } }
       
-
-
+/* 
         // Add Polarization term , see Y.Idomura et al., ...., Kinetic siulations of turnbulence plasmas, Eq. (27)
-     // modify field energy term to add adiabatic contributions
+         // modify field energy term to add adiabatic contributions
         CComplex phi_yz[NxLD]; // RxLD
 
-       /* 
         // short-circuit contribution for ITG mode 
+        
         if(plasma->species[0].doGyro) {
-          // muss ich wirklich ueber yz mitteln ? nicht summieren ??
-       for(int x = NxLlD; x <= NxLuD; x++) phi_yz(x) = sum(fields->phi(x, RyLD, RzLD, 1, 1))/((double) Ny*Nz);
-//       for(int x = NxLlD; x <= NxLuD; x++) phi_yz(x) = sum(fields->phi(x, RyLD, RzLD, 1, 1));
-            parallel->collect(phi_yz, OP_SUM, DIR_YZ);
+          
+           // muss ich wirklich ueber yz mitteln ? nicht summieren ??
+           for(int x = NxLlD; x <= NxLuD; x++) phi_yz[x] = __sec_reduce_add(Field0[Field::phi][NzLlD:NzLD][NkyLlD:NkyLD][x-NxLlD])/((double) Nky*Nz);
+           //parallel->collect(phi_yz, OP_SUM, DIR_YZ);
         }
-      
+        
         // add Adiabatic contributions
         const double adiab = plasma->species[0].n0 * pow2(plasma->species[0].q)/plasma->species[0].T0;
-        for(int x = NxLlD; x <= NxLuD; x++)  phiEnergy += adiab * abs(__sec_reduce(pow2(phi(x,RkyLD,RzLD, 1, 1) - phi_yz[x-NxLlD])));
-        * */ 
+        for(int x = NxLlD; x <= NxLuD; x++)  phiEnergy += adiab * cabs(__sec_reduce_add(square(Field0[Field::phi][NzLlD:NzLD][NkyLlD:NkyLD][x])));// - phi_yz[x-NxLlD])));
      
-      }
+ * */
         // still HDF-5 is a bit buggy and we need to distribute the value over all nodes
        //phiEnergy =  parallel->collect(4. * M_PI * phiEnergy * scaleXYZ / (8.e0 * M_PI) / (initialEkin(TOTAL) == 0. ? 1. : initialEkin(TOTAL)), OP_SUM, DIR_XYZ);
        //ApEnergy  =  parallel->collect(4. * M_PI *  ApEnergy * scaleXYZ / (8.e0 * M_PI) / (initialEkin(TOTAL) == 0. ? 1. : initialEkin(TOTAL)), OP_SUM, DIR_XYZ);
-       //phiEnergy =  parallel->collect(4. * M_PI * phiEnergy * scaleXYZ / (8.e0 * M_PI), OP_SUM, DIR_XYZ);
-       //ApEnergy  =  parallel->collect(4. * M_PI *  ApEnergy * scaleXYZ / (8.e0 * M_PI), OP_SUM, DIR_XYZ);
-       //
+       
        phiEnergy =  abs( parallel->collect(4. * M_PI * phiEnergy * grid->dXYZ / (8.e0 * M_PI), OP_SUM, DIR_ALL) ); 
        ApEnergy  =  abs( parallel->collect(4. * M_PI *  ApEnergy * grid->dXYZ / (8.e0 * M_PI), OP_SUM, DIR_ALL) );
        BpEnergy  = 0.;
-      
-}
+      } ((A4zz) fft->kXIn.dataZero(), (A4zz) fft->kXOut.dataZero(), (A4zz) Field0.dataZero()); 
+
+   }     
+ }
 
 
 ///////////////////////////////////////// Some Helper functions ///////////////////////////////////////////
