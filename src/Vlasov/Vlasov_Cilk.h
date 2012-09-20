@@ -154,7 +154,7 @@ class VlasovCilk : public Vlasov {
    *    Please Document Me !
    *
    **/
-   void printOn(ostream &output) const;
+   void printOn(std::ostream &output) const;
 
    /**
    *    Please Document Me !

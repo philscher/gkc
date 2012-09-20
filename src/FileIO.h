@@ -111,7 +111,7 @@ public:
    FileAttr *newTiming(hid_t group, hsize_t offset=0, bool write=1);
 
   protected:
-   virtual void printOn(ostream &output) const;
+   virtual void printOn(std::ostream &output) const;
    virtual void initDataOutput(FileIO *fileIO) {};
    virtual void writeData(Timing *timing) {};
    virtual void closeData() {};

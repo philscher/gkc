@@ -124,7 +124,7 @@ public:
     
     void signalForceExit(bool val);
 
-    void printOn(ostream &output) const;
+    void printOn(std::ostream &output) const;
 };
 
 

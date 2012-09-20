@@ -122,7 +122,7 @@ class Init   : public IfaceGKC {
 
   protected:
 
-    virtual void printOn(ostream &output) const {
+    virtual void printOn(std::ostream &output) const {
 
 
          output << " Init      | " << PerturbationMethod << std::endl;

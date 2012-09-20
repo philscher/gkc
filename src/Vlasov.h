@@ -229,7 +229,7 @@ class Vlasov : public IfaceGKC {
    *    @brief Holds the non-linear terms from the ExB
    *
    **/
-   Array3C nonLinearTerms; 
+   CComplex *nonLinearTerms; 
 
    /**
    *
@@ -265,7 +265,7 @@ class Vlasov : public IfaceGKC {
    *    Please Document Me !
    *
    **/
-   void printOn(ostream &output) const;
+   void printOn(std::ostream &output) const;
 
    /**
    *    Please Document Me !

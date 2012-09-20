@@ -170,7 +170,7 @@ class VlasovAux : public VlasovCilk {
    *    Please Document Me !
    *
    **/
-   //void printOn(ostream &output) const;
+   //void printOn(std::ostream &output) const;
 
 };
 

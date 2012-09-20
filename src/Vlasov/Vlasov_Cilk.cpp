@@ -21,7 +21,7 @@ VlasovCilk::VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *
 : Vlasov(_grid, _parallel, _setup, fileIO, _geo, fft, _bench)
 {
 
-    nonLinearTerms.resize(RxLD , RkyLD , RvLD);  nonLinearTerms = 0.e0;
+    //nonLinearTerms.resize(RxLD , RkyLD , RvLD);  nonLinearTerms = 0.e0;
         
     collisionBeta = setup->get("Vlasov.CollisionBeta", 0.);
     
@@ -35,7 +35,8 @@ int VlasovCilk::solve(std::string equation_type, Fields *fields, Array6C _fs, Ar
   else if(equation_type == "Vlasov_EM") Vlasov_EM((A6zz) _fs.dataZero(), (A6zz) _fss.dataZero(), (A6zz) f0.dataZero(), (A6zz) f.dataZero(), (A6zz) ft.dataZero(), 
                                                   (A5zz) fields->phi.dataZero(), (A5zz) fields->Ap.dataZero(), (A5zz) fields->Bp.dataZero(),
                                                   (A4zz) Xi.dataZero(), (A4zz) G.dataZero(),
-                                                  (A3zz) nonLinearTerms.dataZero(),
+                                                  //(A3zz) nonLinearTerms.dataZero(),
+                                                  (A3zz) nonLinearTerms,
                                                   X, V, M,  dt, rk_step, rk);
   else   check(-1, DMESG("No Such Equation"));
 
@@ -346,7 +347,7 @@ void VlasovCilk::Vlasov_EM(
 
 
 
-void VlasovCilk::printOn(ostream &output) const
+void VlasovCilk::printOn(std::ostream &output) const
 {
    Vlasov::printOn(output);
 

@@ -180,7 +180,7 @@ void Control::runningException(int status, char *error_message) {
     };
         
 
-void Control::printOn(ostream &output) const 
+void Control::printOn(std::ostream &output) const 
 {
             output << "Control    | phi^2 " << (maxElectricEnergy > 0. ? Setup::num2str(maxElectricEnergy) : "off") << std::endl;
 }

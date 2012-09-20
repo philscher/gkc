@@ -54,7 +54,7 @@ class FFTSolver_fftw3 : public FFTSolver
    *    multiply.
    *
    **/
-   Range AA_RkyLD, AA_RyLD;
+   blitz::Range AA_RkyLD, AA_RyLD;
    int AA_NyLD, AA_NyLlD, AA_NyLuD, AA_NkyLD, AA_NkyLlD, AA_NkyLuD;
    Array2R AA_rYIn, AA_rYOut;
    Array2C AA_kYOut, AA_kYIn;
@@ -91,7 +91,7 @@ class FFTSolver_fftw3 : public FFTSolver
    
 
 
-   virtual void printOn(ostream &output) const;
+   virtual void printOn(std::ostream &output) const;
 
    virtual void initDataOutput(FileIO *fileIO) {};
    virtual void writeData(Timing *timing)  {};

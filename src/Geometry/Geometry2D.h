@@ -40,7 +40,8 @@
 **/
 class Geometry2D : public Geometry
 {
-  Array1R By;
+  //Array1R By;
+  double *By;
   std::string By_str;
 
 
@@ -67,8 +68,10 @@ class Geometry2D : public Geometry
     By_parser.AddConstant("theta", theta);
     check(((By_parser.Parse(By_str, "x") == -1) ? 1 : -1), DMESG("Parsing error of shear condition"));
 
-    By.resize(Range(NxGlD, NxGuD));
-    for(int x=NxGlD; x <= NxGuD; x++) By(x) = By_parser.Eval(&X[x]) ;
+    //By.resize(Range(NxGlD, NxGuD));
+    hpc::allocate(hpc::Range(NxLlD, NxLD))(&By);
+    //for(int x=NxGlD; x <= NxGuD; x++) By[x] = By_parser.Eval(&X[x]) ;
+    for(int x=NxLlD; x <= NxLuD; x++) By[x] = By_parser.Eval(&X[x]) ;
 
 
         // BUG
@@ -122,13 +125,13 @@ class Geometry2D : public Geometry
    *   Get the value of shear at position x, which is constant for sheared slab geometry 
    *
    **/
-   inline CComplex get_kp(const int x, const CComplex ky, const int z) const  { return ky * By(x) ; };//+ _Imaginary * kz; };
+   inline CComplex get_kp(const int x, const CComplex ky, const int z) const  { return ky * By[x] ; };//+ _Imaginary * kz; };
   
   
    double nu (const int x) { return 0.; };
 
 
-   void printOn(ostream& output) const {
+   void printOn(std::ostream& output) const {
          output   << "Geometry   |  Sheared Slab   By : " << By_str  << " Shear : " << shear << " Theta : "  <<  theta << std::endl;
    };
 

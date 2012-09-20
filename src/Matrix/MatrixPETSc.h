@@ -177,14 +177,14 @@ class Matrix
 
    friend Matrix& operator*(double &a, Matrix &A) {
     
-      MatScale(A.getMat(), newComplex(a,0.));
+      MatScale(A.getMat(), Complex(a,0.));
       return A;
    };
    
    friend Matrix& operator*(Matrix &A, double &a) {
     
       A.checkAndAssemble();
-      MatScale(A.getMat(), newComplex(a,0.));
+      MatScale(A.getMat(), Complex(a,0.));
       return A;
    };
 
@@ -213,7 +213,7 @@ class Matrix
    void addDiagonal(double a) 
    {
       checkAndAssemble(); 
-      MatShift(PETSc_Matrix, newComplex(a, 0.));
+      MatShift(PETSc_Matrix, Complex(a, 0.));
    }
 
    /**
@@ -232,7 +232,7 @@ class Matrix
           Mat Matrix_AllReduce;
                
           
-          Array2C ReduceArray(Range(0, n_local-1),  Range(0, n_local-1)); 
+          Array2C ReduceArray(blitz::Range(0, n_local-1),  blitz::Range(0, n_local-1)); 
 
           //Array2C ReduceArray(Range(start, stop),  Range(start, stop)); 
           MatConvert(PETSc_Matrix, MATMPIDENSE,  MAT_INITIAL_MATRIX, &Matrix_AllReduce);

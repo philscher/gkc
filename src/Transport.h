@@ -41,7 +41,7 @@ class Transport {
 
 protected:
 
-        virtual void printOn(ostream &output) const {
+        virtual void printOn(std::ostream &output) const {
 
             output << "Transport " << std::endl;
 

@@ -215,7 +215,7 @@ double FieldsHermite::Lambda(const double x, const int n) {
         return 0.;      
 }
 
-void FieldsHermite::printOn(ostream &output) const {
+void FieldsHermite::printOn(std::ostream &output) const {
          output   << "Fields    |  Hermite      Order : "  << interpolationOrder << std::endl;
    }
  

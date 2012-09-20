@@ -11,8 +11,6 @@
  * =====================================================================================
  */
 
-
-
 #ifndef __GLOBAL_H
 #define __GLOBAL_H
 
@@ -24,14 +22,16 @@
 
 #include<string>
 #include <complex>
+#include <iostream>
 typedef std::complex<double> Complex;  
 typedef double               Real   ;
-#define newComplex(A,B) Complex(A,B)
 
 
 #include<blitz/array.h>
 #include<blitz/allocate.h>
 #include<blitz/types.h>
+
+#include "external/allocate.h"
 
 typedef _Complex double CComplex;  
 
@@ -57,9 +57,41 @@ typedef blitz::Array<double, 1>  Array1R;
 typedef blitz::Array<double, 2>  Array2R;
    
 
-using namespace blitz;
+using namespace std;
 
-//template<class T> inline T pow2(T x) { return x*x; };
+template<class T> inline T pow2(T x) { return x*x; };
+template<class T> inline T pow3(T x) { return x*x*x; };
+template<class T> inline T pow4(T x) { const T x2 =  (x*x); return x2*x2; };
+template<class T> inline T pow5(T x) { const T x2 = x * x; return x2*x2*x; };
+template<class T> inline T pow6(T x) { const T x2 = x * x; return x2*x2*x2; };
+template<class T> inline T pow8(T x) { const T x2 = x * x; x2 *= x2; return x2*x2; };
+//__declspec(vector) inline CComplex square(CComplex x) { return x*x; };
+inline CComplex square(CComplex x) { return x*x; };
+
+
+
+/* 
+int ipow(int base, int exp)
+{
+   int result = 1;
+   while (exp)
+   {
+      
+     if (exp & 1)
+     
+       result *= base;
+       
+     exp >>= 1;
+     
+     
+     base *= base;
+     
+   }
+
+              return result;
+}
+ * */
+
 
 /**
  *   Implicit OpenMP parallelization. Take care, it does not 
@@ -174,11 +206,11 @@ class Timing;
 class IfaceGKC {
    
     protected:
-      virtual void printOn(ostream &output) const = 0;
+      virtual void printOn(std::ostream &output) const = 0;
       //virtual ~IfaceGKC() { closeData(); };
       virtual ~IfaceGKC() { };
     public:
-    friend ostream& operator<<(ostream& output, const IfaceGKC& ih) { ih.printOn(output); return output; };
+    friend std::ostream& operator<<(std::ostream& output, const IfaceGKC& ih) { ih.printOn(output); return output; };
 
     // Data Output Operation
 };
@@ -195,10 +227,8 @@ class Plasma;
 extern Plasma *plasma;
 
 
-// needed for signal handling
 extern blitz::GeneralArrayStorage<6> GKCStorage;
 extern blitz::GeneralArrayStorage<4> GKCStorage4;
-extern blitz::GeneralArrayStorage<3> GKCStorage3;
 
 
 typedef CComplex(*A6zz)[][][][][];
@@ -208,10 +238,6 @@ typedef CComplex(*A3zz)[][];
 typedef CComplex(*A2zz)[];
 
 typedef Real(*A2rr)[][];
-
-
-
-
 
 
 #endif // __GLOBAL_H

@@ -16,6 +16,8 @@
 #include <fftw3-mpi.h>
 
 
+using namespace blitz;
+
 // we have to place plans here to avoid namespace errors 
 fftw_plan plan_YForward_Field, plan_YBackward_Field, 
           plan_YForward_PSF, plan_YBackward_PSF,
@@ -441,7 +443,7 @@ void FFTSolver_fftw3::multiply(const CComplex A[NkyLD][NxLD], const CComplex B[N
 
    //////////////////////// Real Space (multiply values) /////////////////// 
    
-   const double _kw_fft_Norm = 1./(1.5 * Norm_Y_Forward * pow2(Norm_Y_Backward));
+   const double _kw_fft_Norm = 1./(1.5 * Norm_Y_Forward * blitz::pow2(Norm_Y_Backward));
    
    RS_A[:][:] *= RS_B[:][:] * _kw_fft_Norm;
    
@@ -513,7 +515,7 @@ fftw_plan plan_transpose(char storage_type, int rows, int cols, double *in, doub
 }
 
     
-void FFTSolver_fftw3::printOn(ostream &output) const {
+void FFTSolver_fftw3::printOn(std::ostream &output) const {
 
          output   << "FFTSolver  |  using fftw-3 interface for (" << std::string(fftw_version) << ")" << std::endl;
          output   << "           |  Plan : " << plan << " Wisdom : " << ((wisdom=="") ? "None" : wisdom) << std::endl;

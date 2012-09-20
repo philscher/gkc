@@ -307,7 +307,7 @@ protected:
   /**
   *   @brief Print out some runtime information
   */ 
-  virtual void printOn(ostream &output) const;
+  virtual void printOn(std::ostream &output) const;
 
 
   /**

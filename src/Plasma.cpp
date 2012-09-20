@@ -119,7 +119,7 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
 
     };
 
-     void Plasma::printOn(ostream &output) const {
+     void Plasma::printOn(std::ostream &output) const {
          output << 
                "Type       | " << (global ? " Global" : "Local") << std::endl
             << " Cs   : " << cs << std::endl 

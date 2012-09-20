@@ -41,7 +41,7 @@ int VlasovOptim::solve(std::string equation_type, Fields *fields, Array6C _fs, A
   if((equation_type == "2D_ES")) {
   Vlasov_2D((A6sz) _fs.dataZero(), (A6sz) _fss.dataZero(), (A6sz) f0.dataZero(), 
             (A6sz) f.dataZero(), (A6sz) ft.dataZero(), (A5sz) fields->phi.dataZero(),
-            (A4sz) nonLinearTerms.dataZero(), X, V, M,
+            (A4sz) nonLinearTerms, X, V, M,
              dt, rk_step, rk);
   }
 
@@ -73,6 +73,7 @@ int VlasovOptim::solve(std::string equation_type, Fields *fields, Array6C _fs, A
   const int BlockSize_X=bench->BlockSize_X ;
   const int BlockSize_V=bench->BlockSize_V ;
 
+  // MAXIMUM_ALIGN preprocessor directive !
         __assume_aligned(fs,32);
     __assume_aligned(fss,32);
      __assume_aligned(f1,32);

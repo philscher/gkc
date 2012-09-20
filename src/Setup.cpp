@@ -288,7 +288,7 @@ int Setup::check_config()
 
 };
    
-void Setup::printOn(ostream &output) const 
+void Setup::printOn(std::ostream &output) const 
 {
   output << "Parser     | File :  " << setupFilename << std::endl;
   
@@ -300,7 +300,7 @@ void Setup::printOn(ostream &output) const
 
 template<class T> T Setup::get(std::string key, const T default_Value)
 {
-        if(     config.count(key) == 1) {
+        if( config.count(key) == 1) {
             std::string s = config[key];
             std::istringstream stream (s);
             T t;

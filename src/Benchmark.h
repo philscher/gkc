@@ -107,7 +107,7 @@ protected:
    virtual void writeData(Timing timing, double dt);
    void initDataOutput(Setup *setup, FileIO *fileIO);
    void closeData();
-   virtual void printOn(ostream &output) const ;
+   virtual void printOn(std::ostream &output) const ;
 };
 
 

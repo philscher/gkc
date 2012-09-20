@@ -224,7 +224,7 @@ public:
    *   @brief configuration summary output 
    *
    **/ 
-   virtual void printOn(ostream &output) const;
+   virtual void printOn(std::ostream &output) const;
 
    // we don't have FileIO object yet, so no writting is performed
    //    virtual void initDataOutput(FileIO *fileIO) {};

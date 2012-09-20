@@ -90,7 +90,7 @@ private:
 
 protected:
 
-   void printOn(ostream& output) const {
+   void printOn(std::ostream& output) const {
          output   << "Geometry  |  CHEASE (Numerical Equilibrium) Data Input : " << "mysterious file" << std::endl;
    };
 

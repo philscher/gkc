@@ -16,16 +16,16 @@
 
 
 
-Range RFields;
+blitz::Range RFields;
 
 int GC2, GC4, Nq;
 
 Fields::Fields(Setup *setup, Grid *_grid, Parallel *_parallel, FileIO *fileIO, Geometry *_geo)  : 
 grid(_grid), parallel(_parallel), geo(_geo), 
-Q  (FortranArray<4>()),  Qm(FortranArray<4>()),  Field0(FortranArray<4>()), Field(FortranArray<6>()), solveEq(0),
+Q  (blitz::FortranArray<4>()),  Qm(blitz::FortranArray<4>()),  Field0(blitz::FortranArray<4>()), Field(blitz::FortranArray<6>()), solveEq(0),
 
-SendXu(FortranArray<6>()), SendXl(FortranArray<6>()), SendZu(FortranArray<6>()), SendZl(FortranArray<6>()), 
-RecvXu(FortranArray<6>()), RecvXl(FortranArray<6>()), RecvZu(FortranArray<6>()), RecvZl(FortranArray<6>()) 
+SendXu(blitz::FortranArray<6>()), SendXl(blitz::FortranArray<6>()), SendZu(blitz::FortranArray<6>()), SendZl(blitz::FortranArray<6>()), 
+RecvXu(blitz::FortranArray<6>()), RecvXl(blitz::FortranArray<6>()), RecvZu(blitz::FortranArray<6>()), RecvZl(blitz::FortranArray<6>()) 
 
 {
    GC2 = 2; GC4 = 4, Nq=plasma->nfields;
@@ -311,7 +311,7 @@ void Fields::closeData() {
 
 
 // @todo : how to interact with FieldFFT, FieldHermite ?
-void Fields::printOn(ostream &output) const {
+void Fields::printOn(std::ostream &output) const {
 
          output   << "Poisson    |  " << "Base class" << std::endl;
          output   << "Ampere     |  " << ((plasma->nfields >= 2) ? "beta :  " + Setup::num2str(plasma->beta) : " --- no electromagnetic effects ---") << std::endl;

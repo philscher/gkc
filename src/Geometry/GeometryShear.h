@@ -154,7 +154,7 @@ class GeometryShear : public Geometry
    
 
 
-   void printOn(ostream& output) const {
+   void printOn(std::ostream& output) const {
          
      output   << "Geometry  |  Sheared Slab   shear : " << shear << " (Ls : " << Ls << " ) "  << " eps_hat : " << eps_hat << std::endl;
      output   << "          |  Connect Field Lines (" << (connectFieldLines ? "true" : "false") << 

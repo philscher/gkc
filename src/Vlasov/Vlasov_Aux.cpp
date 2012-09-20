@@ -53,19 +53,19 @@ int VlasovAux::solve(std::string equation_type, Fields *fields, Array6C f_in, Ar
 
       Vlasov_ES   ((A6zz) f_in.dataZero(), (A6zz) f_out.dataZero()      , (A6zz) f0.dataZero(), (A6zz) f.dataZero(), 
                    (A6zz) ft.dataZero() , (A5zz) fields->phi.dataZero(), 
-                   (A3zz) nonLinearTerms.dataZero(), X, V, M, dt, rk_step, rk);
+                   (A3zz) nonLinearTerms, X, V, M, dt, rk_step, rk);
 
   else if(equation_type == "EM")
 
       Vlasov_EM    ((A6zz) f_in.dataZero(), (A6zz) f_out.dataZero(), (A6zz) f0.dataZero(), (A6zz) f.dataZero(),
                    (A6zz) ft.dataZero(), (A5zz) fields->phi.dataZero(), (A5zz) fields->Ap.dataZero(),
-                   (A5zz) fields->Bp.dataZero(), (A3zz) nonLinearTerms.dataZero(),
+                   (A5zz) fields->Bp.dataZero(), (A3zz) nonLinearTerms,
                    (A4zz) Xi.dataZero(), (A4zz) G.dataZero(), X, V, M, dt, rk_step, rk);
 
   else if(equation_type == "2D_Island") 
     
       Vlasov_2D_Island((A6zz) f_in.dataZero(), (A6zz) f_out.dataZero(), (A6zz) f0.dataZero(), (A6zz) f.dataZero(), 
-                    (A6zz) ft.dataZero(), (A5zz) fields->phi.dataZero(), (A3zz) nonLinearTerms.dataZero(),
+                    (A6zz) ft.dataZero(), (A5zz) fields->phi.dataZero(), (A3zz) nonLinearTerms,
                     X, V, M, dt, rk_step, rk);
 
 //  else if(equation_type == "2DLandauDamping") Landau_Damping((A6z) f_in.dataZero(), (A6z) f_out.dataZero(), (A6z) f0.dataZero(), (A6z) f.dataZero(), (A6z) ft.dataZero(), (A5z) fields->phi.dataZero(), (A4z) k2p_phi.dataZero(), (A3z) dphi_dx.dataZero(), X.dataZero(), V.dataZero(), M, fields, dt, rk_step, rk);
@@ -129,7 +129,7 @@ void VlasovAux::Vlasov_ES(
            CComplex half_eta_kperp2_phi = 0;
            if(isGyro1) { // first order approximation for gyro-kinetics
              const CComplex ddphi_dx_dx = (16. *(phi[s][m][z][y_k][x+1] + phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] + phi[s][m][z][y_k][x-2]) - 30.*phi_) * _kw_12_dx_dx;
-             half_eta_kperp2_phi     = 0.5 * w_T  * ( (ky*ky) * phi_ );//+ ddphi_dx_dx ) ; 
+             half_eta_kperp2_phi     = 0.5 * w_T  * ( (ky*ky) * phi_ + ddphi_dx_dx ) ; 
            }
              
            // Sign has no influence on result ...
@@ -158,7 +158,7 @@ void VlasovAux::Vlasov_ES(
              +  ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])*kw_T  - sub)) * f0_ * phi_    // Driving term (Temperature/Density gradient)
              -  half_eta_kperp2_phi * f0_)                                            // Contributions from gyro-1 (0 if not neq Gyro-1)
              -  alpha  * V[v]* kp  * ( g + sigma * phi_ * f0_)                        // Linear Landau damping
-             +  collisionBeta  * (g  + alpha * V[v] * dfs_dv + 2. * ddfs_dv);     // Lennard-Bernstein Collision term
+             +  collisionBeta  * (g  + alpha * V[v] * dfs_dv + 2. * ddfs_dv);         // Lennard-Bernstein Collision term
          
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         
@@ -626,7 +626,7 @@ void    VlasovAux::Vlasov_2D_Fullf(
         Complex dg_dt = 
 
 
-             nonLinearTerms(x,y_k,v) +
+             //nonLinearTerms(x,y_k,v) +
              
              // driving term (use dphi_dy instead of dXi_dy, because v * A does not vanish due to numerical errors)
              //ky * (-(w_n + w_T * ((pow2(V[v])+ M[m])/Temp  - sub)) * F0 * phi_

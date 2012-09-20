@@ -159,7 +159,7 @@ class GeometrySA : public Geometry
 
   protected:
 
-   virtual void printOn(ostream& output) const {
+   virtual void printOn(std::ostream& output) const {
          output   << "Geometry   |  s-alpha Geometry Shear : " << shear << " Safety Factor   : " << q0 << std::endl;
          output   << "           |  Aspect Ratio           : " << eps   << " Shfaranov-Shift : " << alpha << std::endl;
    };

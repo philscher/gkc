@@ -74,7 +74,7 @@ void TestParticles::integrate(Vlasov *vlasov, Fields *fields, int step) {
 }
     
 
-void TestParticles::printOn(ostream &output) const {
+void TestParticles::printOn(std::ostream &output) const {
 
              output   << "Tracer Particles    |  " << "Off" << std::endl;
         

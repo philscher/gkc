@@ -203,7 +203,7 @@ Eigenvalue_SLEPc::~Eigenvalue_SLEPc() {
     delete EVTable;
 };
 
-void Eigenvalue_SLEPc::printOn(ostream &output) const {
+void Eigenvalue_SLEPc::printOn(std::ostream &output) const {
            output << "Eigenvalue |  using SLEPc interface " << std::endl;
  }
 

@@ -50,7 +50,7 @@ public:
 
   void checkEvent(Timing timing, Vlasov *vlasov, Fields *fields);
         
-  virtual void printOn(ostream &output) const {
+  virtual void printOn(std::ostream &output) const {
          output   << "Event     |  " << ((useEvent ? "On" : "Off")) << std::endl;
   }
 };

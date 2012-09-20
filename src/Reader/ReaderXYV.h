@@ -57,7 +57,7 @@ class ReaderXYV : public Reader {
 
        std::vector<std::string> token = Setup::split(Setup::trimLower(line), &delimiter);
            
-       Array1R V(Range(0,token.size()-1));
+       Array1R V(blitz::Range(0,token.size()-1));
 
 
        for(int n = 0; n < token.size();n++)  V(n) = Setup::string_to_double(token[n]);
@@ -91,13 +91,13 @@ public:
        // Simple check for consistency, Y len is the number of data rows
        if((lc-2) != Y.numElements()) check(-1, DMESG("Number of lines and size in Y does not match"));
 
-       Array2R V(Range(0,X.numElements()-1), Range(0, Y.numElements()-1));
+       Array2R V(blitz::Range(0,X.numElements()-1), blitz::Range(0, Y.numElements()-1));
 
        // Read in main data file
        for(int ny = 0; ny < Y.numElements(); ny++) {
 
             getline(inputFile, line);
-            V(Range::all(), ny) = parseNumberLine(line);
+            V(blitz::Range::all(), ny) = parseNumberLine(line);
 
        }
 

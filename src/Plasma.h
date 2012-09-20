@@ -153,7 +153,7 @@ class Plasma : public IfaceGKC {
 
 protected:
 
-    virtual void printOn(ostream &output) const;
+    virtual void printOn(std::ostream &output) const;
 
     void initDataOutput(FileIO *fileIO) ;
     virtual void writeData(Timing *timing) {};

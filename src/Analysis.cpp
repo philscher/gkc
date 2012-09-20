@@ -21,12 +21,12 @@ enum SpecDir   {SPEC_NO=-1, SPEC_XY=0, SPEC_XZ=1, SPEC_YZ=2};
 
 Analysis::Analysis(Parallel *_parallel, Vlasov *_vlasov, Fields *_fields, Grid *_grid, Setup *_setup, FFTSolver *_fft, FileIO *fileIO, Geometry *_geo) : 
  
-parallel(_parallel),setup(_setup), vlasov(_vlasov), grid(_grid), fields(_fields), geo(_geo),  fft(_fft), A4_z(FortranArray<4>())
+parallel(_parallel),setup(_setup), vlasov(_vlasov), grid(_grid), fields(_fields), geo(_geo),  fft(_fft), A4_z(blitz::FortranArray<4>())
 
 {
 
        // set initial energy
-       initialEkin.resize(Range(0, NsGuD)); initialEkin = 0.e0;
+       initialEkin.resize(blitz::Range(0, NsGuD)); initialEkin = 0.e0;
        //for(int s=NsLlD; s<= NsLuD; s++)  initialEkin(s) = 0. ;//getKineticEnergy((A6zz) vlasov->f0.dataZero(), V.dataZero(), M, s);
        initialEkin(0) = sum(initialEkin(RsLD));
        
@@ -651,7 +651,7 @@ void Analysis::closeData() {
 
 }
     
-void Analysis::printOn(ostream &output)  const
+void Analysis::printOn(std::ostream &output)  const
 { 
 
 

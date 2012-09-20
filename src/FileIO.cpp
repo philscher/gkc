@@ -348,7 +348,7 @@ void FileIO::flush(Timing timing, double dt)
 }
 
 
-void FileIO::printOn(ostream &output) const {
+void FileIO::printOn(std::ostream &output) const {
          output << "            -------------------------------------------------------------------" << std::endl
                 << "Data       |  Input     : " << inputFileName        << " Output    : " <<  outputFileName        << " Resume : " << ((resumeFile)?"yes":"no") << std::endl;
       };

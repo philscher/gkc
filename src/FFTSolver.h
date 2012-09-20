@@ -136,7 +136,7 @@ class FFTSolver : public IfaceGKC {
    Array2R rYIn, rYOut;
    Array2C kYOut, kYIn;
    int Y_kyLlD, Y_kyLuD , Y_NyLlD , Y_NyLuD;
-   Range Y_RkyL , Y_RyLD;
+   blitz::Range Y_RkyL , Y_RyLD;
    // @}
    
    // @{
@@ -152,7 +152,7 @@ class FFTSolver : public IfaceGKC {
    static int X_NkxL;
    int K1xLlD, K1xLuD;
    int K1yLlD, K1yLuD;
-   Range Rk1xL, Rk1yL;
+   blitz::Range Rk1xL, Rk1yL;
    // @}
 
    /**

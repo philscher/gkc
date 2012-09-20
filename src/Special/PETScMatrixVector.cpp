@@ -43,8 +43,8 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
 
 {
 
-  [=] (CComplex  fs  [NsLD][NmLD ][NzLB][NkyLD][NxLB  ][NvLB],  
-       CComplex  fss [NsLD][NmLD ][NzLB][NkyLD][NxLB  ][NvLB])
+  [=] (CComplex  fs  [NsLD][NmLD ][NzLB][NkyLD][NxLB][NvLB],  
+       CComplex  fss [NsLD][NmLD ][NzLB][NkyLD][NxLB][NvLB])
   {
       
     std::cout << "\r"   << "Iteration  : " << GL_iter++ << std::flush;
@@ -52,12 +52,12 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
     CComplex *x_F1, *y_F1; 
  
     VecGetArrayRead(Vec_x, (const PetscScalar **) &x_F1);
-    VecGetArray    (Vec_y, (PetscScalar **)       &y_F1);
+    VecGetArray    (Vec_y, (      PetscScalar **) &y_F1);
 
     // copy whole phase space function (waste but starting point) (important due to bounday conditions
-   // we can built wrapper around this and directly pass it
-   for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD-1; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
-   for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD   ; m   <= NmLuD   ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
+    // we can built wrapper around this and directly pass it
+    for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD-1; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
+    for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD   ; m   <= NmLuD   ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
       
            fs[s][m][z][y_k][x][v] = x_F1[n++];
 
@@ -69,7 +69,8 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
    const double rk_0[] = { 0., 0., 0.};
    GL_vlasov->solve(GL_vlasov->getEquationType(), GL_fields, GL_vlasov->fs, GL_vlasov->fss, 1., 0, rk_0);
    
-    // copy whole phase space function (waste but starting point) (important due to bounday conditions
+   // copy whole phase space function (waste but starting point) (important due to bounday conditions
+   //#pragma omp parallel for, collapse private(n) 
    for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD-1; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
    for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD   ; m   <= NmLuD   ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
 
@@ -80,7 +81,7 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
    VecRestoreArrayRead(Vec_x, (const PetscScalar **) &x_F1);
    VecRestoreArray    (Vec_y, (      PetscScalar **) &y_F1);
 
-   }((A6zz) GL_vlasov->fs.dataZero(), (A6zz) GL_vlasov->fss.dataZero());
+   } ((A6zz) GL_vlasov->fs.dataZero(), (A6zz) GL_vlasov->fss.dataZero());
    
    return 0; // return 0 (success) required for PETSc
 }

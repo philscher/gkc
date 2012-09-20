@@ -192,7 +192,7 @@ class TimeIntegration  : public IfaceGKC{
    /**
    *
    **/
-   virtual void printOn(ostream &output) const ;
+   virtual void printOn(std::ostream &output) const ;
    
 };
 

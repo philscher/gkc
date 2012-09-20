@@ -38,11 +38,8 @@ public:
    };
 
    /**
-   *  @brief Derivative of the error function
-   *  @image html Deriv_ErrorFunction.png
-   *  \f[ 
-   *      Derf(x) = \frac{d erf(x)}{dx} = \frac{2}{\sqrt{\pi}} \exp\left(-x^2 \right)  
-   *  \f]
+    *
+    *
    **/
    virtual int solve(std::string equation_type, Fields *fields, Array6C fs, Array6C fss, double dt, int rk_step) 
    {
@@ -58,7 +55,7 @@ public:
    *      Derf(x) = \frac{d erf(x)}{dx} = \frac{2}{\sqrt{\pi}} \exp\left(-x^2 \right)  
    *  \f]
    **/
-   inline double Derf(const double x) { return 2./sqrt(M_PI)*exp(-pow2(x)); };
+   __declspec(vector) inline double Derf(const double x) { return 2./sqrt(M_PI)*exp(-pow2(x)); };
 
 
    /**

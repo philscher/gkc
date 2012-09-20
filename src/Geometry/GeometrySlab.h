@@ -87,7 +87,7 @@ public:
    double nu (const int x) { return 0.; };
 
 
-   void printOn(ostream& output)  const {
+   void printOn(std::ostream& output)  const {
          output  << "Geometry   |  Shearless Slab" << std::endl;
    };
 

@@ -254,7 +254,7 @@ class Analysis : public IfaceGKC {
    void writeData(Timing timing, double dt);
    void closeData();
       
-   void printOn(ostream &output) const;
+   void printOn(std::ostream &output) const;
 };
 
 

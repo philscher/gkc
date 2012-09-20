@@ -15,7 +15,6 @@
 #include "Parallel.h"
 #include "Special/Integrate.h"
 
-#include "external/pallocate.h"
 
 // **************** Define Global Variables ************* //
 blitz::Range RzLD, RyLD, RkyLD, RxLD, RvLD, RmLD, RsLD; 
@@ -201,22 +200,22 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
     //X.resize(Range(NxGlB-2, NxGuB+2));
     
     // X
-    pallocate(PRange(NxGlB-2, NxGB+2))(&X);
+    hpc::allocate(hpc::Range(NxGlB-2, NxGB+4))(&X);
     bool includeX0Point = setup->get("Grid.IncludeX0Point", 0);
     for(int x = NxGlB-2; x <= NxGuB+2; x++) X[x] = -  Lx/2. + dx * ( x - NxGC - 1) + ((includeX0Point) ? dx/2. : 0.);
 
 
     // Use  equidistant grid for Y, Z and V
-    pallocate(PRange(NyGlB  , NyGB))(&Y);
+    hpc::allocate(hpc::Range(NyGlB  , NyGB))(&Y);
     for(int y = NyGlB; y <= NyGuB; y++) Y[y] = dy * ( y - NyGC - 1);
-    pallocate(PRange(NzGlB  , NzGB))(&Z);
+    hpc::allocate(hpc::Range(NzGlB  , NzGB))(&Z);
     for(int z = NzGlB; z <= NzGuB; z++) Z[z] = dz * ( z - NzGC - 1);
-    pallocate(PRange(NvGlB  , NvGB))(&V);
+    hpc::allocate(hpc::Range(NvGlB  , NvGB))(&V);
     for(int v = NvGlB; v <= NvGuB; v++) V[v] = -  Lv + dv * ( v - NvGlD);
     
     // M For mu we can choose between linear and Gaussian integration
     // In case of Nm=1 (drift-kinetic, gyro-1st), dm = 1, and M = 0. ! shoudl be automatic ?
-    pallocate(PRange(NmGlB  , NmGB))(&M, &dm);
+    hpc::allocate(hpc::Range(NmGlB  , NmGB))(&M, &dm);
     Integrate integrate("Gauss-Legendre", Nm, 0., Lm);
     for(int m=NmGlD, n=0; m <= NmGuD; m++, n++) { M[m] = (Nm == 1) ? 0. : integrate.x(n) ; dm[m] = (Nm ==1) ? 1. : integrate.w(n); }
 
@@ -235,7 +234,7 @@ Grid::~Grid () {
 
 
 
-void Grid::printOn(ostream &output) const {
+void Grid::printOn(std::ostream &output) const {
     bool do_gyro = Nm > 1 ? true : false;
          output   << " Domain    |  Lx : " << Lx << "  Ly : " << Ly << "  Lz : " << Lz << "  Lv : " << Lv << ((do_gyro) ? std::string("  Lm : ") + Setup::num2str(Lm) : "") << std::endl
                   << " Grid      |  Nx : " << Nx << "  Nky : " << Nky << "  Nz : " << Nz << "  Nv : " << Nv << ((do_gyro) ? std::string("  Nμ : ") + Setup::num2str(Nm) : "") << std::endl;

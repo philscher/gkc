@@ -18,15 +18,17 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
 : fft(_fft), bench(_bench),
 boundary_isclean(true),   parallel(_parallel), grid(_grid), setup(_setup), geo(_geo),
 f0(GKCStorage), f(GKCStorage), fs(GKCStorage), fss(GKCStorage),
-ft(GKCStorage), G(GKCStorage4), Xi(GKCStorage4),    f1(GKCStorage), nonLinearTerms(GKCStorage3)
+ft(GKCStorage), G(GKCStorage4), Xi(GKCStorage4),    f1(GKCStorage) //, nonLinearTerms(GKCStorage3)
 {
 
-   allocate(RxLB, RkyLD, RzLB, RvLB, RmLD, RsLD, f0, f, fss, fs, f1, ft);
+  blitz::allocate(RxLB, RkyLD, RzLB, RvLB, RmLD, RsLD, f0, f, fss, fs, f1, ft);
    
    // for electro-static simulations we don"t need this but overhead
    allocate(RxLB , RkyLD, RzLB, RvLB, G);
    allocate(RxLB4, RkyLD, RzLB, RvLB, Xi);
-   allocate(RxLD , RkyLD, RvLD, nonLinearTerms);
+   //allocate(RxLD , RkyLD, RvLD, nonLinearTerms);
+   
+   hpc::allocate(hpc::Range(NkyLlD,NkyLD), hpc::Range(NxLlD, NxLD), hpc::Range(NvLlD,NvLD))(&nonLinearTerms);
    
    // allocate boundary (mpi) buffers
    allocate(RB  , RkyLD, RzLD, RvLD, RmLD, RsLD, SendXu, SendXl, RecvXu, RecvXl);
@@ -244,7 +246,7 @@ void Vlasov::updateCFL(const Complex dphi_dx, const Complex dphi_dy, const Compl
 
 
 
-void Vlasov::printOn(ostream &output) const
+void Vlasov::printOn(std::ostream &output) const
 {
    output << "Vlasov     | Type : " << equation_type <<  " Non-Linear : " << (nonLinear ? "yes" : "no") << std::endl ;
    output << "Vlasov     | Hyperviscosity [ " ;
