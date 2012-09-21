@@ -12,7 +12,7 @@
  */
 
 #include "Grid.h"
-#include "Parallel.h"
+
 #include "Special/Integrate.h"
 
 

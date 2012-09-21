@@ -21,9 +21,9 @@
 
 #include "Setup.h"
 #include "Grid.h"
-#include "Parallel.h"
+#include "Parallel/Parallel.h"
 #include "Init.h"
-#include "Eigenvalue.h"
+#include "Eigenvalue/Eigenvalue.h"
 #include "Analysis/Benchmark.h"
 #include "Analysis/TestParticle.h"
 #include "Fields.h"

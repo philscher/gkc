@@ -17,7 +17,7 @@
 #include "Global.h"
 
 #include "Setup.h"
-#include "Parallel.h"
+#include "Parallel/Parallel.h"
 #include "Grid.h"
 #include "FFTSolver.h"
 #include "Geometry.h"

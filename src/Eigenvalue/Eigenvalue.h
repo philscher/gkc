@@ -16,13 +16,13 @@
 #define __Eigenvalue_H
 
 #include "Global.h"
-#include "Parallel.h"
+#include "Parallel/Parallel.h"
 #include "Setup.h"
 #include "Control.h"
-#include "Vlasov.h"
-#include "Fields.h"
+#include "Vlasov/Vlasov.h"
+#include "Fields/Fields.h"
 
-#include "Visualization.h"
+#include "Visualization/Visualization.h"
 
 /**
 *    @brief  Interface for eigenvalue calculations

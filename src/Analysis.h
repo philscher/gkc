@@ -17,11 +17,11 @@
 #include "Global.h"
 
 #include "Setup.h"
-#include "Parallel.h"
+#include "Parallel/Parallel.h"
 #include "Grid.h"
-#include "Vlasov.h"
+#include "Vlasov/Vlasov.h"
 #include "FFTSolver.h"
-#include "Geometry.h"
+#include "Geometry/Geometry.h"
 #include "Timing.h"
 #include "Plasma.h"
 

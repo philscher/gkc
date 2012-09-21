@@ -19,19 +19,9 @@
 
 
 #include "Visualization.h"
-
-#include "Global.h"
-#include "Setup.h"
-
-
 #include "Plasma.h"
-
-#include "Vlasov.h"
-#include "Fields.h"
-#include "Timing.h"
-#include "Parallel.h"
+#include "Parallel/Parallel.h"
 #include "FileIO.h"
-#include "Grid.h"
 
 
 /**

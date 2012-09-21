@@ -16,7 +16,7 @@
 
 #include <petscksp.h>
 
-#include "Parallel.h"
+#include "Parallel/Parallel.h"
 
 /**
  *

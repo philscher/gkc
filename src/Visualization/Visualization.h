@@ -20,7 +20,7 @@
 #include "Global.h"
 
 #include "Setup.h"
-#include "Vlasov.h"
+#include "Vlasov/Vlasov.h"
 #include "Fields.h"
 #include "Timing.h"
 #include "Grid.h"

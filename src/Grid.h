@@ -14,12 +14,11 @@
 #ifndef __GRID_H_
 #define __GRID_H_
 
-
-#include "config.h"
-#include "Setup.h"
-#include "Parallel.h"
-#include "Special/Integrate.h"
 #include "Global.h"
+
+#include "Setup.h"
+#include "Parallel/Parallel.h"
+#include "Special/Integrate.h"
 
 #include "FileIO.h"
 

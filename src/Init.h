@@ -21,10 +21,9 @@
 
 
 #include "Grid.h"
-#include "Vlasov.h"
-#include "Geometry.h"
-
-#include "Parallel.h"
+#include "Vlasov/Vlasov.h"
+#include "Geometry/Geometry.h"
+#include "Parallel/Parallel.h"
 
 
 /**

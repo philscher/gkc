@@ -21,7 +21,7 @@
 #include <fstream>
 
 
-#include "Parallel.h"
+#include "Parallel/Parallel.h"
 #include "Setup.h"
 #include "Global.h"
 

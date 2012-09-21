@@ -18,7 +18,7 @@
 #include "Global.h"
 
 #include "Setup.h"
-#include "Parallel.h"
+#include "Parallel/Parallel.h"
 #include "Grid.h"
 #include "Geometry.h"
 #include "FileIO.h"

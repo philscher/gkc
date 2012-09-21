@@ -20,8 +20,8 @@
 #ifndef __GKC_PETSC_MATRIX_VECTOR__H_
 #define __GKC_PETSC_MATRIX_VECTOR__H_
 
-#include "Vlasov.h"
-#include "Fields.h"
+#include "Vlasov/Vlasov.h"
+#include "Fields/Fields.h"
 #include "Grid.h"
 
 #include "petsc.h"

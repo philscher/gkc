@@ -15,14 +15,14 @@
 #define __VLASOV_H
 
 #include "Global.h"
-#include "Parallel.h"
+#include "Parallel/Parallel.h"
 #include "Setup.h"
-#include "Fields.h"
+#include "Fields/Fields.h"
 #include "Grid.h"
 #include "FFTSolver.h"
 #include "Analysis/Benchmark.h"
 
-#include "Collisions.h"
+#include "Collisions/Collisions.h"
 
 
 

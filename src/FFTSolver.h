@@ -15,10 +15,10 @@
 #define __FFTSolver_H
 
 #include "Global.h"
-#include "Parallel.h"
+#include "Parallel/Parallel.h"
 #include "Setup.h"
 #include "config.h"
-#include "Geometry.h"
+#include "Geometry/Geometry.h"
 
 
 
