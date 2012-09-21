@@ -18,16 +18,13 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
 : fft(_fft), bench(_bench),
 boundary_isclean(true),   parallel(_parallel), grid(_grid), setup(_setup), geo(_geo),
 f0(GKCStorage), f(GKCStorage), fs(GKCStorage), fss(GKCStorage),
-ft(GKCStorage), G(GKCStorage4), Xi(GKCStorage4),    f1(GKCStorage) //, nonLinearTerms(GKCStorage3)
+ft(GKCStorage),   f1(GKCStorage) 
 {
 
   blitz::allocate(RxLB, RkyLD, RzLB, RvLB, RmLD, RsLD, f0, f, fss, fs, f1, ft);
    
-   // for electro-static simulations we don"t need this but overhead
-   allocate(RxLB , RkyLD, RzLB, RvLB, G);
-   allocate(RxLB4, RkyLD, RzLB, RvLB, Xi);
-   //allocate(RxLD , RkyLD, RvLD, nonLinearTerms);
-   
+   nct::allocate(nct::Range(NzLlB,NzLB), nct::Range(NkyLlB,NkyLB), nct::Range(NxLlB-2, NxLB+4), nct::Range(NvLlB,NvLB))(&Xi);
+   nct::allocate(nct::Range(NzLlB,NzLB), nct::Range(NkyLlB,NkyLB), nct::Range(NxLlB  , NxLB  ), nct::Range(NvLlB,NvLB))(&G );
    nct::allocate(nct::Range(NkyLlD,NkyLD), nct::Range(NxLlD, NxLD), nct::Range(NvLlD,NvLD))(&nonLinearTerms);
    
    // allocate boundary (mpi) buffers

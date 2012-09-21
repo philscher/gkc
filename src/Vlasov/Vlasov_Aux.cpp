@@ -3,16 +3,12 @@
  *
  *       Filename:  Vlasov_2D.cpp
  *
- *    Description:  
+ *    Description: Vlasov Solver Implementation for 2D Geometry
+ *                 or other special types.
  *
- *        Version:  1.0
- *        Created:  09/01/2012 04:06:01 PM
- *       Revision:  none
- *       Compiler:  gcc
+ *         Author: Paul P. Hilscher (2009-), 
  *
- *         Author:  YOUR NAME (), 
- *        Company:  
- *
+ *        License: GPLv3+
  * =====================================================================================
  */
 
@@ -24,7 +20,7 @@ VlasovAux::VlasovAux(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fi
 : VlasovCilk(_grid, _parallel, _setup, fileIO, _geo, fft, _bench) 
 {
 
-  // Cast to two dimwnsional geometry module (to access k_\parallel)
+  // Cast to two dimensional geometry module (to access k_\parallel)
   geo = static_cast<Geometry2D*>(Vlasov::geo);
 
 }
@@ -45,7 +41,7 @@ int VlasovAux::solve(std::string equation_type, Fields *fields, Array6C f_in, Ar
       Vlasov_EM    ((A6zz) f_in.dataZero(), (A6zz) f_out.dataZero(), (A6zz) f0.dataZero(), (A6zz) f.dataZero(),
                    (A6zz) ft.dataZero(), (A5zz) fields->phi.dataZero(), (A5zz) fields->Ap.dataZero(),
                    (A5zz) fields->Bp.dataZero(), (A3zz) nonLinearTerms,
-                   (A4zz) Xi.dataZero(), (A4zz) G.dataZero(), X, V, M, dt, rk_step, rk);
+                   (A4zz) Xi, (A4zz) G, X, V, M, dt, rk_step, rk);
 
   else if(equation_type == "2D_Island") 
     

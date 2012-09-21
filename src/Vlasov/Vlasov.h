@@ -170,7 +170,7 @@ class Vlasov : public IfaceGKC {
    *    Please Document Me !
    *
    **/
-   Array4C G, Xi;
+   CComplex *G, *Xi;
 
    /**
    *    Please Document Me !

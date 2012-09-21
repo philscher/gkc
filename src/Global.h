@@ -228,7 +228,6 @@ extern Plasma *plasma;
 
 
 extern blitz::GeneralArrayStorage<6> GKCStorage;
-extern blitz::GeneralArrayStorage<4> GKCStorage4;
 
 
 typedef CComplex(*A6zz)[][][][][];

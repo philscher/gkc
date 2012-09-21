@@ -41,8 +41,6 @@
 
 
 blitz::GeneralArrayStorage<6> GKCStorage;
-blitz::GeneralArrayStorage<4> GKCStorage4;
-//blitz::GeneralArrayStorage<3> GKCStorage3;
 
 // TODO : Linux uses UTF-8 encoding for chars per default, Windows not, how to deal with unicode ?
 
@@ -52,14 +50,6 @@ GKC::GKC(Setup *_setup) : setup(_setup)  {
     GKCStorage.ordering() = blitz::fourthDim, blitz::firstDim, blitz::secondDim,  blitz::thirdDim,  blitz::fifthDim, blitz::sixthDim; 
     GKCStorage.base()     = NxLlB, NkyLlD, NzLlB, NvLlB, NmLlB, NsLlB;
     
-    // define Storage for gkc (used by blitz++ arrays)
-    GKCStorage4.ordering() = blitz::fourthDim, blitz::firstDim, blitz::secondDim, blitz::thirdDim; 
-    GKCStorage4.base()     = NxLlB, NkyLlD, NzLlB, NvLlB;
-    
-//    GKCStorage3.ordering() = blitz::thirdDim, blitz::firstDim, blitz::secondDim; 
-//    GKCStorage3.base()     = NxLlB, NkyLlD, NvLlB;
-
-
     // Read Setup 
     std::string fft_solver_name = setup->get("Helios.FFTSolver", "fftw3");
     std::string psolver_type    = setup->get("Fields.Solver", "DFT");

@@ -45,8 +45,6 @@ int NvGlD, NvGuD, NvGlB, NvGuB;
 int NmGlD, NmGuD, NmGlB, NmGuB; 
 int NsGlD, NsGuD, NsGlB, NsGuB; 
 
-//Array1R X, Y, Z, V, M;
-//Array1R X, Y, V;
 double *X, *Y, *V, *M, *Z;
 
   double Lx, Ly, Lz, Lv, Lm;
