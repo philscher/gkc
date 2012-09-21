@@ -19,7 +19,7 @@
 #include "Setup.h"
 #include "Fields/Fields.h"
 #include "Grid.h"
-#include "FFTSolver.h"
+#include "FFTSolver/FFTSolver.h"
 #include "Analysis/Benchmark.h"
 
 #include "Collisions/Collisions.h"

@@ -26,12 +26,12 @@
 // 2D interpolation
 
 class Interpolate {
-    Array2d A;
-    Array1d Xa,Ya;
+    Array2R A;
+    Array1R Xa,Ya;
 
     std::string type;
   public:
-    Interpolate(Array1d _X, Array1d _Y, Array2d _A, Setup *setup, std::string interpol = "Linear") : type(interpol) {
+    Interpolate(Array1R _X, Array1R _Y, Array2R _A, Setup *setup, std::string interpol = "Linear") : type(interpol) {
 
 
 
@@ -71,8 +71,8 @@ class Interpolate {
     double getValue(const double x, const double y, const double z=0.) {
 
 
-          const int nx = getPosX(x);
-          const int ny = getPosY(y);
+          const int nx = getPosX[x];
+          const int ny = getPosY[y];
 
     
           // Bi-Linear Interpolation

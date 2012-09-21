@@ -17,18 +17,18 @@
 #include "Global.h"
 
 #include "Setup.h"
-#include "Parallel.h"
+#include "Parallel/Parallel.h"
 #include "Grid.h"
-#include "Geometry.h"
+#include "Geometry/Geometry.h"
 
 #include "FileIO.h"
 
 #include "Timing.h"
 #include "Plasma.h"
 
-#include "Vlasov.h"
+#include "Vlasov/Vlasov.h"
 #include "Vlasov/Vlasov_Cilk.h"
-#include "Fields.h"
+#include "Fields/Fields.h"
 
 
 /**

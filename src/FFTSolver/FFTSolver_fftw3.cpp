@@ -2,15 +2,15 @@
  * =====================================================================================
  *
  *       Filename:  FFTSolver_fftw3.cpp
- *    Description:  
- *        Version:  0.1
+ *    Description:  Fourier Solver implementation for fftw3-mpi 
+ *                  see www.fftw.org
  *         Author:  Paul P. Hilscher (2009, 2011), 
  *
  * =====================================================================================
  */
 
 
-#include "FFTSolver_fftw3.h"
+#include "FFTSolver/FFTSolver_fftw3.h"
 #include "Plasma.h"
 
 #include <fftw3-mpi.h>

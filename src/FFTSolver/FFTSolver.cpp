@@ -11,7 +11,7 @@
  * =====================================================================================
  */
 
-#include "FFTSolver.h"
+#include "FFTSolver/FFTSolver.h"
 
 int FFTSolver::X_NkxL;
 

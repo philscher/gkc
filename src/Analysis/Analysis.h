@@ -20,7 +20,7 @@
 #include "Parallel/Parallel.h"
 #include "Grid.h"
 #include "Vlasov/Vlasov.h"
-#include "FFTSolver.h"
+#include "FFTSolver/FFTSolver.h"
 #include "Geometry/Geometry.h"
 #include "Timing.h"
 #include "Plasma.h"

@@ -1,22 +1,23 @@
 bin_PROGRAMS = gkc
 
-gkc_SOURCES = main.cpp GKC.cpp FileIO.cpp Fields.cpp Fields/FieldsFFT.cpp Setup.cpp Grid.cpp  \
-                 Parallel.cpp Vlasov.cpp Event.cpp\
-                 Collisions.cpp  Vlasov/Vlasov_Cilk.cpp Vlasov/Vlasov_Aux.cpp Vlasov/Vlasov_Optim.cpp Analysis.cpp  Init.cpp Control.cpp\
-                 Plasma.cpp Special/LA.cpp Timing.cpp TestParticle.cpp TimeIntegration.cpp \
-                FFTSolver.cpp Transport.cpp Visualization/Visualization_Data.cpp Benchmark.cpp
+gkc_SOURCES = main.cpp GKC.cpp FileIO.cpp Fields/Fields.cpp Fields/FieldsFFT.cpp Setup.cpp Grid.cpp  \
+                 Parallel/Parallel.cpp Vlasov/Vlasov.cpp Analysis/Event.cpp\
+                 Collisions/Collisions.cpp  Vlasov/Vlasov_Cilk.cpp Vlasov/Vlasov_Aux.cpp Vlasov/Vlasov_Optim.cpp Analysis/Analysis.cpp  Init.cpp Control.cpp\
+                 Plasma.cpp Special/LA.cpp Timing.cpp Analysis/TestParticle.cpp TimeIntegration/TimeIntegration.cpp \
+                FFTSolver/FFTSolver.cpp Visualization/Visualization_Data.cpp Analysis/Benchmark.cpp
  
+AUTOMAKE_OPTIONS = subdir-objects
 # compile FFT
-gkc_SOURCES += external/FunctionParser/fparser.cc
+gkc_SOURCES += external/FunctionParser/fparser.cc external/SFL/SFL.cpp
 
-AM_CPPFLAGS     = -ggdb -O3 -Wall -Wno-unknown-pragmas  -I$(DIR_HDF5)/include/ -I$(DIR_BLITZ)/include -I./external  -I./FFT -I./Geometry -I./Special -I./TimeIntegration -I./Fields
+AM_CPPFLAGS     = -ggdb -O3 -Wall -Wno-unknown-pragmas  -I$(DIR_HDF5)/include/ -I$(DIR_BLITZ)/include -I./external  -I./FFTSolver -I./Geometry -I./Special -I./TimeIntegration -I./Fields
 gkc_LDFLAGS  = -L$(DIR_HDF5)/lib/ -L$(DIR_BLITZ)/lib
 gkc_LDADD    =   -lblitz $(DIR_HDF5)/lib/libhdf5_hl.a $(DIR_HDF5)/lib/libhdf5.a  -lz 
  
 EXTRA_DIST      =  GKC.h FileIO.h Vlasov/Vlasov_Cilk.h Vlasov/Vlasov_Aux.h Vlasov/Vlasov_Optim.h Vlasov.h Fields.h Fields/FieldsFFT.h\
-                   Fields/FieldsFEM.h Setup.h Grid.h Parallel.h Init.h \
-              Global.h Setup.h Analysis.h  Collisions.h Geometry  FFTSolver.h FEM/FEMSolver.h Fourier.h FunctionParser \
-              gkc.doxygen  Plasma.h FFT/ Timing.h Integration.h Special/GaussWeights.h Control.h Geometry.h Benchmark.h \
+                    Setup.h Grid.h Parallel.h Init.h \
+              Global.h Setup.h Analysis.h  Collisions.h Geometry  FFTSolver.h Fourier.h FunctionParser \
+              gkc.doxygen  Plasma.h FFTSolver/ Timing.h Integration.h Special/GaussWeights.h Control.h Geometry.h Analysis/Benchmark.h \
               external/SHDF5/FileAttr.h external/SHDF5/TableAttr.h TimeIntegration.h Visualization.h Special/LA.h Special/HermitePoly.h
 
 
@@ -83,7 +84,7 @@ gkc_LDADD += -L/home/philscher/Science/Packages/intel/lib/intel64  -liomp5 -lsvm
 if FFTW3
 
 AM_CPPFLAGS    += -I$(DIR_FFTW3)/include
-gkc_SOURCES +=  FFT/FFTSolver_fftw3.cpp 
+gkc_SOURCES +=  FFTSolver/FFTSolver_fftw3.cpp 
 gkc_LDADD   += -L$(DIR_FFTW3)/lib -lfftw3
 gkc_LDADD   += -lfftw3_omp
 

@@ -455,7 +455,7 @@ void MonotCubicInterpolator::chopFlatEndpoints(const double epsilon) {
            (fabs(xf_iterator->second - xf_next_iterator->second) < epsilon )) {
         xf_next_iterator++;
         data.erase(xf_iterator);
-	xf_iterator++;
+   xf_iterator++;
     }
 
     xf_iterator = data.end(); 
@@ -467,7 +467,7 @@ void MonotCubicInterpolator::chopFlatEndpoints(const double epsilon) {
            (fabs(xf_iterator->second - xf_next_iterator->second) < epsilon )) {
         xf_next_iterator--;
         data.erase(xf_iterator);
-	xf_iterator--;
+   xf_iterator--;
     }
     
     // Finished chopping, so recompute function data:

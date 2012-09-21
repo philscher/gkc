@@ -20,7 +20,7 @@
 #include "FieldsFFT.h"
 #include "FieldsHermite.h"
 
-#include "FFT/FFTSolver_fftw3.h"
+#include "FFTSolver/FFTSolver_fftw3.h"
 
 #include "TimeIntegration.h"
 #include "TimeIntegration_PETSc.h"

@@ -17,10 +17,10 @@
 #include "Global.h"
 
 #include "Setup.h"
-#include "Parallel/Parallel.h"
 #include "Grid.h"
-#include "FFTSolver.h"
-#include "Geometry.h"
+#include "Parallel/Parallel.h"
+#include "FFTSolver/FFTSolver.h"
+#include "Geometry/Geometry.h"
 #include "Fields.h"
 
 

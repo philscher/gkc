@@ -22,7 +22,7 @@
 #include "Global.h"
 
 #include "Setup.h"
-#include "Parallel.h"
+#include "Parallel/Parallel.h"
 #include "FileIO.h"
 #include "Timing.h"
 

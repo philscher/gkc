@@ -17,7 +17,7 @@
 #include "Global.h"
 #include "Setup.h"
 #include "Parallel/Parallel.h"
-#include "Analysis.h"
+#include "Analysis/Analysis.h"
 
 
 extern int control_triggered_signal;

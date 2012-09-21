@@ -19,9 +19,9 @@
 #include "Setup.h"
 #include "FileIO.h"
 
-#include "Parallel.h"
-#include "Vlasov.h"
-#include "Fields.h"
+#include "Parallel/Parallel.h"
+#include "Vlasov/Vlasov.h"
+#include "Fields/Fields.h"
 
 #include "Special/Vector3D.h"
 

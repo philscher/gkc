@@ -19,8 +19,7 @@
 #ifndef __FFTW3_H
 #define __FFTW3_H
 
-#include "FFTSolver.h"
-//#include "Geometry.h"
+#include "FFTSolver/FFTSolver.h"
 
 
 /**
