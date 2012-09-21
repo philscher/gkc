@@ -28,7 +28,7 @@ ft(GKCStorage), G(GKCStorage4), Xi(GKCStorage4),    f1(GKCStorage) //, nonLinear
    allocate(RxLB4, RkyLD, RzLB, RvLB, Xi);
    //allocate(RxLD , RkyLD, RvLD, nonLinearTerms);
    
-   hpc::allocate(hpc::Range(NkyLlD,NkyLD), hpc::Range(NxLlD, NxLD), hpc::Range(NvLlD,NvLD))(&nonLinearTerms);
+   nct::allocate(nct::Range(NkyLlD,NkyLD), nct::Range(NxLlD, NxLD), nct::Range(NvLlD,NvLD))(&nonLinearTerms);
    
    // allocate boundary (mpi) buffers
    allocate(RB  , RkyLD, RzLD, RvLD, RmLD, RsLD, SendXu, SendXl, RecvXu, RecvXl);

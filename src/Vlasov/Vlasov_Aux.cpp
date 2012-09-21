@@ -19,21 +19,6 @@
 #include "Vlasov/Vlasov_Aux.h"
 
 
-// Replace asap with C99 function or so
-/*
-extern CComplex conj(CComplex c) {
-   
-     struct _Z{ double re; double im; };
-
-     _Z *a = (_Z*) &c ;
-     a->im = - a->im;
-
-    return c; 
-};
-*/
-
-
-
   
 VlasovAux::VlasovAux(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *fft, Benchmark *_bench)    
 : VlasovCilk(_grid, _parallel, _setup, fileIO, _geo, fft, _bench) 

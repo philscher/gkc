@@ -69,7 +69,7 @@ class Geometry2D : public Geometry
     check(((By_parser.Parse(By_str, "x") == -1) ? 1 : -1), DMESG("Parsing error of shear condition"));
 
     //By.resize(Range(NxGlD, NxGuD));
-    hpc::allocate(hpc::Range(NxLlD, NxLD))(&By);
+    nct::allocate(nct::Range(NxLlD, NxLD))(&By);
     //for(int x=NxGlD; x <= NxGuD; x++) By[x] = By_parser.Eval(&X[x]) ;
     for(int x=NxLlD; x <= NxLuD; x++) By[x] = By_parser.Eval(&X[x]) ;
 
