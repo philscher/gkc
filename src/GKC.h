@@ -27,13 +27,12 @@
 #include "Control.h"
 #include "Timing.h"
 #include "Visualization.h"
-#include "Event.h"
 #include "Eigenvalue.h"
-#include "TestParticle.h"
 #include "TimeIntegration.h"
-#include "Transport.h"
 #include "Geometry.h"
-#include "Benchmark.h"
+#include "Analysis/Benchmark.h"
+#include "Analysis/Event.h"
+#include "Analysis/TestParticle.h"
 
 #include "config.h"
 

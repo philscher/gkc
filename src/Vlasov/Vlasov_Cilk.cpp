@@ -14,7 +14,6 @@
 
 
 #include "Vlasov_Cilk.h"
-#include "Benchmark.h"
 
 
 VlasovCilk::VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *fft, Benchmark *_bench)    

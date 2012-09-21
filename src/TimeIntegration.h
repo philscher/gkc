@@ -19,13 +19,13 @@
 #ifndef TIMEINTEGRATION_H__
 #define TIMEINTEGRATION_H__
 
-#include "TestParticle.h"
 #include "Setup.h"
 #include "Grid.h"
 #include "Parallel.h"
 #include "Init.h"
 #include "Eigenvalue.h"
-#include "Benchmark.h"
+#include "Analysis/Benchmark.h"
+#include "Analysis/TestParticle.h"
 #include "Fields.h"
 
 /**
