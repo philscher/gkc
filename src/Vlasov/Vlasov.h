@@ -231,34 +231,6 @@ class Vlasov : public IfaceGKC {
    **/
    CComplex *nonLinearTerms; 
 
-   /**
-   *
-   *
-   *   Updated the CFL (Courant-Friedrich-Levy number). For explicit time-stepening
-   *   the CFL value has to be always < 1 to ensure stability of the system
-   *   (practically < 0.4).
-   *   
-   *   Note : Stability is still not guranteed. As the system is unstable. Thus the
-   *          time-steppening scheme needs to allows imaginary values e.g.
-   *          (RK-3, RK-4, Heun method).
-   *
-   *   Calculated using ....
-   *
-   *   This needs only to be caluclated in the non-linear terms
-   *
-   *  @note get linking error if defined inline. Check Performance !
-   *
-   *  @depracated This is not done direclty in the non-linear term
-   **/
-   /*
-   void inline updateCFL(const Complex dphi_dx, const Complex dphi_dy, const Complex dphi_dz)
-{
-  Xi_max[DIR_X] = max(Xi_max[DIR_X], abs(dphi_dx));
-  Xi_max[DIR_Y] = max(Xi_max[DIR_Y], abs(dphi_dy));
-  Xi_max[DIR_Z] = max(Xi_max[DIR_Z], abs(dphi_dz));
-};
- */
- 
  protected :
 
    /**

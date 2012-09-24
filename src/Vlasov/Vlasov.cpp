@@ -225,21 +225,6 @@ void Vlasov::initDataOutput(FileIO *fileIO) {
   H5Gclose(psfGroup);
 }
 
-/*
-// Fix it ! 
- // update only from non-linear term (df1_dv)
-void Vlasov::updateCFL(const Complex dphi_dx, const Complex dphi_dy, const Complex dphi_dz)
-{
-  Xi_max(DIR_X) = max(Xi_max(DIR_X), abs(dphi_dx));
-  Xi_max(DIR_Y) = max(Xi_max(DIR_Y), abs(dphi_dy));
-  Xi_max(DIR_Z) = max(Xi_max(DIR_Z), abs(dphi_dz));
-};
- 
- * */
-
-
-
-
 
 
 
