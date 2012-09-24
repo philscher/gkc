@@ -200,7 +200,7 @@ void Analysis::getNumberDensity(const  CComplex f[NsLB][NmLB][NzLB][NkyLB][NxLB]
 
     }}} }} 
 
-    parallel->collect(&D[NsLlD][NzLlD][NkyLlD][NxLlD], OP_SUM, NsLD * NzLD * NkyLD * NxLD, DIR_VM);
+    parallel->collect(&D[NsLlD][NzLlD][NkyLlD][NxLlD], OP_SUM, DIR_VM, NsLD * NzLD * NkyLD * NxLD);
 
     return;
 };

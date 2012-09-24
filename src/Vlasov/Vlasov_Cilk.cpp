@@ -115,8 +115,6 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
         fft->solve(FFT_Y_FIELDS, FFT_BACKWARD, xky_Xi, &xy_Xi[4][0]);
        
         // Set Periodic-Boundary in Y (in X is not necessary as we transform it too)
-        //xy_Xi[0     :4][:] =  xy_Xi[NyLD-1:4][:];
-        //xy_Xi[NyLD+3:4][:] =  xy_Xi[4     :4][:];
         xy_Xi[0     :4][:] =  xy_Xi[NyLD  :4][:];
         xy_Xi[NyLD+4:4][:] =  xy_Xi[4     :4][:];
 
@@ -143,8 +141,6 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
         fft->solve(FFT_Y_PSF, FFT_BACKWARD, (CComplex *) xky_f1, &xy_f1[2][0]);
 
         // Boundary in Y (In X is not necessary as we transformed it too), take care of FFT-boundary conditions
-        //xy_f1[0     :2][:] =  xy_f1[NyLD-1:2][:];
-        //xy_f1[NyLD+1:2][:] =  xy_f1[2     :2][:];
         xy_f1[0     :2][:] =  xy_f1[NyLD  :2][:];
         xy_f1[NyLD+2:2][:] =  xy_f1[2     :2][:];
 

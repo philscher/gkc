@@ -17,11 +17,22 @@
 Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *_fft, Benchmark *_bench)
 : fft(_fft), bench(_bench),
 boundary_isclean(true),   parallel(_parallel), grid(_grid), setup(_setup), geo(_geo),
-f0(GKCStorage), f(GKCStorage), fs(GKCStorage), fss(GKCStorage),
-ft(GKCStorage),   f1(GKCStorage) 
+f0(GKCStorage), f(GKCStorage), fs(GKCStorage), fss(GKCStorage), ft(GKCStorage),   f1(GKCStorage), 
+
+SendXu(GKCStorage), SendXl(GKCStorage),  RecvXu(GKCStorage), RecvXl(GKCStorage),
+SendYu(GKCStorage), SendYl(GKCStorage),  RecvYu(GKCStorage), RecvYl(GKCStorage),
+SendZu(GKCStorage), SendZl(GKCStorage),  RecvZu(GKCStorage), RecvZl(GKCStorage),
+SendVu(GKCStorage), SendVl(GKCStorage),  RecvVu(GKCStorage), RecvVl(GKCStorage)
+
+
 {
 
-  blitz::allocate(RxLB, RkyLD, RzLB, RvLB, RmLD, RsLD, f0, f, fss, fs, f1, ft);
+   //ArrayPhase = nct::allocate(nct::Range(NsLlD , NsLD ), nct::Range(NmLlD, NmLD), nct::Range(NzLlB, NzLB), 
+   //                           nct::Range(NkyLlD, NkyLB), nct::Range(NxLlB, NxLB), nct::Range(NvLlB, NvLB));
+   //ArrayPhase(&f0, &f, &fss, &fs, &f1, &ft);
+  
+   
+   blitz::allocate(RxLB, RkyLD, RzLB, RvLB, RmLD, RsLD, f0, f, fss, fs, f1, ft);
    
    nct::allocate(nct::Range(NzLlB,NzLB), nct::Range(NkyLlB,NkyLB), nct::Range(NxLlB-2, NxLB+4), nct::Range(NvLlB,NvLB))(&Xi);
    nct::allocate(nct::Range(NzLlB,NzLB), nct::Range(NkyLlB,NkyLB), nct::Range(NxLlB  , NxLB  ), nct::Range(NvLlB,NvLB))(&G );
@@ -58,9 +69,10 @@ int Vlasov::solve(Fields *fields, Array6C  _fs, Array6C  _fss, double dt, int rk
 {
 
    // use static function
-   useNonBlockingBoundary = false; 
+   
+   useNonBlockingBoundary =  false; 
    // Need boundary_isclean to avoid deadlock at first iteration
-   if((boundary_isclean == false) && useNonBlockingBoundary) setBoundary(f_boundary, BOUNDARY_RECV);
+   if((boundary_isclean == false) && useNonBlockingBoundary) setBoundary(f_boundary, Boundary::RECV);
   
    Xi_max[:] = 0.; // Needed to calculate CFL time step 
    
@@ -68,7 +80,7 @@ int Vlasov::solve(Fields *fields, Array6C  _fs, Array6C  _fss, double dt, int rk
 
 
    // Note : we have non-blocking boundaries as Poisson solver does not require ghosts
-   (useNonBlockingBoundary) ? setBoundary(_fss, BOUNDARY_SEND) :  setBoundary(_fss, BOUNDARY_SENDRECV); 
+   (useNonBlockingBoundary) ? setBoundary(_fss, Boundary::SEND) :  setBoundary(_fss, Boundary::SENDRECV); 
 
    f_boundary.reference(_fss); boundary_isclean = false;
   
@@ -77,11 +89,11 @@ int Vlasov::solve(Fields *fields, Array6C  _fs, Array6C  _fss, double dt, int rk
 
 void Vlasov::setBoundary(Array6C A) 
 { 
-  setBoundary(A, BOUNDARY_SENDRECV); 
+  setBoundary(A, Boundary::SENDRECV); 
 };
 
 
-void Vlasov::setBoundary(Array6C A, int boundary_type)
+void Vlasov::setBoundary(Array6C A, Boundary boundary_type)
 {
 
 
@@ -92,18 +104,16 @@ void Vlasov::setBoundary(Array6C A, int boundary_type)
          CComplex SendZl[NsLD][NmLD][GC2 ][NkyLD][NxLD][NvLD], CComplex SendZu[NsLD][NmLD][GC2 ][NkyLD][NxLD][NvLD],
          CComplex RecvZl[NsLD][NmLD][GC2 ][NkyLD][NxLD][NvLD], CComplex RecvZu[NsLD][NmLD][GC2 ][NkyLD][NxLD][NvLD],
          CComplex SendVl[NsLD][NmLD][NzLD][NkyLD][NxLD][GC2 ], CComplex SendVu[NsLD][NmLD][NvLD][NkyLD][NxLD][GC2 ],
-         CComplex RecvVl[NsLD][NmLD][NzLD][NkyLD][NxLD][GC2 ], CComplex RecvVu[NsLD][NmLD][NvLD][NkyLD][NxLD][GC2 ],
-         int boundary_type)
+         CComplex RecvVl[NsLD][NmLD][NzLD][NkyLD][NxLD][GC2 ], CComplex RecvVu[NsLD][NmLD][NvLD][NkyLD][NxLD][GC2 ])
 {
 
   /////////////////////////// Send Boundaries //////////////////////////////
-  if(!(boundary_type & BOUNDARY_SEND)) {
-
+  if(boundary_type & Boundary::SEND) {
 
    // X-Boundary (Note, we may have different boundaries for global simulations)
    SendXl[:][:][:][:][:][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD  :2][NvLlD:NvLD];
    SendXu[:][:][:][:][:][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLuD-1:2][NvLlD:NvLD];
-   parallel->updateNeighbours(Vlasov::SendZu, Vlasov::SendZl, Vlasov::RecvZu,Vlasov::RecvZl, DIR_Z);
+   parallel->updateNeighbours(Vlasov::SendXu, Vlasov::SendXl, Vlasov::RecvXu,Vlasov::RecvXl, DIR_X);
   
    // We do not domain decompose poloidal (y) fourier modes, thus boundaries not required
   
@@ -136,10 +146,10 @@ void Vlasov::setBoundary(Array6C A, int boundary_type)
   }
 
   /////////////////////////// Receive Boundaries //////////////////////////////
-  else if(!(boundary_type & BOUNDARY_RECV))
+  else if(boundary_type & Boundary::RECV)
   {
  
-    // Get boundaries
+    // Wait until boundaries are communicated
      parallel->updateNeighboursBarrier();
    
    // Set boundary in X (take care of Neumann boundary ?!) 
@@ -165,10 +175,10 @@ void Vlasov::setBoundary(Array6C A, int boundary_type)
   
   }
 
-}  ((A6zz) A.dataZero(),  (A6zz) SendXl.data(),  (A6zz) SendXu.data(),  (A6zz) RecvXl.data(),  (A6zz) RecvXu.data(),
-                   (A6zz) SendZl.data(),  (A6zz) SendZu.data(),  (A6zz) RecvZl.data(),  (A6zz) RecvZu.data(),
-                   (A6zz) SendVl.data(),  (A6zz) SendVu.data(),  (A6zz) RecvVl.data(),  (A6zz) RecvVu.data(),
-     boundary_type);
+}  ((A6zz) A.dataZero(), 
+    (A6zz) SendXl.data(),  (A6zz) SendXu.data(),  (A6zz) RecvXl.data(),  (A6zz) RecvXu.data(),
+    (A6zz) SendZl.data(),  (A6zz) SendZu.data(),  (A6zz) RecvZl.data(),  (A6zz) RecvZu.data(),
+    (A6zz) SendVl.data(),  (A6zz) SendVu.data(),  (A6zz) RecvVl.data(),  (A6zz) RecvVu.data());
 
 
 
@@ -185,7 +195,8 @@ double Vlasov::getMaxTimeStep(int dir, const double maxCFL)
    
   if     (dir == DIR_X  ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_X]/dx, OP_MAX));
   else if(dir == DIR_Y  ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_Y]/dy, OP_MAX));
-  if     (dir == DIR_XY ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_X]/dy + Xi_max[DIR_Y]/dx, OP_MAX));
+  //if     (dir == DIR_XY ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_X]/dy + Xi_max[DIR_Y]/dx, OP_MAX));
+  if     (dir == DIR_XY ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_X] / dy + Xi_max[DIR_Y]/dx, OP_MAX));
   else if(dir == DIR_Z  ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_Z]/dz, OP_MAX));
   else if(dir == DIR_V  ) dt =  maxCFL / (v_scale * Lv/(sqrt(geo->eps_hat) * dz));
   else if(dir == DIR_ALL) dt =  maxCFL / parallel->collect(Xi_max[DIR_Y]/dx + Xi_max[DIR_X]/dy +  
