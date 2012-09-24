@@ -161,7 +161,7 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
          const char *species_names[] = { "Name"                  , "Charge"             , "Mass"               , "Density"            , "w_T"                  , "w_n"                  , "Collision"                   };
 
          // Note : +1 for adiabatic species
-         check(H5TBmake_table("SpeciesTable", fileIO->getFileID(), "Species", (hsize_t) SPECIES_MAX+1, (hsize_t) 0, sizeof(Species), (const char**) species_names,
+         check(H5TBmake_table("SpeciesTable", fileIO->getFileID(), "Species", (hsize_t) 7, (hsize_t) 0, sizeof(Species), (const char**) species_names,
                                species_offset, species_type, 32, NULL, 0, &species[0] ), DMESG("H5Tmake_table : Species"));
         
          // create table for all included species
