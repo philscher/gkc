@@ -38,9 +38,6 @@ class Visualization_Data : public Visualization {
 
    FileAttr *FA_slphi, *FA_slAp, *FA_slBp, *FA_sldn, *FA_sln, *FA_slT, *FA_slphiTime, *FA_slF1, *FA_slF1Time, *FA_XV ;
   
-   Array3C V3;
-   Array3C ArrXV;
-
    bool visXV;
 
   public:

@@ -106,7 +106,7 @@ public:
    //    int load(Vlasov *vlasov, Fields *fields);
 
    double getOutputMaxTimeStep(Timing timing, double dt);
-   hid_t  newGroup(hid_t parentNode, std::string name);
+   hid_t  newGroup(std::string name, hid_t parentNode=-2);
         
    FileAttr *newTiming(hid_t group, hsize_t offset=0, bool write=1);
 

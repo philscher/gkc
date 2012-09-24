@@ -332,9 +332,9 @@ double FileIO::getOutputMaxTimeStep(Timing timing, double dt) {
 
 }
     
-hid_t  FileIO::newGroup(hid_t parentNode, std::string name)
+hid_t  FileIO::newGroup(std::string name, hid_t parentNode)
 {
-      
+      if (parentNode == -2) parentNode = getFileID();
       hid_t newGroup = check(H5Gcreate(parentNode, name.c_str(),H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Spectrum : H5Gcreate"));
       return newGroup;
 

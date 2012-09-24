@@ -372,14 +372,14 @@ Array2C Analysis::getSpectrum(unsigned int dir) {
 
 void Analysis::initDataOutput(Setup *setup, FileIO *fileIO) {
         
-     analysisGroup = fileIO->newGroup(fileIO->getFileID(), "/Analysis");
+     analysisGroup = fileIO->newGroup("Analysis");
         
      hsize_t offset0[] = { 0, 0, 0, 0, 0, 0, 0 };
     
      //###################################### Analysis - Heat fluxes ################################
      
      // Heat Flux ky and Particle FluxKy ( per species) 
-     hid_t fluxGroup = fileIO->newGroup(analysisGroup, "Flux");
+     hid_t fluxGroup = fileIO->newGroup("Flux", analysisGroup);
      
      hsize_t FSky_dim[]       = { plasma->nfields, Nky, Ns  , 1 }; 
      hsize_t FSky_maxdim[]    = { plasma->nfields, Nky, Ns  , H5S_UNLIMITED} ;
@@ -417,7 +417,7 @@ void Analysis::initDataOutput(Setup *setup, FileIO *fileIO) {
 
      //###################################### Power Spectrum  ################################################
      // X-scalarValue
-      hid_t growGroup = fileIO->newGroup(analysisGroup, "PowerSpectrum");
+      hid_t growGroup = fileIO->newGroup("PowerSpectrum", analysisGroup);
 
      hsize_t grow_x_dim[]       = { plasma->nfields, Nx/2+1, 1 }; 
      hsize_t grow_x_maxdim[]    = { plasma->nfields, Nx/2+1, H5S_UNLIMITED} ;
@@ -438,7 +438,7 @@ void Analysis::initDataOutput(Setup *setup, FileIO *fileIO) {
      H5Gclose(growGroup);
      
      
-     hid_t freqGroup = fileIO->newGroup(analysisGroup, "PhaseShift");
+     hid_t freqGroup = fileIO->newGroup("PhaseShift", analysisGroup);
      FA_freq_x  = new FileAttr("X", freqGroup, 3, grow_x_dim, grow_x_maxdim, grow_x_chunkdim, offset0,  grow_x_chunkBdim, offset0, parallel->myRank == 0);
      FA_freq_y  = new FileAttr("Y", growGroup, 3, grow_y_dim, grow_y_maxdim, grow_y_chunkdim, offset0,  grow_y_chunkBdim, offset0, parallel->myRank == 0);
      FA_freq_t  = fileIO->newTiming(freqGroup);

@@ -213,7 +213,7 @@ void Eigenvalue_SLEPc::printOn(std::ostream &output) const {
 
 void Eigenvalue_SLEPc::initDataOutput(Setup *setup, FileIO *fileIO) 
 {
-   eigvGroupID = fileIO->newGroup(fileIO->getFileID(), "Eigenvalue");
+   eigvGroupID = fileIO->newGroup("Eigenvalue");
 
     // ********************* setup Table for EigenValues *****************
     EigenValue EigVal_table;
