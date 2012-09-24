@@ -268,12 +268,12 @@ void Grid::initDataOutput(FileIO *fileIO) {
          check(H5LTset_attribute_double(gridGroup, ".", "Lm", &Lm, 1), DMESG("Attribute"));
          
          // Grid point number
-         check(H5LTset_attribute_int(gridGroup, ".", "Nx", &Nx, 1), DMESG("Attribute"));
-         check(H5LTset_attribute_int(gridGroup, ".", "Nky", &Nky, 1), DMESG("Attribute"));
-         check(H5LTset_attribute_int(gridGroup, ".", "Nz", &Nz, 1), DMESG("Attribute"));
-         check(H5LTset_attribute_int(gridGroup, ".", "Nv", &Nv, 1), DMESG("Attribite"));
-         check(H5LTset_attribute_int(gridGroup, ".", "Nm", &Nm, 1), DMESG("Attribute"));
-         check(H5LTset_attribute_int(gridGroup, ".", "Ns", &Ns, 1), DMESG("Attribute"));
+         check(H5LTset_attribute_int(gridGroup, ".", "Nx", &Nx , 1), DMESG("Attribute"));
+         check(H5LTset_attribute_int(gridGroup, ".", "Nky",&Nky, 1), DMESG("Attribute"));
+         check(H5LTset_attribute_int(gridGroup, ".", "Nz", &Nz , 1), DMESG("Attribute"));
+         check(H5LTset_attribute_int(gridGroup, ".", "Nv", &Nv , 1), DMESG("Attribite"));
+         check(H5LTset_attribute_int(gridGroup, ".", "Nm", &Nm , 1), DMESG("Attribute"));
+         check(H5LTset_attribute_int(gridGroup, ".", "Ns", &Ns , 1), DMESG("Attribute"));
          
 
     // set Lengths

@@ -66,7 +66,7 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
   if(parallel->Coord[DIR_VMS] == 0) {
 
     // Note : We have domain decomposition in X but not in Y
-    fft->solve(FFT_X_FIELDS, FFT_FORWARD, fields->Field0.data());
+    fft->solve(FFT_X_FIELDS, FFT_FORWARD, &Field0[1][NzLlD][NkyLlD][NxLlD]);
          
     for(int n = 1; n <= plasma->nfields; n++) {
                 
@@ -501,7 +501,7 @@ void Analysis::writeData(Timing timing, double dt)
     double pSpecX [plasma->nfields] [Nx/2], pSpecY [plasma->nfields] [Nky ],
            pPhaseX[plasma->nfields] [Nx/2], pPhaseY[plasma->nfields] [Nky ];
      
-    getPowerSpectrum((A4zz) fft->kXOut.dataZero(), (A4zz) fields->Field0.dataZero(), pSpecX, pSpecY, pPhaseX, pPhaseY);
+    getPowerSpectrum((A4zz) fft->kXOut.dataZero(), (A4zz) fields->Field0, pSpecX, pSpecY, pPhaseX, pPhaseY);
     
     // Seperatly writing ? Hopefully it is buffered ... (passing stack pointer ... OK ?)
     FA_grow_x->write( &pSpecX[0][0] ); FA_grow_y->write(&pSpecY[0][0]); FA_grow_t->write(&timing);

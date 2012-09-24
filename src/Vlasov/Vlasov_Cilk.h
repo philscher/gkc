@@ -55,7 +55,7 @@ class VlasovCilk : public Vlasov {
    void calculatePoissonBracket(const CComplex  G              [NzLB][NkyLD][NxLB  ][NvLB],   // in case of e-m
                                 const CComplex Xi              [NzLB][NkyLD][NxLB+4][NvLB],   // in case of e-m
                                 const CComplex  f [NsLD][NmLD ][NzLB][NkyLD][NxLB  ][NvLB],   // in case of e-s
-                                const CComplex phi[NsLD][NmLD ][NzLB][NkyLD][NxLB+4]      ,   // in case of e-s
+                                const CComplex Fields [Nq][NsLD][NmLD ][NzLB][NkyLD][NxLB+4], // in case of e-s
                                 const int z, const int m, const int s                     ,
                                 CComplex ExB[NkyLD][NxLD][NvLD], double Xi_max[3], const bool electroMagnetic);
 
@@ -86,11 +86,9 @@ class VlasovCilk : public Vlasov {
    *
    **/
    void setupXiAndG(
-                           const CComplex g        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f0       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex phi      [NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           const CComplex Ap       [NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           const CComplex Bp       [NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           const CComplex g           [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f0         [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Fields [Nq][NsLD][NmLD ][NzLB][NkyLD][NxLB+4],
                            CComplex Xi                         [NzLB][NkyLD][NxLB  ][NvLB],
                            CComplex G                          [NzLB][NkyLD][NxLB  ][NvLB],
                            const double V[NvGB], const double M[NmGB],
@@ -107,9 +105,7 @@ class VlasovCilk : public Vlasov {
                            const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           const CComplex Ap [NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           const CComplex Bp [NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           const CComplex Fields [Nq][NsLD][NmLD ][NzLB][NkyLD][NxLB+4],
                            CComplex Xi       [NzLD][NkyLD][NxLD  ][NvLD],
                            CComplex G        [NzLD][NkyLD][NxLD  ][NvLD],
                            CComplex ExB            [NkyLD][NxLB  ][NvLB],

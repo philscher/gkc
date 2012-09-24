@@ -33,21 +33,21 @@ int VlasovAux::solve(std::string equation_type, Fields *fields, Array6C f_in, Ar
   if(equation_type == "ES")
 
       Vlasov_ES   ((A6zz) f_in.dataZero(), (A6zz) f_out.dataZero()      , (A6zz) f0.dataZero(), (A6zz) f.dataZero(), 
-                   (A6zz) ft.dataZero() , (A5zz) fields->phi.dataZero(), 
+                   (A6zz) ft.dataZero()  , (A6zz) fields->Field.dataZero(), 
                    (A3zz) nonLinearTerms, X, V, M, dt, rk_step, rk);
 
   else if(equation_type == "EM")
 
       Vlasov_EM    ((A6zz) f_in.dataZero(), (A6zz) f_out.dataZero(), (A6zz) f0.dataZero(), (A6zz) f.dataZero(),
-                   (A6zz) ft.dataZero(), (A5zz) fields->phi.dataZero(), (A5zz) fields->Ap.dataZero(),
-                   (A5zz) fields->Bp.dataZero(), (A3zz) nonLinearTerms,
+                   (A6zz) ft.dataZero(), (A6zz) fields->Field.dataZero(), (A3zz) nonLinearTerms,
                    (A4zz) Xi, (A4zz) G, X, V, M, dt, rk_step, rk);
-
+/* 
   else if(equation_type == "2D_Island") 
     
       Vlasov_2D_Island((A6zz) f_in.dataZero(), (A6zz) f_out.dataZero(), (A6zz) f0.dataZero(), (A6zz) f.dataZero(), 
-                    (A6zz) ft.dataZero(), (A5zz) fields->phi.dataZero(), (A3zz) nonLinearTerms,
+                    (A6zz) ft.dataZero(), (A5zz) fields->Fields.dataZero(), (A3zz) nonLinearTerms,
                     X, V, M, dt, rk_step, rk);
+ * */
 
 //  else if(equation_type == "2DLandauDamping") Landau_Damping((A6z) f_in.dataZero(), (A6z) f_out.dataZero(), (A6z) f0.dataZero(), (A6z) f.dataZero(), (A6z) ft.dataZero(), (A5z) fields->phi.dataZero(), (A4z) k2p_phi.dataZero(), (A3z) dphi_dx.dataZero(), X.dataZero(), V.dataZero(), M, fields, dt, rk_step, rk);
   else   check(-1, DMESG("No Such Equation"));
@@ -58,12 +58,12 @@ int VlasovAux::solve(std::string equation_type, Fields *fields, Array6C f_in, Ar
 
 
 void VlasovAux::Vlasov_ES(
-                           const CComplex fs [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           const CComplex fs    [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex fss         [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f0    [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f1    [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex ft          [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Fields[Nq][NsLD][NmLB][NzLB][NkyLD][NxLB+4],
                            CComplex       NL                   [NkyLD][NxLD  ][NvLD],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3])
@@ -96,7 +96,7 @@ void VlasovAux::Vlasov_ES(
       for(int m=NmLlD; m<= NmLuD;m++) { for(int z=NzLlD; z<= NzLuD;z++) { 
       
          // calculate non-linear term (rk_step == 0 for eigenvalue calculations)
-         if(nonLinear && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, phi, z, m, s, NL, Xi_max, false); 
+         if(nonLinear && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, Fields, z, m, s, NL, Xi_max, false); 
        
 
       omp_for(int y_k=NkyLlD; y_k <= NkyLuD; y_k++) { 
@@ -105,11 +105,11 @@ void VlasovAux::Vlasov_ES(
              
          for(int x=NxLlD; x<= NxLuD; x++) { 
          
-           const CComplex phi_   = phi[s][m][z][y_k][x];
+           const CComplex phi_   = Fields[Field::phi][s][m][z][y_k][x];
        
            CComplex half_eta_kperp2_phi = 0;
            if(isGyro1) { // first order approximation for gyro-kinetics
-             const CComplex ddphi_dx_dx = (16. *(phi[s][m][z][y_k][x+1] + phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] + phi[s][m][z][y_k][x-2]) - 30.*phi_) * _kw_12_dx_dx;
+             const CComplex ddphi_dx_dx = (16. *(Fields[Field::phi][s][m][z][y_k][x+1] + Fields[Field::phi][s][m][z][y_k][x-1]) - (Fields[Field::phi][s][m][z][y_k][x+2] + Fields[Field::phi][s][m][z][y_k][x-2]) - 30.*phi_) * _kw_12_dx_dx;
              half_eta_kperp2_phi     = 0.5 * w_T  * ( (ky*ky) * phi_ + ddphi_dx_dx ) ; 
            }
              
@@ -135,7 +135,7 @@ void VlasovAux::Vlasov_ES(
             ///////////////   The time derivative of the Vlasov equation      //////////////////////
        
             const CComplex dg_dt = 
-                NL[y_k][x][v]                                                         // Non-linear ( array is zero for linear simulations) 
+             +  NL[y_k][x][v]                                                         // Non-linear ( array is zero for linear simulations) 
              +  ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])*kw_T  - sub)) * f0_ * phi_    // Driving term (Temperature/Density gradient)
              -  half_eta_kperp2_phi * f0_)                                            // Contributions from gyro-1 (0 if not neq Gyro-1)
              -  alpha  * V[v]* kp  * ( g + sigma * phi_ * f0_)                        // Linear Landau damping
@@ -160,7 +160,7 @@ void VlasovAux::Vlasov_2D_Island(
                            const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
+                           const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
                            CComplex nonLinear                  [NkyLD][NxLD  ][NvLD],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3])
@@ -211,9 +211,9 @@ void VlasovAux::Vlasov_2D_Island(
           simd_for(int x=NxLlD; x<= NxLuD;x++) {  
 
                // calculate for estimation of CFL condition
-             const CComplex phi_ = phi[s][m][z][y_k][x];
+             const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];
 
-             const CComplex dphi_dx  = (8.*(phi[s][m][z][y_k][x+1] - phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] - phi[s][m][z][y_k][x-2]))/(12.*dx)  ;  
+             const CComplex dphi_dx  = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1]) - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2]))/(12.*dx)  ;  
 
         /////////////////////////////////////////////////// Magnetic Island Contribution    /////////////////////////////////////////
         
@@ -237,15 +237,15 @@ void VlasovAux::Vlasov_2D_Island(
         const double dMagIs_dx = - 0.5 * w*w*shear/16. * dpsi;// - sin(zeta * X[x]) * zeta;
 
         
-        const CComplex     phi_p1 = ( y_k == Nky-1) ? 0.                       : phi[s][m][z][y_k+1][x] ;
-        const CComplex     phi_m1 = ( y_k ==  0   ) ? conj(phi[s][m][z][1][x]) : phi[s][m][z][y_k-1][x] ;
+        const CComplex     phi_p1 = ( y_k == Nky-1) ? 0.                       : Fields[Field::phi][s][m][z][y_k+1][x] ;
+        const CComplex     phi_m1 = ( y_k ==  0   ) ? conj(Fields[Field::phi][s][m][z][1][x]) : Fields[Field::phi][s][m][z][y_k-1][x] ;
 
 
         const CComplex dphi_dx_p1 = ( y_k == Nky-1) ? 0. 
-                                                  : (8.*(phi[s][m][z][y_k+1][x+1] - phi[s][m][z][y_k+1][x-1]) - (phi[s][m][z][y_k+1][x+2] - phi[s][m][z][y_k+1][x-2]))/(12.*dx)  ;
+                                                  : (8.*(Fields[Field::phi][s][m][z][y_k+1][x+1] - Fields[Field::phi][s][m][z][y_k+1][x-1]) - (Fields[Field::phi][s][m][z][y_k+1][x+2] - Fields[Field::phi][s][m][z][y_k+1][x-2]))/(12.*dx)  ;
 
-        const CComplex dphi_dx_m1 = ( y_k ==    0 ) ?  conj(8.*(phi[s][m][z][    1][x+1] - phi[s][m][z][    1][x-1]) - (phi[s][m][z][    1][x+2] - phi[s][m][z][    1][x-2]))/(12.*dx) 
-                                                  :      (8.*(phi[s][m][z][y_k-1][x+1] - phi[s][m][z][y_k-1][x-1]) - (phi[s][m][z][y_k-1][x+2] - phi[s][m][z][y_k-1][x-2]))/(12.*dx) ;
+        const CComplex dphi_dx_m1 = ( y_k ==    0 ) ?  conj(8.*(Fields[Field::phi][s][m][z][    1][x+1] - Fields[Field::phi][s][m][z][    1][x-1]) - (Fields[Field::phi][s][m][z][    1][x+2] - Fields[Field::phi][s][m][z][    1][x-2]))/(12.*dx) 
+                                                  :      (8.*(Fields[Field::phi][s][m][z][y_k-1][x+1] - Fields[Field::phi][s][m][z][y_k-1][x-1]) - (Fields[Field::phi][s][m][z][y_k-1][x+2] - Fields[Field::phi][s][m][z][y_k-1][x-2]))/(12.*dx) ;
         
        
         // The magnetic island
@@ -265,8 +265,8 @@ void VlasovAux::Vlasov_2D_Island(
            
         CComplex eta_kp2_phi = 0;
            if(isGyro1) { // first order approximation for gyro-kinetics
-             const CComplex ddphi_dx_dx = (16. *(phi[s][m][z][y_k][x+1] + phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] + phi[s][m][z][y_k][x-2]) - 30.*phi[s][m][z][y_k][x]) * _kw_12_dx_dx;
-             eta_kp2_phi                = 0.5 * w_T  * ( ky*ky * phi[s][m][z][y_k][x] + ddphi_dx_dx ); 
+             const CComplex ddphi_dx_dx = (16. *(Fields[Field::phi][s][m][z][y_k][x+1] + Fields[Field::phi][s][m][z][y_k][x-1]) - (Fields[Field::phi][s][m][z][y_k][x+2] + Fields[Field::phi][s][m][z][y_k][x-2]) - 30.*Fields[Field::phi][s][m][z][y_k][x]) * _kw_12_dx_dx;
+             eta_kp2_phi                = 0.5 * w_T  * ( ky*ky * Fields[Field::phi][s][m][z][y_k][x] + ddphi_dx_dx ); 
            }
 
                // velocity space magic
@@ -334,9 +334,7 @@ void VlasovAux::Vlasov_EM(
                            const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
-                           const CComplex Ap [NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
-                           const CComplex Bp [NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
+                           const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
                            CComplex    nonLinear               [NkyLD][NxLD  ][NvLD],
                            CComplex Xi       [NzLB][NkyLD][NxLB+4][NvLB],
                            CComplex G        [NzLB][NkyLD][NxLB][NvLB],
@@ -366,9 +364,9 @@ void VlasovAux::Vlasov_EM(
          // calculate for estimation of CFL condition
          for(int z=NzLlD; z<= NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
        
-               const CComplex phi_ = (__extension__ 1.0i) * phi[s][m][z][y_k][x];
-               //const CComplex phi_ = _Imaginary * phi[s][m][z][y_k][x];
-               const CComplex dphi_dx = (8.*(phi[s][m][z][y_k][x+1] - phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] - phi[s][m][z][y_k][x-2]))/(12.*dx)  ;  
+               const CComplex phi_ = (__extension__ 1.0i) * Fields[Field::phi][s][m][z][y_k][x];
+               //const CComplex phi_ = _Imaginary * Fields[Field::phi][s][m][z][y_k][x];
+               const CComplex dphi_dx = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1]) - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2]))/(12.*dx)  ;  
 
                const CComplex ky = ((CComplex) (0. + 1.i)) *  fft->ky(y_k);
                const CComplex kp = geo->get_kp(x, ky, z);
@@ -406,7 +404,7 @@ void VlasovAux::Vlasov_EM(
       // driving term (use dphi_dy instead of dXi_dy, because v * A does not vanish due to numerical errors)
       //ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])/Temp  - sub)) * F0 * Xi_
       ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])/Temp  - sub)) * F0 * phi_
-          )//             + 0.5 * w_T  * k2_phi[1][z][y_k][x] * F0)
+          )//             + 0.5 * w_T  * k2_Fields[Field::phi][1][z][y_k][x] * F0)
       // add first order gyro-average term (zero when full-gyro)
       // Landau Damping term and parallel ... ? 
       - alpha  * V[v]* kp * G_
@@ -433,8 +431,8 @@ void VlasovAux::Vlasov_2D_Island(
                            const Complex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const Complex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            Complex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const Complex phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           Complex k2_phi[plasma->nfields][NzLD][NkyLD][NxLD],
+                           const Complex Fields[Field::phi][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           Complex k2_Fields[Field::phi][plasma->nfields][NzLD][NkyLD][NxLD],
                            Complex nonLinear[NzLD][NkyLD][NxLD][NvLD],
                            Complex dphi_dx[NzLB][NkyLD][NxLB],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
@@ -452,8 +450,8 @@ void VlasovAux::Vlasov_2D_Island(
 
         
                // calculate for estimation of CFL condition
-             const Complex phi_ = phi[s][m][z][y_k][x];
-             dphi_dx[z][y_k][x]  = (8.*(phi[s][m][z][y_k][x+1] - phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] - phi[s][m][z][y_k][x-2]))/(12.*dx)  ;  
+             const Complex phi_ = Fields[Field::phi][s][m][z][y_k][x];
+             dphi_dx[z][y_k][x]  = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1]) - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2]))/(12.*dx)  ;  
 
              updateCFL(dphi_dx[z][y_k][x], ky*phi_, 0.);
              
@@ -464,12 +462,12 @@ void VlasovAux::Vlasov_2D_Island(
         const double dMagIs_dx = -  0.5 * w*w*shear/16. * sin(zeta * X[x]) * zeta;
 
         // Note : f, fftw ordering [ 0, 1, 2, 3, 4, -3, -2, -1 ]
-        const Complex     phi_p1 = (( y_k+1) <= Nky-1) ? phi[s][m][z][y_k+1][x] : 0.;
-        const Complex     phi_m1 = (( y_k-1) >=    0) ? phi[s][m][z][y_k-1][x] : 0.;
+        const Complex     phi_p1 = (( y_k+1) <= Nky-1) ? Fields[Field::phi][s][m][z][y_k+1][x] : 0.;
+        const Complex     phi_m1 = (( y_k-1) >=    0) ? Fields[Field::phi][s][m][z][y_k-1][x] : 0.;
         const Complex dphi_dx_p1 = (( y_k+1) <= Nky-1) ?
-                    (8.*(phi[s][m][z][y_k+1][x+1] - phi[s][m][z][y_k+1][x-1]) - (phi[s][m][z][y_k+1][x+2] - phi[s][m][z][y_k+1][x-2]))/(12.*dx)  : 0.;
+                    (8.*(Fields[Field::phi][s][m][z][y_k+1][x+1] - Fields[Field::phi][s][m][z][y_k+1][x-1]) - (Fields[Field::phi][s][m][z][y_k+1][x+2] - Fields[Field::phi][s][m][z][y_k+1][x-2]))/(12.*dx)  : 0.;
         const Complex dphi_dx_m1 = (( y_k-1) >=    0) ?
-                    (8.*(phi[s][m][z][y_k-1][x+1] - phi[s][m][z][y_k-1][x-1]) - (phi[s][m][z][y_k-1][x+2] - phi[s][m][z][y_k-1][x-2]))/(12.*dx)  : 0.;
+                    (8.*(Fields[Field::phi][s][m][z][y_k-1][x+1] - Fields[Field::phi][s][m][z][y_k-1][x-1]) - (Fields[Field::phi][s][m][z][y_k-1][x+2] - Fields[Field::phi][s][m][z][y_k-1][x-2]))/(12.*dx)  : 0.;
         
         // NOTE :  at the Nyquist frequency we have no coupling with higher frequencies (actually phi(m=Ny) = 0. anyway)
        
@@ -510,7 +508,7 @@ void VlasovAux::Landau_Damping(
                            const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           const CComplex Fields[Field::phi][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3])
 { 
@@ -523,7 +521,7 @@ void VlasovAux::Landau_Damping(
    omp_for(int x=NxLlD; x<= NxLuD;x++) {  simd_for(int v=NvLlD; v<= NvLuD;v++)         {
        
            const CComplex f0_     = f0 [s][m][z][y_k][x][v];
-           const CComplex dphi_dx = (8.*(phi[s][m][z][y_k][x+1] - phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] - phi[s][m][z][y_k][x-2]))/(12.*dx)  ;  
+           const CComplex dphi_dx = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1]) - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2]))/(12.*dx)  ;  
            const CComplex   df_dv = (8.*(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))/(12.*dv);
            const CComplex   df_dx = (8. *(fs[s][m][z][y_k][x+1][v] - fs[s][m][z][y_k][x-1][v])  - (fs[s][m][z][y_k][x+2][v] - fs[s][m][z][y_k][x-2][v]))/(12.*dx) ;
            
@@ -551,7 +549,7 @@ void    VlasovAux::Vlasov_2D_Fullf(
                            const Complex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const Complex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            Complex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const Complex phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           const Complex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                            const double dt, const int rk_step, const double rk[3])
 { 
 
@@ -575,14 +573,14 @@ void    VlasovAux::Vlasov_2D_Fullf(
        // calculate for estimation of CFL condition
        for(int z=NzLlD; z<= NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
        
-             const Complex dphi_dx  = (8.*(phi[s][m][z][y_k][x+1] - phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] - phi[s][m][z][y_k][x-2]))/(12.*dx)  ;  
+             const Complex dphi_dx  = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1]) - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2]))/(12.*dx)  ;  
 
              const Complex ky = Complex(0., fft->ky(y_k));
              const Complex kp = 0.; //geo->get_kp(x, ky, z);
 
   //           Xi_max(DIR_X) = max(Xi_max(DIR_X), abs(dphi_dx(x,y_k,z)));
-  //           Xi_max(DIR_Y) = max(Xi_max(DIR_Y), abs(ky*phi[s][m][z][y_k][x])); 
- //            Xi_max(DIR_Z) = max(Xi_max(DIR_Z), abs(kp));// * abs(phi[s][m][z][y_k][x])); 
+  //           Xi_max(DIR_Y) = max(Xi_max(DIR_Y), abs(ky*Fields[Field::phi][s][m][z][y_k][x])); 
+ //            Xi_max(DIR_Z) = max(Xi_max(DIR_Z), abs(kp));// * abs(Fields[Field::phi][s][m][z][y_k][x])); 
 
 
             for(int v=NvLlD; v<= NvLuD;v++) {
@@ -593,7 +591,7 @@ void    VlasovAux::Vlasov_2D_Fullf(
         // abbreviations to not clutter the equations
         const Complex g_   = fs [s][m][z][y_k][x][v];
         const Complex f0_  = f0 [s][m][z][y_k][x][v];
-        const Complex phi_ = phi[s][m][z][y_k][x];
+        const Complex phi_ = Fields[Field::phi][s][m][z][y_k][x];
 
         // Hyper diffusion terms
         //const Complex d4g_dv    =  0.;
@@ -615,7 +613,7 @@ void    VlasovAux::Vlasov_2D_Fullf(
                     -(w_n + w_T * (M[m]/Temp  - sub)) * f0_ * phi_)
 
              // add first order gyro-average term (zero when full-gyro)
-//             + 0.5 * w_T  * k2_phi[z][y_k][x] * F0
+//             + 0.5 * w_T  * k2_Fields[Field::phi][z][y_k][x] * F0
 
               // Landau Damping term and parallel ... ? - alpha  * V[v]* geo->get_kp(x)  * ( g + sigma * phi * F0)) 
            - alpha  * V[v]* kp * ( g_ + sigma * phi_ * f0_ )

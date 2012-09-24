@@ -262,33 +262,31 @@ public:
    *  @param gyroField true if forward transformation, false if backward transformation
    *
    **/
-   virtual void gyroAverage(Array4C In, Array4C Out, const int m, const int s, const bool forward) = 0;
-   //virtual void gyroAverage(CComplex Q     [plasma->nfields][NxLD][NkyLD][Nz],
-   //                         CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz],
-   //                        const int m, const int s, const bool forward) = 0;
-  
+   virtual void gyroAverage(CComplex In [Nq][NzLD][NkyLD][NxLD], 
+                            CComplex Out[Nq][NzLD][NkyLD][NxLD],
+                            const int m, const int s, const bool forward) = 0;
+ 
+
+   nct::allocate ArrayField0;
    /**
    *  @brief four-dimensional array hold the source terms in drift-coordinates.
    *
    *  @note  Q stand for the German Quellterme (translated : source terms).
    **/
-   Array4C  Q;
-
-   Array4C Qm;
+   CComplex *Q,
+            *Qm; ///< Array to held intermediate Q results
+   
    /**
    *  @brief four-dimensional array hold the field terms in drift-coordinates.
+   *
+   *  with boundaries [NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]
    **/
-   Array4C  Field0;
+   CComplex *Field0;
    
    /**
    *  @brief gyro-averaged field quantities as \f$ \left( <\phi>, <A_{1\parallel}>, <B_{1\parallel}> \right)\f$
    **/
    Array6C  Field;
-   
-   /**
-   *  @brief please document me
-   **/
-   Array5C  phi, Ap, Bp;
    
    /**
    * 

@@ -72,16 +72,32 @@ class VlasovAux : public VlasovCilk {
    *
    **/
    void    Vlasov_ES(
-                           const CComplex fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex  fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex fss       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex  f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex  f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex ft        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           CComplex nonLinear                  [NkyLD][NxLD  ][NvLD],
+                           const double X[NxGB], const double V[NvGB], const double M[NmGB],
+                           const double dt, const int rk_step, const double rk[3]);
+   /**
+   *    Please Document Me !
+   *
+   **/
+   void Vlasov_EM(
+                           CComplex fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            CComplex fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           //const CComplex Fields[plasma->nfields][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           CComplex nonLinear                  [NkyLD][NxLD  ][NvLD],
+                           const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
+                           CComplex    nonLinear               [NkyLD][NxLD  ][NvLD],
+                           CComplex Xi       [NzLB][NkyLD][NxLB][NvLB],
+                           CComplex G        [NzLB][NkyLD][NxLB][NvLB],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3]);
+
   
    /**
    *   @brief perform full-f simulations
@@ -93,7 +109,7 @@ class VlasovAux : public VlasovCilk {
                            const Complex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const Complex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            Complex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const Complex phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           const Complex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                            const double dt, const int rk_step, const double rk[3]);
 
 
@@ -107,7 +123,7 @@ class VlasovAux : public VlasovCilk {
                            const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
+                           const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
                            CComplex nonLinear                  [NkyLD][NxLD  ][NvLD],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3]);
@@ -122,26 +138,7 @@ class VlasovAux : public VlasovCilk {
                            const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           const double X[NxGB], const double V[NvGB], const double M[NmGB],
-                           const double dt, const int rk_step, const double rk[3]);
-
-   /**
-   *    Please Document Me !
-   *
-   **/
-   void Vlasov_EM(
-                           CComplex fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
-                           const CComplex Ap [NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
-                           const CComplex Bp [NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
-                           CComplex    nonLinear               [NkyLD][NxLD  ][NvLD],
-                           CComplex Xi       [NzLB][NkyLD][NxLB][NvLB],
-                           CComplex G        [NzLB][NkyLD][NxLB][NvLB],
+                           const CComplex Field[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3]);
 

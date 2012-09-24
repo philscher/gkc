@@ -40,7 +40,7 @@ int VlasovOptim::solve(std::string equation_type, Fields *fields, Array6C _fs, A
  
   if((equation_type == "2D_ES")) {
   Vlasov_2D((A6sz) _fs.dataZero(), (A6sz) _fss.dataZero(), (A6sz) f0.dataZero(), 
-            (A6sz) f.dataZero(), (A6sz) ft.dataZero(), (A5sz) fields->phi.dataZero(),
+            (A6sz) f.dataZero(), (A6sz) ft.dataZero(), (A6sz) fields->Field.dataZero(),
             (A4sz) nonLinearTerms, X, V, M,
              dt, rk_step, rk);
   }
@@ -56,7 +56,7 @@ int VlasovOptim::solve(std::string equation_type, Fields *fields, Array6C _fs, A
                            const cmplx16 f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplx16 f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplx16 ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const cmplx16 phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           const cmplx16 Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                            cmplx16 nonLinear[NzLD][NkyLD][NxLD][NvLD],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3])
@@ -74,12 +74,12 @@ int VlasovOptim::solve(std::string equation_type, Fields *fields, Array6C _fs, A
   const int BlockSize_V=bench->BlockSize_V ;
 
   // MAXIMUM_ALIGN preprocessor directive !
-        __assume_aligned(fs,32);
-    __assume_aligned(fss,32);
-     __assume_aligned(f1,32);
-   __assume_aligned(f0 ,32);
-   __assume_aligned(ft,32);
-   __assume_aligned(phi,32);
+        __assume_aligned(fs,64);
+   __assume_aligned(fss   , 64);
+   __assume_aligned(f1    , 64);
+   __assume_aligned(f0    , 64);
+   __assume_aligned(ft    , 64);
+   __assume_aligned(Fields, 64);
    __assume(BlockSize_V % 4 == 0);
    __assume(BlockSize_X % 2 == 0);
    
@@ -115,16 +115,16 @@ int VlasovOptim::solve(std::string equation_type, Fields *fields, Array6C _fs, A
 
              //const double Krook_nu = krook_nu * ( (X[x] > 0.8 * Lx/2.) || (X[x] < -0.8 * Lx/2.))  ?  0.1 * pow2(abs(X[x]) - 0.8 * Lx/2.): 0.;
 
-             //const Complex dphi_dx  = (8.*(phi[s][m][z][y_k][xx+1] - phi[s][m][z][y_k][xx-1]) - (phi[s][m][z][y_k][xx+2] - phi[s][m][z][y_k][xx-2]))/(12.*dx)  ;  
-              const double phi_re     = phi[s][m][z][y_k][xx].re;
-              const double phi_im     = phi[s][m][z][y_k][xx].im;
+             //const Complex dphi_dx  = (8.*(Fields[Field::phi][s][m][z][y_k][xx+1] - Fields[Field::phi][s][m][z][y_k][xx-1]) - (Fields[Field::phi][s][m][z][y_k][xx+2] - Fields[Field::phi][s][m][z][y_k][xx-2]))/(12.*dx)  ;  
+              const double phi_re     = Fields[Field::phi][s][m][z][y_k][xx].re;
+              const double phi_im     = Fields[Field::phi][s][m][z][y_k][xx].im;
              
              // BUG : does it needs a mutex ?
               const double kp = 0.4 * X[x] * (2.*M_PI)/Ly * y_k; //geo->get_kp(xx, ky, z);
              //updateCFL(dphi_dx, ky*phi_, 0.);
 
 
-           //  Complex4d Phi; Phi.load_a((double*)&phi[s][m][z][y_k][xx]);
+           //  Complex4d Phi; Phi.load_a((double*)&Fields[Field::phi][s][m][z][y_k][xx]);
             //for(int v=NvLlD; v<= NvLuD-4;v+=4) {
          
             //#pragma unroll(8)

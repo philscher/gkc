@@ -35,7 +35,7 @@ void FieldsFFT::solveFieldEquations(CComplex Q     [Nq][NzLD][NkyLD][NxLD],
 {
 
    // Transform to fourier space (x,ky) -> (kx,ky)
-   fft->solve(FFT_X_FIELDS, FFT_FORWARD, FieldsFFT::Q.data());
+   fft->solve(FFT_X_FIELDS, FFT_FORWARD, &Q[1][NzLlD][NkyLlD][NxLlD]);
 
    // if (phi,Ap,Bp) is solved together, (phi,Bp) are coupled and have to be solved together
    if     ( solveEq &  Field::phi & Field::Bpp ) solveBParallelEquation((A4zz) fft->kXOut.dataZero(), (A4zz) fft->kXIn.dataZero());
@@ -51,7 +51,7 @@ void FieldsFFT::solveFieldEquations(CComplex Q     [Nq][NzLD][NkyLD][NxLD],
    //if(!(solveEq & Field::Bpp) && (Nq >= 3)) fft->rXOut(RxLD, RkyLD, RzLD, Field::Bp ) = Field0(RxLD, RkyLD, RzLD, Field::Bp );
 
    // transform back to real-space (kx,ky) -> (x,ky)
-   fft->solve(FFT_X_FIELDS, FFT_BACKWARD, FieldsFFT::Field0.data());
+   fft->solve(FFT_X_FIELDS, FFT_BACKWARD, &Field0[1][NzLlD][NkyLlD][NxLlD]);
    
    return;
 
@@ -173,14 +173,14 @@ void FieldsFFT::calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_Nk
 
 
 // Pretty sure needs to be turned around
-void FieldsFFT::gyroFull(Array4C In, Array4C Out,
+void FieldsFFT::gyroFull(CComplex In [Nq][NzLD][NkyLD][NxLD], 
+                         CComplex Out[Nq][NzLD][NkyLD][NxLD],
                          CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
                          CComplex kXIn [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
                          const int m, const int s, const bool gyroFields)  
 {
    
-   // Test if gyro-field is OK !     
-   fft->solve(FFT_X_FIELDS, FFT_FORWARD, In.data());
+   fft->solve(FFT_X_FIELDS, FFT_FORWARD, &In[1][NzLlD][NkyLlD][NxLlD]);
    
    // solve for all fields at once
    for(int n = 1; n <= Nq; n++) {
@@ -204,22 +204,26 @@ void FieldsFFT::gyroFull(Array4C In, Array4C Out,
        } } }
    }
    
-   fft->solve(FFT_X_FIELDS, FFT_BACKWARD, Out.data());
+   fft->solve(FFT_X_FIELDS, FFT_BACKWARD, &Out[1][NzLlD][NkyLlD][NxLlD]);
        
    return;
 
 }
 
 
-void FieldsFFT::gyroFirst(Array4C In, Array4C Out,
-                         CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
-                         CComplex kXIn [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
-                         const int s, const bool gyroFields)  
+void FieldsFFT::gyroFirst(CComplex In   [Nq][NzLD][NkyLD][NxLD], 
+                          CComplex Out  [Nq][NzLD][NkyLD][NxLD],
+                          CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+                          CComplex kXIn [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+                          const int s, const bool gyroFields)  
 {
 
-  if(gyroFields==false) { Out = In; return; };
-
-  fft->solve(FFT_X_FIELDS, FFT_FORWARD, In.data());
+  if(gyroFields==false) {   Out[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]
+                          =  In[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD];
+                                                                     return; 
+                        };
+   
+  fft->solve(FFT_X_FIELDS, FFT_FORWARD, &In[1][NzLlD][NkyLlD][NxLlD]);
            
    // solve for all fields at once
    for(int n = 1; n <= Nq; n++) {
@@ -241,7 +245,7 @@ void FieldsFFT::gyroFirst(Array4C In, Array4C Out,
    }
 
 
-  fft->solve(FFT_X_FIELDS, FFT_BACKWARD, Out.data());
+   fft->solve(FFT_X_FIELDS, FFT_BACKWARD, &Out[1][NzLlD][NkyLlD][NxLlD]);
   
   return;
 
@@ -249,7 +253,10 @@ void FieldsFFT::gyroFirst(Array4C In, Array4C Out,
 
 
 // note : back gyro-average goes over only one field not all !
-void FieldsFFT::gyroAverage(Array4C In, Array4C Out, const int m, const int s, const bool gyroFields) 
+void FieldsFFT::gyroAverage(CComplex In [Nq][NzLD][NkyLD][NxLD], 
+                            CComplex Out[Nq][NzLD][NkyLD][NxLD],
+                            const int m, const int s, const bool gyroFields)
+//void FieldsFFT::gyroAverage(Array4C In, Array4C Out, const int m, const int s, const bool gyroFields) 
 {
   // check if we should do gyroAvearge
   if     (plasma->species[s].gyroModel == "Drift" ) Out=In;
@@ -275,13 +282,14 @@ void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEn
 
       if(parallel->Coord[DIR_VMS] == 0) {
         
-        fft->solve(FFT_X_FIELDS, FFT_FORWARD, Field0.data());
 
         // Lambda funtion to use CEAN notation
         [&](CComplex kXOut [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
             CComplex kXIn  [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
             CComplex Field0[Nq][NzLD][NkyLD][NxLD])
         {
+        
+          fft->solve(FFT_X_FIELDS, FFT_FORWARD, &Field0[1][NzLlD][NkyLlD][NxLlD]);
 
         // Add only kinetic contributions (check if FFT Norm is correct)
         //#pragma omp parallel for, collapse(2), reduce(+,phiEnergy,ApEnergy,BpEnergy)
@@ -321,7 +329,7 @@ void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEn
        phiEnergy =  abs( parallel->collect(4. * M_PI * phiEnergy * grid->dXYZ / (8.e0 * M_PI), OP_SUM, DIR_ALL) ); 
        ApEnergy  =  abs( parallel->collect(4. * M_PI *  ApEnergy * grid->dXYZ / (8.e0 * M_PI), OP_SUM, DIR_ALL) );
        BpEnergy  = 0.;
-      } ((A4zz) fft->kXIn.dataZero(), (A4zz) fft->kXOut.dataZero(), (A4zz) Field0.dataZero()); 
+      } ((A4zz) fft->kXIn.dataZero(), (A4zz) fft->kXOut.dataZero(), (A4zz) Field0); 
 
    }     
  }

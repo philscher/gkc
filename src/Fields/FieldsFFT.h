@@ -223,7 +223,9 @@ class FieldsFFT : public Fields {
   *   @todo link to function.
   *
   */
-  void gyroAverage(Array4C In, Array4C Out, const int m, const int s, const bool gyroField=false);
+   virtual void gyroAverage(CComplex In [Nq][NzLD][NkyLD][NxLD], 
+                            CComplex Out[Nq][NzLD][NkyLD][NxLD],
+                            const int m, const int s, const bool forward);
     
   /**
   * 
@@ -251,10 +253,11 @@ class FieldsFFT : public Fields {
   *  @param gyroField forward- or backward transformation
   *
   */
-  void gyroFirst(Array4C In, Array4C Out,
-                CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
-                CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
-                const int s, const bool gyroField=false);  
+  void gyroFirst(CComplex   In [Nq][NzLD][NkyLD][NxLD], 
+                 CComplex   Out[Nq][NzLD][NkyLD][NxLD],
+                 CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+                 CComplex kXIn [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+                 const int s, const bool gyroField=false) ; 
   
   /**
   *   Constructor
@@ -281,7 +284,8 @@ class FieldsFFT : public Fields {
   *
   */
   //Array4C gyroFull (Array4C fields, int m, int s, int nField, bool gyroField=false);
-  void gyroFull(Array4C In, Array4C Out,
+  void gyroFull(CComplex In [Nq][NzLD][NkyLD][NxLD], 
+                CComplex Out[Nq][NzLD][NkyLD][NxLD],
                 CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
                 CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
                 const int m, const int s, const bool gyroField=false);  

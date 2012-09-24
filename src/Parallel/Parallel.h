@@ -176,7 +176,17 @@ struct NeighbourDir {
      check(MPI_Bcast(A.data(), A.numElements(), getMPIDataType(typeid(T)), dirMaster[dir], Comm[dir]), DMESG("MPI_Bcast")); 
 #endif
      return GKC_SUCCESS; 
-   }
+   };
+   
+   template<typename T> int send(T *A, int dir, int num) {
+#ifdef GKC_PARALLEL_MPI
+     if(dir <= DIR_S) if(decomposition[dir] == 1) return GKC_SUCCESS;
+     // rank differ between communicators, so we should take care of rankFFTMaster
+     check(MPI_Bcast(A,num, getMPIDataType(typeid(T)), dirMaster[dir], Comm[dir]), DMESG("MPI_Bcast")); 
+#endif
+     return GKC_SUCCESS; 
+   };
+
 
 
    /**

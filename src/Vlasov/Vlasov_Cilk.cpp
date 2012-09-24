@@ -182,9 +182,7 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
 void VlasovCilk::setupXiAndG(
                            const CComplex g   [NsLD][NmLD ][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f0  [NsLD][NmLD ][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex phi [NsLD][NmLD ][NzLB][NkyLD][NxLB+4],
-                           const CComplex Ap  [NsLD][NmLD ][NzLB][NkyLD][NxLB+4],
-                           const CComplex Bp  [NsLD][NmLD ][NzLB][NkyLD][NxLB+4],
+                           const CComplex Fields [Nq][NsLD][NmLD ][NzLB][NkyLD][NxLB+4],
                            CComplex Xi        [NzLB][NkyLD][NxLB+4][NvLB ],
                            CComplex G         [NzLB][NkyLD][NxLB][NvLB ],
                            const double V[NvGB], const double M[NmGB],
@@ -206,7 +204,8 @@ void VlasovCilk::setupXiAndG(
   for(int z = NzLlB; z <= NzLuB; z++) {  omp_for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
   for(int x = NxLlB; x <= NxLuB; x++) { simd_for(int v   = NvLlB ;   v <= NvLuB ;   v++) { 
 
-     Xi[z][y_k][x][v] = phi[s][m][z][y_k][x] - (useAp ? aeb*V[v]*Ap[s][m][z][y_k][x] : 0.) - (useBp ? aeb*M[m]*Bp[s][m][z][y_k][x] : 0.);
+     Xi[z][y_k][x][v] = Fields[Field::phi][s][m][z][y_k][x] - (useAp ? aeb*V[v]*Fields[Field::Ap][s][m][z][y_k][x] : 0.) 
+                                                            - (useBp ? aeb*M[m]*Fields[Field::Bp][s][m][z][y_k][x] : 0.);
      G [z][y_k][x][v] = g[s][m][z][y_k][x][v]  + sigma * Xi[z][y_k][x][v] * f0[s][m][z][y_k][x][v];
  // f1[z][y_k][x][v] = g[s][m][z][y_k][x][v] - (useAp ? saeb * V[v] * f0[s][n][z][y_k][x][v] * Ap[s][m][z][y_k][x] : 0.);
       
@@ -214,8 +213,10 @@ void VlasovCilk::setupXiAndG(
      
   // Note we have extended boundaries in X (NxLlB-2 -- NxLuB+2) for fields
   simd_for(int v   = NvLlB ;   v <= NvLuB ;   v++) { 
-     Xi[z][y_k][NxLlB-2:2][v] = phi[s][m][z][y_k][NxLlB-2:2] - (useAp ? aeb*V[v]*Ap[s][m][z][y_k][NxLlB-2:2] : 0.) - (useBp ? aeb*M[m]*Bp[s][m][z][y_k][NxLlB-2:2] : 0.);
-     Xi[z][y_k][NxLuB+1:2][v] = phi[s][m][z][y_k][NxLuB+1:2] - (useAp ? aeb*V[v]*Ap[s][m][z][y_k][NxLuB+1:2] : 0.) - (useBp ? aeb*M[m]*Bp[s][m][z][y_k][NxLuB+1:2] : 0.);
+     Xi[z][y_k][NxLlB-2:2][v] = Fields[Field::phi][s][m][z][y_k][NxLlB-2:2] - (useAp ? aeb*V[v]*Fields[Field::Ap][s][m][z][y_k][NxLlB-2:2] : 0.)
+                                                                           - (useBp ? aeb*M[m]*Fields[Field::Bp][s][m][z][y_k][NxLlB-2:2] : 0.);
+     Xi[z][y_k][NxLuB+1:2][v] = Fields[Field::phi][s][m][z][y_k][NxLuB+1:2] - (useAp ? aeb*V[v]*Fields[Field::Ap][s][m][z][y_k][NxLuB+1:2] : 0.) 
+                                                                           - (useBp ? aeb*M[m]*Fields[Field::Bp][s][m][z][y_k][NxLuB+1:2] : 0.);
   }
   
   
@@ -231,9 +232,7 @@ void VlasovCilk::Vlasov_EM(
                            const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                                  CComplex ft [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           const CComplex Ap [NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           const CComplex Bp [NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                                  CComplex Xi             [NzLB][NkyLD][NxLB+4][NvLB],
                                  CComplex G              [NzLB][NkyLD][NxLB  ][NvLB],
                                  CComplex ExB                  [NkyLD][NxLD  ][NvLB],
@@ -261,23 +260,23 @@ void VlasovCilk::Vlasov_EM(
       for(int m=NmLlD; m<= NmLuD;m++) { 
 
           // Calculate before z loop as we use dg_dz and dXi_dz derivative
-          setupXiAndG(g, f0 , phi, Ap, Bp, Xi, G, V, M, m , s);
+          setupXiAndG(g, f0 , Fields, Xi, G, V, M, m , s);
       
           // Nested Parallelism (PoissonBracket variables are allocated on stack)
           // Cannot collapse as we have no perfetly nested loops
          omp_for(int z=NzLlD; z<= NzLuD;z++) { 
            
            
-         // calculate non-linear term (rk_step == 0 for eigenvalue calculations)
+         // calculate non-linear term (rk_step == 0 for eigenvalue calculatinullptr)
          // CFL condition is calculated inside calculatePoissonBracket
-         if(nonLinear && (rk_step != 0)) calculatePoissonBracket(G, Xi, g, phi, z, m, s, ExB, Xi_max, true); 
+         if(nonLinear && (rk_step != 0)) calculatePoissonBracket(G, Xi, nullptr, nullptr, z, m, s, ExB, Xi_max, true); 
            
          omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
            
        
-            const CComplex phi_ = phi[s][m][z][y_k][x];
+            const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];
 
-            const CComplex dphi_dx = (8.*(phi[s][m][z][y_k][x+1] - phi[s][m][z][y_k][x-1]) - (phi[s][m][z][y_k][x+2] - phi[s][m][z][y_k][x-2]))/(12.*dx)  ;  
+            const CComplex dphi_dx = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1]) - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2]))/(12.*dx)  ;  
 
             const CComplex ky = (CComplex (0. + 1.j)) * fft->ky(y_k);
 

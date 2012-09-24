@@ -58,7 +58,7 @@ class VlasovOptim : public Vlasov {
                            const cmplx16 f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplx16 f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplx16 ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const cmplx16 phi[NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           const cmplx16 Field[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                            cmplx16 nonLinear[NzLD][NkyLD][NxLD][NvLD],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3]);

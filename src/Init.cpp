@@ -46,8 +46,13 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
         for(int s = NsLlD; s <= NsLuD; s++) vlasov->f(RxLB, RkyLD, RzLB, RvLB, RmLB, s) *= (1. - total_charge/((double) Ns));
    }
 */
+           
+   // Field is first index, is last index not better ? e.g. write as vector ?
+   [=] (CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+        CComplex Field0[Nq][NzLD][NkyLD][NxLD]          , CComplex Field[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+        CComplex      Q[Nq][NzLD][NkyLD][NxLD])
+   {
 
-    
    /////////////////////////////////////// Initialize dynamic Fields for Ap (we use Canonical Momentum Method) ////////////////////////////
    if(plasma->nfields >= 2) {
    	FunctionParser Ap_parser = setup->getFParser();
@@ -66,7 +71,8 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
   
      	} } }
 
-       	fields->gyroAverage(fields->Field0(RxLD,RkyLD, RzLD, RFields), fields->Field(RxLD, RkyLD, RzLD, m , s, RFields), m, s, true);
+       	//fields->gyroAverage(fields->Field0(RxLD,RkyLD, RzLD, RFields), fields->Field(RxLD, RkyLD, RzLD, m , s, RFields), m, s, true);
+
 
     	} }
            
@@ -95,6 +101,18 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
            
    }
 */
+  
+   ////////////////////////////////////////////////////////////// 
+   // Perform gyro-average of the fields
+    for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) {
+        
+       	fields->gyroAverage(Field0, Q, m, s, true);
+
+         Field[1:plasma->nfields][m][s][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NzLD] 
+          =  Q[1:plasma->nfields]      [NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NzLD];
+   
+   
+   } }
 
    //////////////////////////////// construct g from f : g = f + .... .//////////////////////////////////////////////////// 
    // we defined g = f + sigma_j * alpha_j * vp * F_j0 eps * berta * Ap
@@ -102,15 +120,16 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    for(int s = NsLlD; s <= NsLuD; s++) { for(int m   = NmLlD ; m   <= NmLuD ; m++  ) {  for(int v = NvLlD; v <= NvLuD; v++) { 
    for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  for(int x = NxLlD; x <= NxLuD; x++) {
  
-                   vlasov->f(x, y_k, z, v, m, s)  = vlasov->f(x,y_k,z,v,m,s)
-                             + ((plasma->nfields >= 2) ? plasma->species[s].sigma * plasma->species[s].alpha * V[v]*geo->eps_hat 
-                                                         * vlasov->f0(x,y_k,z,v,m,s) * plasma->beta * fields->Ap(x,y_k,z,m,s) : 0.);
+        f[s][m][z][y_k][x][v]  +=  ((plasma->nfields >= 2) ? plasma->species[s].sigma * plasma->species[s].alpha * V[v]*geo->eps_hat 
+                                                    * f0[s][m][z][y_k][x][v] * plasma->beta * Field[Field::Ap][s][m][z][y_k][x] : 0.);
    }}} }}}
 
+    
+   } ( (A6zz) vlasov->f0.dataZero(), (A6zz) vlasov->f.dataZero(), (A4zz) fields->Field0, (A6zz) fields->Field.dataZero(), (A4zz) fields->Q);
 
    ////////////////////////////////////////////////////////    Set Fixed Fields  phi, Ap, Bp //////////////////
    // set fixed fields if requested,  initialize Fields, Ap
-
+/* 
    if (setup->get("Init.FixedPhi", "0.").substr(0,4) == "File") setFieldFromDataFile(setup, fields->Field0, Field::phi, setup->get("Init.FixedPhi", "0."));
    else if (plasma->nfields >= 1) setFieldFromFunction(setup, fields->Field0, Field::phi, setup->get("Init.FixedPhi", "0."));
 
@@ -120,14 +139,8 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    if (setup->get("Init.FixedBp", "0.").substr(0,4) == "File") setFieldFromDataFile(setup, fields->Field0, Field::Bp, setup->get("Init.FixedBp", "0."));
    else if (plasma->nfields >= 3) setFieldFromFunction(setup, fields->Field0, Field::Bp, setup->get("Init.FixedBp", "0."));
 
+ * */
 
-  ////////////////////////////////////////////////////////////// 
-   // Perform gyro-average of the fields
-   for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) {
-        
-       	fields->gyroAverage(fields->Field0, fields->Field(RxLD, RkyLD, RzLD, m , s, RFields), m, s, true);
-   
-   }}
    
    //////////////////////////////////////// Done ///////////////
    // Boundaries and Done   
