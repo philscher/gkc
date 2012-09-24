@@ -89,13 +89,29 @@ enum class alloc_flags  {
 **/
 class allocate 
 {
-  int N,   ///< Number of Elements 
+  int Num, ///< Number of Elements 
       Off; ///< Offset from p[0] to p[n] = first element
 
   int flags; // Deallocate all arrays after usage
 
   public:
 
+   int getNum() const { return Num; };
+   int getOff() const { return Off; };
+
+   allocate()
+   {
+      Num = 0;
+      Off = 0;
+   };
+
+
+   template<class T> T* data(T *g)
+   {
+         T *g0 = g + Off;
+         return g0; 
+   };
+   
 
    /**
    *    @brief calculated offset for one dimensional arrays.
@@ -110,7 +126,7 @@ class allocate
 
        
         // get total array size
-        N   = R0.Num() ; 
+        Num = R0.Num() ; 
        
         // calculate offset to p[0]
         Off = R0.Off(); 
@@ -130,7 +146,7 @@ class allocate
             alloc_flags user_flags = alloc_flags::USE_DEFAULT)             
    { 
         // get total array size
-        N   = R0.Num() * R1.Num(); 
+        Num = R0.Num() * R1.Num(); 
         
         // calculate offset to p[0][0]
         Off = 
@@ -159,7 +175,7 @@ class allocate
    {
      
         // get total array size
-        N   = R2.Num() * R1.Num() * R0.Num();
+        Num = R2.Num() * R1.Num() * R0.Num();
 
         // calculate offset to p[0][0][0]
         Off = 
@@ -183,7 +199,7 @@ class allocate
             alloc_flags user_flags = alloc_flags::USE_DEFAULT)             
    {
        
-       N   = R3.Num() * R2.Num() * R1.Num() * R0.Num();
+       Num = R3.Num() * R2.Num() * R1.Num() * R0.Num();
 
        Off = 
           R0.Off() * (R1.Num() * R2.Num() * R3.Num()) 
@@ -213,7 +229,7 @@ class allocate
             alloc_flags user_flags = alloc_flags::USE_DEFAULT)             
    {
        
-       N   = R4.Num() * R3.Num() * R2.Num() * 
+       Num = R4.Num() * R3.Num() * R2.Num() * 
              R1.Num() * R0.Num();
        
        Off = 
@@ -242,7 +258,7 @@ class allocate
             alloc_flags user_flags = alloc_flags::USE_DEFAULT)             
    {
        // get total array size
-       N   = R5.Num() * R4.Num() * R3.Num() * 
+       Num = R5.Num() * R4.Num() * R3.Num() * 
              R2.Num() * R1.Num() * R0.Num();
        
        // calculate offset to p[0][0][0][0][0][0]
@@ -288,16 +304,20 @@ class allocate
     **/
     template<class T> void operator()(T **g)
     {
+   //   std::cout << "Biggest Alignment : " <<    __BIGGEST_ALIGNMENT << std::endl;
          //  using mm_malloc crashes the code, why ?! !
          // Take care, pointer arithmetic is typed, only char* is 1 Byte !!!
          //*g = (T *) (((char *) malloc(N * sizeof(T)))   - Off * sizeof(T));
          
          //*g = ((T *) malloc(N * sizeof(T)));
-         *g = ((T *) _mm_malloc(N * sizeof(T), 64));
-         
-         for(int n = 0; n < N; n++) (*g)[n] = 0.;
+         *g = ((T *) _mm_malloc(Num * sizeof(T), 64));
+        
+         std::cout << "Original Pointer : " << *g << std::endl;
+
+         for(int n = 0; n < Num; n++) (*g)[n] = 0.;
          *g = *g - Off;
-         // Not working ...   *g = (T *) (((char *) _mm_malloc(N * sizeof(T),64))   - Off * sizeof(T));
+         
+         std::cout << "Backcast Pointer : " << data(*g) << std::endl;
     };
  
     /**
