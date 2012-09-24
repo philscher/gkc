@@ -86,7 +86,7 @@ struct Timing {
    *
    **/
     friend ostream& operator<<(std::ostream& output, const Timing& t) {
-      output << "Steps : " << t.step << " Time : " << t.time << std::endl;
+      output << "Steps : " << t.step << " Time : " << t.time;// << std::endl;
       return output;
     };
     /**

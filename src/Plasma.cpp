@@ -121,8 +121,7 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
 
      void Plasma::printOn(std::ostream &output) const {
          output << 
-               "Type       | " << (global ? " Global" : "Local") << std::endl
-            << " Cs   : " << cs << std::endl 
+               "Type       | " << (global ? " Global" : "Local") << " Cs   : " << cs << std::endl 
             << "Species    | ";
             if(species[0].n0 != 0.) { output << "0. " << species[0].name << "  Density : " << species[0].n0 << " Charge : " << species[0].q << 
                                            " Temp : " << species[0].T0 << " FluxAvrg : " << (species[0].doGyro ? "Yes" : "No") << 
