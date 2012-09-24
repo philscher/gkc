@@ -23,11 +23,10 @@
 
 #include "Special/Vector3D.h"
 
-typedef struct Complex_t {
+typedef struct ComplexSplit_t {
       double r;   // real part
       double i;   // imaginary part
-};
-//}  Complex;
+}  ComplexSplit;
 
 
 
@@ -51,9 +50,9 @@ typedef struct Complex_t {
     H5Tinsert(timing_tid, "Time"    , HOFFSET(Timing, time), H5T_NATIVE_DOUBLE);
 
     // don't changes r and i name otherwise it will break compatibiltiy with pyTables
-    complex_tid = H5Tcreate(H5T_COMPOUND, sizeof (Complex_t));
-    H5Tinsert(complex_tid, "r", HOFFSET(Complex_t,r), H5T_NATIVE_DOUBLE);
-    H5Tinsert(complex_tid, "i", HOFFSET(Complex_t,i), H5T_NATIVE_DOUBLE);
+    complex_tid = H5Tcreate(H5T_COMPOUND, sizeof (ComplexSplit_t));
+    H5Tinsert(complex_tid, "r", HOFFSET(ComplexSplit_t,r), H5T_NATIVE_DOUBLE);
+    H5Tinsert(complex_tid, "i", HOFFSET(ComplexSplit_t,i), H5T_NATIVE_DOUBLE);
     
     vector3D_tid = H5Tcreate(H5T_COMPOUND, sizeof (Vector3D));
     H5Tinsert(vector3D_tid, "x", HOFFSET(Vector3D,x), H5T_NATIVE_DOUBLE);

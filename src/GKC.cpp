@@ -151,15 +151,18 @@ int GKC::mainLoop()   {
 
             bench->start("MainLoop");
             for(; control->checkOK(timing, timeIntegration->maxTiming);){
-        
-               double dt = timeIntegration->solveTimeStep(vlasov, fields, particles, timing);        
-                event->checkEvent(timing, vlasov, fields);
-                analysis->writeData(timing, dt);
-                fields->writeData(timing, dt);
-                visual->writeData(timing, dt);
-                    // OK Time Step finished
+       
+              // integrate for one time-step, give current dt as output
+               double dt = timeIntegration->solveTimeStep(vlasov, fields, particles, timing);       
+
+               // Analysis results and output data if necessary
+               // check if performed in writeData
+               event->checkEvent(timing, vlasov, fields);
+               analysis->writeData(timing, dt);
+               fields->writeData(timing, dt);
+               visual->writeData(timing, dt);
            }
-          bench->stop("MainLoop");
+           bench->stop("MainLoop");
 
    
         control->printLoopStopReason();
