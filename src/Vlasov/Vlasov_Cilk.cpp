@@ -32,8 +32,7 @@ int VlasovCilk::solve(std::string equation_type, Fields *fields, Array6C _fs, Ar
 {
   if(0);
   else if(equation_type == "Vlasov_EM") Vlasov_EM((A6zz) _fs.dataZero(), (A6zz) _fss.dataZero(), (A6zz) f0.dataZero(), (A6zz) f.dataZero(), (A6zz) ft.dataZero(), 
-                                                  (A6zz) fields->Field.dataZero(),
-                                                  (A4zz) Xi, (A4zz) G, (A3zz) nonLinearTerms,
+                                                  (A6zz) fields->Field.dataZero(), (A4zz) Xi, (A4zz) G, (A3zz) nonLinearTerms,
                                                   X, V, M,  dt, rk_step, rk);
   else   check(-1, DMESG("No Such Equation"));
 
@@ -132,8 +131,8 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
         
         // get maximum value to calculate CFL condition 
         // OPTIM : (is there sec_reduce_max_abs ? if not create)
-        Xi_max[DIR_Y] = max(Xi_max[DIR_Y], max(__sec_reduce_max(xy_dXi_dx[:][:]), -__sec_reduce_min(xy_dXi_dx[:][:])));
-        Xi_max[DIR_X] = max(Xi_max[DIR_X], max(__sec_reduce_max(xy_dXi_dy[:][:]), -__sec_reduce_min(xy_dXi_dy[:][:])));
+        Xi_max[DIR_Y] = max(Xi_max[DIR_Y], max(__sec_reduce_max(xy_dXi_dy[:][:]), -__sec_reduce_min(xy_dXi_dy[:][:])));
+        Xi_max[DIR_X] = max(Xi_max[DIR_X], max(__sec_reduce_max(xy_dXi_dx[:][:]), -__sec_reduce_min(xy_dXi_dx[:][:])));
         
 
         }

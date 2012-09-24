@@ -58,13 +58,13 @@ int VlasovAux::solve(std::string equation_type, Fields *fields, Array6C f_in, Ar
 
 
 void VlasovAux::Vlasov_ES(
-                           const CComplex fs    [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex fss         [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f0    [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f1    [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex ft          [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex fs        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex fss             [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f0        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f1        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex ft              [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex Fields[Nq][NsLD][NmLB][NzLB][NkyLD][NxLB+4],
-                           CComplex       NL                   [NkyLD][NxLD  ][NvLD],
+                           CComplex       NL                          [NkyLD][NxLD  ][NvLD],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3])
 { 
@@ -577,11 +577,6 @@ void    VlasovAux::Vlasov_2D_Fullf(
 
              const Complex ky = Complex(0., fft->ky(y_k));
              const Complex kp = 0.; //geo->get_kp(x, ky, z);
-
-  //           Xi_max(DIR_X) = max(Xi_max(DIR_X), abs(dphi_dx(x,y_k,z)));
-  //           Xi_max(DIR_Y) = max(Xi_max(DIR_Y), abs(ky*Fields[Field::phi][s][m][z][y_k][x])); 
- //            Xi_max(DIR_Z) = max(Xi_max(DIR_Z), abs(kp));// * abs(Fields[Field::phi][s][m][z][y_k][x])); 
-
 
             for(int v=NvLlD; v<= NvLuD;v++) {
         

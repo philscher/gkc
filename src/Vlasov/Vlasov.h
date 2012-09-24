@@ -63,7 +63,7 @@ class Vlasov : public IfaceGKC {
   /**
   *
   **/
-  enum Boundary  { BOUNDARY_SEND=1,  BOUNDARY_RECV=2, BOUNDARY_SENDRECV=3};
+  enum class Boundary  { SEND=1,  RECV=2, SENDRECV=3};
 
 
    /**
@@ -198,7 +198,7 @@ class Vlasov : public IfaceGKC {
    void setBoundary(Array6C);
 
 
-   void setBoundary(Array6C, int boundary_type);
+   void setBoundary(Array6C, const Boundary boundary_type);
 
    /**
    *    Please Document Me !

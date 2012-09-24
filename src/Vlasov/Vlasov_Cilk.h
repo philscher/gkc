@@ -51,6 +51,23 @@ class VlasovCilk : public Vlasov {
    *    @todo Describe and add reference
    *
    *
+   *   Updated the CFL (Courant-Friedrich-Levy number). For explicit time-stepening
+   *   the CFL value has to be always < 1 to ensure stability of the system
+   *   (practically < 0.4).
+   *   
+   *   Note : Stability is still not guranteed. As the system is unstable. Thus the
+   *          time-steppening scheme needs to allows imaginary values e.g.
+   *          (RK-3, RK-4, Heun method).
+   *
+   *   Calculated using ....
+   *
+   *   This needs only to be caluclated in the non-linear terms
+   *
+   *  @note get linking error if defined inline. Check Performance !
+   *
+   *  @depracated This is not done direclty in the non-linear term
+   *
+   *
    **/
    void calculatePoissonBracket(const CComplex  G              [NzLB][NkyLD][NxLB  ][NvLB],   // in case of e-m
                                 const CComplex Xi              [NzLB][NkyLD][NxLB+4][NvLB],   // in case of e-m
