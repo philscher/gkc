@@ -32,7 +32,7 @@ int VlasovCilk::solve(std::string equation_type, Fields *fields, Array6C _fs, Ar
 {
   if(0);
   else if(equation_type == "Vlasov_EM") Vlasov_EM((A6zz) _fs.dataZero(), (A6zz) _fss.dataZero(), (A6zz) f0.dataZero(), (A6zz) f.dataZero(), (A6zz) ft.dataZero(), 
-                                                  (A5zz) fields->phi.dataZero(), (A5zz) fields->Ap.dataZero(), (A5zz) fields->Bp.dataZero(),
+                                                  (A6zz) fields->Field.dataZero(),
                                                   (A4zz) Xi, (A4zz) G, (A3zz) nonLinearTerms,
                                                   X, V, M,  dt, rk_step, rk);
   else   check(-1, DMESG("No Such Equation"));
@@ -77,30 +77,28 @@ Nice stuff http://stackoverflow.com/questions/841433/gcc-attribute-alignedx-expl
 void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][NkyLD][NxLB  ][NvLB],  // in case of e-m
                                          const CComplex Xi              [NzLB][NkyLD][NxLB+4][NvLB],  // in case of e-m
                                          const CComplex  f [NsLD][NmLD ][NzLB][NkyLD][NxLB  ][NvLB],  // in case of e-s
-                                         const CComplex phi[NsLD][NmLD ][NzLB][NkyLD][NxLB+4],        // in case of e-s
+                                         const CComplex Fields[Nq][NsLD][NmLD ][NzLB][NkyLD][NxLB+4], // in case of e-s
                                          const int z, const int m, const int s,
                                          CComplex ExB[NkyLD][NxLD][NvLD], double Xi_max[3], const bool electroMagnetic)
 {
    // phase space function & Poisson bracket
    const double _kw_fft_Norm = 1./(fft->Norm_Y_Backward * fft->Norm_Y_Backward * fft->Norm_Y_Forward);
+   
+   typedef __declspec(align(64)) double     doubleAA;
+   typedef __declspec(align(64)) CComplex CComplexAA;
 
-   CComplex  xky_Xi [NkyLD][NxLD+8];
-   CComplex  xky_f1 [NkyLD][NxLD+4];
-   CComplex  xky_ExB[NkyLD][NxLD  ];
+   CComplexAA  xky_Xi [NkyLD][NxLB+4];
+   CComplexAA  xky_f1 [NkyLD][NxLB  ];
+   CComplexAA  xky_ExB[NkyLD][NxLD  ];
 
-   // having different extend suckz, sorry
-   typedef __declspec(align(32)) double double32;
+   doubleAA    xy_Xi    [NyLD+8][NxLB+4]; // extended BC 
+   doubleAA    xy_dXi_dy[NyLD+4][NxLB  ]; // normal BC
+   doubleAA    xy_dXi_dx[NyLD+4][NxLB  ];
+   doubleAA    xy_f1    [NyLD+4][NxLB  ];
+   doubleAA    xy_ExB   [NyLD  ][NxLD  ];
 
-
-   double  __declspec(align(32))  xy_Xi    [NyLD+8][NxLD+8]; // extended BC 
-   //double  __declspec(align(32))  xy_dXi_dy[NyLD+4][NxLD+4]; // normal BC
-   double32  xy_dXi_dy[NyLD+4][NxLD+4]; // normal BC
-   double    xy_dXi_dx[NyLD+4][NxLD+4];
-   double    xy_f1    [NyLD+4][NxLD+4];
-   double    xy_ExB   [NyLD  ][NxLD  ];
-
-   const double _kw_12_dx = 1./(12.*dx), _kw_12_dy=1./(12.*dy);
-   const double _kw_24_dx = 1./(24.*dx), _kw_24_dy=1./(24.*dy);
+   const doubleAA _kw_12_dx = 1./(12.*dx), _kw_12_dy=1./(12.*dy);
+   const doubleAA _kw_24_dx = 1./(24.*dx), _kw_24_dy=1./(24.*dy);
 
    // stride is not good
    for(int v=NvLlD; v<=NvLuD;v++) { 
@@ -111,18 +109,20 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
         // for electro-static field this has to be calculated only once
         if(electroMagnetic || (v == NvLlD)) {
 
-        if(electroMagnetic) xky_Xi[:][:] =  Xi      [z][NkyLlD:NkyLD][NxLlD-4:NxLD+8][v];
-        else                xky_Xi[:][:] = phi[s][m][z][NkyLlD:NkyLD][NxLlD-4:NxLD+8]   ;
+        if(electroMagnetic) xky_Xi[:][:] =     Xi                  [z][NkyLlD:NkyLD][NxLlB-2:NxLB+4][v];
+        else                xky_Xi[:][:] = Fields[Field::phi][s][m][z][NkyLlD:NkyLD][NxLlB-2:NxLB+4]   ;
        
-        // boundary sucks
-        fft->solve(FFT_Y_FIELDS, FFT_BACKWARD, (CComplex *) xky_Xi, &xy_Xi[4][0]);
+        // xy_Xi[shift by +4][], as we have now boundaries also excended BC in Y
+        fft->solve(FFT_Y_FIELDS, FFT_BACKWARD, xky_Xi, &xy_Xi[4][0]);
        
-        // Boundary in Y (in X is not necessary as we transform it too)
-        xy_Xi[0     :4][:] =  xy_Xi[NyLD-1:4][:];
-        xy_Xi[NyLD+3:4][:] =  xy_Xi[4:4     ][:];
+        // Set Periodic-Boundary in Y (in X is not necessary as we transform it too)
+        //xy_Xi[0     :4][:] =  xy_Xi[NyLD-1:4][:];
+        //xy_Xi[NyLD+3:4][:] =  xy_Xi[4     :4][:];
+        xy_Xi[0     :4][:] =  xy_Xi[NyLD  :4][:];
+        xy_Xi[NyLD+4:4][:] =  xy_Xi[4     :4][:];
 
         // perform CD-4 derivative for dphi_dx , and dphi_dy (Note, we have extendend GC in X&Y)
-        omp_for(int y=2; y< NyLD+6;y++) { simd_for(int x=2; x< NyLD+6;x++)  {
+        omp_for(int y=2; y < NyLB+2; y++) { simd_for(int x=2; x < NxLB+2; x++)  {
 
          xy_dXi_dx[y-2][x-2] = (8.*(xy_Xi[y][x+1] - xy_Xi[y][x-1]) - (xy_Xi[y][x+2] - xy_Xi[y][x-2])) * _kw_12_dx;
          xy_dXi_dy[y-2][x-2] = (8.*(xy_Xi[y+1][x] - xy_Xi[y-1][x]) - (xy_Xi[y+2][x] - xy_Xi[y-2][x])) * _kw_12_dy;
@@ -144,12 +144,14 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
         fft->solve(FFT_Y_PSF, FFT_BACKWARD, (CComplex *) xky_f1, &xy_f1[2][0]);
 
         // Boundary in Y (In X is not necessary as we transformed it too), take care of FFT-boundary conditions
-        xy_f1[NyLD+1:2][:] =  xy_f1[2     :2][:];
-        xy_f1[0     :2][:] =  xy_f1[NyLD-1:2][:];
+        //xy_f1[0     :2][:] =  xy_f1[NyLD-1:2][:];
+        //xy_f1[NyLD+1:2][:] =  xy_f1[2     :2][:];
+        xy_f1[0     :2][:] =  xy_f1[NyLD  :2][:];
+        xy_f1[NyLD+2:2][:] =  xy_f1[2     :2][:];
 
      /////////////////   calculate cross terms using Morinishi scheme (Arakawa type) [Xi,G] (or [phi,F1])  /////////////////////
       
-     omp_for(int y=2; y < NyLD+2;y++) { simd_for(int x=2; x < NxLD+2; x++) {
+     omp_for(int y=2; y < NyLD+2; y++) { simd_for(int x=2; x < NxLD+2; x++) {
 
             const double dXi_dy__dG_dx =  ( 8. * ( (xy_dXi_dy[y][x] + xy_dXi_dy[y][x+1]) * xy_f1[y][x+1]
                                                  - (xy_dXi_dy[y][x] + xy_dXi_dy[y][x-1]) * xy_f1[y][x-1])
@@ -167,8 +169,7 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
    
       fft->solve(FFT_Y_NL, FFT_FORWARD, xy_ExB, (CComplex *) xky_ExB);
 
-      // Done - stores the non-linear terms ExB
-      // large stride ... fuck ...
+      // Done - store the non-linear term in ExB
       ExB[NkyLlD:NkyLD][NxLlD:NxLD][v] = xky_ExB[:][:];
 
    }
