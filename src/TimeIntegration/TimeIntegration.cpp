@@ -198,7 +198,7 @@ int TimeIntegration::writeTimeStep(Timing timing, Timing maxTiming, double dt) {
 
 
             output << "Time Int.  |  " << timeIntegrationScheme << "  maxCFL Number : " << maxCFLNumber   << std::endl;
-            output << "Max Timing |  " << maxTiming << " lin. TimeStep " << linearTimeStep <<  std::endl;
+            output << "Max Timing |  " << maxTiming << "  lin. TimeStep : " << linearTimeStep <<  std::endl;
         
          }
 

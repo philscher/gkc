@@ -38,7 +38,6 @@ RecvXu(blitz::FortranArray<6>()), RecvXl(blitz::FortranArray<6>()), RecvZu(blitz
 
    // for phi terms
    allocate(RxLB4,RkyLD,RzLB, RmLB, RsLB, RFields, Field);
-   //allocate(RxLD ,RkyLD,RzLD, RFields, Q, Qm, Field0);
   
    ArrayField0 = nct::allocate(nct::Range(1,Nq), nct::Range(NzLlD, NzLD), nct::Range(NkyLlD,NkyLD), nct::Range(NxLlD, NxLD));
    ArrayField0(&Q, &Qm, &Field0);
@@ -73,18 +72,21 @@ void Fields::solve(Array6C f0, Array6C  f, Timing timing)
       if(solveEq & Field::Bpp) calculatePerpendicularCurrentDensity ((A6zz) f0.dataZero(), (A6zz) f.dataZero(), (A4zz) Field0, M, m, s);
   
       // thus uses AllReduce, Reduce is more effective (with false flag...)
-      parallel->collect(ArrayField0.data(Field0), OP_SUM, DIR_V, true, ArrayField0.getNum()); 
+      parallel->collect(ArrayField0.data(Field0), OP_SUM, DIR_V, ArrayField0.getNum(), true); 
  
       // OPTIM : Normally we would decompose in m&s, thus no need for Qm                         
       // backward-transformation from gyro-center to drift-center 
       if (parallel->Coord[DIR_V] == 0) {
 
-            gyroAverage((A4zz) Field0, (A4zz) Qm, m, s, false);            
+            gyroAverage((A4zz) Field0, (A4zz) Qm, m, s, false);           
+
             // Lambda function to integrate over m ( for source terms), If loop=0, we overwrite value of Q
-           if(loop==0) [=] (CComplex Q[Nq][NzLD][NkyLD][NxLD], CComplex Qm[Nq][NzLD][NkyLD][NxLD])
-                           { Q[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]   = Qm[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]; } ((A4zz) Q, (A4zz) Qm); 
-           else        [=] (CComplex Q[Nq][NzLD][NkyLD][NxLD], CComplex Qm[Nq][NzLD][NkyLD][NxLD])
-                           { Q[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]  += Qm[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]; } ((A4zz) Q, (A4zz) Qm); 
+            [=] (CComplex Q[Nq][NzLD][NkyLD][NxLD], CComplex Qm[Nq][NzLD][NkyLD][NxLD])
+            {
+               if  (loop == 0) Q[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]   = Qm[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD];
+               else            Q[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]  += Qm[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD];
+
+            } ((A4zz) Q, (A4zz) Qm);
       }
       
    }  } // for m, for s
@@ -94,7 +96,7 @@ void Fields::solve(Array6C f0, Array6C  f, Timing timing)
    if(parallel->Coord[DIR_V] == 0) {
 
       // integrate over mu-space and over species
-      parallel->collect(ArrayField0.data(Q), OP_SUM, DIR_MS, true, ArrayField0.getNum()); 
+      parallel->collect(ArrayField0.data(Q), OP_SUM, DIR_MS, ArrayField0.getNum(), true); 
 
       // Solve field equation in drift coordinates
       // This routine is solved only on a part of notes when decomposed in m thus efficiency is crucial
@@ -286,25 +288,18 @@ void Fields::initDataOutput(Setup *setup, FileIO *fileIO) {
 
 }   
 
-// to do : Improve writeMessage (timestep, offset, etc.)
 void Fields::writeData(Timing timing, double dt) 
 {
-
    if (timing.check(dataOutputFields, dt)       )   {
-      //FA_phi->write(&Field0[Fields::phi][NzLlD][NkyLlD][NzLlD]);
-      //FA_Ap ->write(Field0[Fields::Ap ][NzLlD][NkyLlD][NzLlD]);
-      //FA_Bp ->write(Field0[Fields::Bp ][NzLlD][NkyLlD][NzLlD]);
       //FA_phi->write(&Field0[Fields::phi][NzLlD][NkyLlD][NzLlD]);
       //FA_Ap ->write(Field0[Fields::Ap ][NzLlD][NkyLlD][NzLlD]);
       //FA_Bp ->write(Field0[Fields::Bp ][NzLlD][NkyLlD][NzLlD]);
       FA_phiTime->write(&timing);
       
-      parallel->print("Wrote Potential data ... "); 
+      parallel->print("Wrote fields data ... "); 
    }
-
 } 
       
-
 void Fields::closeData() {
 
    delete FA_phi;
@@ -315,7 +310,6 @@ void Fields::closeData() {
 }
 
 
-// @todo : how to interact with FieldFFT, FieldHermite ?
 void Fields::printOn(std::ostream &output) const {
 
          output   << "Poisson    |  " << "Base class" << std::endl;

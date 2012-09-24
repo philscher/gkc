@@ -43,7 +43,7 @@ void FieldsFFT::solveFieldEquations(CComplex Q     [Nq][NzLD][NkyLD][NxLD],
    if     ( solveEq &  Field::Ap               ) solveAmpereEquation   ((A4zz) fft->kXOut.dataZero(), (A4zz) fft->kXIn.dataZero());
 
    // suppresses modes in all fields (needs work)
-   //fft->suppressModes(fft->kXIn, Field::phi);
+   // fft->suppressModes(fft->kXIn, Field::phi);
 
    // replace calcultated field with fixed one if option is set Don't need - or ?
    //if(!(solveEq & Field::phi) && (Nq >= 1)) fft->rXOut(RxLD, RkyLD, RzLD, Field::phi) = Field0(RxLD, RkyLD, RzLD, Field::phi);
@@ -173,8 +173,8 @@ void FieldsFFT::calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_Nk
 
 
 // Pretty sure needs to be turned around
-void FieldsFFT::gyroFull(CComplex In [Nq][NzLD][NkyLD][NxLD], 
-                         CComplex Out[Nq][NzLD][NkyLD][NxLD],
+void FieldsFFT::gyroFull(CComplex In   [Nq][NzLD][NkyLD][NxLD             ], 
+                         CComplex Out  [Nq][NzLD][NkyLD][NxLD             ],
                          CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
                          CComplex kXIn [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
                          const int m, const int s, const bool gyroFields)  

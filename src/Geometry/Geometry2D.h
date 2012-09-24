@@ -125,7 +125,7 @@ class Geometry2D : public Geometry
    *   Get the value of shear at position x, which is constant for sheared slab geometry 
    *
    **/
-   inline CComplex get_kp(const int x, const CComplex ky, const int z) const  { return ky * By[x] ; };//+ _Imaginary * kz; };
+   inline CComplex get_kp(const int x, const CComplex ky, const int z) const  { return ky * By[x] + ((CComplex (0. + 1.j)) * kz); };
   
   
    double nu (const int x) { return 0.; };

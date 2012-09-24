@@ -20,6 +20,7 @@ Fields *GL_fields;
 
 int GL_iter;
 
+extern int process_rank;
 
 int petc_signal_handler(int sig, void *ctx) {
     // hard exit ( try to improve using control)
@@ -47,7 +48,7 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
        CComplex  fss [NsLD][NmLD ][NzLB][NkyLD][NxLB][NvLB])
   {
       
-    std::cout << "\r"   << "Iteration  : " << GL_iter++ << std::flush;
+    if(process_rank == 0 ) std::cout << "\r"   << "Iteration  : " << GL_iter++ << std::flush;
 
     CComplex *x_F1, *y_F1; 
  
