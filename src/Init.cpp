@@ -108,8 +108,8 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
         
        	fields->gyroAverage(Field0, Q, m, s, true);
 
-         Field[1:plasma->nfields][m][s][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NzLD] 
-          =  Q[1:plasma->nfields]      [NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NzLD];
+         Field[1:plasma->nfields][m][s][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD] 
+          =  Q[1:plasma->nfields]      [NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD];
    
    
    } }
