@@ -40,7 +40,7 @@ public:
             B1 += f1(x,y_k, z, v,m,s);
             B2 +=              f1(x,y_k, z, v,m,s);
             B3 +=              f1(x,y_k, z, v,m,s);
-            B4 += pow2(V(v)) * f1(x,y_k, z, v,m,s);
+            B4 += pow2(V[v]) * f1(x,y_k, z, v,m,s);
 
 
 
@@ -68,8 +68,8 @@ public:
                 df_dm[v][m] = (8.  *(f[s][m+1][z][y_k][x][v] - f[s][m-1][z][y_k][x][v]) - (f[s][m+2][z][y_k][x][v] - f[s][m-2][z][y_k][x][v]))/(12.*dm);
 
 
-                C_v[v][m] =    (2. * plasma->B0 * M(m)) * df_dv -   ( 4. * M(m) * V(v)                 ) * df_dm 
-                C_m[v][m] =  - (4. * M(m) * V(v)      ) * df_dv +   ( 8./plasma->B0 * pow2(V(v)) * M(m)) * df_dm
+                C_v[v][m] =    (2. * plasma->B0 * M[m]) * df_dv -   ( 4. * M[m] * V[v]                 ) * df_dm 
+                C_m[v][m] =  - (4. * M[m] * V[v]      ) * df_dv +   ( 8./plasma->B0 * pow2(V[v]) * M[m]) * df_dm
         } }
 
 
@@ -104,13 +104,13 @@ public:
         // we need to calculate the pre-factors
         //
 
-//        for(int s=NsGlD; s <= NsGuD; s++)  pref_Cxy(s) += - vc * plasma->species(j).n * pow2(plasma->species(j).q)* plasma->species(j).T * pow(plasma->species(s).m, 3./2.) 
+//        for(int s=NsGlD; s <= NsGuD; s++)  pref_Cxy(s) += - vc * plasma->species(j).n * pow2(plasma->species(j).q)* plasma->species(j).T * pow(plasma->species[s].m, 3./2.) 
 
 
 
         // caluclate B's for conservation term
      /* 
-        double v2 = pow2(V(v)) + M(m); 
+        double v2 = pow2(V[v]) + M[m]; 
  
         B(s,1) = parallel->sum(sum(F0), DIR_ALL);
         B(s,1) = parallel->sum(sum(F0), DIR_ALL);
@@ -162,7 +162,7 @@ public:
       const double xc = 0.;
 
 
-       return pref_Cxy(s) * 1./pow5(V(v)) * ( V(v) * F1(xc) + 3. * plasma->B0 * M(m) * df_dp / plasma->species(s).m * F2(df_dp));
+       return pref_Cxy(s) * 1./pow5(V[v]) * ( V[v] * F1(xc) + 3. * plasma->B0 * M[m] * df_dp / plasma->species[s].m * F2(df_dp));
 
     };
 
@@ -174,11 +174,11 @@ public:
     inline double C_vm(const double df_dv, const double df_dm, const double f, const int x, const int y, const int z, const int v, const int m, const int s) {
   
       int j = s;
-       const double xc = plasma->species(s).scale_v / plasma->species(j).scale_v * V(v);
+       const double xc = plasma->species[s].scale_v / plasma->species(j).scale_v * V[v];
       
        // parallel velocity
-      const double C_v =    ((2. * plasma->B0 * M(m))/ plasma->species(s).m * F1(xc) + pow2(V(v)) * F3(x)) * df_dv + (6. * M(m) * pow2(V(v)) * F2(xc)) * df_dm - 2. * F3(xc)/pow3(V(v)) * V(v) * f;
-      const double C_m =    ((6. * M(m) * V(v) * F2(xc)) * df_dv  + 4./plasma->B0 * pow2(V(v)) * M(m) * F1(xc)) * df_dv + (4. * pow2(M(m)) * F3(xc)) * df_dm - 2. * F3(xc)/pow3(V(v)) * 2. * M(m) * f;
+      const double C_v =    ((2. * plasma->B0 * M[m])/ plasma->species[s].m * F1(xc) + pow2(V[v]) * F3(x)) * df_dv + (6. * M[m] * pow2(V[v]) * F2(xc)) * df_dm - 2. * F3(xc)/pow3(V[v]) * V[v] * f;
+      const double C_m =    ((6. * M[m] * V[v] * F2(xc)) * df_dv  + 4./plasma->B0 * pow2(V[v]) * M[m] * F1(xc)) * df_dv + (4. * pow2(M[m]) * F3(xc)) * df_dm - 2. * F3(xc)/pow3(V[v]) * 2. * M[m] * f;
         
        
       // BUG : this is wrong, we need to diffrentiate over v
@@ -207,7 +207,7 @@ public:
      
 protected:
 
-        virtual void printOn(ostream &output) const {
+        virtual void printOn(std::ostream &output) const {
          output   << "Collisions |  " << ((nu > 0.) ? Num2String(nu) :  "off") << std::endl;
         }
 };

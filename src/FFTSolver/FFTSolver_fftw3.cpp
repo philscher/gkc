@@ -210,15 +210,23 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
                 //           Distance for the next mode is thus 1          
                 //
 
+                perf_flag |= FFTW_UNALIGNED;
+                // Orginal
+                plan_YBackward_Field = fftw_plan_many_dft_c2r(1, &NyLD, NxLB+4, (fftw_complex*) kYIn.data(), NULL, NxLB+4, 1,                 rYOut.data(), NULL, NxLB+4, 1, perf_flag);
+                plan_YBackward_PSF   = fftw_plan_many_dft_c2r(1, &NyLD, NxLB  , (fftw_complex*) kYIn.data(), NULL, NxLB  , 1,                 rYOut.data(), NULL, NxLB  , 1, perf_flag);
+                plan_YForward_NL     = fftw_plan_many_dft_r2c(1, &NyLD, NxLD  ,                 rYIn.data(), NULL, NxLD  , 1, (fftw_complex*) kYOut.data(), NULL, NxLD  , 1, perf_flag);
+               
+               // plan_YBackward_Field = fftw_plan_many_dft_c2r(1, &NyLD, NxLB+4, (fftw_complex*) kYIn.data(), NULL, 1, NxLB+4,                  rYOut.data(), NULL, 1,NxLB+4,  perf_flag);
+              // plan_YBackward_PSF   = fftw_plan_many_dft_c2r(1, &NyLD, NxLB  , (fftw_complex*) kYIn.data(), NULL, 1, NxLB,                  rYOut.data(), NULL, 1,NxLB,  perf_flag);
+              //  plan_YForward_NL     = fftw_plan_many_dft_r2c(1, &NyLD, NxLD,                   rYIn.data(), NULL, 1, NxLD ,  (fftw_complex*) kYOut.data(), NULL, 1,NxLD,  perf_flag);
+                
+                
+                
+                
                 //plan_YForward_Field  = fftw_plan_many_dft_r2c(1, &NyLD, NxLD+8,                 rYIn.data(), NULL, 1, NyLD,  (fftw_complex*) kYOut.data(), NULL, 1, NkyLD, perf_flag);
                 //plan_YBackward_Field = fftw_plan_many_dft_c2r(1, &NyLD, NxLD+8, (fftw_complex*) kYIn.data(), NULL, 1, NkyLD,                  rYOut.data(), NULL, 1, NyLD , perf_flag);
-                plan_YBackward_Field = fftw_plan_many_dft_c2r(1, &NyLD, NxLD+8, (fftw_complex*) kYIn.data(), NULL, NxLD+8, 1,                 rYOut.data(), NULL, NxLD+8, 1, perf_flag);
-                
                 //plan_YForward_PSF    = fftw_plan_many_dft_r2c(1, &NyLD, NxLB  ,                 rYIn.data(), NULL, 1, NyLD ,  (fftw_complex*) kYOut.data(), NULL, 1, NkyLD, perf_flag);
                 //plan_YBackward_PSF   = fftw_plan_many_dft_c2r(1, &NyLD, NxLB  , (fftw_complex*) kYIn.data(), NULL, 1, NkyLD,                  rYOut.data(), NULL, 1, NyLD , perf_flag);
-                plan_YBackward_PSF   = fftw_plan_many_dft_c2r(1, &NyLD, NxLB  , (fftw_complex*) kYIn.data(), NULL, NxLB, 1,                 rYOut.data(), NULL, NxLB, 1, perf_flag);
-                
-                plan_YForward_NL    = fftw_plan_many_dft_r2c(1, &NyLD, NxLD,                 rYIn.data(), NULL, NxLD , 1, (fftw_complex*) kYOut.data(), NULL, NxLD, 1, perf_flag);
                 plan_YBackward_NL   = fftw_plan_many_dft_c2r(1, &NyLD, NxLD, (fftw_complex*) kYIn.data(), NULL, NxLD,  1,                rYOut.data(), NULL, NxLD , 1, perf_flag);
                 
 
