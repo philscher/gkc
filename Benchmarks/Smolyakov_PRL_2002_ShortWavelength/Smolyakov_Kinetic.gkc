@@ -1,0 +1,60 @@
+Grid.Nx  = 2
+Grid.Nky = 129
+Grid.Nv  = 32
+Grid.Nz  = 1
+Grid.Ns  = 2
+Grid.Nm  = 16
+
+
+# scale by sqrt(2.)
+Grid.Lx = 44.428829
+Grid.Ly = 128.
+Grid.Lz = 1.
+Grid.Lv = 4.
+Grid.Lm = 12.
+
+DataOutput.OutputFileName = Smolyakov_Kinetic.h5
+
+Geometry.kz = 0.0028284271247461905
+
+Vlasov.Equation = ES
+Vlasov.NonLinear = 0
+Vlasov.CollisionBeta = 0.
+
+DataOutput.Statistics.Time     =  10.
+
+Plasma.Beta   = 0.e0
+Plasma.Debye2 = 0.
+
+Plasma.Species0.Name        = Electron
+Plasma.Species0.Charge      = -1.
+Plasma.Species0.Density     = 0.0 
+Plasma.Species0.Temperature = 1.
+
+Plasma.Species1.Name        = Proton
+Plasma.Species1.Density     = 1. 
+Plasma.Species1.Temperature = 1.
+Plasma.Species1.Mass        = 1.
+Plasma.Species1.Charge      = 1.
+Plasma.Species1.w_T         = 0.14142
+Plasma.Species1.w_n         = 0.028284
+Plasma.Species1.gyroModel   = Gyro
+
+Plasma.Species2.Name        = Electron
+Plasma.Species2.Density     = 1. 
+Plasma.Species2.Temperature = 1.
+Plasma.Species2.Mass        =  0.002
+Plasma.Species2.Charge      = -1.
+Plasma.Species2.w_T         = 0.14142
+Plasma.Species2.w_n         = 0.028284
+Plasma.Species2.gyroModel   = Gyro
+
+
+Helios.MaxTime     = 6000.
+Helios.MaxSteps    = -1
+
+SuppressModeX = (0-0)
+
+Init.Perturbation = PSFNoise
+Init.Epsilon0     = 1.e-120
+

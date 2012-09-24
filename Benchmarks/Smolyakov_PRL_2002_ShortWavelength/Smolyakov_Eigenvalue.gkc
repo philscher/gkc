@@ -1,0 +1,62 @@
+Grid.Nx  = 2
+Grid.Nky = 3
+Grid.Nv  = 32
+Grid.Nz  = 1
+Grid.Ns  = 2
+Grid.Nm  = 8
+
+
+# scale by sqrt(2.)
+Grid.Lx = 44.428829
+Grid.Ly = 5.711986642890532
+Grid.Lz = 1.
+Grid.Lv = 3.5
+Grid.Lm = 7.
+
+DataOutput.OutputFileName = Smolyakov_Eigenvalue.h5
+
+Geometry.kz = 0.0028284271247461905
+
+
+Vlasov.Equation = ES
+Vlasov.NonLinear = 0
+Vlasov.CollisionBeta = 1.e-4
+
+
+Plasma.Beta   = 0.e0
+Plasma.Debye2 = 0.00
+
+Plasma.Species0.Name        = Electron
+Plasma.Species0.Charge      = -1.
+Plasma.Species0.Density     = 0. 
+Plasma.Species0.Temperature = 1.
+
+Plasma.Species1.Name        = Proton
+Plasma.Species1.Density     = 1. 
+Plasma.Species1.Temperature = 1.
+Plasma.Species1.Mass        = 1.
+Plasma.Species1.Charge      = 1.
+Plasma.Species1.w_T         = 0.14142
+Plasma.Species1.w_n         = 0.028284
+Plasma.Species1.gyroModel   = Gyro
+
+Plasma.Species2.Name        = Electron
+Plasma.Species2.Density     = 1. 
+Plasma.Species2.Temperature = 1.
+Plasma.Species2.Mass        = 0.0025
+Plasma.Species2.Charge      = -1.
+Plasma.Species2.w_T         = 0.14142
+Plasma.Species2.w_n         = 0.028284
+Plasma.Species2.gyroModel   = Gyro
+
+Init.Perturbation = NoPerturbation
+GKC.Type = Eigenvalue
+
+
+
+
+
+SuppressModeX = (0-0)
+SuppressModeY = (0-0)
+
+
