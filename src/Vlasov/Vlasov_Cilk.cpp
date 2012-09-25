@@ -82,7 +82,8 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
 {
    // phase space function & Poisson bracket
    const double _kw_fft_Norm = 1./(fft->Norm_Y_Backward * fft->Norm_Y_Backward * fft->Norm_Y_Forward);
-   
+  
+   // all direclty at cache-lines
    typedef __declspec(align(64)) double     doubleAA;
    typedef __declspec(align(64)) CComplex CComplexAA;
 
@@ -111,10 +112,11 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
         if(electroMagnetic) xky_Xi[:][:] =     Xi                  [z][NkyLlD:NkyLD][NxLlB-2:NxLB+4][v];
         else                xky_Xi[:][:] = Fields[Field::phi][s][m][z][NkyLlD:NkyLD][NxLlB-2:NxLB+4]   ;
        
-        // xy_Xi[shift by +4][], as we have now boundaries also excended BC in Y
+        // xy_Xi[shift by +4][], as we also will use extended BC in Y
         fft->solve(FFT_Y_FIELDS, FFT_BACKWARD, xky_Xi, &xy_Xi[4][0]);
        
         // Set Periodic-Boundary in Y (in X is not necessary as we transform it too)
+        //wonder if this is faster : xy_Xi[0     :4][4:NxLB] =  xy_Xi[NyLD  :4][4:NxLB];
         xy_Xi[0     :4][:] =  xy_Xi[NyLD  :4][:];
         xy_Xi[NyLD+4:4][:] =  xy_Xi[4     :4][:];
 
@@ -158,17 +160,18 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
                                             -    ( (xy_dXi_dx[y][x] + xy_dXi_dx[y+2][x]) * xy_f1[y+2][x] 
                                                  - (xy_dXi_dx[y][x] + xy_dXi_dx[y-2][x]) * xy_f1[y-2][x]) ) * _kw_24_dy;
             
-            // Take care of Fourier normalization : A*sqrt(N) * B*sqrt(N) 
+           // Take care of Fourier normalization : A*sqrt(N) * B*sqrt(N) 
            xy_ExB[y-2][x-2]  = -(dXi_dy__dG_dx - dXi_dx__dG_dy) * _kw_fft_Norm;
       } } // x,y
    
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
       fft->solve(FFT_Y_NL, FFT_FORWARD, xy_ExB, (CComplex *) xky_ExB);
 
       // Done - store the non-linear term in ExB
       ExB[NkyLlD:NkyLD][NxLlD:NxLD][v] = xky_ExB[:][:];
 
    }
-  
     
    return;
 
@@ -202,15 +205,20 @@ void VlasovCilk::setupXiAndG(
 
      Xi[z][y_k][x][v] = Fields[Field::phi][s][m][z][y_k][x] - (useAp ? aeb*V[v]*Fields[Field::Ap][s][m][z][y_k][x] : 0.) 
                                                             - (useBp ? aeb*M[m]*Fields[Field::Bp][s][m][z][y_k][x] : 0.);
+
      G [z][y_k][x][v] = g[s][m][z][y_k][x][v]  + sigma * Xi[z][y_k][x][v] * f0[s][m][z][y_k][x][v];
- // f1[z][y_k][x][v] = g[s][m][z][y_k][x][v] - (useAp ? saeb * V[v] * f0[s][n][z][y_k][x][v] * Ap[s][m][z][y_k][x] : 0.);
+
+     // substract canonical momentum to get "real" f1 (not used "yet")
+     // f1[z][y_k][x][v] = g[s][m][z][y_k][x][v] - (useAp ? saeb * V[v] * f0[s][n][z][y_k][x][v] * Ap[s][m][z][y_k][x] : 0.);
       
-  }} // v, x
+  } } // v, x
      
   // Note we have extended boundaries in X (NxLlB-2 -- NxLuB+2) for fields
-  simd_for(int v   = NvLlB ;   v <= NvLuB ;   v++) { 
+  simd_for(int v   = NvLlB ;   v <= NvLuB ;   v++) {
+
      Xi[z][y_k][NxLlB-2:2][v] = Fields[Field::phi][s][m][z][y_k][NxLlB-2:2] - (useAp ? aeb*V[v]*Fields[Field::Ap][s][m][z][y_k][NxLlB-2:2] : 0.)
                                                                            - (useBp ? aeb*M[m]*Fields[Field::Bp][s][m][z][y_k][NxLlB-2:2] : 0.);
+
      Xi[z][y_k][NxLuB+1:2][v] = Fields[Field::phi][s][m][z][y_k][NxLuB+1:2] - (useAp ? aeb*V[v]*Fields[Field::Ap][s][m][z][y_k][NxLuB+1:2] : 0.) 
                                                                            - (useBp ? aeb*M[m]*Fields[Field::Bp][s][m][z][y_k][NxLuB+1:2] : 0.);
   }

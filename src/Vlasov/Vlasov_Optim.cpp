@@ -1,12 +1,11 @@
 /*
  * =====================================================================================
  *
- *       Filename: Vlasov_Cilk.cpp
+ *       Filename: Vlasov_Optim.cpp
  *
- *    Description: Implementation of GK Vlasov's equation using 
- *                 Intel Cilk (Array Notation)
+ *    Description: Implementation of optimized algorithms for Vlasov 
  *
- *         Author: Paul P. Hilscher (2011-), 
+ *         Author: Paul P. Hilscher (2012-), 
  *
  *        License: GPLv3+
  * =====================================================================================
@@ -21,28 +20,23 @@
 #include "Geometry/Geometry2D.h"
 
 
-typedef cmplx16(*A6sz)[][][][][];
-typedef cmplx16(*A5sz)[][][][];
-typedef cmplx16(*A4sz)[][][];
-typedef cmplx16(*A3sz)[][];
 
 
 VlasovOptim::VlasovOptim(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *fft, Benchmark *_bench)    
-    : Vlasov(_grid, _parallel, _setup, fileIO, _geo, fft, _bench)
+: Vlasov(_grid, _parallel, _setup, fileIO, _geo, fft, _bench)
 {
-
-    Vlasov::initDataOutput(fileIO);    
+   // no need to call : Is done is base constructor -- or ?    Vlasov::initDataOutput(fileIO);    
 }
 
 
 int VlasovOptim::solve(std::string equation_type, Fields *fields, Array6C _fs, Array6C _fss, double dt, int rk_step, const double rk[3]) 
 {
  
-  if((equation_type == "2D_ES")) {
-  Vlasov_2D((A6sz) _fs.dataZero(), (A6sz) _fss.dataZero(), (A6sz) f0.dataZero(), 
-            (A6sz) f.dataZero(), (A6sz) ft.dataZero(), (A6sz) fields->Field.dataZero(),
-            (A4sz) nonLinearTerms, X, V, M,
-             dt, rk_step, rk);
+  if((equation_type == "VlasovAux_ES")) {
+
+      Vlasov_2D((A6sz) _fs.dataZero(), (A6sz) _fss.dataZero(), (A6sz) f0.dataZero(), 
+                (A6sz) f.dataZero(), (A6sz) ft.dataZero(), (A6sz) fields->Field.dataZero(),
+                (A4sz) nonLinearTerms, X, V, M, dt, rk_step, rk);
   }
 
   return GKC_SUCCESS;
@@ -51,30 +45,25 @@ int VlasovOptim::solve(std::string equation_type, Fields *fields, Array6C _fs, A
                            
 
  void    VlasovOptim::Vlasov_2D(
-                           const cmplx16 fs [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           cmplx16 fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const cmplx16 f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const cmplx16 f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           cmplx16 ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const cmplx16 Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           cmplx16 nonLinear[NzLD][NkyLD][NxLD][NvLD],
+                           const cmplx16 fs        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           cmplx16 fss             [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplx16 f0        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplx16 f1        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           cmplx16 ft              [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplx16 Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
+                           cmplx16 nonLinear                   [NzLD][NkyLD][NxLD][NvLD]  ,
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3])
 { 
+ 
   const Geometry2D *geo = static_cast<Geometry2D*>(Vlasov::geo);
 
-  // KW is Kehrwert (German for Multiplicative Inverse)
-  // increases speed by 5% 
-  
-  const double _kw_12_dv    = 1./(12.*dv);
-  const double _kw_12_dv_dv = 1./(12.*dv*dv);
-  const double _kw_16_dx4 = 16.*pow4(dx);
 
   const int BlockSize_X=bench->BlockSize_X ;
   const int BlockSize_V=bench->BlockSize_V ;
 
   // MAXIMUM_ALIGN preprocessor directive !
-        __assume_aligned(fs,64);
+   __assume_aligned(fs    , 64);
    __assume_aligned(fss   , 64);
    __assume_aligned(f1    , 64);
    __assume_aligned(f0    , 64);
@@ -83,7 +72,6 @@ int VlasovOptim::solve(std::string equation_type, Fields *fields, Array6C _fs, A
    __assume(BlockSize_V % 4 == 0);
    __assume(BlockSize_X % 2 == 0);
    
-
    for(int s = NsLlD; s <= NsLuD; s++) {
         
       // small abbrevations
@@ -155,8 +143,13 @@ int VlasovOptim::solve(std::string equation_type, Fields *fields, Array6C _fs, A
         ft [s][m][z][y_k][xx][vv].re = rk[0] * ft[s][m][z][y_k][xx][vv].re + rk[1] * dg_dt_re                                ;
         fss[s][m][z][y_k][xx][vv].re = f1[s][m][z][y_k][xx][vv].re         + (rk[2] * ft[s][m][z][y_k][xx][vv].re + dg_dt_re) * dt;
        
-       const double ddfs_dvv_im = (16. *(fs[s][m][z][y_k][xx][vv+1].im + fs[s][m][z][y_k][xx][vv-1].im) - (fs[s][m][z][y_k][xx][vv+2].im + fs[s][m][z][y_k][xx][vv-2].im) - 30.*fs[s][m][z][y_k][xx][vv].im) * _kw_12_dv_dv;
-       const double dfs_dv_im   = (8.  *(fs[s][m][z][y_k][xx][vv+1].im - fs[s][m][z][y_k][xx][vv-1].im) - (fs[s][m][z][y_k][xx][vv+2].im - fs[s][m][z][y_k][xx][vv-2].im))*_kw_12_dv;
+       const double ddfs_dvv_im = (16. *(fs[s][m][z][y_k][xx][vv+1].im + fs[s][m][z][y_k][xx][vv-1].im) 
+                                      - (fs[s][m][z][y_k][xx][vv+2].im + fs[s][m][z][y_k][xx][vv-2].im) 
+                                   - 30.*fs[s][m][z][y_k][xx][vv].im) * _kw_12_dv_dv;
+
+       const double dfs_dv_im   = (8.  *(fs[s][m][z][y_k][xx][vv+1].im - fs[s][m][z][y_k][xx][vv-1].im) 
+                                      - (fs[s][m][z][y_k][xx][vv+2].im - fs[s][m][z][y_k][xx][vv-2].im))
+                                  * _kw_12_dv;
        
         const  double dg_dt_im = 
             ky_im* (-(w_n + w_T * (((V[vv]*V[vv])+ M[m])/kw_T  - 3./2.)) * f0 [s][m][z][y_k][xx][vv].re * phi_re )

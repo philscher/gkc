@@ -1,49 +1,49 @@
 /*
  * =====================================================================================
  *
- *       Filename: Vlasov_Cilk.h
+ *       Filename: Vlasov_Optim.h
  *
- *    Description: Implementation of GK Vlasov's equation using 
- *                 Intel Cilk (Array Notation)
+ *    Description: Definitions of optimized algorithms for Vlasov 
  *
- *         Author: Paul P. Hilscher (2011-), 
+ *         Author: Paul P. Hilscher (2012-), 
  *
  *        License: GPLv3+
  * =====================================================================================
  */
 
-#include "Vlasov.h"
 
 
 #ifndef __VLASOV_OPTIM_H
 #define __VLASOV_OPTIM_H
 
-
-
-
 #include "Vlasov.h"
-#include "Global.h"
-
-class Event;
-
-
-typedef struct{ double re; double im; } cmplx16;
-
 
 /**
-*  @brief Implementation of Vlasov's equation using Cilk Array Notation
+*     @brief Optimzed implementations of various Vlasov functions
 *
-*  Making extensively use of Intel's Cilk Plus Array Notation to faciliate
-*  array operations (especially vectorization). (http://software.intel.com/en-us/articles/intel-cilk-plus/)
-*  Supported by Intel(12.1)  and GCC (svn side branch)
+*     Implements optimized algorithms.
 *
+*     @note 
+*        Here, we sacrifice readability in favor of speed.
+*        Experimental and mainly broken.
+*
+*  Optimization used :
+*     Seperat calculations of real and imaginary parts
+*     Cache-blocking
 *
 **/
 class VlasovOptim : public Vlasov {
 
+ protected:
 
-  friend class Event;
-        
+  typedef struct{ double re; double im; } cmplx16;
+
+  typedef cmplx16(*A6sz)[][][][][];
+  typedef cmplx16(*A5sz)[][][][];
+  typedef cmplx16(*A4sz)[][][];
+  typedef cmplx16(*A3sz)[][];
+
+
    /**
    *   
    *   @brief Solves gyro-kinetic equation in 2-d plane in sheared geometry.
@@ -77,7 +77,6 @@ class VlasovOptim : public Vlasov {
    **/
    int solve(std::string equation_tyoe, Fields *fields, Array6C fs, Array6C fss, double dt, int rk_step, const double rk[3]);
  
-  protected :
   
 };
 

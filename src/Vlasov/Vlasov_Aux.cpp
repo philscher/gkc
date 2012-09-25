@@ -16,8 +16,8 @@
 
 
   
-VlasovAux::VlasovAux(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *fft, Benchmark *_bench)    
-: VlasovCilk(_grid, _parallel, _setup, fileIO, _geo, fft, _bench) 
+VlasovAux::VlasovAux(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *_fileIO, Geometry *_geo, FFTSolver *_fft, Benchmark *_bench)    
+        : VlasovCilk(_grid, _parallel, _setup, _fileIO, _geo, _fft, _bench) 
 {
 
   // Cast to two dimensional geometry module (to access k_\parallel)
@@ -68,10 +68,8 @@ void VlasovAux::Vlasov_ES(
                            const double dt, const int rk_step, const double rk[3])
 { 
 
-  // KW is Kehrwert (German for Multiplicative Inverse)
-  // increases speed by 5%, set directly in Vlasov ? Arrangment ?  
 
-  #pragma ivdep 
+  //#pragma ivdep 
   for(int s = NsLlD; s <= NsLuD; s++) {
         
       // some abbrevations
@@ -90,8 +88,8 @@ void VlasovAux::Vlasov_ES(
       // Cannot do omp parallelization here (due to nonlinear term ..)
       for(int m=NmLlD; m<= NmLuD;m++) { for(int z=NzLlD; z<= NzLuD;z++) { 
       
-         // calculate non-linear term (rk_step == 0 for eigenvalue calculations)
-         if(nonLinear && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, Fields, z, m, s, NL, Xi_max, false); 
+      // calculate non-linear term (rk_step == 0 for eigenvalue calculations)
+      if(nonLinear && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, Fields, z, m, s, NL, Xi_max, false); 
        
 
       omp_for(int y_k=NkyLlD; y_k <= NkyLuD; y_k++) { 
