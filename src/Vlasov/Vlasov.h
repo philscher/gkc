@@ -152,6 +152,13 @@ class Vlasov : public IfaceGKC {
    virtual int solve(std::string equation_type, Fields *fields, Array6C fs, Array6C fss, double dt, int rk_step, const double rk[3]) = 0;
  public:
   
+   const double _kw_12_dx_dx,    ///< \f$ \frac{1}{12 dx^2} \f$
+                _kw_12_dv   ,    ///< \f$ \frac{1}{16 dv  } \f$
+                _kw_12_dv_dv,    ///< \f$ \frac{1}{12 dv^2} \f$
+                _kw_16_dx4  ;    ///< \f$ \frac{1}{16 dx^4} \f$
+
+
+
    /**
    *    Please Document Me !
    *

@@ -100,7 +100,6 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
        NkyGlD = 0; NkyGuD=Nky-1; NkyGlB=0; NkyGuB=Nky-1; 
        NkyLlD = 0; NkyLuD=Nky-1; NkyLlB=0; NkyLuB=Nky-1;
        NkyLD=Nky; NkyGB=Nky; NkyGD=Nky;
-       RkyLD.setRange(NkyLlD,NkyLuD);
 
 
     // Set Domain for all processes
@@ -159,6 +158,8 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
     RvLD.setRange(NvLlD,NvLuD);
     RmLD.setRange(NmLlD,NmLuD);
     RsLD.setRange(NsLlD,NsLuD);
+    
+    RkyLD.setRange(NkyLlD,NkyLuD);
   
     // Ranges of Local Boundary (LB)
     RxLB.setRange(NxLlB,NxLuB);

@@ -104,29 +104,14 @@ class VlasovAux : public VlasovCilk {
    *
    **/
    void    Vlasov_2D_Fullf(
-                           Complex fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           Complex fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const Complex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const Complex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           Complex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const Complex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           CComplex fs               [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex fss              [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f0         [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f1         [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex ft               [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const  CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                            const double dt, const int rk_step, const double rk[3]);
 
-
-   /**
-   *    Please Document Me !
-   *
-   **/
-   void  Vlasov_2D_Island(
-                           CComplex fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
-                           CComplex nonLinear                  [NkyLD][NxLD  ][NvLD],
-                           const double X[NxGB], const double V[NvGB], const double M[NmGB],
-                           const double dt, const int rk_step, const double rk[3]);
 
    /**
    *    Please Document Me !

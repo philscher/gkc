@@ -24,6 +24,11 @@ SendYu(GKCStorage), SendYl(GKCStorage),  RecvYu(GKCStorage), RecvYl(GKCStorage),
 SendZu(GKCStorage), SendZl(GKCStorage),  RecvZu(GKCStorage), RecvZl(GKCStorage),
 SendVu(GKCStorage), SendVl(GKCStorage),  RecvVu(GKCStorage), RecvVl(GKCStorage)
 
+   , _kw_12_dx_dx(1./(12.*dx*dx))
+   , _kw_12_dv   ( 1./(12.*dv)  )
+   , _kw_12_dv_dv( 1./(12.*dv*dv))
+   , _kw_16_dx4  ( 1./(16.*pow4(dx)))
+
 
 {
 
