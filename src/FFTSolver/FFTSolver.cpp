@@ -19,37 +19,37 @@ int FFTSolver::X_NkxL;
 void FFTSolver::setNormalizationConstants() {
 
 
-   // find out normalization (assume constant normalization accors boundaries)
-        // Real -> Complex (Fourier space) transform
-      rYIn(NxLlD, RyLD) = 1.;
+  /////////////////   Find normalization constants for X-transformation    //////////
+  double   rY[NyLD ][NxLD]; 
+  CComplex kY[NkyLD][NxLD]; 
+ 
+  // Real -> Complex (Fourier space) transform
+  rY[:][:] = 1.; 
+  solve(FFT_Y_NL, FFT_FORWARD, rY, kY);
+  Norm_Y_Forward = creal(kY[0][0]);
+  
+  // Complex (Fourier sapce) -> Real transform
+  kY[:][:] = 0. ; kY[0][0] = 1.;
+  solve(FFT_Y_NL, FFT_BACKWARD, kY, rY);
+  Norm_Y_Backward = rY[0][0];
+
+  /////////////////   Find normalization constants for Y-transformation    //////////
+
+  // Real -> Complex (Fourier sapce) transform
+  rXIn(RxLD, NkyLlD, NzLlD, 1) = 1.;
+  solve(FFT_X_FIELDS, FFT_FORWARD, rXIn.data());
+  Norm_X_Forward = (K1xLlD == 0) ? real(kXOut(0, NkyLlD, NzLlD, 1)) : 0.;      
+
+
+  // Complex (Fourier sapce) -> Real transform
+  kXIn(Rk1xL, RkyLD, RzLD, 1) = 0.; if(K1xLlD == 0) kXIn(0, NkyLlD, NzLlD, 1) = 1.;
+  solve(FFT_X_FIELDS, FFT_BACKWARD, kXOut.data());
+  Norm_X_Backward = real(rXOut(NxLlD, NkyLlD, NzLlD, 1));
       
-     solve(FFT_Y_NL, FFT_FORWARD, rYIn.data(), kYOut.data());
-     Norm_Y_Forward = real(kYOut(NxLlD, 0));      
-
-
-     // Complex (Fourier sapce) -> Real transform
-     kYIn(RxLD, RkyLD) = 0.; kYIn(NxLlD, NkyLlD) = 1.;
-     solve(FFT_Y_NL, FFT_BACKWARD, kYIn.data(), rYOut.data());
-     Norm_Y_Backward = rYOut(NxLlD, NyLlD);
-    
-     std::cout << "Forward/Backward : " <<  Norm_Y_Backward << " " << Norm_Y_Forward << std::endl;
-
-    // Real -> Complex (Fourier sapce) transform
-   rXIn(RxLD, NkyLlD, NzLlD, 1) = 1.;
-   solve(FFT_X_FIELDS, FFT_FORWARD, rXIn.data());
-   Norm_X_Forward = (K1xLlD == 0) ? real(kXOut(0, NkyLlD, NzLlD, 1)) : 0.;      
-
-
-    // Complex (Fourier sapce) -> Real transform
-    kXIn(Rk1xL, RkyLD, RzLD, 1) = 0.; if(K1xLlD == 0) kXIn(0, NkyLlD, NzLlD, 1) = 1.;
-   solve(FFT_X_FIELDS, FFT_BACKWARD, kXOut.data());
-   Norm_X_Backward = real(rXOut(NxLlD, NkyLlD, NzLlD, 1));
-      
-    // broadcast normalization to all nodes
-    parallel->barrier();
-    parallel->send(Norm_Y_Forward, parallel->Coord[DIR_ALL] == 0); parallel->send(Norm_Y_Backward, parallel->Coord[DIR_ALL] == 0);
-    parallel->send(Norm_X_Forward, parallel->Coord[DIR_ALL] == 0); parallel->send(Norm_X_Backward, parallel->Coord[DIR_ALL] == 0);
-    parallel->barrier();
+  // broadcast normalization to all nodes
+  parallel->send(Norm_Y_Forward, parallel->Coord[DIR_ALL] == 0); parallel->send(Norm_Y_Backward, parallel->Coord[DIR_ALL] == 0);
+  parallel->send(Norm_X_Forward, parallel->Coord[DIR_ALL] == 0); parallel->send(Norm_X_Backward, parallel->Coord[DIR_ALL] == 0);
+  parallel->barrier();
 
 };
 
@@ -91,9 +91,9 @@ void FFTSolver::parseSuppressMode(const std::string &value, std::vector<int> &su
               }
 
 
-
+/* 
 // BUG : Input SuppressModeX = 0 does not work (Crashes)
-int FFTSolver::suppressModes(Array4C A, const int field) 
+void FFTSolver::suppressModes(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL], const int field) 
 {
 
   // suppress x,y, z - Modes
@@ -110,7 +110,8 @@ int FFTSolver::suppressModes(Array4C A, const int field)
   }
 
 
-  return GKC_SUCCESS;
+  return;
 }
+ * */
 
 

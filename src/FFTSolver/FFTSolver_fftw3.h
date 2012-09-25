@@ -35,29 +35,16 @@
 class FFTSolver_fftw3 : public FFTSolver
 {
    std::string wisdom, plan;
-   /**
-   *   Arrays for real-complex transform for Y-direction
-   **/ 
-   double *data_Y_rIn, *data_Y_rOut;
-   Complex *data_Y_kIn, *data_Y_kOut;
 
    /**
    *   Arrays for complex-to-complex transform for X-direction
    **/ 
-   Complex *data_X_rIn , *data_X_rOut;  
-   Complex *data_X_kIn , *data_X_kOut; 
-   Complex *data_X_Transp_1,  *data_X_Transp_2; 
+   CComplex *data_X_rIn ,     *data_X_rOut;  
+   CComplex *data_X_kIn ,     *data_X_kOut; 
+   CComplex *data_X_Transp_1, *data_X_Transp_2; 
+                
+   int AA_NkyLD, AA_NkyLlD, AA_NkyLuD, AA_NyLD; ///< use for anti-alias multiplication
 
-   /**
-   *    Anti-Aliased Fourier transform used by
-   *    multiply.
-   *
-   **/
-   blitz::Range AA_RkyLD, AA_RyLD;
-   int AA_NyLD, AA_NyLlD, AA_NyLuD, AA_NkyLD, AA_NkyLlD, AA_NkyLuD;
-   Array2R AA_rYIn, AA_rYOut;
-   Array2C AA_kYOut, AA_kYIn;
-   
   public:
    /**
    *   @brief the contstructor

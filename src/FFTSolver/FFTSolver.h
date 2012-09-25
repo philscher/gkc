@@ -52,7 +52,7 @@ class FFTSolver : public IfaceGKC {
    /**  We can suppress various modes, this is set in the setup of the fields.
    *   and sets the Fourier mode to zero. Move to FFT solver.
    */
-   int suppressModes(Array4C k2Out, const int field=1);
+   //void suppressModes(CComplex kXOut[Nq][NzLD][NkyLD][X_NkxL], const int field=Field::phi); 
    void parseSuppressMode(const std::string &value, std::vector<int> &suppressMode);
 
   protected:
@@ -124,21 +124,6 @@ class FFTSolver : public IfaceGKC {
 
    int getFlags() const { return flags; };
   
-   // @{
-   /**
-   *  @brief Arrays for FFT in Y-direcction
-   *
-   *  Transforms the field equations \f$ A(x,k_y, z, n) rightarrow A(x, y, z,n) \f$,
-   *  which is needed to calculate the non-linearity in real space.
-   *
-   *  @note that this is uses a real-to-complex and complex-to-real transform
-   **/
-   Array2R rYIn, rYOut;
-   Array2C kYOut, kYIn;
-   int Y_kyLlD, Y_kyLuD , Y_NyLlD , Y_NyLuD;
-   blitz::Range Y_RkyL , Y_RyLD;
-   // @}
-   
    // @{
    /**
    *  @brief Arrays for FFT in X-direcction
