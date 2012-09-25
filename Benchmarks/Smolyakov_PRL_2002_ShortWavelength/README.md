@@ -29,10 +29,10 @@ _________
 
 
 ## Benchmark results (with adiabatic electrons)
-![Caption text](Smolyakov_Adiabatic.png   "")
+![Benchmark results (with adiabatic electrons)](Smolyakov_Adiabatic.png)
 
 ## Benchmark results (with kinetic wlectrons)
-![Caption text](Smolyakov_Kinetic.png "")
+![Benchmark results (with kinetic wlectrons)](Smolyakov_Kinetic.png)
 
 ## Benchmark results (Eigenvalues solver resolved ETG and ITG mode)
-![Caption text](Smolyakov_Eigenvalue.png "")
+![Eigenvalue solver](Smolyakov_Eigenvalue.png)
