@@ -90,8 +90,8 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
     // Finalized calculations for x-domain (decomposed and negative frequency modes)
 
     // Sum up with X-values from other processes
-    parallel->collect(&pSpec[0][0], OP_SUM, DIR_XYZ, Nq * Nx);        
-    parallel->collect(&pFreq[0][0], OP_SUM, DIR_XYZ, Nq * Nx);        
+    parallel->collect(&pSpec[0][0], Op::SUM, DIR_XYZ, Nq * Nx);        
+    parallel->collect(&pFreq[0][0], Op::SUM, DIR_XYZ, Nq * Nx);        
          
     // map back from fftw [k0, k1, k2, ..., k_Ny, -k_(N/y-2), ... -k_1]
     for(int x_k = 1; x_k < Nx/2; x_k++) pFreq [:][x_k] = pFreq[:][Nx-x_k];
@@ -200,7 +200,7 @@ void Analysis::getNumberDensity(const  CComplex f[NsLB][NmLB][NzLB][NkyLB][NxLB]
 
     }}} }} 
 
-    parallel->collect(&D[NsLlD][NzLlD][NkyLlD][NxLlD], OP_SUM, DIR_VM, NsLD * NzLD * NkyLD * NxLD);
+    parallel->collect(&D[NsLlD][NzLlD][NkyLlD][NxLlD], Op::SUM, DIR_VM, NsLD * NzLD * NkyLD * NxLD);
 
     return;
 };
@@ -244,7 +244,7 @@ void Analysis::getTemperatureParallel(const  CComplex f[NsLB][NmLB][NzLB][NkyLB]
     } // s
 
 
-    parallel->collect(&A4_z[NsLlD][NzLlD][NkyLlD][NxLlD], OP_SUM, NsLD * NzLD * NkyLD * NxLD, DIR_VM);
+    parallel->collect(&A4_z[NsLlD][NzLlD][NkyLlD][NxLlD], Op::SUM, NsLD * NzLD * NkyLD * NxLD, DIR_VM);
 
     return;
 };

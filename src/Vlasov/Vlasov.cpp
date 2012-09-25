@@ -193,14 +193,14 @@ double Vlasov::getMaxTimeStep(int dir, const double maxCFL)
   
   for(int s=NsGlD; s<=NsGuD; s++) v_scale = max(v_scale, plasma->species[s].scale_v);
    
-  if     (dir == DIR_X  ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_X]/dx, OP_MAX));
-  else if(dir == DIR_Y  ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_Y]/dy, OP_MAX));
+  if     (dir == DIR_X  ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_X]/dx, Op::MAX));
+  else if(dir == DIR_Y  ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_Y]/dy, Op::MAX));
   //if     (dir == DIR_XY ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_X]/dy + Xi_max[DIR_Y]/dx, OP_MAX));
-  if     (dir == DIR_XY ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_X] / dy + Xi_max[DIR_Y]/dx, OP_MAX));
-  else if(dir == DIR_Z  ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_Z]/dz, OP_MAX));
+  if     (dir == DIR_XY ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_X] / dy + Xi_max[DIR_Y]/dx, Op::MAX));
+  else if(dir == DIR_Z  ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_Z]/dz, Op::MAX));
   else if(dir == DIR_V  ) dt =  maxCFL / (v_scale * Lv/(sqrt(geo->eps_hat) * dz));
   else if(dir == DIR_ALL) dt =  maxCFL / parallel->collect(Xi_max[DIR_Y]/dx + Xi_max[DIR_X]/dy +  
-                                              v_scale*Lv*Xi_max[DIR_Z]/(sqrt(geo->eps_hat)*dz) +  v_scale * Lv/(sqrt(geo->eps_hat)*dz), OP_MAX);
+                                              v_scale*Lv*Xi_max[DIR_Z]/(sqrt(geo->eps_hat)*dz) +  v_scale * Lv/(sqrt(geo->eps_hat)*dz), Op::MAX);
   return dt;
 }
 

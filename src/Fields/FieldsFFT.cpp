@@ -35,7 +35,8 @@ void FieldsFFT::solveFieldEquations(CComplex Q     [Nq][NzLD][NkyLD][NxLD],
 {
 
    // Transform to fourier space (x,ky) -> (kx,ky)
-   fft->solve(FFT_X_FIELDS, FFT_FORWARD, &Q[1][NzLlD][NkyLlD][NxLlD]);
+   //fft->solve(FFT_X_FIELDS, FFT_FORWARD, &Q[1][NzLlD][NkyLlD][NxLlD]);
+   fft->solve(FFT_X_FIELDS, FFT_FORWARD, ArrayField0.data((CComplex *) Q));
 
    // if (phi,Ap,Bp) is solved together, (phi,Bp) are coupled and have to be solved together
    if     ( solveEq &  Field::phi & Field::Bpp ) solveBParallelEquation((A4zz) fft->kXOut.dataZero(), (A4zz) fft->kXIn.dataZero());
@@ -51,7 +52,8 @@ void FieldsFFT::solveFieldEquations(CComplex Q     [Nq][NzLD][NkyLD][NxLD],
    //if(!(solveEq & Field::Bpp) && (Nq >= 3)) fft->rXOut(RxLD, RkyLD, RzLD, Field::Bp ) = Field0(RxLD, RkyLD, RzLD, Field::Bp );
 
    // transform back to real-space (kx,ky) -> (x,ky)
-   fft->solve(FFT_X_FIELDS, FFT_BACKWARD, &Field0[1][NzLlD][NkyLlD][NxLlD]);
+   //fft->solve(FFT_X_FIELDS, FFT_BACKWARD, &Field0[1][NzLlD][NkyLlD][NxLlD]);
+   fft->solve(FFT_X_FIELDS, FFT_BACKWARD, ArrayField0.data((CComplex *) Field0));
    
    return;
 
@@ -62,6 +64,7 @@ void FieldsFFT::solvePoissonEquation(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::
 {
     // Calculate flux-surface averaging  Note : how to deal with FFT normalization here ?
     CComplex phi_yz[FFTSolver::X_NkxL];
+
     if(plasma->species[0].doGyro) calcFluxSurfAvrg(kXOut, phi_yz);
     
     // adiabatic response term (if no adiabatic species included n0 = 0)
@@ -218,9 +221,10 @@ void FieldsFFT::gyroFirst(CComplex In   [Nq][NzLD][NkyLD][NxLD],
                           const int s, const bool gyroFields)  
 {
 
-  if(gyroFields==false) {   Out[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]
+  if(gyroFields==false) {  
+                             Out[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]
                           =  In[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD];
-                                                                     return; 
+                             return; 
                         };
    
   fft->solve(FFT_X_FIELDS, FFT_FORWARD, &In[1][NzLlD][NkyLlD][NxLlD]);
@@ -256,10 +260,13 @@ void FieldsFFT::gyroFirst(CComplex In   [Nq][NzLD][NkyLD][NxLD],
 void FieldsFFT::gyroAverage(CComplex In [Nq][NzLD][NkyLD][NxLD], 
                             CComplex Out[Nq][NzLD][NkyLD][NxLD],
                             const int m, const int s, const bool gyroFields)
-//void FieldsFFT::gyroAverage(Array4C In, Array4C Out, const int m, const int s, const bool gyroFields) 
 {
-  // check if we should do gyroAvearge
-  if     (plasma->species[s].gyroModel == "Drift" ) Out=In;
+
+  if     (plasma->species[s].gyroModel == "Drift" ) {
+       
+      Out[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]
+   =  In[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD];
+  }
   else if(plasma->species[s].gyroModel == "Gyro"  ) gyroFull (In, Out, (A4zz) fft->kXOut.dataZero(), (A4zz) fft->kXIn.dataZero(), m, s, gyroFields);  
   else if(plasma->species[s].gyroModel == "Gyro-1") gyroFirst(In, Out, (A4zz) fft->kXOut.dataZero(), (A4zz) fft->kXIn.dataZero(),    s, gyroFields);  
   else   check(-1, DMESG("No such gyro-average Model"));
@@ -326,8 +333,8 @@ void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEn
        //phiEnergy =  parallel->collect(4. * M_PI * phiEnergy * scaleXYZ / (8.e0 * M_PI) / (initialEkin(TOTAL) == 0. ? 1. : initialEkin(TOTAL)), OP_SUM, DIR_XYZ);
        //ApEnergy  =  parallel->collect(4. * M_PI *  ApEnergy * scaleXYZ / (8.e0 * M_PI) / (initialEkin(TOTAL) == 0. ? 1. : initialEkin(TOTAL)), OP_SUM, DIR_XYZ);
        
-       phiEnergy =  abs( parallel->collect(4. * M_PI * phiEnergy * grid->dXYZ / (8.e0 * M_PI), OP_SUM, DIR_ALL) ); 
-       ApEnergy  =  abs( parallel->collect(4. * M_PI *  ApEnergy * grid->dXYZ / (8.e0 * M_PI), OP_SUM, DIR_ALL) );
+       phiEnergy =  abs( parallel->collect(4. * M_PI * phiEnergy * grid->dXYZ / (8.e0 * M_PI), Op::SUM, DIR_ALL) ); 
+       ApEnergy  =  abs( parallel->collect(4. * M_PI *  ApEnergy * grid->dXYZ / (8.e0 * M_PI), Op::SUM, DIR_ALL) );
        BpEnergy  = 0.;
       } ((A4zz) fft->kXIn.dataZero(), (A4zz) fft->kXOut.dataZero(), (A4zz) Field0); 
 

@@ -157,8 +157,8 @@ bool Control::checkOK(Timing timing, Timing maxTiming) {
       cntrl.check(!(control_triggered_signal & SIGFPE ), "(3) Interrupted by SIGUSR2");
 
 
-      // FIXME no bool datatype available 
-      cntrl.check(parallel->collect((int) cntrl.isOK(), OP_BAND) > 0, "(4) Interupted by other processor"); 
+      // Check if stopping signal was triggered on other processes
+      cntrl.check(parallel->collect((int) cntrl.isOK(), Op::BAND, DIR_ALL) > 0, "(4) Interupted by other processor"); 
 
       return cntrl.isOK();
     }

@@ -23,7 +23,8 @@
 #include <omp.h>
 #endif
 
-enum Operations {OP_NULL = 0, OP_SUM=1, OP_MAX=2, OP_MIN=3, OP_BOR=4, OP_BAND};
+// use enum class !
+enum class Op {OP_NULL = 0, SUM=1, MAX=2, MIN=3, BOR=4, BAND};
 
 #include <mpi.h>
 
@@ -71,12 +72,11 @@ struct NeighbourDir {
    int master_rank;
    
    //! the total number of threads 
-   int numThreads, numProcesses, numGPUs;
-   //! switches if OpenMP, MPI or OpenCL is during compule time
-   bool useOpenMP, useMPI, useOpenCL;
+   int numThreads, numProcesses;
+   //! switches if OpenMP, MPI is during compule time
+   bool useOpenMP, useMPI;
 
    // Some MPI specific stuff
-#ifdef GKC_PARALLEL_MPI
    NeighbourDir Talk[DIR_S+1];
    MPI_Status stat; 
 
@@ -94,7 +94,7 @@ struct NeighbourDir {
    *   @brief get corresponding MPI operation from data type
    *
    **/
-   MPI_Op   getMPIOp(int op);
+   MPI_Op   getMPIOp(Op op);
 
    /**
    *   @brief get MPI data type from  C++ type
@@ -102,11 +102,9 @@ struct NeighbourDir {
    **/
    MPI_Datatype getMPIDataType(const std::type_info &T);
 
-#endif //Parallel_MPI
    Parallel(Setup *setup);
    virtual ~Parallel();
    
- 
    /**
    *    @brief updates boundaries in X,Z direction
    *
@@ -137,32 +135,7 @@ struct NeighbourDir {
 
    };
    int updateNeighboursBarrier();
-  
-   /**
-   *  @brief updates boundaries for direction dir
-   *
-   *  Uses blocking SendRecv operations. 
-   *
-   **/
-   template<typename T, int W> int updateNeighbours(blitz::Array<T,W>  Sendu,  blitz::Array<T,W>  Sendl,  blitz::Array<T,W>  Recvu, blitz::Array<T,W>  Recvl, int dir, bool nonBlocking) {
-#ifdef GKC_PARALLEL_MPI
-     
-     int msg_tag[] = { 4998 , 4999};
-     MPI_Status  msg_status[2];
-
-     MPI_Sendrecv(Sendu.data(), Sendu.numElements(), getMPIDataType(typeid(T)), Talk[dir].rank_u, msg_tag[1], 
-                     //Recvl.data(), Recvl.umElements(), getMPIDataType(typeid(T)), Talk[dir].rank_l, msg_tag[1], Comm[dir],  &msg_status[0]);
-                     Recvl.data(), Recvl.numElements(), getMPIDataType(typeid(T)), Talk[dir].rank_l, msg_tag[1], Comm[DIR_ALL],  &msg_status[0]);
-     MPI_Sendrecv(Sendl.data(), Sendl.numElements(), getMPIDataType(typeid(T)), Talk[dir].rank_l, msg_tag[0], 
-                     //Recvu.data(), Recvu.numElements(), getMPIDataType(typeid(T)), Talk[dir].rank_u, msg_tag[0], Comm[dir], &msg_status[1]);
-                     Recvu.data(), Recvu.numElements(), getMPIDataType(typeid(T)), Talk[dir].rank_u, msg_tag[0], Comm[DIR_ALL], &msg_status[1]);
  
-#endif // GKC_PARALLEL_MPI
-     return GKC_SUCCESS;
-
-   };
-   
-
    /**
    *   @brief sends Array data to other CPU 
    *
@@ -200,7 +173,7 @@ struct NeighbourDir {
 
      // Notify all process who is root (is there a simpler way ?), take care it fails 
      // horribly if there is more than one root, (note 0 is master process also valid)
-     int master_rank = collect(isRoot ? myRank : 0, OP_SUM, dir);
+     int master_rank = collect(isRoot ? myRank : 0, Op::SUM, dir);
      master_rank = 0;
 
 #ifdef GKC_PARALLEL_MPI
@@ -216,26 +189,36 @@ struct NeighbourDir {
    *   @brief Allreduce over direction dir
    *
    **/
-   template<class T>  T  collect(T x, int op = OP_SUM, int dir=DIR_ALL, int N=1, bool allreduce=true)
+   template<class T>  T  collect(T x, Op op, int dir=DIR_ALL, bool allreduce=true)
    {
 #ifdef GKC_PARALLEL_MPI
      T global_dValue;
+
      // we need allreduce instead of reduce because H5TB need all process to have the same value
-     check(MPI_Allreduce(&x, &global_dValue, N, getMPIDataType(typeid(T)), getMPIOp(op), Comm[dir]), DMESG("MPI_Reduce")); 
+     MPI_Allreduce(&x, &global_dValue, 1, getMPIDataType(typeid(T)), getMPIOp(op), Comm[dir]);//, DMESG("MPI_Reduce"); 
+     //check(MPI_Allreduce(&x, &global_dValue, N, getMPIDataType(typeid(T)), getMPIOp(op), Comm[dir]), DMESG("MPI_Reduce")); 
      return global_dValue; 
 #endif
      return x; 
    }
    
+   
    /**
    *   @brief Allreduce over direction dir
    *
    **/
-   template<class T>  void  collect(T *x, int op = OP_SUM, int dir=DIR_ALL, int N=1, bool allreduce=true)
+   template<class T>  void  collect(T *A, Op op, int dir, int Num, bool allreduce=true)
    {
+     //if(dir <= DIR_S) if(decomposition[dir] == 1) return A;
+     
 #ifdef GKC_PARALLEL_MPI
+     // note, for MPI_Reduce only root process can specify MPI_IN_PLACE
      // we need allreduce instead of reduce because H5TB need all process to have the same value
-     check(MPI_Allreduce(MPI_IN_PLACE, x, N, getMPIDataType(typeid(T)), getMPIOp(op), Comm[dir]), DMESG("MPI_Reduce")); 
+        //MPI_Allreduce(MPI_IN_PLACE, A.data(), A.numElements(), getMPIDataType(typeid(T)), getMPIOp(op),                Comm[dir]), DMESG("MPI_Allreduce");
+     if(allreduce == true)
+        check(MPI_Allreduce(MPI_IN_PLACE, A, Num, getMPIDataType(typeid(T)), getMPIOp(op), Comm[dir]), DMESG("MPI_Reduce")); 
+     else 
+        check(MPI_Reduce((myRank == dirMaster[dir]) ? MPI_IN_PLACE : A, A, Num, getMPIDataType(typeid(T)), getMPIOp(op), dirMaster[dir], Comm[dir]), DMESG("MPI_Reduce"   )); 
 #endif
      return;
    }
@@ -244,27 +227,19 @@ struct NeighbourDir {
    *  @Depreciated
    *
    **/
-   template<typename T, int W> blitz::Array<T,W> collect(blitz::Array<T,W> A, int op=OP_SUM, int dir=DIR_ALL, bool allreduce=true) {
+   template<typename T, int W> blitz::Array<T,W> collect(blitz::Array<T,W> A, Op op=Op::SUM, int dir=DIR_ALL, bool allreduce=true) {
 #ifdef GKC_PARALLEL_MPI
      // Return immediately if we don't decompose in this direction
      if(dir <= DIR_S) if(decomposition[dir] == 1) return A;
     
      if(allreduce == true)
         MPI_Allreduce(MPI_IN_PLACE, A.data(), A.numElements(), getMPIDataType(typeid(T)), getMPIOp(op),                Comm[dir]), DMESG("MPI_Allreduce");
-        // check(MPI_Allreduce(MPI_IN_PLACE, A.data(), A.numElements(), getMPIDataType(typeid(T)), getMPIOp(op),                Comm[dir]), DMESG("MPI_Allreduce")); 
      else    // note, for MPI_Reduce only root process can specify MPI_IN_PLACE
-        check(MPI_Reduce   ((myRank == dirMaster[dir]) ? MPI_IN_PLACE : A.data(), A.data(), A.numElements(), getMPIDataType(typeid(T)), getMPIOp(op), dirMaster[dir], Comm[dir]), DMESG("MPI_Reduce"   )); 
+        check(MPI_Reduce((myRank == dirMaster[dir]) ? MPI_IN_PLACE : A.data(), A.data(), A.numElements(), getMPIDataType(typeid(T)), getMPIOp(op), dirMaster[dir], Comm[dir]), DMESG("MPI_Reduce"   )); 
 #endif
      return A;
    }
 
-   
-   /**
-   *  @brief  Prints out string to terminal (only master process)
-   *
-   **/
-   virtual void print(std::string message);
-   
    /**
    *   @brief gets total number of process in direction DIR
    *
@@ -293,6 +268,12 @@ struct NeighbourDir {
    *
    **/
    void getAutoDecomposition(int numCPU);
+   
+   /**
+   *  @brief  Prints out string to terminal (only master process)
+   *
+   **/
+   virtual void print(std::string message);
 
   protected:
 

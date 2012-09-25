@@ -250,7 +250,7 @@ class Matrix
 
           
           // Reduction over dimension, take care that size is the same
-          parallel->collect(ReduceArray, OP_SUM, dir);
+          parallel->collect(ReduceArray, Op::SUM, dir);
                
           
           for(int x = 0, n = 0; x < n_local-1; x++) {  for(int x2 = 0; x2 < n_local-1; x2++) {

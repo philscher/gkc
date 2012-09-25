@@ -72,8 +72,8 @@ void Fields::solve(Array6C f0, Array6C  f, Timing timing)
       if(solveEq & Field::Bpp) calculatePerpendicularCurrentDensity ((A6zz) f0.dataZero(), (A6zz) f.dataZero(), (A4zz) Field0, M, m, s);
   
       // thus uses AllReduce, Reduce is more effective (with false flag...)
-      parallel->collect(ArrayField0.data(Field0), OP_SUM, DIR_V, ArrayField0.getNum(), true); 
- 
+      parallel->collect(ArrayField0.data(Field0), Op::SUM, DIR_V, ArrayField0.getNum(), true); 
+      
       // OPTIM : Normally we would decompose in m&s, thus no need for Qm                         
       // backward-transformation from gyro-center to drift-center 
       if (parallel->Coord[DIR_V] == 0) {
@@ -89,17 +89,17 @@ void Fields::solve(Array6C f0, Array6C  f, Timing timing)
             } ((A4zz) Q, (A4zz) Qm);
       }
       
-   }  } // for m, for s
+   }  } // for m, s
 
-   /////////////////////////////// Solve for the corresponding fields //////////////
+   /////////////////////////////// Solve for the corresponding fields ////////////////////////////////
    // Note :  Fields are only solved by root nodes  (X=0, V=0, S=0), Gyro-averaging is done for (V=0)
    if(parallel->Coord[DIR_V] == 0) {
 
       // integrate over mu-space and over species
-      parallel->collect(ArrayField0.data(Q), OP_SUM, DIR_MS, ArrayField0.getNum(), true); 
+      parallel->collect(ArrayField0.data(Q), Op::SUM, DIR_MS, ArrayField0.getNum(), true); 
 
       // Solve field equation in drift coordinates
-      // This routine is solved only on a part of notes when decomposed in m thus efficiency is crucial
+      // This routine is solved only on rood nodes, thus efficiency is crucial for scalability
       if(parallel->Coord[DIR_MS] == 0) solveFieldEquations((A4zz) Q, (A4zz) Field0);
 
       parallel->send(ArrayField0.data(Field0), DIR_MS, ArrayField0.getNum()); 
@@ -112,9 +112,9 @@ void Fields::solve(Array6C f0, Array6C  f, Timing timing)
            // Use temporary Qm, and copy to Fields afterwards.
 
            // forward-transformation from drift-center -> gyro-center 
-           gyroAverage( (A4zz) Field0, (A4zz) Qm, m, s, true);
+           gyroAverage((A4zz) Field0, (A4zz) Qm, m, s, true);
 
-           // Field is first index, is last index not better ? e.g. write as vector ?
+           // Copy result in temporary array to field
            [=] (CComplex Qm[Nq][NzLD][NkyLD][NxLD], CComplex Field[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]) 
            { 
                   Field[1:Nq][s][m][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD] 
@@ -138,15 +138,13 @@ void Fields::solve(Array6C f0, Array6C  f, Timing timing)
 
 void Fields::calculateChargeDensity(const CComplex f0         [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                     const CComplex f          [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                    CComplex Field0     [Nq]        [NzLD][NkyLD][NxLD]      ,
+                                    CComplex       Field0             [Nq][NzLD][NkyLD][NxLD]      ,
                                     const int m, const int s) 
 {
  
    // In case of a full-f simulation the Maxwellian is subtracted
 
-   // re-normalize with \f[ \hat{v}^3
-   //const double pqnB_dvdm = M_PI * plasma->species[s].n0 * plasma->species[s].q   * plasma->B0 * dv * grid->dm(m) ;
-   const double pqnB_dvdm = M_PI * plasma->species[s].q   * plasma->B0 * dv * grid->dm[m] ;
+   const double pqnB_dvdm = M_PI * plasma->species[s].q * plasma->species[s].n0 * plasma->B0 * dv * grid->dm[m] ;
     
    omp_for_C2(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
@@ -160,9 +158,9 @@ void Fields::calculateChargeDensity(const CComplex f0         [NsLD][NmLD][NzLB]
 
 
 
-void Fields::calculateParallelCurrentDensity(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                             const CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                             CComplex Field0[Nq][NzLD][NkyLD][NxLD],
+void Fields::calculateParallelCurrentDensity(const CComplex f0   [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                             const CComplex f    [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                             CComplex       Field0       [Nq][NzLD][NkyLD][NxLD]      ,
                                              const double V[NvGB], const int m, const int s          ) 
 {
   
@@ -180,9 +178,9 @@ void Fields::calculateParallelCurrentDensity(const CComplex f0[NsLD][NmLD][NzLB]
 
   
 // Note : Did not checked correctness of this function
-void Fields::calculatePerpendicularCurrentDensity(const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                                  const CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                                  CComplex Field0[Nq][NzLD][NkyLD][NxLD],
+void Fields::calculatePerpendicularCurrentDensity(const CComplex f0     [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                                  const CComplex f      [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                                  CComplex       Field0         [Nq][NzLD][NkyLD][NxLD]      ,
                                                   const double M[NmGB], const int m, const int s          ) 
 {
    
@@ -236,15 +234,15 @@ void Fields::updateBoundary(
 
    } }
    
-   // Parallized version is using SendRecv call exchange ghostcells
+   // Exchange ghostcells between processors [ SendXu (CPU 1) ->RecvXl (CPU 2) ]
    parallel->updateNeighbours(Fields::SendXl, Fields::SendXu,  Fields::SendYl, Fields::SendYu, Fields::SendZl,  Fields::SendZu, 
                               Fields::RecvXl, Fields::RecvXu,  Fields::RecvYl, Fields::RecvYu, Fields::RecvZl,  Fields::RecvZu); 
 
-   // X-Boundary
+   // Back copy X-Boundary cell data
    Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlB-2:4] = RecvXl[:][:][:][:][:][:];
    Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLuD+1:4] = RecvXu[:][:][:][:][:][:];
  
-   // Z-Boundary
+   // Back copy Z-Boundary cell data
    if( Nz > 1 ) {
 
    Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlB  :2][NkyLlD:NkyLD][NxLlD:NxLD] = RecvZl[:][:][:][:][:][:];

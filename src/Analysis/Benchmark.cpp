@@ -111,10 +111,11 @@ void Benchmark::closeData()
 
 void Benchmark::printOn(std::ostream &output) const {
 
-int PAPI_VERSION_MAJOR = 0, PAPI_VERSION_MINOR = 0;
-  output << "Benchmark  | using PAPI  " << PAPI_VERSION_MAJOR << "." << PAPI_VERSION_MINOR <<  "   Available Counters : " << num_hwcntrs << std::endl;
-  output << "           | Total GFLOPS : " << std::setprecision(3) << parallel->collect(simMaxGFLOPS)*parallel->numThreads    << "   " <<
-                        " Average GFLOPS/CPU : "  << parallel->collect(simMaxGFLOPS)/parallel->numProcesses << std::endl;
+  double totalFLOPS = parallel->collect(simMaxGFLOPS, Op::SUM) * parallel->numThreads;
+  //output << "Benchmark  | using PAPI  " << PAPI_VERSION_MAJOR << "." << PAPI_VERSION_MINOR <<  "   Available Counters : " << num_hwcntrs << std::endl;
+  output << "           | Total GFLOPS : " << std::setprecision(3) << totalFLOPS    << "   " <<
+                        " Average GFLOPS/CPU : "  << totalFLOPS/(parallel->numProcesses * parallel->numThreads) << std::endl;
+                          
 
 }
 
