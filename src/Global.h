@@ -108,7 +108,7 @@ int ipow(int base, int exp)
 
 
 // DIR_SIZE has to be the number of elements, excluding DIR_SIZE
-enum Direction : int {DIR_X=0, DIR_Y, DIR_Z, DIR_V, DIR_M, DIR_S, DIR_ALL, DIR_XYZ, DIR_VMS, DIR_MS, DIR_VM, DIR_XY, DIR_XYZVM, DIR_SIZE};
+enum Dir : int {DIR_X=0, DIR_Y, DIR_Z, DIR_V, DIR_M, DIR_S, DIR_ALL, DIR_XYZ, DIR_VMS, DIR_MS, DIR_VM, DIR_XY, DIR_XYZVM, DIR_SIZE};
      
 inline int check( int status, std::string file, int line, std::string error_text, bool doAbort=false) {
         if(status == -1 ) {

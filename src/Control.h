@@ -50,7 +50,8 @@ extern int control_triggered_signal;
 *
 **/
 class Control : public IfaceGKC {
-  
+   
+
    bool useControlFile;
 
    class CntrlID {

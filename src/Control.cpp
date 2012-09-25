@@ -13,61 +13,39 @@
 
 #include "Control.h"
 #include "GKC.h"
+#include "System.h"
 
 #include <fenv.h>
 #include <csignal>
 
 bool force_exit = false;
-
-Parallel *gl_parallel;
-
-Control::Control(Setup *setup, Parallel *_parallel, Analysis *_analysis) : parallel(_parallel), analysis(_analysis) {
-
-  gl_parallel = parallel;
-        // set our control file, this is same for all processes and set to mpi root process id 
-   if (setup->get("Control.useControlFile", 0)) {
-        cntrl_file_name   = "gkc_" + Setup::num2str(parallel->master_process_id) + ".stop";
-   } else cntrl_file_name = "";
-        maxKineticEnergy  = setup->get("Control.MaxKineticEnergy", 1.e355);
-        maxElectricEnergy = setup->get("Control.MaxElectricEnergy", 1.e355);
-        maxMagneticEnergy = setup->get("Control.MaxMagneticEnergy", 1.e355);
-        
-
-
-        // Some Tests to check the function
-        maxRunningTime = Setup::getSecondsFromTimeString(setup->get("Control.MaxRunningTime", "0s"));
-
-        // set start Time
-        startTime = time (NULL);
-
-
-
-     setSignalHandler();
-};
-   
-void Control::signalForceExit(bool val) { force_exit = val; }
-
-
-Control::~Control() {
-        // clean up stop file
-        if(cntrl_file_name != "") remove(cntrl_file_name.c_str());
- }
-     
-    void printLoopStopReason();
-
 int control_triggered_signal=0;
 
+Parallel *gl_parallel; // need extern variables for signal handler
+
+
+
+
+/*
+ *
+ *   Our signal handler
+ *
+ */ 
 void signal_handler(int sig)
-   {
+
+{
     switch(sig) {
-      case(SIGFPE)  :  std::cerr << "Floating point exception occured. Exiting" << std::endl;
-                       // we have to unmask the signal otherwie program will slow down
+      case(SIGFPE)  :
+                       std::cerr << "Floating point exception occured. Exiting" << std::endl;
+                       
                        control_triggered_signal |= SIGFPE;
-                       //delete helios;
-                       abort();
+                       
+                       // we have to unmask the signal otherwie program will slow down
                        //signal(SIGFPE, SIG_IGN);
                        // now we raise SIGUSR1 which is propagetaed by mpirun to other processes
                        //raise(SIGUSR2);
+                       
+                       abort();
                        break;
 
                        // when SIGINT or SIGTERM appears, e.g. openmpi first propagates SIGTERM too all procecess, waits a couple
@@ -77,15 +55,22 @@ void signal_handler(int sig)
                  //      signal(SIGINT, SIG_IGN);
                  //      raise(SIGTERM); 
                        break;
+
       case(SIGTERM)  : //helios->runningException(GKC_EXIT); 
                        std::cout << "SIGTERM" << std::endl;
                        control_triggered_signal |= SIGTERM;
                        break;
+
+      // SIGUSR1 includes redirected low important stuff e.g. 
       case(SIGUSR1) :  gl_parallel->print("SIGUSR1 received");
                        control_triggered_signal |= SIGUSR1;
                        break;
-      case(SIGUSR2) :  gl_parallel->print("SIGUSR2 received");
+
+      // SIGUSR2 includes redirected critical issues SIGFPE, SIGSEGV 
+      case(SIGUSR2) :  
+                       gl_parallel->print("SIGUSR2 received");
                        control_triggered_signal |= SIGUSR2;
+                       abort();
                        break;
       default       :  std::cerr << "Unkown signal .... Ignoring\n";
     }
@@ -93,26 +78,58 @@ void signal_handler(int sig)
 
     if(force_exit == true) check(-1, DMESG("Signal received and \"force exit\" set"));
 }
+
+ 
+
+///////////// Control class member function definitions //////////////////
+
+
+Control::Control(Setup *setup, Parallel *_parallel, Analysis *_analysis) : parallel(_parallel), analysis(_analysis) 
+{
+  
+  gl_parallel = parallel;
    
-#ifdef OS_DARWIN
-#include <Accelerate/Accelerate.h>
-#include <xmmintrin.h>
-#endif
+  // distributed unified id (the process id of MPI master process) to all processes
+  if (setup->get("Control.useControlFile", 0)) {
+        
+        int master_process_id = parallel->collect( (parallel->myRank == 0) ? System::getProcessID() : 0, Op::SUM, DIR_ALL);
+        cntrl_file_name   = "gkc_" + Setup::num2str(master_process_id) + ".stop";
+   } 
+   else cntrl_file_name = "";
 
+   maxKineticEnergy  = setup->get("Control.MaxKineticEnergy", 1.e355);
+   maxElectricEnergy = setup->get("Control.MaxElectricEnergy", 1.e355);
+   maxMagneticEnergy = setup->get("Control.MaxMagneticEnergy", 1.e355);
+        
+   // Some Tests to check the function
+   maxRunningTime = Setup::getSecondsFromTimeString(setup->get("Control.MaxRunningTime", "0s"));
 
-void checkSignal() {
-
-
+   // set start Time
+   startTime = time (NULL);
+  
+   // set signal handler to catch SIGUSR1, SIGFPE and SIGTRP
+   setSignalHandler();
 
 };
+   
+Control::~Control() 
+{
+        // clean up stop file if control file is used
+        if(cntrl_file_name != "") remove(cntrl_file_name.c_str());
+}
 
 
-void Control::setSignalHandler() {
+void Control::signalForceExit(bool val) 
+{ 
+  force_exit = val; 
+}
+     
+
+void Control::setSignalHandler() 
+{
 
 
-// Set Floating Point Capturing if in Debug mode
-
-//#ifdef OS_LINUX
+     // Set Floating Point Capturing if in Debug mode
     feenableexcept(FE_DIVBYZERO | FE_INVALID);
 //    feenableexcept(FE_ALL_EXCEPT);
     // Set the signal handler:
@@ -122,14 +139,9 @@ void Control::setSignalHandler() {
     signal(SIGUSR2 , signal_handler);
 //#endif
 
-#ifdef OS_DARWIN 
-       _mm_setcsr( _MM_MASK_MASK &~  (_MM_MASK_OVERFLOW | _MM_MASK_INVALID | _MM_MASK_DIV_ZERO) );
-#endif
-
 
 
 };
-
 
 
 bool Control::checkOK(Timing timing, Timing maxTiming) {
@@ -161,23 +173,23 @@ bool Control::checkOK(Timing timing, Timing maxTiming) {
       cntrl.check(parallel->collect((int) cntrl.isOK(), Op::BAND, DIR_ALL) > 0, "(4) Interupted by other processor"); 
 
       return cntrl.isOK();
-    }
+
+}
     
-void Control::printLoopStopReason() {
+void Control::printLoopStopReason() 
+{
+
         parallel->print(std::string("\nMain Loop finished due to ") + cntrl.getMessage());
-    };
+
+};
     
 void Control::runningException(int status, char *error_message) {
         // catch secondary exceptions
         std::cerr << error_message << std::endl;
-    //    if     (status == GKC_FINISH) abort_run = 1;
-    //    else if(status == GKC_EXIT  ) delete fileIO;
-   //     else    check(-1, DMESG("No such status"));
-    #ifdef GKC_PARALLEL_MPI
+    
         parallel->barrier();
-    #endif
-     
-    };
+
+};
         
 
 void Control::printOn(std::ostream &output) const 

@@ -41,7 +41,7 @@ Parallel::Parallel(Setup *setup)
   myRank = 0;  numThreads = 1; numProcesses = 1, master_rank = 0; 
   useOpenMP = false; useMPI = false;
   Coord[:] = 0;
-  master_process_id = setup->get("Helios.Process_ID", 0);
+
   decomposition[:] = 1;
 
 #ifdef GKC_PARALLEL_OPENMP
@@ -196,10 +196,6 @@ Parallel::Parallel(Setup *setup)
     MPI_Cart_shift(Comm[DIR_ALL], DIR_S, 1, &rank, &Talk[DIR_S].rank_u);
     MPI_Cart_shift(Comm[DIR_ALL], DIR_S,-1, &rank, &Talk[DIR_S].rank_l);
  
-    // distributed unified id to all processes
-    master_process_id = (int) collect((double) (myRank == 0) ? master_process_id : 0, Op::SUM, DIR_ALL);
-   
-    
     /////////////////// Setup own error handle,  this needed to enable backtracing when debugging
     MPI_Errhandler my_errhandler;
     MPI_Errhandler_create(&check_mpi, &my_errhandler);
