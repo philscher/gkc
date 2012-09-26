@@ -43,14 +43,13 @@ class Plasma : public IfaceGKC {
      { 
        alpha   = 0.;
        sigma   = 0.;
-       T.resize(RxLB); T = 0.;
-       n.resize(RxLB); n = 0.;
+       nct::allocate(nct::Range(NxLlB, NxLB))(&T, &n);
        gyroModel = "";
      };
    
      double q;          ///< Charge 
      double m;          ///< Mass 
-     double collision;  ///< collisional Frequency 
+     double collision;  ///< Collisional Frequency 
      double w_n;        ///< Density gradient
      double w_T;        ///< Temperature gradient
      double T0;         ///< Temperature normalization
@@ -68,8 +67,6 @@ class Plasma : public IfaceGKC {
      char T_name[64];   ///< dont know
    
      std::string gyroModel;
-     std::string f0_str;
-     std::string f1_str;
    
      // stupid fix, but we have to otherwise all stuff is private
    
@@ -82,19 +79,10 @@ class Plasma : public IfaceGKC {
      };
 
      /// Calculate debye legnth
-     double debye2(const int x) { return T(x)/(4.*M_PI*n(x)*q*q); };
+     double debye2(const int x) const { return T[x]/(4.*M_PI*n[x]*q*q); };
    
-
-     /**
-     *  Temperature profile
-     **/
-     Array1R T;
-   
-     /**
-     *  Density profile
-     *
-     **/ 
-     Array1R n;
+     double *T, ///< Temperature profile
+            *n; ///< Density profile
    
    } _Species;
 
@@ -103,6 +91,8 @@ class Plasma : public IfaceGKC {
    double n_ref, ///< Reference 
           L_ref, ///< Reference scale length
           T_ref; ///< Reference temperature
+   
+   double cs;  ///<  speed of sound of ions \f$ c_s = \sqrt{\frac{T_{e0}}{m_i}} \f$ 
 
     
    /**  The normalized Debye length (from e.g. G\"orler PhD Eq. (2.82))
@@ -136,20 +126,20 @@ class Plasma : public IfaceGKC {
    Species species[SPECIES_MAX+1];
    
    /**
-   *   Note Species goes from 0 ... SPECIES_MAX, where 0 is an
-   *   adiabatic species.
-   *   @todo check impact on speed
+   *    @brief intializes species 
+   *
+   *
+   * 
    **/
    Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int nfields=1);
    
    /**
-   *   Note Species goes from 0 ... SPECIES_MAX, where 0 is an
-   *   adiabatic species.
-   *   @todo check impact on speed
+    *
+    *  @brief Free up resources
+    *
    **/
    virtual ~Plasma() {};
 
-   double cs;  ///<  speed of sound of ions \f$ c_s = \sqrt{\frac{T_{e0}}{m_i}} \f$ 
 
 protected:
 

@@ -50,7 +50,7 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
       species[0].n0   = setup->get("Plasma.Species0.Density" , 0. );
       species[0].T0   = setup->get("Plasma.Species0.Temperature" , 1. );
       species[0].q    = setup->get("Plasma.Species0.Charge" , 1. );
-      species[0].m = 0.;
+      species[0].m    = 0.;
       // this is dummy for flux average
       species[0].doGyro  = setup->get("Plasma.Species0.FluxAverage", 0 );
       species[0].w_n     = setup->get("Plasma.Species0.Phase"      , 0.0 );
@@ -59,7 +59,8 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
       ////////////////////////  set kinetic species   //////////////////
       for(int s = 1; s <= SPECIES_MAX; s++) { 
 
-        std::string key          = "Plasma.Species" + Setup::num2str(s); 
+        std::string key          = "Plasma.Species" + Setup::num2str(s);
+
         std::string species_name = setup->get(key + ".Name"  , "Unnamed");
         snprintf(species[s].name, sizeof(species_name.c_str()), "%s", species_name.c_str());
         species[s].m   = setup->get(key + ".Mass"       , 1. );
@@ -67,10 +68,10 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
         species[s].T0  = setup->get(key + ".Temperature", 1. );
         species[s].q   = setup->get(key + ".Charge"     , 1. );
         species[s].gyroModel  = setup->get(key + ".gyroModel", (Nm > 1) ? "Gyro" : "Gyro-1" );
-        species[s].f0_str = setup->get(key + ".F0"      , "n/(pi*T)^1.5*exp(-v^2/T)*exp(-m*B/T)" );
-        species[s].f1_str = setup->get(key + ".F1"      , "0.");
+        //species[s].f0_str = setup->get(key + ".F0"      , "n/(pi*T)^1.5*exp(-v^2/T)*exp(-m*B/T)" );
+        //species[s].f1_str = setup->get(key + ".F1"      , "0.");
         
-        species[s].doGyro = (Nm > 1) ? 1 : 0;//(species[s].gyroModel == "Drift") ? 0 : 1;
+        species[s].doGyro = (species[s].gyroModel == "Gyro") ? 1 : 0;
 
         if(species[s].m < 1.e-10) check(-1, DMESG(std::string("Mass for species ") + std::string(species[s].name) + std::string(" choosen too low")));
   
@@ -88,23 +89,21 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
 
             // we not to normalize N, so that total density is equal in gyro-simulations 
             for(int x = NxLlB; x <= NxLuB; x++) { 
-                species[s].n(x) = n_parser.Eval(&X[x]);///sum(exp(-M));
-                species[s].T(x) = T_parser.Eval(&X[x]);
+                species[s].n[x] = n_parser.Eval(&X[x]);///sum(exp(-M));
+                species[s].T[x] = T_parser.Eval(&X[x]);
                 } 
             } 
            
             else {
                 species[s].w_T = setup->get(key + ".w_T", 0.0 );
                 species[s].w_n = setup->get(key + ".w_n", 0.0 );
-                species[s].n   = species[s].n0;
-                species[s].T   = species[s].T0;
+                species[s].n[NxLlB:NxLB] = species[s].n0;
+                species[s].T[NxLlB:NxLB] = species[s].T0;
                 snprintf(species[s].n_name, 64, "%f", species[s].n0);
                 snprintf(species[s].T_name, 64, "%f", species[s].n0);
             }
 
         species[s].update(geo, cs);
-
-       // std::cout << species[s].name << " n : " << species[s].n0 << " n(x)" << species[s].n << std::endl; 
 
       }   
 
@@ -116,10 +115,12 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
         if(rho0_tot > 1.e-8) check(setup->get("Plasma.checkTotalCharge", -1), DMESG("VIOLATING charge neutrality, check species q * n and TOTAL_SPECIES! Exciting...")); 
 
        initDataOutput(fileIO);
+   
+};
 
-    };
 
-     void Plasma::printOn(std::ostream &output) const {
+void Plasma::printOn(std::ostream &output) const 
+{
          output << 
                "Type       | " << (global ? " Global" : "Local") << " Cs   : " << cs << std::endl 
             << "Species    | ";
@@ -136,22 +137,22 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
              output << " T : " << species[s].T_name << " n0 : " << species[s].n_name  <<  std::endl;
             } else {
              output << " T0 : " << species[s].T0 << " n0 : " << species[s].n0 <<
-             "  w_n : " << species[s].w_n << "  w_T : " << species[s].w_T << " Model : " << species[s].gyroModel << std::endl;
+             "  w_n : " << species[s].w_n << "  w_T : " << species[s].w_T << " Model : " << species[s].gyroModel << " " << species[s].doGyro << std::endl;
             }
- }
+            }
             output <<  "           |  Debye Length^2 : " << debye2 << "   B0 : " << B0 << "  beta : " << beta << "  w_p : " << w_p << std::endl; 
-     }
+     
+}
 
 
-    void Plasma::initDataOutput(FileIO *fileIO) {
+
+void Plasma::initDataOutput(FileIO *fileIO) 
+{
           hid_t plasmaGroup = check(H5Gcreate(fileIO->getFileID(), "/Plasma",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group for Geometry : H5Gcreate"));
 
          check(H5LTset_attribute_double(plasmaGroup, ".", "Debye2",  &debye2, 1), DMESG("H5LTset_attribute"));
-         check(H5LTset_attribute_double(plasmaGroup, ".", "beta",  &beta, 1), DMESG("H5LTset_attribute"));
-         check(H5LTset_attribute_double(plasmaGroup, ".", "B0",  &B0, 1), DMESG("H5LTset_attribute"));
-        // check(H5LTset_attribute_string(plasmaGroup, ".", "Physics", ((plasma->nfields > 1)   ? "Electromagnetic" : "Electrostatic")), DMESG("H5LTset_attribute"));
-
-         
+         check(H5LTset_attribute_double(plasmaGroup, ".", "beta"  ,  &beta  , 1), DMESG("H5LTset_attribute"));
+         check(H5LTset_attribute_double(plasmaGroup, ".", "B0"    ,  &B0    , 1), DMESG("H5LTset_attribute"));
          
           //////////////////////// Set Table for species.
          
@@ -169,8 +170,6 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
 
      /////////////////////
          
-         
          H5Gclose(plasmaGroup);
-
-    };
+};
 
