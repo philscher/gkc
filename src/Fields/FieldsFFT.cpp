@@ -333,8 +333,8 @@ void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEn
        //phiEnergy =  parallel->collect(4. * M_PI * phiEnergy * scaleXYZ / (8.e0 * M_PI) / (initialEkin(TOTAL) == 0. ? 1. : initialEkin(TOTAL)), OP_SUM, DIR_XYZ);
        //ApEnergy  =  parallel->collect(4. * M_PI *  ApEnergy * scaleXYZ / (8.e0 * M_PI) / (initialEkin(TOTAL) == 0. ? 1. : initialEkin(TOTAL)), OP_SUM, DIR_XYZ);
        
-       phiEnergy =  abs( parallel->collect(4. * M_PI * phiEnergy * grid->dXYZ / (8.e0 * M_PI), Op::SUM, DIR_ALL) ); 
-       ApEnergy  =  abs( parallel->collect(4. * M_PI *  ApEnergy * grid->dXYZ / (8.e0 * M_PI), Op::SUM, DIR_ALL) );
+       phiEnergy =  abs( parallel->collect(4. * M_PI * phiEnergy * grid->dXYZ / (8.e0 * M_PI), Op::SUM, DIR_XYZ) ); 
+       ApEnergy  =  abs( parallel->collect(4. * M_PI *  ApEnergy * grid->dXYZ / (8.e0 * M_PI), Op::SUM, DIR_XYZ) );
        BpEnergy  = 0.;
       
       } ((A4zz) fft->kXIn, (A4zz) fft->kXOut, (A4zz) Field0); 
