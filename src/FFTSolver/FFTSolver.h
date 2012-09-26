@@ -32,7 +32,7 @@ enum class FFT_SIGN : int { No=0, Forward=1, Backward=2 };
 *  @brief type of transform
 *  @todo  avoid global scope 
 **/
-enum FFT_FLAGS  {FFT_DUMMY=0, FFT_XYZ=1, FFT_X=2, FFT_XY=4, FFT_Y=16, FFT_AA=32, FFT_FIELDS=64, FFT_X_FIELDS=128, FFT_Y_FIELDS=256, FFT_Y_PSF=512, FFT_Y_NL=1024};
+enum class FFT_Type : int {DUMMY=0, XYZ=1, X=2, XY=4, Y=16, AA=32, FIELDS=64, X_FIELDS=128, Y_FIELDS=256, Y_PSF=512, Y_NL=1024};
 
 
 /** 
@@ -165,7 +165,7 @@ class FFTSolver : public IfaceGKC {
    *   @param nstacked   depreceated
    *
    **/
-   virtual void solve(const int type, const FFT_SIGN direction, void *in=nullptr, void *out=nullptr) = 0;
+   virtual void solve(const FFT_Type type, const FFT_SIGN direction, void *in=nullptr, void *out=nullptr) = 0;
 
    /**
    *   @brief  returns the FFT library name in use

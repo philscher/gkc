@@ -63,7 +63,6 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
     
     // needs for poissons equation
     
-    if(flags & FFT_X) {
          
     
       // set and check bounds 
@@ -114,14 +113,12 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
       // plan_FieldTranspose_2 = plan_transpose('C', 2 * NkyLD * NzLD * nfields, 2 * X_NkxL, (double *) data_X_Transp_1, (double *) data_X_Transp_2);
       // check(((plan_FieldTranspose_1 == NULL) || (plan_FieldTranspose_2 == NULL)) ? -1 : 0, DMESG("Transpose planner null"));
 
-    }
            
             
    
     // Needed to calculate non-linearity in real space
     
-    if(flags & FFT_Y) {
-  
+    ////////////////////////////////// Define Fourier transforms for Y ///////////////// 
     
       //                                                  howmany                                  stride distance
       //  leave space for boundary conditions
@@ -188,13 +185,8 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
       plan_AA_YForward  = fftw_plan_many_dft_r2c(1, &AA_NyLD, NxLD, (double      *) rY_AA, NULL, 1, AA_NyLD ,  (fftw_complex*) kY_AA, NULL, 1, AA_NkyLD, perf_flag);
       plan_AA_YBackward = fftw_plan_many_dft_c2r(1, &AA_NyLD, NxLD, (fftw_complex*) kY_AA, NULL, 1, AA_NkyLD,  (double      *) rY_AA, NULL, 1, AA_NyLD , perf_flag);
 
-   }
 
-    if(flags & FFT_XY ) check(-1, DMESG("XY does not work for fftw3"));
-    if(flags & FFT_XYZ) check(-1, DMESG("3D Fourier transformatio not tested yet"));
-   
     setNormalizationConstants();
-     
    
     // export it again (only by root job ?!)
    
@@ -206,10 +198,10 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
 
 
 /// too much crap here ..... :(
-void FFTSolver_fftw3::solve(const int FFTtype, const FFT_SIGN direction, void *in, void *out) 
+void FFTSolver_fftw3::solve(const FFT_Type type, const FFT_SIGN direction, void *in, void *out) 
 {
 
-   if(FFTtype & FFT_X_FIELDS) {
+   if(type == FFT_Type::X_FIELDS) {
              
    
      if(in == nullptr)  check(-1, DMESG("Need Pointer to array"));
@@ -238,7 +230,7 @@ void FFTSolver_fftw3::solve(const int FFTtype, const FFT_SIGN direction, void *i
    }  
   
    // These are speed critical (move above x-transformation)
-   else if(FFTtype & FFT_Y_FIELDS ) {
+   else if(type == FFT_Type::Y_FIELDS ) {
             
              // Need to cast between bit comparible complex types
              //if     (direction == FFT_SIGN::Forward )  fftw_execute_dft_r2c(plan_YForward_Field , (double   *) in, (fftw_complex *) out); 
@@ -247,7 +239,7 @@ void FFTSolver_fftw3::solve(const int FFTtype, const FFT_SIGN direction, void *i
    }
         
    
-   else if(FFTtype & FFT_Y_PSF ) {
+   else if(type == FFT_Type::Y_PSF ) {
             
              // Need to cast between bit comparible complex types
              //if     (direction == FFT_SIGN::Forward )  fftw_execute_dft_r2c(plan_YForward_PSF , (double   *) in, (fftw_complex *) out); 
@@ -256,7 +248,7 @@ void FFTSolver_fftw3::solve(const int FFTtype, const FFT_SIGN direction, void *i
    
    }
    
-   else if(FFTtype & FFT_Y_NL  ) {
+   else if(type == FFT_Type::Y_NL  ) {
             
              // Need to cast between bit comparible complex types
              if     (direction == FFT_SIGN::Forward )  fftw_execute_dft_r2c(plan_YForward_NL , (double   *) in, (fftw_complex *) out); 
@@ -281,20 +273,14 @@ FFTSolver_fftw3::~FFTSolver_fftw3()
 {
 
     //  release fftw-3  
-    if(flags & FFT_X) {
         fftw_destroy_plan(plan_XForward_Fields);
        fftw_destroy_plan(plan_XBackward_Fields);
-    }
-    if(flags & FFT_Y) {
        
        fftw_destroy_plan(plan_YForward_Field);
        fftw_destroy_plan(plan_YBackward_Field);
         
        fftw_destroy_plan(plan_AA_YForward);
        fftw_destroy_plan(plan_AA_YBackward);
-
-       //TODO  add other transforms to
-    }
 
 #ifdef PARALLEL_OPENMP
     fftw_cleanup_threads();

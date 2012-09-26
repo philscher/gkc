@@ -25,12 +25,12 @@ void FFTSolver::setNormalizationConstants() {
  
   // Real -> Complex (Fourier space) transform
   rY[:][:] = 1.; 
-  solve(FFT_Y_NL, FFT_SIGN::Forward, rY, kY);
+  solve(FFT_Type::Y_NL, FFT_SIGN::Forward, rY, kY);
   Norm_Y_Forward = creal(kY[0][0]);
   
   // Complex (Fourier sapce) -> Real transform
   kY[:][:] = 0. ; kY[0][0] = 1.;
-  solve(FFT_Y_NL, FFT_SIGN::Backward, kY, rY);
+  solve(FFT_Type::Y_NL, FFT_SIGN::Backward, kY, rY);
   Norm_Y_Backward = rY[0][0];
 
   /////////////////   Find normalization constants for X-transformation    //////////
@@ -61,8 +61,8 @@ FFTSolver::FFTSolver(Setup *setup, Parallel *_parallel, Geometry *_geo, double _
       parallel(_parallel), Norm_XYZ(_Norm_XYZ), Norm_XY(_Norm_XY), Norm_X(_Norm_X), Norm_Y(_Norm_Y), geo(_geo)
    {
      // is this really necessary ?
-     flags = FFT_X | FFT_Y;
-     if(setup->get("Vlasov.useAA" , 0) == 1)   flags |= FFT_AA;
+     //flags = FFT_X | FFT_Y;
+     //if(setup->get("Vlasov.useAA" , 0) == 1)   flags |= FFT_AA;
        
      parseSuppressMode(setup->get("SuppressModeX", ""), suppressModeX);  
      parseSuppressMode(setup->get("SuppressModeY", ""), suppressModeY);  

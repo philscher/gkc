@@ -76,7 +76,7 @@ class FFTSolver_fftw3 : public FFTSolver
    *
    *
    **/
-   void solve(const int type, const FFT_SIGN direction, void *in=nullptr, void *out=nullptr);
+   void solve(const FFT_Type type, const FFT_SIGN sign, void *in=nullptr, void *out=nullptr);
    
    void multiply(const CComplex A[NkyLlD][NxLD], const CComplex B[NkyLlD][NxLD],
                  CComplex R[NkyLlD][NxLD]);
