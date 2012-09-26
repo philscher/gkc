@@ -26,8 +26,8 @@
 
 #include "petscmat.h" 
 
-FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry *geo, FFTSolver *fft) 
-: FieldsFFT(setup, grid, parallel,fileIO, geo, fft)
+FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry *geo) 
+: Fields(setup, grid, parallel,fileIO, geo)
 {
       
   // Move to Master PETSc class (create one ...) 
@@ -62,24 +62,28 @@ FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileI
 }
 
 
-void FieldsHermite::gyroAverage(Array4C In, Array4C Out, const int m, const int s, const bool gyroField)  
+//void FieldsHermite::gyroAverage(Array4C In, Array4C Out, const int m, const int s, const bool gyroField)  
+void FieldsHermite::gyroAverage(CComplex In [Nq][NzLD][NkyLD][NxLD], 
+                   CComplex Out[Nq][NzLD][NkyLD][NxLD],
+                   const int m, const int s, const bool forward)
 {
-        Complex *vec_X, *vec_XAvrg;
+        CComplex *vec_X, *vec_XAvrg;
 
         // Create Matrix
         // Is it possible to fill array at once ?! otherwise parallelization efficiency will be bad
-        for(int    z = NzLlD; z <= NzLuD; z++) {  omp_for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
+        for(int q = 1; q <= plasma->nfields; q++) {
         
-        for(int nField = 1; nField <= plasma->nfields; nField++) {
+          for(int  z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
+        
     
             VecGetArray    (GyroVector_X, (PetscScalar **) &vec_X);
-            for(int x = NxLlD, n = 0; x <= NxLuD; x++)  vec_X[n++] = In(x,y_k,z,nField);
+            for(int x = NxLlD, n = 0; x <= NxLuD; x++)  vec_X[n++] = In[q][z][y_k][x];
             VecRestoreArray(GyroVector_X, &vec_X);
        
             MatMult(GyroMatrix(y_k,z,m,s)->getMat(), GyroVector_X, GyroVector_XAvrg);
            
             VecGetArrayRead    (GyroVector_XAvrg, (const PetscScalar **) &vec_XAvrg);
-            for(int x=NxLlD, n = 0; x <= NxLuD; x++)  Out(x,y_k,z,nField) = vec_XAvrg[n++]; 
+            for(int x=NxLlD, n = 0; x <= NxLuD; x++)  Out[q][z][y_k][x] = vec_XAvrg[n++]; 
             VecRestoreArrayRead(GyroVector_XAvrg, (const PetscScalar **) &vec_XAvrg);
         
         }
@@ -91,9 +95,9 @@ void FieldsHermite::gyroAverage(Array4C In, Array4C Out, const int m, const int 
 };
 
 
-Complex FieldsHermite::getElements(const int x, const int n, const double r, int y_k, const int z) {
+CComplex FieldsHermite::getElements(const int x, const int n, const double r, int y_k, const int z) {
   
-        const double ky = fft->ky(y_k);
+        const double ky = (2. * M_PI/Ly) * y_k;
          // Assign the lambda expression that adds two numbers to an auto variable.
          auto Integrand = [=] (double alpha) -> Complex { 
            
@@ -125,7 +129,9 @@ Complex FieldsHermite::getElements(const int x, const int n, const double r, int
         };
         
         // Integration is very sensitif on order ( why ? some bug ?? )
-        return 1./(2.*M_PI) * Integrate::GaussLegendre(Integrand, 0., 2.*M_PI, 128);
+        check(-1, DMESG("Fix _Complex double -> std::complex<double> cast"));
+        return 0.; //1./(2.*M_PI) * Integrate::GaussLegendre(Integrand, 0., 2.*M_PI, 128);
+        
 
 };
 
@@ -257,7 +263,7 @@ Matrix* FieldsHermite::getGyroAveragingMatrix(const double mu, const int y_k, co
               const double rho_t2  = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0); 
               const double lambda2 = 2. * mu * rho_t2;
                 
-              const Complex value  = getElements(x, n, sqrt(lambda2), y_k, z);
+              const CComplex value  = getElements(x, n, sqrt(lambda2), y_k, z);
 
               // Note that our domain starts at NxGlD, while PETSc col/row @ 0
               M->setValue(x - NxGlD, n - NxGlD, value);
@@ -318,7 +324,7 @@ void FieldsHermite::setDoubleGyroAverageMatrix(Setup *setup) {
                    const double BT = plasma->B0 / plasma->species[s].T0; 
 
                    // no exp in case of Laguerre intergration const Complex w  = BT * exp(- BT * mu) * GRQuad.w(n); 
-                   const Complex w  = BT * GRQuad.w(n); 
+                   const CComplex w  = BT * GRQuad.w(n); 
                
                    Matrix *GyroM = getGyroAveragingMatrix(mu/BT, y_k, z, s);
                     

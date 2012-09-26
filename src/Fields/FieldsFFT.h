@@ -113,7 +113,6 @@ class FieldsFFT : public Fields {
   *   solve Eq. in Fourier space, using periodic boundary conditions in X and Y
   *
   **/
-  //virtual Array4C solveFieldEquations(Array4C fields, Timing timing);
   void solveFieldEquations(CComplex Q     [plasma->nfields][NxLD][NkyLD][Nz],
                            CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz]);
 
@@ -135,8 +134,6 @@ class FieldsFFT : public Fields {
   *  @warning We need to normalize the FFT transform here.
   *
   */
-  //void virtual solvePoissonEquation(Array3C rho);
-//  static int X_NkxL;
   virtual void solvePoissonEquation(CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
                                     CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields]);
   
@@ -158,7 +155,6 @@ class FieldsFFT : public Fields {
   *  @warning We need to normalize the FFT transform here.
   *
   **/
-  //void virtual solveAmpereEquation (Array3C   j);
   void solveAmpereEquation(CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
                            CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields]);
 

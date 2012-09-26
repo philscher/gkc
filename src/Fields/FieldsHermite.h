@@ -71,7 +71,7 @@ static char FieldsHermite_help[] = "Help for PETSc Interface not available, plea
  *
  *
  * */
-class FieldsHermite : public FieldsFFT {
+class FieldsHermite : public Fields {
 
   /**
    *    Please Document Me !
@@ -109,7 +109,10 @@ protected:
    *    Please Document Me !
    *
    **/
-  void gyroAverage(Array4C In, Array4C Out, const int m, const int s, const bool forward);// override;
+  void gyroAverage(CComplex In [Nq][NzLD][NkyLD][NxLD], 
+                   CComplex Out[Nq][NzLD][NkyLD][NxLD],
+                   const int m, const int s, const bool forward);
+ 
     
 private:
   /**
@@ -128,7 +131,8 @@ private:
    *    Please Document Me !
    *
    **/
-    Complex getElements(const int i, const int n, const double r, const int y_k, const int z);
+   CComplex getElements(const int i, const int n, const double r, const int y_k, const int z);
+
   /**
    *    Please Document Me !
    *
@@ -140,7 +144,7 @@ public:
    *    Please Document Me !
    *
    **/
- FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry *geo, FFTSolver *fftsolver);
+ FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry *geo);
   /**
    *    Please Document Me !
    *

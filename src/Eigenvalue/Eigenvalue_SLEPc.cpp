@@ -81,7 +81,7 @@ Complex Eigenvalue_SLEPc::getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields)
    
     Complex eigv, eigv_dummy;
     if(nconv > 0) MatGetVecs(A_F1, PETSC_NULL, &Vec_F1);
-    EPSGetEigenpair(EigvSolver, 0, &eigv, &eigv_dummy, Vec_F1, Vec_F1);
+    EPSGetEigenpair(EigvSolver, 0, (PetscScalar *) &eigv, (PetscScalar *) &eigv_dummy, Vec_F1, Vec_F1);
 
     VecDestroy(&Vec_F1);
 
@@ -114,7 +114,7 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
 
         }}} }}}
 
-     VecRestoreArray    (Vec_init, &init_x);
+     VecRestoreArray    (Vec_init, (PetscScalar **)  &init_x);
      EPSSetInitialSpace(EigvSolver, 0, &Vec_init);
      VecDestroy(&Vec_init);
     }
@@ -149,7 +149,7 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
     for(int m = 0; m < nconv; m++) {
           
             Complex eigv, eigv_dummy;
-            EPSGetEigenpair(EigvSolver, m, &eigv, &eigv_dummy, Vec_F1, Vec_F1_dummy);
+            EPSGetEigenpair(EigvSolver, m, (PetscScalar *) &eigv, (PetscScalar *) &eigv_dummy, Vec_F1, Vec_F1_dummy);
 
 
             eigvTable.EigenValue     = eigv;
@@ -165,7 +165,7 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
             // Get EigenVector (Phase Space function) and calculate corresponding potentials
            std::cout << "Saving eigenvector : " << eigv << std::endl;
          
-           VecGetArray(Vec_F1, &x_F1);
+           VecGetArray(Vec_F1, (PetscScalar **) &x_F1);
 
             // copy whole phase space function (waste but starting point) (important due to bounday conditions
            // we can built wrapper around this and directly pass it
@@ -178,7 +178,7 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
            
            fields->solve(vlasov->f0,  vlasov->fs); 
    
-           VecRestoreArray    (Vec_F1, &x_F1);
+           VecRestoreArray    (Vec_F1, (PetscScalar **) &x_F1);
         
            visual->writeData(Timing(m,0.), 0., true);
           }

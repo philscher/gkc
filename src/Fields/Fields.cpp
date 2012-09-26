@@ -146,7 +146,7 @@ void Fields::calculateChargeDensity(const CComplex f0         [NsLD][NmLD][NzLB]
 
    const double pqnB_dvdm = M_PI * plasma->species[s].q * plasma->species[s].n0 * plasma->B0 * dv * grid->dm[m] ;
     
-   omp_for_C2(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
+   omp_C2_for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
               Field0[Q::rho][z][y_k][x] = ( __sec_reduce_add(f [s][m][z][y_k][x][NvLlD:NvLD]) 
                         - (plasma->global ? __sec_reduce_add(f0[s][m][z][y_k][x][NvLlD:NvLD]) : 0)) * pqnB_dvdm;
@@ -166,7 +166,7 @@ void Fields::calculateParallelCurrentDensity(const CComplex f0   [NsLD][NmLD][Nz
   
    const double qa_dvdm = plasma->species[s].q * plasma->species[s].alpha  * plasma->B0 * M_PI * dv * grid->dm[m] ;
    
-   omp_for_C2(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
+   omp_C2_for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
                 Field0[Q::jp][z][y_k][x] = -__sec_reduce_add(V[NvLlD:NvLD] * f[s][m][z][y_k][x][NvLlD:NvLD]) * qa_dvdm;
 
@@ -200,7 +200,7 @@ void Fields::calculatePerpendicularCurrentDensity(const CComplex f0     [NsLD][N
 // only support parallelized version (assuming we run always parallized).
 void Fields::updateBoundary()
 {
-   updateBoundary((A6zz ) Field.dataZero(), 
+  updateBoundary((A6zz ) Field.dataZero(), 
                   (A6zz ) SendXl.data()   , (A6zz) SendXu.data(), (A6zz) RecvXl.data(), (A6zz) RecvXu.data(),
                   (A6zz ) SendZl.data()   , (A6zz) SendZu.data(), (A6zz) RecvZl.data(), (A6zz) RecvZu.data());
    return;

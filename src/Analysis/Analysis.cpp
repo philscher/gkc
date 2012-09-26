@@ -112,7 +112,7 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
 void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
                                      const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
                                      const double V[NvGB], const double M[NmGB], const int s,
-                                       ScalarValues &scalarValues) 
+                                     ScalarValues &scalarValues) 
 
 {
   
@@ -228,7 +228,7 @@ void Analysis::getTemperatureParallel(const  CComplex f[NsLB][NmLB][NzLB][NkyLB]
     // BUG need to use grid->dm
       const double d6Z = M_PI * plasma->species[s].n0 * plasma->species[s].T0 * plasma->B0 * dv * grid->dm[m] * grid->dXYZ;
 
-        omp_for_C2(int z=NzLlD; z<= NzLuD; z++) { for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { 
+        omp_C2_for(int z=NzLlD; z<= NzLuD; z++) { for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { 
             
         const Complex ky=Complex(0.,-fft->ky(y_k));
         
@@ -485,7 +485,7 @@ void Analysis::writeData(Timing timing, double dt)
 
   if (timing.check(dataOutputMoments, dt)       )   {
 
-    getTemperatureParallel((A6zz ) vlasov->f.dataZero(), (A4zz) A4_z.dataZero(), V, M);
+//    getTemperatureParallel((A6zz ) vlasov->f.dataZero(), (A4zz) A4_z.dataZero(), V, M);
 //           FA_Mom_Tp->write(A4_z.data());
 //           FA_Mom_HeatFlux->write(getHeatFlux().data());
 //           FA_Mom_Density->write(getNumberDensity().data());
@@ -501,10 +501,10 @@ void Analysis::writeData(Timing timing, double dt)
     double pSpecX [plasma->nfields] [Nx/2], pSpecY [plasma->nfields] [Nky ],
            pPhaseX[plasma->nfields] [Nx/2], pPhaseY[plasma->nfields] [Nky ];
      
-    getPowerSpectrum((A4zz) fft->kXOut.dataZero(), (A4zz) fields->Field0, pSpecX, pSpecY, pPhaseX, pPhaseY);
+    getPowerSpectrum((A4zz) fft->kXOut, (A4zz) fields->Field0, pSpecX, pSpecY, pPhaseX, pPhaseY);
     
     // Seperatly writing ? Hopefully it is buffered ... (passing stack pointer ... OK ?)
-    FA_grow_x->write( &pSpecX[0][0] ); FA_grow_y->write(&pSpecY[0][0]); FA_grow_t->write(&timing);
+    FA_grow_x->write( &pSpecX [0][0]); FA_grow_y->write(&pSpecY [0][0]); FA_grow_t->write(&timing);
     FA_freq_x->write( &pPhaseX[0][0]); FA_freq_y->write(&pPhaseY[0][0]); FA_freq_t->write(&timing);
     
     // Heat Flux skip this crap
