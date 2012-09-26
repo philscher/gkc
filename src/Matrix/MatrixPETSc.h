@@ -90,7 +90,7 @@ class Matrix
       return;
    };
 
-   void setValue(int row, int col, Complex value) 
+   void setValue(int row, int col, CComplex value) 
    {
               
      MatSetValues(PETSc_Matrix, 1, &row, 1, &col, (PetscScalar *) &value, INSERT_VALUES);
@@ -166,7 +166,7 @@ class Matrix
    //    return A;
    //  };
   
-   friend Matrix& operator*(Complex a, Matrix &A) 
+   friend Matrix& operator*(CComplex a, Matrix &A) 
    {
     
       A.checkAndAssemble();
@@ -177,18 +177,18 @@ class Matrix
 
    friend Matrix& operator*(double &a, Matrix &A) {
     
-      MatScale(A.getMat(), Complex(a,0.));
+      MatScale(A.getMat(), (CComplex) a);
       return A;
    };
    
    friend Matrix& operator*(Matrix &A, double &a) {
     
       A.checkAndAssemble();
-      MatScale(A.getMat(), Complex(a,0.));
+      MatScale(A.getMat(), (CComplex) a);
       return A;
    };
 
-   friend Matrix& operator*(Matrix &A, Complex a) {
+   friend Matrix& operator*(Matrix &A, CComplex a) {
       A.checkAndAssemble();
       MatScale(A.getMat(), a);
       return A;
@@ -204,7 +204,7 @@ class Matrix
    };
    */
    
-   void addDiagonal(Complex a) 
+   void addDiagonal(CComplex a) 
    {
       checkAndAssemble(); 
       MatShift(PETSc_Matrix, a);
@@ -213,7 +213,7 @@ class Matrix
    void addDiagonal(double a) 
    {
       checkAndAssemble(); 
-      MatShift(PETSc_Matrix, Complex(a, 0.));
+      MatShift(PETSc_Matrix, (CComplex) a);
    }
 
    /**
@@ -238,7 +238,7 @@ class Matrix
           MatConvert(PETSc_Matrix, MATMPIDENSE,  MAT_INITIAL_MATRIX, &Matrix_AllReduce);
 
           
-          Complex *matrix_val;
+          CComplex *matrix_val;
           MatGetArray(Matrix_AllReduce, (PetscScalar **) &matrix_val);
 
           
@@ -252,9 +252,9 @@ class Matrix
           // Reduction over dimension, take care that size is the same
           parallel->collect(ReduceArray, Op::SUM, dir);
                
-          
+         check(-1, DMESG("BUG")); // reinterpret 
           for(int x = 0, n = 0; x < n_local-1; x++) {  for(int x2 = 0; x2 < n_local-1; x2++) {
-                    matrix_val[n++] = ReduceArray(x,x2);
+                  //  matrix_val[n++] = reinterpret_cast<CComplex>(ReduceArray(x,x2));
           
           } }     
                

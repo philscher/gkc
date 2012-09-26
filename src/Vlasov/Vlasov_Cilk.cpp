@@ -114,7 +114,7 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
         else                xky_Xi[:][:] = Fields[Field::phi][s][m][z][NkyLlD:NkyLD][NxLlB-2:NxLB+4]   ;
        
         // xy_Xi[shift by +4][], as we also will use extended BC in Y
-        fft->solve(FFT_Y_FIELDS, FFT_BACKWARD, xky_Xi, &xy_Xi[4][0]);
+        fft->solve(FFT_Y_FIELDS, FFT_SIGN::Backward, xky_Xi, &xy_Xi[4][0]);
        
         // Set Periodic-Boundary in Y (in X is not necessary as we transform it too)
         //wonder if this is faster : xy_Xi[0     :4][4:NxLB] =  xy_Xi[NyLD  :4][4:NxLB];
@@ -141,7 +141,7 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
         if(electroMagnetic) xky_f1[:][:] = G      [z][NkyLlD:NkyLD][NxLlB:NxLB][v];
         else                xky_f1[:][:] = f[s][m][z][NkyLlD:NkyLD][NxLlB:NxLB][v];
 
-        fft->solve(FFT_Y_PSF, FFT_BACKWARD, (CComplex *) xky_f1, &xy_f1[2][0]);
+        fft->solve(FFT_Y_PSF, FFT_SIGN::Backward, (CComplex *) xky_f1, &xy_f1[2][0]);
 
         // Boundary in Y (In X is not necessary as we transformed it too), take care of FFT-boundary conditions
         xy_f1[0     :2][:] =  xy_f1[NyLD  :2][:];
@@ -167,7 +167,7 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
    
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-      fft->solve(FFT_Y_NL, FFT_FORWARD, xy_ExB, (CComplex *) xky_ExB);
+      fft->solve(FFT_Y_NL, FFT_SIGN::Forward, xy_ExB, (CComplex *) xky_ExB);
 
       // Done - store the non-linear term in ExB
       ExB[NkyLlD:NkyLD][NxLlD:NxLD][v] = xky_ExB[:][:];
