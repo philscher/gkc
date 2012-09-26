@@ -101,8 +101,8 @@ int ipow(int base, int exp)
  **/
 #define omp_for     _Pragma("omp parallel for") for
 // warning This is an OpenMP 3.0 function, is it possible to check for it ? (_OPENMP)
-#define omp_for_C2  _Pragma("omp parallel for collapse(2)") for
-#define omp_for_C3  _Pragma("omp parallel for collapse(3)") for
+#define omp_C2_for  _Pragma("omp parallel for collapse(2)") for
+#define omp_C3_for  _Pragma("omp parallel for collapse(3)") for
 // for vectorization support, see 
 #define simd_for _Pragma("simd") for
 
@@ -141,7 +141,7 @@ inline int check( int status, std::string file, int line, std::string error_text
 extern blitz::Range RzLD, RyLD, RxLD, RvLD, RmLD, RsLD, RkyLD; 
 extern blitz::Range RxLB, RyLB, RzLB, RvLB, RmLB, RsLB;
 extern blitz::Range RxLB4, RyLB4; 
-extern blitz::Range RB, RB4, RFields ; 
+extern blitz::Range RB, RB4,  RFields ; 
 
 
 // use assert instead !

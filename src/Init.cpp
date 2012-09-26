@@ -23,7 +23,7 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    epsilon_0          = setup->get("Init.Epsilon0", 1.e-14); 
    sigma              = setup->get("Init.Sigma"   , 3.e-1); 
 
-   initMaxwellian(setup, (A6zz) vlasov->f0.dataZero(), (A6zz) vlasov->f.dataZero(), V, M);
+   initMaxwellian(setup, (A6zz) vlasov->f0.dataZero(), (A6zz) vlasov->f.dataZero(), V, M, grid);
   
    // check for predefined perturbations
    PerturbationMethod = setup->get("Init.Perturbation", "");
@@ -199,24 +199,20 @@ void Init::setFieldFromFunction(Setup *setup, Array4C Field0, int n , std::strin
 
 void Init::initMaxwellian(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                         CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                          const double V[NvGB], const double M[NmGB])
+                          const double V[NvGB], const double M[NmGB], Grid *grid)
 {
   ////////////////////////////////////////////////////  Initial Condition Maxwellian f0 = (...) ///////////////
+  
   for(int s = NsLlD; s <= NsLuD; s++) {
    
     // Initialize Form of f, Ap, phi, and g, we need superposition between genereal f1 pertubration and species dependent
-    std::string perturb_f1s_str = setup->get("Plasma.Species" + Setup::num2str(s) + ".InitF1", "0.");
-    std::string perturb_f1_str  = setup->get("Init.F1", "0.");
-    FunctionParser f1s_parser = setup->getFParser();
-    check(((f1s_parser.Parse(perturb_f1s_str + "+" +  perturb_f1_str, "x,y,z,v,m") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
-                                 
     const double VOff = 0.;//setup->get("Plasma.Species" + Setup::num2str(s) + ".VelocityOffset", 0.);
    
-    omp_for_C3(int m = NmLlD; m <= NmLuD; m++) {      for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  
-    for(int x = NxLlD; x <= NxLuD; x++)        { 
+    omp_C3_for(int m   = NmLlD ; m   <= NmLuD ; m++  ) {  for(int z = NzLlD; z <= NzLuD; z++) { 
+           for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  for(int x = NxLlD; x <= NxLuD; x++) { 
       
-      const double n = plasma->species[s].n(x);
-      const double T = plasma->species[s].T(x);
+      const double n = plasma->species[s].n[x];
+      const double T = plasma->species[s].T[x];
       // included rotation, not additionally the flux surfacedensity is also scaled withing n = n_0 exp(e/t) 
       const double w = 0., r = 0;
       
@@ -224,18 +220,23 @@ void Init::initMaxwellian(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxL
       
       // although only F0(x,k_y=0,...) is not equal zero, we perturb all modes, as F0 in Fourier space "acts" like a nonlinearity,
       // which couples modes together
-      f0[s][m][z][y_k][x][v]  =  (n / pow( M_PI*T, 1.5) * exp(-pow2(V[v] - w*r + VOff)/T) * ((plasma->species[s].doGyro == true) 
-                                 ?   exp(- M[m]    * plasma->B0/T) 
-                                 :    T/(plasma->B0)));
 
-      // for df
-      double pos[] = {X[x], 0., Z[z], V[v], M[m] };
-      
-      f[s][m][z][y_k][x][v] = f1s_parser.Eval(pos)*f0[s][m][z][y_k][x][v];
+      // Initialized gyro-kinetic Maxwellian
+      if(plasma->species[s].doGyro == true) { 
+         f0[s][m][z][y_k][x][v]  =  n / pow( M_PI*T, 1.5) * exp(-pow2(V[v] - w*r + VOff)/T) * exp(- M[m]    * plasma->B0/T); 
+      } else {
+      // Initialized gyro-1 or drift-kinetic Maxwellian
+      // For gyro-1 or drift-kinetic we only fill one point in M, otherwise is zero. However, for hybrid simulations
+      // (e.g. Gyro/Gyro-1, we homegenous distribute the gyro-1 species over f(mu) (to enable hybrid simulations)
+         f0[s][m][z][y_k][x][v]  =  n / pow( M_PI*T, 1.5) * exp(-pow2(V[v] - w*r + VOff)/T) * T/(plasma->B0) /  ((double) Nm)  ;
+      }
 
-   }}} }}
 
-   if(plasma->global == false)  f[NsLlD:NsLD][NmLlD:NmLD][NzLlB:NzLB][NkyLlD:NkyLD][NxLlB:NxLB][NvLlB:NvLB] = ((CComplex) 0.e0);
+   }
+        
+   }} }}
+
+   if(plasma->global == false)  f [NsLlD:NsLD][NmLlD:NmLD][NzLlB:NzLB][NkyLlD:NkyLD][NxLlB:NxLB][NvLlB:NvLB] = ((CComplex) 0.e0);
    else                         f [NsLlD:NsLD][NmLlD:NmLD][NzLlB:NzLB][NkyLlD:NkyLD][NxLlB:NxLB][NvLlB:NvLB] =
                                 f0[NsLlD:NsLD][NmLlD:NmLD][NzLlB:NzLB][NkyLlD:NkyLD][NxLlB:NxLB][NvLlB:NvLB];
    
@@ -338,3 +339,8 @@ void Init::PerturbationPSFMode(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][
 }
 
 
+    
+void Init::printOn(std::ostream &output) const 
+{
+         output << "Init       | " << PerturbationMethod << std::endl;
+};

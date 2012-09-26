@@ -80,7 +80,6 @@ GKC::GKC(Setup *_setup) : setup(_setup)  {
 //    else if(fft_solver_name == "fftw2_mpi")  fftsolver = new FFTSolver_fftw2_mpi    (setup, parallel, geometry);
 #endif
 #ifdef FFTW3
-//   else if(fft_solver_name == "fftw3")     fftsolver = new FFTSolver_fftw3        (setup, parallel, geometry);
    else if(fft_solver_name == "fftw3") fftsolver = new FFTSolver_fftw3    (setup, parallel, geometry);
 #endif
    else check(-1, DMESG("No such FFTSolver name"));
@@ -91,7 +90,7 @@ GKC::GKC(Setup *_setup) : setup(_setup)  {
 #ifdef GKC_HYPRE
     else if(psolver_type == "Hypre"  ) fields   = new FieldsHypre(setup, grid, parallel, fileIO,geometry, fftsolver);
 #endif
-    else if(psolver_type == "Hermite") fields   = new FieldsHermite(setup, grid, parallel, fileIO,geometry, fftsolver);
+    else if(psolver_type == "Hermite") fields   = new FieldsHermite(setup, grid, parallel, fileIO,geometry);
     else    check(-1, DMESG("No such Fields Solver"));
 
     // Load Vlasov Solver
@@ -161,6 +160,8 @@ int GKC::mainLoop()   {
                analysis->writeData(timing, dt);
                fields->writeData(timing, dt);
                visual->writeData(timing, dt);
+
+               // Make here scalar operations
            }
            bench->stop("MainLoop");
 

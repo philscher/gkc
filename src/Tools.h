@@ -26,29 +26,6 @@
 class Tools
 {
   public:
-/* 
-     std::list Range(const int stop) {
-
-       std::list<int> L;
-       if (stop > 0 ) for(int n = 0 ; n < stop; n++)  L.push_back(n);
-     
-     }
-
-     }  
-     std::list Range(const int start, const int stop, const int step) {
-       std::list<int> range;
-
-       if(start => stop
-
-       the_list.push_back(1);
-       the_list.push_back(-15);
-       the_list.push_back(3);
-
-            // create full list first
-     }
- * */
-
-
 
      /** 
       *     Create an integrer squence of [ 0, 1, 2, 3, 4, 5, 6 ...., N-1 ].

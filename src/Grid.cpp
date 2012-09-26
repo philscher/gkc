@@ -235,8 +235,8 @@ Grid::~Grid () {
 
 void Grid::printOn(std::ostream &output) const {
     bool do_gyro = Nm > 1 ? true : false;
-         output   << " Domain    |  Lx : " << Lx << "  Ly : " << Ly << "  Lz : " << Lz << "  Lv : " << Lv << ((do_gyro) ? std::string("  Lm : ") + Setup::num2str(Lm) : "") << std::endl
-                  << " Grid      |  Nx : " << Nx << "  Nky : " << Nky << "  Nz : " << Nz << "  Nv : " << Nv << ((do_gyro) ? std::string("  Nμ : ") + Setup::num2str(Nm) : "") << std::endl;
+         output   << "Domain     |  Lx : " << Lx << "  Ly : " << Ly << "  Lz : " << Lz << "  Lv : " << Lv << ((do_gyro) ? std::string("  Lm : ") + Setup::num2str(Lm) : "") << std::endl
+                  << "Grid       |  Nx : " << Nx << "  Nky : " << Nky << "  Nz : " << Nz << "  Nv : " << Nv << ((do_gyro) ? std::string("  Nμ : ") + Setup::num2str(Nm) : "") << std::endl;
      
             
  #ifdef _DEBUG

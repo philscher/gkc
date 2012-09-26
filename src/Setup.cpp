@@ -125,7 +125,6 @@ std::vector<std::string> Setup::split(std::string str, std::string delim)
   config["Parallel.Decomposition"] = setup_decomposition;
   config["gkc.Process_ID"]      =  num2str(process_id);
      
-  std::cout << "---> " << setup_Xoptions << std::endl;
   //////////////////// parse Setup file /////////////////
   
   if(setupFilename == "") check(-1, DMESG("No config file provided. Start helios with : -c <config_file_name> option"));
@@ -211,11 +210,11 @@ FunctionParser Setup::getFParser()
    FunctionParser parser;
 
    parser.AddConstant("pi", M_PI);
-   parser.AddConstant("Lx", Lx); parser.AddConstant("Nx", (double) Nx);
+   parser.AddConstant("Lx", Lx); parser.AddConstant("Nx" , (double) Nx);
    parser.AddConstant("Ly", Ly); parser.AddConstant("Nky", (double) Nky);
-   parser.AddConstant("Lz", Lz); parser.AddConstant("Nz", (double) Nz);
-   parser.AddConstant("Lv", Lv); parser.AddConstant("Nv", (double) Nv);
-   parser.AddConstant("Lm", Lm); parser.AddConstant("Nm", (double) Nm);
+   parser.AddConstant("Lz", Lz); parser.AddConstant("Nz" , (double) Nz);
+   parser.AddConstant("Lv", Lv); parser.AddConstant("Nv" , (double) Nv);
+   parser.AddConstant("Lm", Lm); parser.AddConstant("Nm" , (double) Nm);
    parser.AddConstant("Ns", (double) Ns);
     
    //  BUG : Crashes if parser_constants is empty. Why ?
@@ -224,7 +223,7 @@ FunctionParser Setup::getFParser()
       
       for(int s = 0; s < const_vec.size(); s++) { 
             std::vector<std::string> key_value = split(const_vec[s],"=");
-            parser.AddConstant(trimLower(key_value[0], false), string_to_double(key_value[1]));
+            parser.AddConstant(trimLower(key_value[0], false), str2num(key_value[1]));
 
       };
    }

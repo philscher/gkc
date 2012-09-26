@@ -54,7 +54,7 @@ class Init   : public IfaceGKC {
  **/
    void initMaxwellian(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                      CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                    const double V[NvGB], const double M[NmGB]);
+                                    const double V[NvGB], const double M[NmGB], Grid *grid);
 
   public :
 
@@ -121,15 +121,11 @@ class Init   : public IfaceGKC {
 
   protected:
 
-    virtual void printOn(std::ostream &output) const {
-
-
-         output << " Init      | " << PerturbationMethod << std::endl;
-
-    };
-     virtual void initDataOutput(FileIO *fileIO) {};
-     virtual void writeData(Timing *timing) {};
-     virtual void closeData() {};
+    virtual void printOn(std::ostream &output) const ;
+     
+    virtual void initDataOutput(FileIO *fileIO) {};
+    virtual void writeData(Timing *timing) {};
+    virtual void closeData() {};
 
 
 

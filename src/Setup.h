@@ -75,7 +75,7 @@ public:
    *    @todo is there any more C++ style way ?
    *
    **/
-   static double string_to_double( const std::string s )
+   static double str2num( const std::string s )
    {
         return atof(s.c_str());
         /* 
@@ -139,7 +139,8 @@ public:
    *   @brief constructor
    *
    **/ 
-   Setup(const int argc, char **argv, std::string setup_filename = "", std::string setup_decomposition= "1:1:1:1:1:1", std::string setup_Xoptions="", std::string setup_ExArgv="", int process_id=0, int flags=0);
+   Setup(const int argc, char **argv, std::string setup_filename = "", std::string setup_decomposition= "1:1:1:1:1:1", 
+         std::string setup_Xoptions="", std::string setup_ExArgv="", int process_id=0, int flags=0);
   
    /**
    *   @brief destructor
@@ -152,6 +153,7 @@ public:
    *   @brief erases specific characters from the string 
    **/
    static std::string eraseCharacter(std::string str, std::string chars);
+
    /**
    *   @brief trim all characters to lower space
    **/
@@ -227,9 +229,6 @@ public:
    virtual void printOn(std::ostream &output) const;
 
    // we don't have FileIO object yet, so no writting is performed
-   //    virtual void initDataOutput(FileIO *fileIO) {};
-   //    virtual void writeData(Timing *timing) {};
-   //    virtual void closeData() {};
 
 };
 
