@@ -30,9 +30,11 @@ typedef struct ComplexSplit_t {
 
 
 
-  // Constructor
-  FileIO::FileIO(Parallel *_parallel, Setup *setup):     parallel(_parallel)
-  {
+
+// Constructor
+
+FileIO::FileIO(Parallel *_parallel, Setup *setup)  :  parallel(_parallel)
+{
 
     // Set Initial values
     inputFileName         = setup->get("DataOutput.InputFileName", "--- None ---");
@@ -41,7 +43,7 @@ typedef struct ComplexSplit_t {
     resumeFile            = setup->get("DataOutput.Resume", 0);
     overwriteFile         = setup->get("DataOutput.Overwrite", 0) || (setup->flags & Setup::GKC_OVERWRITE);
    
-     dataFileFlushTiming  = Timing(setup->get("DataOutput.Flush.Step", -1)       , setup->get("DataOutput.Flush.Time", 100.)); 
+    dataFileFlushTiming  = Timing(setup->get("DataOutput.Flush.Step", -1)       , setup->get("DataOutput.Flush.Time", 100.)); 
     
 
     ///////// Define Timeing Datatype
@@ -58,7 +60,8 @@ typedef struct ComplexSplit_t {
     H5Tinsert(vector3D_tid, "x", HOFFSET(Vector3D,x), H5T_NATIVE_DOUBLE);
     H5Tinsert(vector3D_tid, "y", HOFFSET(Vector3D,y), H5T_NATIVE_DOUBLE);
     H5Tinsert(vector3D_tid, "z", HOFFSET(Vector3D,z), H5T_NATIVE_DOUBLE);
- 
+
+    // move somewhere else !
     hsize_t species_dim[] = { setup->get("Grid.Ns", 1)}; 
     species_tid = H5Tarray_create(H5T_NATIVE_DOUBLE, 1, species_dim);
     
@@ -66,23 +69,14 @@ typedef struct ComplexSplit_t {
           // BUG : Somehow HDF-8 stores up to 8 chars fro 64 possible. Rest are truncated ! Why ?
     s256_tid = H5Tcopy(H5T_C_S1); H5Tset_size(s256_tid, 64); H5Tset_strpad(s256_tid, H5T_STR_NULLTERM);
 
-
-    offset0[0] = 0;
-    offset0[1] = 0;
-    offset0[2] = 0;
-    offset0[3] = 0;
-    offset0[4] = 0;
-    offset0[5] = 0;
-    offset0[6] = 0;
-    offset0[7] = 0;
-    
-
     // Create/Load HDF5 file
     if(resumeFile == false || (inputFileName != outputFileName)) create(setup);
 
-   }
+}
 
-    int FileIO::create(Setup *setup) {
+
+int FileIO::create(Setup *setup) 
+{
      
         hid_t file_plist = H5Pcreate(H5P_FILE_ACCESS);
 #ifdef GKC_PARALLEL_MPI
@@ -139,7 +133,7 @@ typedef struct ComplexSplit_t {
 
             for(int s = 0; s < const_vec.size(); s++) { 
                 std::vector<std::string> key_value = Setup::split(const_vec[s],"=");
-                double value = Setup::string_to_double(key_value[1]);
+                double value = Setup::str2num(key_value[1]);
                 int dim[] = { 1 };
    //           check(H5LTmake_dataset_double(constantsGroup, Setup::trimLower(key_value[0], false).c_str(), 1, dim, &value ), DMESG("Write Constants Attributes"));
                 check(H5LTset_attribute_double(constantsGroup, ".", Setup::trimLower(key_value[0], false).c_str(), &value, 1), DMESG("H5LTset_attribute"));
@@ -150,56 +144,8 @@ typedef struct ComplexSplit_t {
          
           H5Gclose(constantsGroup);
 
-         
-         // ********************* setup Table for CFL   *****************88
-         cfl_table = new CFLTable();
-         
-         cfl_offset[0] =  HOFFSET( CFLTable, timeStep );
-         cfl_offset[1] =  HOFFSET( CFLTable, time );
-         cfl_offset[2] =  HOFFSET( CFLTable, Fx );
-         cfl_offset[3] =  HOFFSET( CFLTable, Fy );
-         cfl_offset[4] =  HOFFSET( CFLTable, Fz  );
-         cfl_offset[5] =  HOFFSET( CFLTable, Fv );
-         cfl_offset[6] =  HOFFSET( CFLTable, total );
-          
-
-         for(int i = 1; i < 7; i++)  cfl_sizes[i] = sizeof(double); cfl_sizes[0] = sizeof(int);
-         hid_t   cfl_type[7]; for(int i = 1; i < 7; i++)  cfl_type [i] = H5T_NATIVE_DOUBLE; cfl_type[0] = H5T_NATIVE_INT;
-
-         const char *cfl_names[7];
-         cfl_names[0] = "timeStep";
-         cfl_names[1] = "time";
-         cfl_names[2] = "Fx"; cfl_names[3] = "Fy"; cfl_names[4] = "Fz"; cfl_names[5] = "Fv"; cfl_names[6] = "Total";
-
-          check(H5TBmake_table("cflTable", file, "cfl", (hsize_t) 7, (hsize_t) 0, sizeof(CFLTable), (const char**) cfl_names,
-                               cfl_offset, cfl_type, 32, NULL, 0, cfl_table ), DMESG("H5Tmake_table : cfl"));
-         
-
          return GKC_SUCCESS;
-    }
-
-
-//    int FileIO::writeInitialConditions(Vlasov *vlasov, Fields *fields, Timing timing) {
-    /* 
-         hid_t initialGroup = check(H5Gcreate(file, "/Initial",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phasespace : H5Gcreate"));
-
-         hsize_t hs_Nx[1] = {Nx}, hs_Nv[1]={Nv};
-         H5LTmake_dataset_double(initialGroup, "T" , 1, hs_Nx, T (RxLD).data());
-         H5LTmake_dataset_double(initialGroup, "Tx", 1, hs_Nx, Tx(RxLD).data());
-         H5LTmake_dataset_double(initialGroup, "N" , 1, hs_Nx, N (RxLD).data());
-
-         H5Gclose(initialGroup);
-     * */      
-          
-         // sometimes we want to skip IC to reduce file size
-
-         
-
-         
- //         return GKC_SUCCESS;
- //   }
-
-
+}
 
 
       // This is a bit ugly ... :(
@@ -257,37 +203,15 @@ typedef struct ComplexSplit_t {
 
      
 
-  int FileIO::writeCFLValues(Analysis *analysis, Fields *fields, Timing timing) {
-      return GKC_SUCCESS;
-        
-    cfl_table->timeStep  = timing.step;
-    cfl_table->time  = timing.time;
-    cfl_table->Fx    = analysis->getMaxTimeStep(timing, DIR_X);
-    cfl_table->Fy    = analysis->getMaxTimeStep(timing, DIR_Y);
-    cfl_table->Fz    = analysis->getMaxTimeStep(timing, DIR_Z);
-    cfl_table->Fv    = analysis->getMaxTimeStep(timing, DIR_V);
-    cfl_table->total = analysis->getMaxTimeStep(timing);
-    
-    check(H5TBappend_records (file, "cfl", 1, sizeof(CFLTable), cfl_offset, cfl_sizes, cfl_table), DMESG("Append Table")); 
 
-      return GKC_SUCCESS;
-  }
-
-  void zero(double *DArray, int N) {
-      for(int i = 0; i < N; i++) DArray[i] = 0.e0;
-  }
 
  * */
 
 
 
-
-
-
-
-
-    // Destructor
-    FileIO::~FileIO()  {
+// Destructor
+FileIO::~FileIO()  
+{
        // Free all HDF5 resources
 
      // close some extra stuff
@@ -300,37 +224,9 @@ typedef struct ComplexSplit_t {
      // close file
      check( H5Fclose(file) , DMESG("Unable to close file ..."));
 
-     delete cfl_table;
-
 }
-/* 
-int FileIO::checkOutput(Vlasov *vlasov, Fields *fields, Visualization *visual, Analysis *analysis, Timing timing, double dt, bool force_write) {
-        
-        //if (timing.check(dataOutputPSF, dt) || force_write ) writePhaseSpace(vlasov->f, timing);
-        if (timing.check(dataOutputVisual,dt) )              visual->doPlots(vlasov, fields, analysis, timing);
-       if (timing.check(dataOutputStatistics, dt))          analysis->writeScalarValues(vlasov, fields,  analysis, timing);
-       if (timing.check(dataOutputStatistics, dt))          writeCFLValues(analysis, fields, timing);
 
 
- * */ 
-
-double FileIO::getOutputMaxTimeStep(Timing timing, double dt) {
-       
-    check(-1, DMESG("BLA"));        
-  /* 
-        dt = min(dt, dataOutputPSF        & timing);
-        dt = min(dt, dataOutputPhi        & timing);
-        dt = min(dt, dataOutputStatistics & timing);
-        dt = min(dt, dataOutputXProperty  & timing);
-   * */ 
-//       if (timing % dataOutputStatistics) writeScalarValues(vlasov, fields,  analysis, timing);
-//       if (timing % dataOutputXProperty ) writeXProperty(vlasov, fields,  analysis, timing);
-//       if (timing % dataOutputStatistics) writeCFLValues(analysis, fields, timing);
-
-        return dt; 
-
-}
-    
 hid_t  FileIO::newGroup(std::string name, hid_t parentNode)
 {
       if (parentNode == -2) parentNode = getFileID();

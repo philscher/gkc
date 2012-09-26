@@ -14,18 +14,12 @@
 #ifndef __FILEIO_H_
 #define __FILEIO_H_
 
-#include<fstream>
-#include<iostream>
-#include <hdf5.h>
-#include <string>
-#include <fstream>
-
+#include "Global.h"
 
 #include "Parallel/Parallel.h"
 #include "Setup.h"
-#include "Global.h"
-
 #include "Timing.h"
+
 #include "SHDF5/FileAttr.h"
 #include "SHDF5/TableAttr.h"
 
@@ -44,68 +38,52 @@ class Visualization;
 **/
 class FileIO : public IfaceGKC 
 {
+   Parallel *parallel;
 
-  private:
-   
    Timing dataFileFlushTiming; ///< Timing when to flush the HDF-5 file
-
-
-   /**
-   *  @brief Table to store the CFL values and various contributions
-   *
-   *  @note  Is it worth the effort to keep in the codebase ?
-   *         Get rid of contributional part, just store the time-step
-   **/ 
-   typedef struct CFLTable
-   {
-     //  CFLTable(int _timeStep, double _time, double _Fx, double _Fy, double _Fz, double _total) : 
-     //           timeStep(_timeStep), time(_time), Fx(_Fx), Fy(_Fy), Fz(_Fz), total(_total) {}; 
-     int timeStep;
-     double time;
-     double   Fx, Fy, Fz, Fv, total;
-   } _CFLTable;
-
-
    
    // Data files
-   
    string inputFileName;     ///< Input file name (not working)
    string outputFileName;    ///< Name of the output file
    string info;              ///< additional information to append to the file
-//   ofstream asciiOutputFile; 
-   
-   Parallel *parallel;
-
-    
-   size_t cfl_offset[7];
-   size_t cfl_sizes[7];
-
-   CFLTable *cfl_table;
-
 
 
 public:
-   /** Flush all data to disk to prevent corruption */
+
+   /** 
+   *
+   *
+   * @brief Flush all data to disk to prevent corruption 
+   *
+   * Not working anyway. If program crashes data is basically
+   * lost as the HDF-5 file becomes corrupted if not closed properly.
+   * Snapshots cannot be saved.
+   *
+   **/
    void flush(Timing timing, double dt);
    
-   hid_t timing_mspace, species_tid;
+   hid_t //timing_mspace, 
+        species_tid;
    
-   hid_t s256_tid;
+   hid_t s256_tid;   ///< string datatype
    
-   hid_t file;  
+   hid_t file; ///< main data file id 
    
-   hsize_t offset0[10];//= { 0, 0, 0, 0, 0, 0, 0 };
-   hid_t timing_tid, complex_tid, vector3D_tid;
+   hid_t timing_tid,   ///< Type id for Timing 
+         complex_tid,  ///< Complex Data type
+         vector3D_tid; ///< Vector (x,y,z) type
+
    hid_t getFileID() const { return file; };
 
    // move to private
    bool resumeFile, overwriteFile;
    FileIO(Parallel *parallel, Setup *setup);
+   
    virtual ~FileIO();
 
-   //    int load(Vlasov *vlasov, Fields *fields);
+   // to be written
+   // int load(Vlasov *vlasov, Fields *fields);
 
-   double getOutputMaxTimeStep(Timing timing, double dt);
    hid_t  newGroup(std::string name, hid_t parentNode=-2);
         
    FileAttr *newTiming(hid_t group, hsize_t offset=0, bool write=1);
