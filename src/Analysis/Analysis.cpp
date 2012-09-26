@@ -66,7 +66,7 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
   if(parallel->Coord[DIR_VMS] == 0) {
 
     // Note : We have domain decomposition in X but not in Y
-    fft->solve(FFT_Type::X_FIELDS, FFT_SIGN::Forward, &Field0[1][NzLlD][NkyLlD][NxLlD]);
+    fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, &Field0[1][NzLlD][NkyLlD][NxLlD]);
          
     for(int n = 1; n <= plasma->nfields; n++) {
                 

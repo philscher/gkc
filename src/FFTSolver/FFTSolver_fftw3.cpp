@@ -198,7 +198,7 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
 
 
 /// too much crap here ..... :(
-void FFTSolver_fftw3::solve(const FFT_Type type, const FFT_SIGN direction, void *in, void *out) 
+void FFTSolver_fftw3::solve(const FFT_Type type, const FFT_Sign direction, void *in, void *out) 
 {
 
    if(type == FFT_Type::X_FIELDS) {
@@ -207,7 +207,7 @@ void FFTSolver_fftw3::solve(const FFT_Type type, const FFT_SIGN direction, void 
      if(in == nullptr)  check(-1, DMESG("Need Pointer to array"));
 
      
-     if     (direction == FFT_SIGN::Forward )  {
+     if     (direction == FFT_Sign::Forward )  {
     
        // fftw3-mpi many transform requires specific input (thus we have to transpose our data)
        transpose(NxLD, NkyLD, NzLD, plasma->nfields      , (A4zz) ((CComplex *) in)             , (A4zz) ((CComplex *) data_X_Transp_1));                
@@ -216,7 +216,7 @@ void FFTSolver_fftw3::solve(const FFT_Type type, const FFT_SIGN direction, void 
 
      }
     
-     else if(direction == FFT_SIGN::Backward) {
+     else if(direction == FFT_Sign::Backward) {
                   
        // fftw3-mpi many transform requires specific input (thus we have to transpose our data and backtransform)
        transpose(X_NkxL, NkyLD, NzLD, plasma->nfields, (A4zz) ((CComplex *) data_kXIn), (A4zz) ((CComplex *) data_X_Transp_1));                
@@ -233,8 +233,8 @@ void FFTSolver_fftw3::solve(const FFT_Type type, const FFT_SIGN direction, void 
    else if(type == FFT_Type::Y_FIELDS ) {
             
              // Need to cast between bit comparible complex types
-             //if     (direction == FFT_SIGN::Forward )  fftw_execute_dft_r2c(plan_YForward_Field , (double   *) in, (fftw_complex *) out); 
-             if(direction == FFT_SIGN::Backward)  fftw_execute_dft_c2r(plan_YBackward_Field, (fftw_complex *) in, (double   *) out); 
+             //if     (direction == FFT_Sign::Forward )  fftw_execute_dft_r2c(plan_YForward_Field , (double   *) in, (fftw_complex *) out); 
+             if(direction == FFT_Sign::Backward)  fftw_execute_dft_c2r(plan_YBackward_Field, (fftw_complex *) in, (double   *) out); 
              else   check(-1, DMESG("No such FFT direction"));
    }
         
@@ -242,8 +242,8 @@ void FFTSolver_fftw3::solve(const FFT_Type type, const FFT_SIGN direction, void 
    else if(type == FFT_Type::Y_PSF ) {
             
              // Need to cast between bit comparible complex types
-             //if     (direction == FFT_SIGN::Forward )  fftw_execute_dft_r2c(plan_YForward_PSF , (double   *) in, (fftw_complex *) out); 
-             if(direction == FFT_SIGN::Backward)  fftw_execute_dft_c2r(plan_YBackward_PSF, (fftw_complex *) in, (double   *) out); 
+             //if     (direction == FFT_Sign::Forward )  fftw_execute_dft_r2c(plan_YForward_PSF , (double   *) in, (fftw_complex *) out); 
+             if(direction == FFT_Sign::Backward)  fftw_execute_dft_c2r(plan_YBackward_PSF, (fftw_complex *) in, (double   *) out); 
              else   check(-1, DMESG("No such FFT direction"));
    
    }
@@ -251,8 +251,8 @@ void FFTSolver_fftw3::solve(const FFT_Type type, const FFT_SIGN direction, void 
    else if(type == FFT_Type::Y_NL  ) {
             
              // Need to cast between bit comparible complex types
-             if     (direction == FFT_SIGN::Forward )  fftw_execute_dft_r2c(plan_YForward_NL , (double   *) in, (fftw_complex *) out); 
-             else if(direction == FFT_SIGN::Backward)  fftw_execute_dft_c2r(plan_YBackward_NL, (fftw_complex *) in, (double   *) out); 
+             if     (direction == FFT_Sign::Forward )  fftw_execute_dft_r2c(plan_YForward_NL , (double   *) in, (fftw_complex *) out); 
+             else if(direction == FFT_Sign::Backward)  fftw_execute_dft_c2r(plan_YBackward_NL, (fftw_complex *) in, (double   *) out); 
              else   check(-1, DMESG("No such FFT direction"));
    
    }

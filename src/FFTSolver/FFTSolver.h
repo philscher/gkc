@@ -26,7 +26,7 @@
 *  @brief sign of transform (forward or backward)
 *  @todo  avoid global scope 
 **/
-enum class FFT_SIGN : int { No=0, Forward=1, Backward=2 };
+enum class FFT_Sign : int { No=0, Forward=1, Backward=2 };
 
 /**
 *  @brief type of transform
@@ -165,7 +165,7 @@ class FFTSolver : public IfaceGKC {
    *   @param nstacked   depreceated
    *
    **/
-   virtual void solve(const FFT_Type type, const FFT_SIGN direction, void *in=nullptr, void *out=nullptr) = 0;
+   virtual void solve(const FFT_Type type, const FFT_Sign direction, void *in=nullptr, void *out=nullptr) = 0;
 
    /**
    *   @brief  returns the FFT library name in use

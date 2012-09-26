@@ -25,12 +25,12 @@ void FFTSolver::setNormalizationConstants() {
  
   // Real -> Complex (Fourier space) transform
   rY[:][:] = 1.; 
-  solve(FFT_Type::Y_NL, FFT_SIGN::Forward, rY, kY);
+  solve(FFT_Type::Y_NL, FFT_Sign::Forward, rY, kY);
   Norm_Y_Forward = creal(kY[0][0]);
   
   // Complex (Fourier sapce) -> Real transform
   kY[:][:] = 0. ; kY[0][0] = 1.;
-  solve(FFT_Type::Y_NL, FFT_SIGN::Backward, kY, rY);
+  solve(FFT_Type::Y_NL, FFT_Sign::Backward, kY, rY);
   Norm_Y_Backward = rY[0][0];
 
   /////////////////   Find normalization constants for X-transformation    //////////
@@ -38,13 +38,13 @@ void FFTSolver::setNormalizationConstants() {
   /* 
   // Real -> Complex (Fourier sapce) transform
   rXIn(RxLD, NkyLlD, NzLlD, 1) = 1.;
-  solve(FFT_X_FIELDS, FFT_SIGN::Forward, rXIn.data());
+  solve(FFT_X_FIELDS, FFT_Sign::Forward, rXIn.data());
   Norm_X_Forward = (K1xLlD == 0) ? real(kXOut(0, NkyLlD, NzLlD, 1)) : 0.;      
 
 
   // Complex (Fourier sapce) -> Real transform
   kXIn(Rk1xL, RkyLD, RzLD, 1) = 0.; if(K1xLlD == 0) kXIn(0, NkyLlD, NzLlD, 1) = 1.;
-  solve(FFT_X_FIELDS, FFT_SIGN::Backward, kXOut.data());
+  solve(FFT_X_FIELDS, FFT_Sign::Backward, kXOut.data());
   Norm_X_Backward = real(rXOut(NxLlD, NkyLlD, NzLlD, 1));
       
   // broadcast normalization to all nodes
