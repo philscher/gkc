@@ -130,9 +130,16 @@ class FFTSolver : public IfaceGKC {
    *
    *  Transforms the field equations \f$ A(x,k_y, z, n) rightarrow A(k_x, k_y, z,n) \f$,
    *  which is needs on e.g. the Poisson's equation.
+   * 
+   *  Output of the FFT Solver. Note that the FFT solver is responsible for
+   *  correct (re-) ordering of the output data, as well as input data,
+   *  e.g. transpositions.
+   *
+   *  Real space data (in x) is directly passed as the coresponding Fields0, Q, Qm.
+   *  
+   *
    **/
-   Array4C rXIn, rXOut, kXOut, kXIn;
-
+   CComplex *kXIn, *kXOut;
 
    static int X_NkxL;
    int K1xLlD, K1xLuD;

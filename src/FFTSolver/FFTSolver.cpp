@@ -19,7 +19,7 @@ int FFTSolver::X_NkxL;
 void FFTSolver::setNormalizationConstants() {
 
 
-  /////////////////   Find normalization constants for X-transformation    //////////
+  /////////////////   Find normalization constants for Y-transformation    //////////
   double   rY[NyLD ][NxLD]; 
   CComplex kY[NkyLD][NxLD]; 
  
@@ -33,8 +33,9 @@ void FFTSolver::setNormalizationConstants() {
   solve(FFT_Y_NL, FFT_BACKWARD, kY, rY);
   Norm_Y_Backward = rY[0][0];
 
-  /////////////////   Find normalization constants for Y-transformation    //////////
+  /////////////////   Find normalization constants for X-transformation    //////////
 
+  /* 
   // Real -> Complex (Fourier sapce) transform
   rXIn(RxLD, NkyLlD, NzLlD, 1) = 1.;
   solve(FFT_X_FIELDS, FFT_FORWARD, rXIn.data());
@@ -50,6 +51,7 @@ void FFTSolver::setNormalizationConstants() {
   parallel->send(Norm_Y_Forward, parallel->Coord[DIR_ALL] == 0); parallel->send(Norm_Y_Backward, parallel->Coord[DIR_ALL] == 0);
   parallel->send(Norm_X_Forward, parallel->Coord[DIR_ALL] == 0); parallel->send(Norm_X_Backward, parallel->Coord[DIR_ALL] == 0);
   parallel->barrier();
+   * */
 
 };
 

@@ -40,10 +40,16 @@ class FFTSolver_fftw3 : public FFTSolver
    *   Arrays for complex-to-complex transform for X-direction
    **/ 
    CComplex *data_X_rIn ,     *data_X_rOut;  
-   CComplex *data_X_kIn ,     *data_X_kOut; 
    CComplex *data_X_Transp_1, *data_X_Transp_2; 
-                
+
+   CComplex *data_kXOut, *data_kXIn;
+
    int AA_NkyLD, AA_NkyLlD, AA_NkyLuD, AA_NyLD; ///< use for anti-alias multiplication
+
+   void transpose    (int Nx, int Ny, int Nz, int Nq, 
+                      CComplex In[Nq][Nz][Ny][Nx], CComplex OutT[Nx][Ny][Nz][Nq]);
+   void transpose_rev(int Nx, int Ny, int Nz, int Nq, 
+                      CComplex In[Nx][Ny][Nz][Nq], CComplex OutT[Nq][Nz][Ny][Nx]);
 
   public:
    /**
