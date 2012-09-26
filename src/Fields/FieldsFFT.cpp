@@ -39,9 +39,9 @@ void FieldsFFT::solveFieldEquations(CComplex Q     [Nq][NzLD][NkyLD][NxLD],
    fft->solve(FFT_X_FIELDS, FFT_FORWARD, ArrayField0.data((CComplex *) Q));
 
    // if (phi,Ap,Bp) is solved together, (phi,Bp) are coupled and have to be solved together
-   if     ( solveEq &  Field::phi & Field::Bpp ) solveBParallelEquation((A4zz) fft->kXOut.dataZero(), (A4zz) fft->kXIn.dataZero());
-   else if( solveEq &  Field::phi              ) solvePoissonEquation  ((A4zz) fft->kXOut.dataZero(), (A4zz) fft->kXIn.dataZero());
-   if     ( solveEq &  Field::Ap               ) solveAmpereEquation   ((A4zz) fft->kXOut.dataZero(), (A4zz) fft->kXIn.dataZero());
+   if     ( solveEq &  Field::phi & Field::Bpp ) solveBParallelEquation((A4zz) fft->kXOut, (A4zz) fft->kXIn);
+   else if( solveEq &  Field::phi              ) solvePoissonEquation  ((A4zz) fft->kXOut, (A4zz) fft->kXIn);
+   if     ( solveEq &  Field::Ap               ) solveAmpereEquation   ((A4zz) fft->kXOut, (A4zz) fft->kXIn);
 
    // suppresses modes in all fields (needs work)
    // fft->suppressModes(fft->kXIn, Field::phi);
@@ -267,8 +267,8 @@ void FieldsFFT::gyroAverage(CComplex In [Nq][NzLD][NkyLD][NxLD],
       Out[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]
    =  In[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD];
   }
-  else if(plasma->species[s].gyroModel == "Gyro"  ) gyroFull (In, Out, (A4zz) fft->kXOut.dataZero(), (A4zz) fft->kXIn.dataZero(), m, s, gyroFields);  
-  else if(plasma->species[s].gyroModel == "Gyro-1") gyroFirst(In, Out, (A4zz) fft->kXOut.dataZero(), (A4zz) fft->kXIn.dataZero(),    s, gyroFields);  
+  else if(plasma->species[s].gyroModel == "Gyro"  ) gyroFull (In, Out, (A4zz) fft->kXOut, (A4zz) fft->kXIn, m, s, gyroFields);  
+  else if(plasma->species[s].gyroModel == "Gyro-1") gyroFirst(In, Out, (A4zz) fft->kXOut, (A4zz) fft->kXIn,    s, gyroFields);  
   else   check(-1, DMESG("No such gyro-average Model"));
   
   return;
@@ -336,7 +336,8 @@ void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEn
        phiEnergy =  abs( parallel->collect(4. * M_PI * phiEnergy * grid->dXYZ / (8.e0 * M_PI), Op::SUM, DIR_ALL) ); 
        ApEnergy  =  abs( parallel->collect(4. * M_PI *  ApEnergy * grid->dXYZ / (8.e0 * M_PI), Op::SUM, DIR_ALL) );
        BpEnergy  = 0.;
-      } ((A4zz) fft->kXIn.dataZero(), (A4zz) fft->kXOut.dataZero(), (A4zz) Field0); 
+      
+      } ((A4zz) fft->kXIn, (A4zz) fft->kXOut, (A4zz) Field0); 
 
    }     
  }
