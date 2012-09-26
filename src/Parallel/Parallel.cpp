@@ -17,10 +17,8 @@
 #include "Global.h"
 #include "Parallel.h"
 
-// BUG find a way to remove them
+// global process rank needed for output
 extern int process_rank;
-
-#ifdef GKC_PARALLEL_MPI
 
 // MPI_ERror handler so we can use check and backtrace
 void check_mpi(MPI_Comm *comm, int *err_code, ...) {
@@ -31,7 +29,6 @@ void check_mpi(MPI_Comm *comm, int *err_code, ...) {
   if (*err_code != MPI_SUCCESS) check(-1, DMESG(std::string(string)), true);
 
 }
-#endif // GKC_PARALLEL_MPI
 
 
 
@@ -39,7 +36,7 @@ Parallel::Parallel(Setup *setup)
 {
   // initialize some basic parameter
   myRank = 0;  numThreads = 1; numProcesses = 1, master_rank = 0; 
-  useOpenMP = false; useMPI = false;
+  useOpenMP = false; useMPI = true;
   Coord[:] = 0;
 
   decomposition[:] = 1;
@@ -51,10 +48,8 @@ Parallel::Parallel(Setup *setup)
   {
     numThreads = omp_get_num_threads();
   }
-#endif
+#endif // GKC_PARALLEL_OPENMP
 
-
-   useMPI = true;
    for(int d=DIR_X;d<DIR_SIZE;d++) Comm[d] = MPI_COMM_NULL;
 
    //////////////////////// Set Message tags, enumerate through ////////////////////////
@@ -69,9 +64,10 @@ Parallel::Parallel(Setup *setup)
         Talk[dir].phi_msg_tag[1] = ++i;
    }
    
-   MPI_Init(&setup->argc,&setup->argv); 
-   MPI_Comm_size(MPI_COMM_WORLD,&numProcesses); 
-   MPI_Comm_rank(MPI_COMM_WORLD,&myRank);
+   MPI_Init     (&setup->argc, &setup->argv);
+
+   MPI_Comm_size(MPI_COMM_WORLD, &numProcesses); 
+   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 
   // set automatic decomposition
   std::vector<std::string> decomp = Setup::split(setup->get("Parallel.Decomposition","Auto"), ":");
@@ -79,13 +75,12 @@ Parallel::Parallel(Setup *setup)
   if(decomp[0] == "Auto")  getAutoDecomposition(numProcesses);
   else for(unsigned int dir=DIR_X; dir < decomp.size() && (dir <= DIR_S); dir++)  decomposition[dir] =  atoi(decomp[dir].c_str());
  
-  // Not if OpenMP is enabled OpenMP, we decompose in Y in OpenMP threads (not clean solution tough)
-
+  // Note : if OpenMP is enabled OpenMP, we decompose in Y in OpenMP threads (not clean solution tough)
 #ifdef GKC_PARALLEL_OPENMP
-      #pragma omp parallel
-      {
-        omp_set_num_threads(numThreads);
-      } 
+  #pragma omp parallel
+  {
+      omp_set_num_threads(numThreads);
+  } 
 #endif
 
    checkValidDecomposition(setup);
@@ -114,7 +109,6 @@ Parallel::Parallel(Setup *setup)
     
     int coord_master[6] = { 0, 0, 0, 0, 0, 0 };
  
-  
     // Communicator for X
     int remain_dims_X[6] = { true, false, false, false, false, false };         
     MPI_Cart_sub(Comm[DIR_ALL], remain_dims_X, &Comm[DIR_X]);
@@ -158,7 +152,8 @@ Parallel::Parallel(Setup *setup)
     int remain_dim_VMS[6] = {false, false, false, true, true ,true};
     MPI_Cart_sub(Comm[DIR_ALL], remain_dim_VMS, &Comm[DIR_VMS]);
     MPI_Cart_rank  (Comm[DIR_VMS], coord_master, &dirMaster[DIR_VMS]);
-    
+   
+    // Velocity space communiocation
     int remain_dim_VM[6] = { false, false, false, true, true, false };
     MPI_Cart_sub(Comm[DIR_ALL], remain_dim_VM, &Comm[DIR_VM]);
     MPI_Cart_rank  (Comm[DIR_VM], coord_master, &dirMaster[DIR_VM]);
@@ -205,21 +200,19 @@ Parallel::Parallel(Setup *setup)
 
 
 
-Parallel::~Parallel() {
-
-     // free supcommunicators
-     //for(int d=DIR_X;d<DIR_SIZE;d++) Comm[d] = MPI_COMM_NULL;
-     check(MPI_Comm_free(&Comm[DIR_VMS]   ), DMESG("MPI_Comm_free(Comm_S)"   ));
-     check(MPI_Comm_free(&Comm[DIR_MS ]   ), DMESG("MPI_Comm_free(Comm_S)"   ));
-     check(MPI_Comm_free(&Comm[DIR_V  ]   ), DMESG("MPI_Comm_free(Comm_S)"   ));
-     check(MPI_Comm_free(&Comm[DIR_XYZ] ), DMESG("MPI_Comm_free(Comm_XYZ)" ));
-     check(MPI_Comm_free(&Comm[DIR_ALL] ), DMESG("MPI_Comm_free(Comm_XYZ)" ));
+Parallel::~Parallel() 
+{
+   
+     // free MPI communicators (Comm[] was initialized with MPI_COMM_NULL)
+      for(int n=DIR_X; n<DIR_SIZE; n++) if(Comm[n] != MPI_COMM_NULL) MPI_Comm_free(&Comm[n]);
 
      check(MPI_Finalize(), DMESG("MPI_Finalize"));
  
+     return;
 }
 
-int Parallel::updateNeighboursBarrier() {
+void Parallel::updateNeighboursBarrier() 
+{
 
     // BUG what happen if we never sent a message, what does Waitall
      
@@ -227,17 +220,17 @@ int Parallel::updateNeighboursBarrier() {
     if(decomposition[DIR_Y] > 1) MPI_Waitall(4, Talk[DIR_Y].psf_msg_request, Talk[DIR_Y].msg_status);
     if(decomposition[DIR_Z] > 1) MPI_Waitall(4, Talk[DIR_Z].psf_msg_request, Talk[DIR_Z].msg_status);
     if(decomposition[DIR_V] > 1) MPI_Waitall(4, Talk[DIR_V].psf_msg_request, Talk[DIR_V].msg_status);
-//     if(decomposition & DECOMP_M) MPI_Waitall(4, Talk[DIR_M].psf_msg_request, Talk[DIR_M].msg_status);
-//     if(decomposition & DECOMP_S) MPI_Waitall(4, Talk[DIR_S].psf_msg_request, Talk[DIR_S].msg_status);
-      return GKC_SUCCESS;
-
+  //if(decomposition[DIR_M] > 1) MPI_Waitall(4, Talk[DIR_M].psf_msg_request, Talk[DIR_M].msg_status);
+  //if(decomposition[DIR_S] > 1) MPI_Waitall(4, Talk[DIR_S].psf_msg_request, Talk[DIR_S].msg_status);
+      
+    return;
 }
 
 
 // There should be a better way instead of defininng 2 updateNEighbours as all same the same functions
 // but template arguments are different ... :(
-int Parallel::updateNeighbours(Array6C  SendXl, Array6C  SendXu, Array6C  SendYl, Array6C  SendYu, Array6C SendZl, Array6C SendZu, 
-                               Array6C  RecvXl, Array6C  RecvXu, Array6C  RecvYl, Array6C  RecvYu, Array6C RecvZl, Array6C RecvZu) 
+void Parallel::updateNeighbours(Array6C  SendXl, Array6C  SendXu, Array6C  SendYl, Array6C  SendYu, Array6C SendZl, Array6C SendZu, 
+                                Array6C  RecvXl, Array6C  RecvXu, Array6C  RecvYl, Array6C  RecvYu, Array6C RecvZl, Array6C RecvZu) 
 {
       MPI_Status  msg_status[12];
       MPI_Request msg_request[12];
@@ -266,17 +259,22 @@ int Parallel::updateNeighbours(Array6C  SendXl, Array6C  SendXu, Array6C  SendYl
       // Ok let's wait here ....
       MPI_Waitall(12, msg_request, msg_status);
       
-      return GKC_SUCCESS;
+      return;
 }
 
-MPI_Op Parallel::getMPIOp(Op op) {
+MPI_Op Parallel::getMPIOp(Op op) 
+{
+
     MPI_Op mOp = MPI_OP_NULL;
+
     switch(op) {
       case(Op::SUM)  : mOp = MPI_SUM ; break;
       case(Op::MAX)  : mOp = MPI_MAX ; break;
       case(Op::MIN)  : mOp = MPI_MIN ; break;
       case(Op::BOR ) : mOp = MPI_BOR ; break;
       case(Op::BAND) : mOp = MPI_BAND; break;
+      case(Op::LOR ) : mOp = MPI_LOR ; break;
+      case(Op::LAND) : mOp = MPI_LAND; break;
 
         default       : check(-1, DMESG("No such MPI operation defined"));
     }
@@ -284,7 +282,8 @@ MPI_Op Parallel::getMPIOp(Op op) {
 }
 
 
-MPI_Datatype Parallel::getMPIDataType(const std::type_info &T) {
+MPI_Datatype Parallel::getMPIDataType(const std::type_info &T) 
+{
 
     MPI_Datatype type=0;
 
@@ -293,14 +292,15 @@ MPI_Datatype Parallel::getMPIDataType(const std::type_info &T) {
     else if(T == typeid(double   ) ) type = MPI_DOUBLE;
     else if(T == typeid(int      ) ) type = MPI_INT;
     else if(T == typeid(long long) ) type = MPI_LONG_LONG;
-    
+    else if(T == typeid(bool     ) ) type = MPI::BOOL;   
     else check(-1, DMESG("Such type is not defined"));
     
    return type;
 }
 
 
-void Parallel::getAutoDecomposition(int numCPU) {
+void Parallel::getAutoDecomposition(int numCPU) 
+{
 
     if (numCPU == 1) decomposition[:] = 1;
     else check(-1, DMESG("Not implemented"));
@@ -310,12 +310,13 @@ void Parallel::getAutoDecomposition(int numCPU) {
 };
   
 
-bool Parallel::checkValidDecomposition(Setup *setup) {
+bool Parallel::checkValidDecomposition(Setup *setup) 
+{
 
    // Check basic decomposition sizes
    if( decomposition[DIR_X] > setup->get("Grid.Nx", 1)) check(-1, DMESG("Decomposition in x bigger than Nx"));
-   // no need to check y-decomposition (OpenMP parallelization)   
-   //if( decomposition(DIR_Y) > setup->get("Grid.Ny", 1)) check(-1, DMESG("Decomposition in y bigger than Ny"));
+// no need to check y-decomposition (OpenMP parallelization)   
+// if( decomposition(DIR_Y) > setup->get("Grid.Ny", 1)) check(-1, DMESG("Decomposition in y bigger than Ny"));
    if( decomposition[DIR_Z] > setup->get("Grid.Nz", 1)) check(-1, DMESG("Decomposition in z bigger than Nz"));
    if( decomposition[DIR_V] > setup->get("Grid.Nv", 1)) check(-1, DMESG("Decomposition in v bigger than Nv"));
    if( decomposition[DIR_M] > setup->get("Grid.Nm", 1)) check(-1, DMESG("Decomposition in m bigger than Nm"));
@@ -332,7 +333,8 @@ bool Parallel::checkValidDecomposition(Setup *setup) {
 };
 
 
-void Parallel::print(std::string message) {
+void Parallel::print(std::string message)
+{
 
     if(myRank == 0) std::cout << message << std::endl;
 
@@ -375,8 +377,7 @@ int Parallel::getWorkerID(int dir)
 
 };
 
-
-   
-void Parallel::barrier(int dir) {
+void Parallel::barrier(int dir) 
+{
         MPI_Barrier(Comm[dir]);
 };

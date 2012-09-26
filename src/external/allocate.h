@@ -106,11 +106,18 @@ class allocate
    };
 
 
-   template<class T> T* data(T *g)
+   template<class T> T* data(T *g0)
    {
-         T *g0 = g + Off;
+         T *g = g0 + Off;
+         return g; 
+   };
+   
+   template<class T> T* zero(T *g)
+   {
+         T *g0 = g - Off;
          return g0; 
    };
+
    
 
    /**
@@ -304,20 +311,17 @@ class allocate
     **/
     template<class T> void operator()(T **g)
     {
-   //   std::cout << "Biggest Alignment : " <<    __BIGGEST_ALIGNMENT << std::endl;
-         //  using mm_malloc crashes the code, why ?! !
-         // Take care, pointer arithmetic is typed, only char* is 1 Byte !!!
-         //*g = (T *) (((char *) malloc(N * sizeof(T)))   - Off * sizeof(T));
          
          //*g = ((T *) malloc(N * sizeof(T)));
          *g = ((T *) _mm_malloc(Num * sizeof(T), 64));
-        
-         std::cout << "Original Pointer : " << *g << std::endl;
-
+    
+         // Set all elements to zero
          for(int n = 0; n < Num; n++) (*g)[n] = 0.;
+         
+         // Take care, pointer arithmetic is typed, only char* is 1 Byte !!!
+         // Substract offset to calculate p[0][0]....
          *g = *g - Off;
          
-         std::cout << "Backcast Pointer : " << data(*g) << std::endl;
     };
  
     /**

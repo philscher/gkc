@@ -141,7 +141,6 @@ class Vlasov : public IfaceGKC {
    **/
    bool nonLinear;
     
-
         
    /**
    *
@@ -163,6 +162,7 @@ class Vlasov : public IfaceGKC {
    **/
    const double _kw_12_dx_dx,    ///< \f$ \frac{1}{12 dx^2} \f$
                 _kw_12_dv   ,    ///< \f$ \frac{1}{16 dv  } \f$
+                _kw_12_dx   ,    ///< \f$ \frac{1}{12 dx  } \f$
                 _kw_12_dv_dv,    ///< \f$ \frac{1}{12 dv^2} \f$
                 _kw_16_dx4  ;    ///< \f$ \frac{1}{16 dx^4} \f$
 

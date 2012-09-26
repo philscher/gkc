@@ -170,7 +170,7 @@ bool Control::checkOK(Timing timing, Timing maxTiming) {
 
 
       // Check if stopping signal was triggered on other processes
-      cntrl.check(parallel->collect((int) cntrl.isOK(), Op::BAND, DIR_ALL) > 0, "(4) Interupted by other processor"); 
+      cntrl.check(parallel->collect(cntrl.isOK(), Op::LAND, DIR_ALL) == true, "(4) Interupted by other processor"); 
 
       return cntrl.isOK();
 

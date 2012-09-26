@@ -41,6 +41,8 @@ int VlasovCilk::solve(std::string equation_type, Fields *fields, Array6C _fs, Ar
 
 
 /*
+ *
+ *
 struct my_float {
           float number;
 }  __attribute__((aligned(0x1000)));
@@ -53,9 +55,6 @@ Nice stuff http://stackoverflow.com/questions/841433/gcc-attribute-alignedx-expl
            godd bless sof
 
 */
-
-
-
 
 // Align arrays, allocate on stack, (TAKE care of stackoverflow, if happens allocated
 // dynamically with alloc in Constructor)
@@ -71,6 +70,8 @@ Nice stuff http://stackoverflow.com/questions/841433/gcc-attribute-alignedx-expl
 // See : http://stackoverflow.com/questions/1061818/stack-allocation-padding-and-alignment
 // short array[3] __attribute__ ((aligned (__BIGGEST_ALIGNMENT__)));
 // __BIGGEST_ALIGNMENT autmatically uses max alignments sizes supported by vector instructions
+
+
 
 // take care, for electro-static simulations, G & Xi are null pointers (for e-m f&phi respectively)
 void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][NkyLD][NxLB  ][NvLB],  // in case of e-m

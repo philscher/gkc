@@ -51,7 +51,7 @@ TimeIntegration_PETSc::TimeIntegration_PETSc(Setup *setup, Grid *grid, Parallel 
 
       }}} }}}
 
-      VecRestoreArray(Vec_init, &init_x);
+      VecRestoreArray(Vec_init, (PetscScalar **) &init_x);
       TSSetSolution(ts, Vec_init);
       
       VecDestroy(&Vec_init);
@@ -79,7 +79,7 @@ double TimeIntegration_PETSc::solveTimeStep(Vlasov *vlasov, Fields *fields, Test
     
 
                     TSGetSolution(ts, &Vec_F1);
-                    VecGetArray(Vec_F1, &x_F1);
+                    VecGetArray(Vec_F1, (PetscScalar **) &x_F1);
 
             // copy whole phase space function (waste but starting point) (important due to bounday conditions
            // we can built wrapper around this and directly pass it
@@ -92,7 +92,7 @@ double TimeIntegration_PETSc::solveTimeStep(Vlasov *vlasov, Fields *fields, Test
            }}} }}}
            
            fields->solve(vlasov->f0,  vlasov->f); 
-           VecRestoreArray    (Vec_F1, &x_F1);
+           VecRestoreArray    (Vec_F1, (PetscScalar **) &x_F1);
             
            timing.time += dt;
             timing.step++;

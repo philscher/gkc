@@ -95,7 +95,7 @@ Complex* PETScMatrixVector::getCreateVector(Grid *grid, Vec &Vec_x) {
     VecAssemblyBegin(Vec_x);
     VecAssemblyEnd(Vec_x);
 
-    VecGetArray    (Vec_x, &xp);
+    VecGetArray    (Vec_x, (PetscScalar **) &xp);
 
     return xp;
 }

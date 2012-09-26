@@ -35,7 +35,9 @@ class VlasovIsland : public VlasovAux {
 
    double width, ///< Magnetic Island width
           shear; ///< Shearing rate
-     
+
+   double *MagIs, *dMagIs_dx;
+
    double p[3];
    /**
    *    Please Document Me !
@@ -49,6 +51,7 @@ class VlasovIsland : public VlasovAux {
                            CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
                            CComplex nonLinear                  [NkyLD][NxLD  ][NvLD],
+                           const double MagIs[NxGB], const double dMagIs[NxGB], 
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3]);
 

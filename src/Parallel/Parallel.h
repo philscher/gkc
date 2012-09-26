@@ -24,7 +24,7 @@
 #endif
 
 // use enum class !
-enum class Op {OP_NULL = 0, SUM=1, MAX=2, MIN=3, BOR=4, BAND};
+enum class Op {OP_NULL = 0, SUM=1, MAX=2, MIN=3, BOR=4, BAND=5, LAND=6, LOR=7};
 
 #include <mpi.h>
 
@@ -110,7 +110,7 @@ struct NeighbourDir {
    *
    *
    **/
-   int  updateNeighbours(Array6C  SendXl, Array6C  SendXu, Array6C  SendYl, Array6C  SendYu, Array6C SendZl, Array6C SendZu, 
+   void  updateNeighbours(Array6C  SendXl, Array6C  SendXu, Array6C  SendYl, Array6C  SendYu, Array6C SendZl, Array6C SendZu, 
                          Array6C  RecvXl, Array6C  RecvXu, Array6C  RecvYl, Array6C  RecvYu, Array6C RecvZl, Array6C RecvZu); 
    
    /**
@@ -119,7 +119,7 @@ struct NeighbourDir {
    *  This assumes all domains to be periodic, except for velocity, which
    *  is assumed to be zero. Thus if rank is MPI_PROC_NULL we set value to zero
    **/
-   template<typename T, int W> int updateNeighbours(blitz::Array<T,W>  Sendu,  blitz::Array<T,W>  Sendl,  blitz::Array<T,W>  Recvu, blitz::Array<T,W>  Recvl, int dir) {
+   template<typename T, int W> void updateNeighbours(blitz::Array<T,W>  Sendu,  blitz::Array<T,W>  Sendl,  blitz::Array<T,W>  Recvu, blitz::Array<T,W>  Recvl, int dir) {
         
 #ifdef GKC_PARALLEL_MPI
      MPI_Irecv(Recvl.data(), Recvl.numElements(), getMPIDataType(typeid(T)), Talk[dir].rank_l, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_request[1]);
@@ -131,10 +131,10 @@ struct NeighbourDir {
      MPI_Isend(Sendl.data(), Sendl.numElements(), getMPIDataType(typeid(T)), Talk[dir].rank_l, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_request[2]);
      if(Talk[dir].rank_l == MPI_PROC_NULL)   Recvu = 0.e0;
 #endif // GKC_PARALLEL_MPI
-     return GKC_SUCCESS;
+     return;
 
    };
-   int updateNeighboursBarrier();
+   void updateNeighboursBarrier();
  
    /**
    *   @brief sends Array data to other CPU 
@@ -216,7 +216,7 @@ struct NeighbourDir {
      // we need allreduce instead of reduce because H5TB need all process to have the same value
         //MPI_Allreduce(MPI_IN_PLACE, A.data(), A.numElements(), getMPIDataType(typeid(T)), getMPIOp(op),                Comm[dir]), DMESG("MPI_Allreduce");
      if(allreduce == true)
-        check(MPI_Allreduce(MPI_IN_PLACE, A, Num, getMPIDataType(typeid(T)), getMPIOp(op), Comm[dir]), DMESG("MPI_Reduce")); 
+        check(MPI_Allreduce(MPI_IN_PLACE, A, Num, getMPIDataType(typeid(T)), getMPIOp(op), Comm[dir]), DMESG("MPI_AllReduce")); 
      else 
         check(MPI_Reduce((myRank == dirMaster[dir]) ? MPI_IN_PLACE : A, A, Num, getMPIDataType(typeid(T)), getMPIOp(op), dirMaster[dir], Comm[dir]), DMESG("MPI_Reduce"   )); 
 #endif

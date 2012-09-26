@@ -60,7 +60,7 @@ class ReaderXYV : public Reader {
        Array1R V(blitz::Range(0,token.size()-1));
 
 
-       for(int n = 0; n < token.size();n++)  V(n) = Setup::string_to_double(token[n]);
+       for(int n = 0; n < token.size();n++)  V(n) = Setup::str2num(token[n]);
 
       return V;
     };

@@ -26,6 +26,7 @@ SendVu(GKCStorage), SendVl(GKCStorage),  RecvVu(GKCStorage), RecvVl(GKCStorage)
 
    , _kw_12_dx_dx(1./(12.*dx*dx))
    , _kw_12_dv   ( 1./(12.*dv)  )
+   , _kw_12_dx   ( 1./(12.*dx)  )
    , _kw_12_dv_dv( 1./(12.*dv*dv))
    , _kw_16_dx4  ( 1./(16.*pow4(dx)))
 
@@ -100,7 +101,6 @@ void Vlasov::setBoundary(Array6C A)
 
 void Vlasov::setBoundary(Array6C A, Boundary boundary_type)
 {
-
 
     [=] (
          CComplex g     [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
