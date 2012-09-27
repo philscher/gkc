@@ -18,22 +18,37 @@
 #include<sstream>
 #include<ostream>
 
-    bool Timing::operator<=(Timing &b) {
+
+bool Timing::operator<=(Timing &b) 
+{
 
         bool check_step = (step <= b.step) ||  (step == -1 ) || (b.step == -1 );
         bool check_time = (time <= b.time) ||  (time == -1.) || (b.time == -1.);
         return (check_step && check_time);
-    };
-    bool Timing::operator<=(int step2) {
+
+};
+
+
+bool Timing::operator<=(int step2) 
+{
         return (step <= step2 );
-    };
-    bool Timing::operator!=(int step2) {
+
+};
+
+bool Timing::operator!=(int step2) 
+{
         return (step != step2 );
-    };
-    bool Timing::operator!=(double time2) {
+
+};
+
+bool Timing::operator!=(double time2) 
+{
         return (time != time2 );
-    };
-    bool Timing::operator%(Timing &b) {
+
+};
+
+bool Timing::operator%(Timing &b) 
+{
         bool doWrite = false;
         if((step != -1 ) && (b.step != -1 )) doWrite |=  (step % b.step     == 0 );
    //     if((step ==  0 ) && (b.step != -1 )) doWrite |=  true;
@@ -42,9 +57,12 @@
         // Note : We can have variable timesteps, thus fmod is most of the time != 0.
         if((time > 0.) && (b.time > 0.))     doWrite |=  (fmod(time,b.time) == 0. );
         return doWrite;
-    };
 
-    bool Timing::check(Timing &b, double dt) {
+};
+
+
+bool Timing::check(Timing &b, double dt) 
+{
 
         bool doWrite = false;
         if((step != -1 ) && (b.step != -1 )) doWrite |=  (step % b.step     == 0 );
@@ -53,11 +71,15 @@
         if((time > 0.) && (b.time > 0.))     doWrite |=  (fmod(time,b.time) < dt );
         return doWrite;
 
-    };
 
-    double Timing::operator&(Timing h_time) {
+};
+
+
+double Timing::operator&(Timing h_time) 
+{
        return (time > 0.) ? fmod(h_time.time, time) : 1.e99;
-    };
+
+};
 
     /**
      *
@@ -66,7 +88,9 @@
      *
      * */
     //static std::string Timing::getRemainingTimeString(Timing timing, Timing maxTiming, time_t start_time) {
-    std::string Timing::getRemainingTimeString(Timing timing, Timing maxTiming, time_t start_time) {
+
+std::string Timing::getRemainingTimeString(Timing timing, Timing maxTiming, time_t start_time) 
+{
 
         time_t curr_time = std::time(0); 
         int  time = (int) difftime(curr_time , start_time);
@@ -88,10 +112,12 @@
         else                     remainTimeString = "-d:-h:-m:-s";  
 
         return remainTimeString;
-    };
+};
 
    //static std::string Timing::TimeStringFromSeconds(int secs) {
-   std::string Timing::TimeStringFromSeconds(int secs) {
+
+std::string Timing::TimeStringFromSeconds(int secs) 
+{
 
             int days    = secs / (60*60*24 ); secs -= days    * (60*60*24);
             int hours   = secs / (60*60   ); secs -= hours   * (60*60)   ;
@@ -105,6 +131,7 @@
             if(minutes > 0)  ss << minutes << "m ";
             if(seconds > 0)  ss << seconds << "s ";
 
-       return ss.str();
-   };
+
+            return ss.str();
+};
 

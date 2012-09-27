@@ -103,14 +103,16 @@ void VlasovIsland::Vlasov_2D_Island(
       const double kw_T = 1./Temp;
 
       bool isGyro1 = (plasma->species[s].gyroModel == "Gyro-1");
+      
+      const double rho_t2 = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0); 
 
 
-      for(int m=NmLlD; m<=NmLuD; m++) {
-
-       //calculate non-linear term (rk_step == 0 for eigenvalue calculations)
-       //if(nonLinear && (rk_step != 0)) calculatePoissonBracket(G, Xi, g, phi, z, m, s, ExB, Xi_max, true); 
-
-      for(int z=NzLlD; z<= NzLuD;z++) {  omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
+      for(int m=NmLlD; m<=NmLuD; m++) { for(int z=NzLlD; z<= NzLuD;z++) {  
+        
+        //calculate non-linear term (rk_step == 0 for eigenvalue calculations)
+        if(nonLinear && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, Fields, z, m, s, nonLinear, Xi_max, false); 
+        
+        omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
 
         
         // Note : for negative modes we need to use complex conjugate value
@@ -167,15 +169,15 @@ void VlasovIsland::Vlasov_2D_Island(
             
         const CComplex kp = geo->get_kp(x, ky, z);
            
-           CComplex half_eta_kperp2_phi = 0;
+        CComplex half_eta_kperp2_phi = 0;
 
-           if(isGyro1) { // first order approximation for gyro-kinetics
+        if(isGyro1) { // first order approximation for gyro-kinetics
              const CComplex ddphi_dx_dx = (16. *(Fields[Field::phi][s][m][z][y_k][x+1] + Fields[Field::phi][s][m][z][y_k][x-1]) 
                                               - (Fields[Field::phi][s][m][z][y_k][x+2] + Fields[Field::phi][s][m][z][y_k][x-2]) 
                                          - 30.*phi_) * _kw_12_dx_dx;
 
-             half_eta_kperp2_phi     = 0.5 * w_T  * ( (ky*ky) * phi_ + ddphi_dx_dx ) ; 
-           }
+             half_eta_kperp2_phi     = rho_t2 * 0.5 * w_T  * ( (ky*ky) * phi_ + ddphi_dx_dx ) ; 
+         }
              
            // Sign has no influence on result ...
 

@@ -107,7 +107,7 @@ class TimeIntegration  : public IfaceGKC{
    *
    *
    **/
-   int writeTimeStep(Timing timing, Timing maxTiming, double dt);
+   void writeTimeStep(Timing timing, Timing maxTiming, double dt);
 
    /**
    *    @brief ?

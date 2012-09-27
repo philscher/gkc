@@ -110,11 +110,8 @@ class Vlasov : public IfaceGKC {
    Setup *setup;
    Geometry *geo;
    Benchmark *bench;  
-
-   /**
-   *    Please Document Me !
-   **/
    Collisions     *collisions;
+
 
    /**
    *   Stabilize simulation by adding a small amount of hyper-viscosity.

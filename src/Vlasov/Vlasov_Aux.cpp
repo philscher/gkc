@@ -43,7 +43,7 @@ int VlasovAux::solve(std::string equation_type, Fields *fields, Array6C f_in, Ar
                    (A6zz) ft.dataZero(), (A6zz) fields->Field.dataZero(), (A3zz) nonLinearTerms,
                    (A4zz) Xi, (A4zz) G, X, V, M, dt, rk_step, rk);
 
-  else if(equation_type == "2DLandauDamping")
+  else if(equation_type == "Landau_Damping")
     
       Landau_Damping((A6zz) f_in.dataZero(), (A6zz) f_out.dataZero(), (A6zz) f0.dataZero(), (A6zz) f.dataZero(), 
                      (A6zz) ft.dataZero()  , (A6zz) fields->Field.dataZero(), 
@@ -130,7 +130,8 @@ void VlasovAux::Vlasov_ES(
        
             ///////////////   The time derivative of the Vlasov equation      //////////////////////
        
-            const CComplex dg_dt = 
+            const CComplex dg_dt =
+
              +  NL[y_k][x][v]                                                         // Non-linear ( array is zero for linear simulations) 
              +  ky* (-(w_n + w_T * (((V[v]*V[v])+ (doGyro ? M[m] : 0.))*kw_T  - sub)) * f0_ * phi_    // Driving term (Temperature/Density gradient)
              -  half_eta_kperp2_phi * f0_)                                            // Contributions from gyro-1 (0 if not neq Gyro-1)
@@ -181,11 +182,14 @@ void VlasovAux::Vlasov_EM(
 
     for(int m=NmLlD; m<= NmLuD;m++) { 
  
-//         setupXiAndG(fs, f0 , phi, Ap, Bp, Xi, G, V, M, m , s);
-//         if(calculate_nonLinear && (rk_step != 0)) calculatePoissonBracket(Vlasov::Xi, _fs,m, s);
+          setupXiAndG(fs, f0 , Fields, Xi, G, V, M, m , s);
        
          
-    for(int z=NzLlD; z<= NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
+    for(int z=NzLlD; z<= NzLuD;z++) { 
+      
+          if(nonLinear && (rk_step != 0)) calculatePoissonBracket(G, Xi, nullptr, nullptr, z, m, s, nonLinear, Xi_max, true); 
+      
+          omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
        
           const CComplex phi_ = (__extension__ 1.0i) * Fields[Field::phi][s][m][z][y_k][x];
                

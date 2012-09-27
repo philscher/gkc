@@ -27,7 +27,7 @@ TimeIntegration::TimeIntegration(Setup *setup, Grid *grid, Parallel *_parallel, 
     maxCFLNumber        = setup->get("Helios.maxCFLNumber"      , 0.4);
     
     
-    maxTiming.time = setup->get("Helios.MaxTime", -1.);
+    maxTiming.time = setup->get("Helios.MaxTime" , -1.);
     maxTiming.step = setup->get("Helios.MaxSteps", -1);
     
     dt             = maxTiming.time / maxTiming.step;
@@ -191,18 +191,23 @@ void TimeIntegration::solveTimeStepEigen(Fields *fields, Vlasov *vlasov,Timing t
        
 
 
-int TimeIntegration::writeTimeStep(Timing timing, Timing maxTiming, double dt)
+void TimeIntegration::writeTimeStep(Timing timing, Timing maxTiming, double dt)
 {
         
   // should I use flush ? For many CPU maybe not good.
-         if(parallel->myRank == 0) {
-                   std::cout    << "\r" << "Steps  : " << timing.step  << "/" << maxTiming.step 
-                                        << "  Time : " << timing.time  << "/" << maxTiming.time <<
-                   std::setprecision(3) <<   "  dt : " << dt << std::flush; 
-                  if(timing.step % 20 == 0)  std::cout << Timing::getRemainingTimeString(timing, maxTiming, start_time);
-         }
+  
+  if(parallel->myRank == 0) {
+  
+    std::cout   << "\r" << "Steps  : " << timing.step  << "/" << maxTiming.step 
+                << "  Time : " << timing.time  << "/" << maxTiming.time 
+                << std::setprecision(3) <<   "  dt : " << dt << std::flush; 
+  
+    if(timing.step % 20 == 0)  std::cout << Timing::getRemainingTimeString(timing, maxTiming, start_time);
+  
+  }
 
-         return 0;
+  
+  return;
 
 };
 

@@ -64,7 +64,9 @@ Parallel::Parallel(Setup *setup)
         Talk[dir].phi_msg_tag[1] = ++i;
    }
    
-   MPI_Init     (&setup->argc, &setup->argv);
+   // MPI-2 standard allows to pass NULL for (&argc, &argv)
+   // valgrind complains about unilizaedMPI_Init     (&setup->argc, &setup->argv);
+   MPI_Init     (NULL, NULL);
 
    MPI_Comm_size(MPI_COMM_WORLD, &numProcesses); 
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);

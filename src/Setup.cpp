@@ -15,6 +15,7 @@
 
 #include "Setup.h"
 
+#include <sstream>
 #include <iostream>
 #include <cstdlib>
 
@@ -46,13 +47,15 @@ std::string Setup::eraseCharacter(std::string str, std::string chars)
     return str;
 };
 
+
+
 std::string Setup::trimLower(std::string str, bool lowerCase)  
 { 
 
    
   // Trim Both leading and trailing spaces  
   size_t startpos = str.find_first_not_of("\t "); // Find the first character position after excluding leading blank spaces  
-  size_t endpos = str.find_last_not_of("\t "); // Find the first character position from reverse af  
+  size_t endpos   = str.find_last_not_of("\t ");  // Find the first character position from reverse af  
      
   // if all spaces or empty return an empty string  
   if(( std::string::npos == startpos ) || ( std::string::npos == endpos))   str = std::string("");  
@@ -98,11 +101,12 @@ std::vector<std::string> Setup::split(std::string str, std::string delim)
    return items;
 }
 
- Setup::Setup(int _argc, char **_argv, std::string setup_filename, std::string setup_decomposition, std::string setup_Xoptions, std::string setup_ExArgv, int process_id, int _flags) :
+ Setup::Setup(int _argc, char **_argv, std::string setup_filename, std::string setup_decomposition, std::string setup_Xoptions, std::string setup_ExArgv, int _flags) :
    flags(_flags)
 
 {
-   
+argc= _argc;
+argv=_argv;
   commandLineOptions = setup_Xoptions;
   extraLineOptions   = setup_ExArgv;
   setupFilename      = setup_filename;
@@ -123,7 +127,6 @@ std::vector<std::string> Setup::split(std::string str, std::string delim)
   ExArgv.push_back(0);
 
   config["Parallel.Decomposition"] = setup_decomposition;
-  config["gkc.Process_ID"]      =  num2str(process_id);
      
   //////////////////// parse Setup file /////////////////
   
@@ -178,27 +181,28 @@ std::vector<std::string> Setup::split(std::string str, std::string delim)
 int Setup::parseOption(std::string line, bool fromFile) 
 {
 
-   
+  // Skip comments  
   if((line[0] == '#') || (line[0] == '!')) return GKC_SUCCESS;
+  // Skip empty file
   if(line.empty() == true) return GKC_SUCCESS;
   
   int posEqual=line.find('=');
-
   
-  std::string name  = trimLower(line.substr(0,posEqual), false);
+  std::string key   = trimLower(line.substr(0,posEqual), false);
   std::string value = trimLower(line.substr(posEqual+1), false);
 
+  if(key.empty() || value.empty()) check(-1, DMESG("Input file has wrong format"));
   
   std::map<std::string, std::string> :: const_iterator el;
   
   el = config.find(value);
   
   if((el != config.end()) && fromFile) { 
-    std::cout << "Parsing Error : Duplicated key in File " << name << std::endl; check(-1, DMESG("Duplicate key added"));
+    std::cout << "Parsing Error : Duplicated key in File " << key << std::endl; check(-1, DMESG("Duplicate key added"));
   }
  
-  if(fromFile) config_check.push_back(name) ;
-  config[name] = value;
+  if(fromFile) config_check.push_back(key) ;
+  config[key] = value;
   
   return GKC_SUCCESS;
 }
@@ -219,6 +223,7 @@ FunctionParser Setup::getFParser()
     
    //  BUG : Crashes if parser_constants is empty. Why ?
    if (!parser_constants.empty()) {
+
       std::vector<std::string> const_vec = split(parser_constants, ",");
       
       for(int s = 0; s < const_vec.size(); s++) { 

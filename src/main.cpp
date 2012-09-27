@@ -8,15 +8,48 @@
 
 
 #include <cstdlib>
+#include <sys/resource.h>
    
 #define MASTER_PROCESS 0
 
 int process_rank;
-GKC *gkc;
+
+
+void set_stacksize(int size_Mbytes)
+{
+    const rlim_t kStackSize = size_Mbytes * 1024 * 1024;   // min stack size = 16 MB
+    struct rlimit rl;
+
+    int result = getrlimit(RLIMIT_STACK, &rl);
+    
+    std::cout << " Stack size is : " << rl.rlim_cur/(1024*1024) << " MBytes" << std::endl;
+    
+    if (result == 0)
+    {
+        if (rl.rlim_cur < kStackSize)
+        {
+            rl.rlim_cur = kStackSize;
+            result = setrlimit(RLIMIT_STACK, &rl);
+            if (result != 0)
+            {
+                fprintf(stderr, "setrlimit returned result = %d\n", result);
+            }
+        }
+    }
+    
+    result = getrlimit(RLIMIT_STACK, &rl);
+    std::cout << " Stack size is : " << rl.rlim_cur/(1024*1024) << " MBytes" << std::endl;
+
+
+    return;
+};
+
+
 
 
 int main(int argc, char **argv)
 {
+    // Set stack size (not necesart for jobs) set_stacksize(32);
     // Some internal variables
     time_t start_sim_time, start_all_time, end_sim_time, end_all_time;
     
@@ -30,14 +63,15 @@ int main(int argc, char **argv)
    * Check command line parameters (note, the user can also 
    * speify PETSc parameters
    */
-   int c;
-   extern char *optarg;
    
    std::string setup_filename(""), setup_Xoptions(""), setup_ExArgv("");
    // set it to automatic ?
    std::string setup_decomposition("Auto Decomposition"), setup_scalingFileName("ScalingTime.txt");
    int gkcFlags=0;
-   
+  
+   /////////////////// Read In Command Line Arguments //////////////////
+   int c;
+   extern char *optarg;
    while ((c = getopt(argc, argv, "x:o:c:d:v;s:;f;i")) != -1) {
             
         switch(c) {
@@ -73,13 +107,12 @@ int main(int argc, char **argv)
         }
     }
 
-    int process_pid = getpid();
-    // Get simulation properties and setupurations
-   Setup *setup    = new Setup(argc, argv, setup_filename, setup_decomposition, setup_Xoptions, setup_ExArgv, process_pid, gkcFlags);
+    // Get simulation properties and setup
+    Setup *setup    = new Setup(argc, argv, setup_filename, setup_decomposition, setup_Xoptions, setup_ExArgv, gkcFlags);
 
     
    //////////////////    Start gkc engine and main loop /////////////////////
-   gkc =  new GKC(setup);
+   GKC *gkc =  new GKC(setup);
    
   
     time(&start_sim_time);
@@ -91,7 +124,9 @@ int main(int argc, char **argv)
   
    // write simulation time to file, so we can late investigate it
     // in case for scaling we want to collect some basic statistics about the running
-   
+  
+    ////////////////////// get somer statistic information //////////////
+    /*
     if((gkcFlags & Setup::GKC_STATISTICS) && (process_rank == 0)) {
    int numThreads=1;
 #ifdef GKC_PARALLEL_OPENMP
@@ -105,7 +140,8 @@ int main(int argc, char **argv)
 
         scalingFile.close();
     }
-
+    */
+   //////////////////////////////////////////////////////////////////////////
 
    // Clean up and print basic informations.
    delete gkc;

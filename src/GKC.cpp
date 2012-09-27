@@ -28,6 +28,8 @@
 #include "Vlasov/Vlasov_Cilk.h"
 #include "Vlasov/Vlasov_Aux.h"
 #include "Vlasov/Vlasov_Optim.h"
+#include "Vlasov/Vlasov_Island.h"
+
 #include "Geometry/GeometrySA.h"
 #include "Geometry/Geometry2D.h"
 #include "Geometry/GeometryShear.h"
@@ -44,11 +46,12 @@ blitz::GeneralArrayStorage<6> GKCStorage;
 
 // TODO : Linux uses UTF-8 encoding for chars per default, Windows not, how to deal with unicode ?
 
-GKC::GKC(Setup *_setup) : setup(_setup)  {
+GKC::GKC(Setup *_setup) : setup(_setup)  
+{
 
     // define Storage for gkc (used by blitz++ arrays)
     GKCStorage.ordering() = blitz::fourthDim, blitz::firstDim, blitz::secondDim,  blitz::thirdDim,  blitz::fifthDim, blitz::sixthDim; 
-    GKCStorage.base()     = NxLlB, NkyLlD, NzLlB, NvLlB, NmLlB, NsLlB;
+    //GKCStorage.base()     = NxLlB, NkyLlD, NzLlB, NvLlB, NmLlB, NsLlB;
     
     // Read Setup 
     std::string fft_solver_name = setup->get("Helios.FFTSolver", "fftw3");
@@ -95,9 +98,10 @@ GKC::GKC(Setup *_setup) : setup(_setup)  {
 
     // Load Vlasov Solver
     if(vlasov_type == "None" ) check(-1, DMESG("No Vlasov Solver Selected"));
-    else if(vlasov_type == "Cilk"  ) vlasov     = new VlasovCilk  (grid, parallel, setup, fileIO, geometry, fftsolver, bench);
-    else if(vlasov_type == "Aux"  ) vlasov      = new VlasovAux   (grid, parallel, setup, fileIO, geometry, fftsolver, bench);
-    else if(vlasov_type == "Optim" ) vlasov     = new VlasovOptim (grid, parallel, setup, fileIO, geometry, fftsolver, bench);
+    else if(vlasov_type == "Cilk"   ) vlasov  = new VlasovCilk  (grid, parallel, setup, fileIO, geometry, fftsolver, bench);
+    else if(vlasov_type == "Aux"    ) vlasov  = new VlasovAux   (grid, parallel, setup, fileIO, geometry, fftsolver, bench);
+    else if(vlasov_type == "Island" ) vlasov  = new VlasovIsland(grid, parallel, setup, fileIO, geometry, fftsolver, bench);
+    else if(vlasov_type == "Optim"  ) vlasov  = new VlasovOptim (grid, parallel, setup, fileIO, geometry, fftsolver, bench);
     else   check(-1, DMESG("No such Fields Solver"));
 
 
@@ -107,24 +111,16 @@ GKC::GKC(Setup *_setup) : setup(_setup)  {
     
     eigenvalue = new Eigenvalue_SLEPc(fileIO, setup, grid, parallel); 
 
-
+    
     /////////////////////////////////////////////////////////////////////////////
 
-    // call Initital conditions
-  
-    //if(fileIO->resumeFile == true) fileIO->load(vlasov, fields);
-    //else {
-    //    Init::setInitCondition(grid, setup, vlasov);
-    //
-    //        if(0) fileIO->writeInitialConditions(vlasov, fields, timing);
-    //    }
-    // Apply boundary conditions for variables
+    // Note : Initalization also handles continueation from file
+    // call before time integration (due to eigenvalue solver)
+    init           = new  Init(parallel, grid, setup, vlasov, fields, geometry);
     
     control   = new Control(setup, parallel, analysis);
     particles = new TestParticles(fileIO, setup, parallel);
    
-    // call before time integration (due to eigenvalue solver)
-    init           = new  Init(parallel, grid, setup, vlasov, fields, geometry);
 
     //timeIntegration = new TimeIntegration_PETSc(setup, grid, parallel, vlasov, fields, eigenvalue);
     timeIntegration = new TimeIntegration(setup, grid, parallel, vlasov, fields, eigenvalue, bench);
@@ -138,7 +134,8 @@ GKC::GKC(Setup *_setup) : setup(_setup)  {
 }
           
 
-int GKC::mainLoop()   {
+int GKC::mainLoop()   
+{
 
    parallel->print("Running main loop");
 
@@ -180,7 +177,8 @@ int GKC::mainLoop()   {
 }
 
 
-GKC::~GKC(){
+GKC::~GKC()
+{
    // Shutdown submodules : ORDER IS IMPORTANT !!
         delete fields;
         delete visual;
@@ -203,7 +201,8 @@ GKC::~GKC(){
 
 
 
-void GKC::printSettings() {
+void GKC::printSettings() 
+{
     std::stringstream infoStream;
   
     time_t start_time = std::time(0); 

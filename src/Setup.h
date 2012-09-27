@@ -21,13 +21,13 @@
 #include "Global.h"
 #include "FunctionParser/fparser.hh"
 
+
 #include <string>
 #include <cctype>
-#include <fstream>
 #include <vector>
 #include <map>
 #include <algorithm>
-#include <sstream>
+#include <fstream>
 
 
 
@@ -140,7 +140,7 @@ public:
    *
    **/ 
    Setup(const int argc, char **argv, std::string setup_filename = "", std::string setup_decomposition= "1:1:1:1:1:1", 
-         std::string setup_Xoptions="", std::string setup_ExArgv="", int process_id=0, int flags=0);
+         std::string setup_Xoptions="", std::string setup_ExArgv="",  int flags=0);
   
    /**
    *   @brief destructor

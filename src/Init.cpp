@@ -14,10 +14,14 @@
 #include "Plasma.h"
 #include "Special/HermitePoly.h"
 
-#include "Reader/ReaderXYV.h"
+#include "Tools/Reader/ReaderXYV.h"
 #include "System.h"
 
-Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields *fields, Geometry *_geo) : geo(_geo) {
+Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields *fields, Geometry *_geo) : geo(_geo)
+{
+
+
+    //if(fileIO->resumeFile == true) fileIO->load(vlasov, fields);
 
 
    epsilon_0          = setup->get("Init.Epsilon0", 1.e-14); 
@@ -213,8 +217,8 @@ void Init::initMaxwellian(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxL
       
       const double n = plasma->species[s].n[x];
       const double T = plasma->species[s].T[x];
-      // included rotation, not additionally the flux surfacedensity is also scaled withing n = n_0 exp(e/t) 
-      const double w = 0., r = 0;
+      
+      const double w = 0., r = 0; // roation not needed 
       
       simd_for(int v = NvLlD; v <= NvLuD; v++) { 
       
