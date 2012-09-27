@@ -35,8 +35,8 @@ void FieldsFFT::solveFieldEquations(CComplex Q     [Nq][NzLD][NkyLD][NxLD],
 {
 
    // Transform to fourier space (x,ky) -> (kx,ky)
-   //fft->solve(FFT_X_FIELDS, FFT_SIGN::Forward, &Q[1][NzLlD][NkyLlD][NxLlD]);
-   fft->solve(FFT_Type::X_FIELDS, FFT_SIGN::Forward, ArrayField0.data((CComplex *) Q));
+   //fft->solve(FFT_X_FIELDS, FFT_Sign::Forward, &Q[1][NzLlD][NkyLlD][NxLlD]);
+   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, ArrayField0.data((CComplex *) Q));
 
    // if (phi,Ap,Bp) is solved together, (phi,Bp) are coupled and have to be solved together
    if     ( solveEq &  Field::phi & Field::Bpp ) solveBParallelEquation((A4zz) fft->kXOut, (A4zz) fft->kXIn);
@@ -52,8 +52,8 @@ void FieldsFFT::solveFieldEquations(CComplex Q     [Nq][NzLD][NkyLD][NxLD],
    //if(!(solveEq & Field::Bpp) && (Nq >= 3)) fft->rXOut(RxLD, RkyLD, RzLD, Field::Bp ) = Field0(RxLD, RkyLD, RzLD, Field::Bp );
 
    // transform back to real-space (kx,ky) -> (x,ky)
-   //fft->solve(FFT_X_FIELDS, FFT_SIGN::Backward, &Field0[1][NzLlD][NkyLlD][NxLlD]);
-   fft->solve(FFT_Type::X_FIELDS, FFT_SIGN::Backward, ArrayField0.data((CComplex *) Field0));
+   //fft->solve(FFT_X_FIELDS, FFT_Sign::Backward, &Field0[1][NzLlD][NkyLlD][NxLlD]);
+   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, ArrayField0.data((CComplex *) Field0));
    
    return;
 
@@ -183,7 +183,7 @@ void FieldsFFT::gyroFull(CComplex In   [Nq][NzLD][NkyLD][NxLD             ],
                          const int m, const int s, const bool gyroFields)  
 {
    
-   fft->solve(FFT_Type::X_FIELDS, FFT_SIGN::Forward, &In[1][NzLlD][NkyLlD][NxLlD]);
+   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, &In[1][NzLlD][NkyLlD][NxLlD]);
    
    // solve for all fields at once
    for(int n = 1; n <= Nq; n++) {
@@ -207,7 +207,7 @@ void FieldsFFT::gyroFull(CComplex In   [Nq][NzLD][NkyLD][NxLD             ],
        } } }
    }
    
-   fft->solve(FFT_Type::X_FIELDS, FFT_SIGN::Backward, &Out[1][NzLlD][NkyLlD][NxLlD]);
+   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, &Out[1][NzLlD][NkyLlD][NxLlD]);
        
    return;
 
@@ -227,7 +227,7 @@ void FieldsFFT::gyroFirst(CComplex In   [Nq][NzLD][NkyLD][NxLD],
                              return; 
                         };
    
-  fft->solve(FFT_Type::X_FIELDS, FFT_SIGN::Forward, &In[1][NzLlD][NkyLlD][NxLlD]);
+  fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, &In[1][NzLlD][NkyLlD][NxLlD]);
            
    // solve for all fields at once
    for(int n = 1; n <= Nq; n++) {
@@ -249,7 +249,7 @@ void FieldsFFT::gyroFirst(CComplex In   [Nq][NzLD][NkyLD][NxLD],
    }
 
 
-   fft->solve(FFT_Type::X_FIELDS, FFT_SIGN::Backward, &Out[1][NzLlD][NkyLlD][NxLlD]);
+   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, &Out[1][NzLlD][NkyLlD][NxLlD]);
   
   return;
 
@@ -296,7 +296,7 @@ void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEn
             CComplex Field0[Nq][NzLD][NkyLD][NxLD])
         {
         
-          fft->solve(FFT_Type::X_FIELDS, FFT_SIGN::Forward, &Field0[1][NzLlD][NkyLlD][NxLlD]);
+          fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, &Field0[1][NzLlD][NkyLlD][NxLlD]);
 
         // Add only kinetic contributions (check if FFT Norm is correct)
         //#pragma omp parallel for, collapse(2), reduce(+,phiEnergy,ApEnergy,BpEnergy)
