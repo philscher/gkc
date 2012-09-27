@@ -13,7 +13,7 @@
 
 #include "Grid.h"
 
-#include "Special/Integrate.h"
+#include "Special/Integrate/Integrate.h"
 
 
 // **************** Define Global Variables ************* //

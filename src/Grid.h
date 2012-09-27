@@ -18,7 +18,6 @@
 
 #include "Setup.h"
 #include "Parallel/Parallel.h"
-#include "Special/Integrate.h"
 
 #include "FileIO.h"
 
