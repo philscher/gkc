@@ -218,7 +218,8 @@ void Parallel::updateNeighboursBarrier()
 
     // BUG what happen if we never sent a message, what does Waitall
      
-    if(decomposition[DIR_X] > 1) MPI_Waitall(4, Talk[DIR_X].psf_msg_request, Talk[DIR_X].msg_status);
+    //if(decomposition[DIR_X] > 1) MPI_Waitall(4, Talk[DIR_X].psf_msg_request, Talk[DIR_X].msg_status);
+      MPI_Waitall(4, Talk[DIR_X].psf_msg_request, Talk[DIR_X].msg_status);
     if(decomposition[DIR_Y] > 1) MPI_Waitall(4, Talk[DIR_Y].psf_msg_request, Talk[DIR_Y].msg_status);
     if(decomposition[DIR_Z] > 1) MPI_Waitall(4, Talk[DIR_Z].psf_msg_request, Talk[DIR_Z].msg_status);
     if(decomposition[DIR_V] > 1) MPI_Waitall(4, Talk[DIR_V].psf_msg_request, Talk[DIR_V].msg_status);
