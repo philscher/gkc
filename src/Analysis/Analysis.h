@@ -113,8 +113,8 @@ class Analysis : public IfaceGKC {
    *         Calculates the power of each mode and corresponding phase (better do in
    *         post processing ?)
    *
-   *         Power \f[ abs(\F(n, x,k_y) )^2 \f]
-   *         Phase \f[ arctan2(\F(n,x,k_y)) \f]
+   *         Power \f[ abs( F(n, x,k_y) )^2 \f]
+   *         Phase \f[ arctan2( F(n,x,k_y)) \f]
    *
    *         where $n=\phi,A_{1\parallel}, B_{1\parallel}$.
    *
