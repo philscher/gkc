@@ -16,12 +16,7 @@
 
 Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *_fft, Benchmark *_bench)
 
-: fft(_fft), bench(_bench), parallel(_parallel), grid(_grid), setup(_setup), geo(_geo),
-
-SendXu(GKCStorage), SendXl(GKCStorage),  RecvXu(GKCStorage), RecvXl(GKCStorage),
-SendYu(GKCStorage), SendYl(GKCStorage),  RecvYu(GKCStorage), RecvYl(GKCStorage),
-SendZu(GKCStorage), SendZl(GKCStorage),  RecvZu(GKCStorage), RecvZl(GKCStorage),
-SendVu(GKCStorage), SendVl(GKCStorage),  RecvVu(GKCStorage), RecvVl(GKCStorage)
+: fft(_fft), bench(_bench), parallel(_parallel), grid(_grid), setup(_setup), geo(_geo)
 
    , _kw_12_dx_dx(1./(12.*dx*dx))
    , _kw_12_dv   ( 1./(12.*dv)  )
@@ -42,10 +37,18 @@ SendVu(GKCStorage), SendVl(GKCStorage),  RecvVu(GKCStorage), RecvVl(GKCStorage)
    nct::allocate(nct::Range(NkyLlD,NkyLD), nct::Range(NxLlD, NxLD), nct::Range(NvLlD,NvLD))(&nonLinearTerms);
    
    // allocate boundary (mpi) buffers
-   allocate(RB  , RkyLD, RzLD, RvLD, RmLD, RsLD, SendXu, SendXl, RecvXu, RecvXl);
-   allocate(RxLD, RB   , RzLD, RvLD, RmLD, RsLD, SendYu, SendYl, RecvYu, RecvYl);
-   allocate(RxLD, RkyLD, RB  , RvLD, RmLD, RsLD, SendZu, SendZl, RecvZu, RecvZl);
-   allocate(RxLD, RkyLD, RzLD, RB  , RmLD, RsLD, SendVu, SendVl, RecvVu, RecvVl);
+   //allocate(RB  , RkyLD, RzLD, RvLD, RmLD, RsLD, SendXu, SendXl, RecvXu, RecvXl);
+   ArrayBoundX = nct::allocate(nct::Range(0 , 2 * NkyLD * NzLD * NvLD * NmLD * NsLD ));
+   ArrayBoundX(&SendXu, &SendXl, &RecvXl, &RecvXu);
+   
+   //allocate(RxLD, RkyLD, RB  , RvLD, RmLD, RsLD, SendZu, SendZl, RecvZu, RecvZl);
+   ArrayBoundZ = nct::allocate(nct::Range(0 , NxLD * NkyLD * 2 * NvLD * NmLD * NsLD ));
+   ArrayBoundZ(&SendZu, &SendZl, &RecvZl, &RecvZu);
+   
+   //allocate(RxLD, RkyLD, RzLD, RB  , RmLD, RsLD, SendVu, SendVl, RecvVu, RecvVl);
+   ArrayBoundV = nct::allocate(nct::Range(0 , NxLD * NkyLD * NzLD * 2 * NmLD * NsLD ));
+   ArrayBoundV(&SendVu, &SendVl, &RecvVl, &RecvVu);
+  
 
    equation_type       = setup->get("Vlasov.Equation" , "2D_ES");        
    nonLinear           = setup->get("Vlasov.NonLinear", 0      );
@@ -116,7 +119,7 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
    // X-Boundary (Note, we may have different boundaries for global simulations)
    SendXl[:][:][:][:][:][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD  :2][NvLlD:NvLD];
    SendXu[:][:][:][:][:][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLuD-1:2][NvLlD:NvLD];
-   parallel->updateNeighbours(Vlasov::SendXu, Vlasov::SendXl, Vlasov::RecvXu,Vlasov::RecvXl, DIR_X);
+   parallel->updateBoundaryVlasov((CComplex *) SendXu, (CComplex *) SendXl, (CComplex *) RecvXu, (CComplex *) RecvXl, ArrayBoundX.getNum(),  DIR_X);
   
    // We do not domain decompose poloidal (y) fourier modes, thus boundaries not required
   
@@ -130,7 +133,7 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
             SendZu[:][:][:][:][y_k][x-3] = g[NsLlD:NsLD][NmLlD:NmLD][NzLuD-1:2][y_k][x][NvLlD:NvLD] * cexp(-((NzLlD == NzGlD) ? a : 0.) * geo->nu(x));
                
   } }
-  parallel->updateNeighbours(Vlasov::SendZu, Vlasov::SendZl, Vlasov::RecvZu, Vlasov::RecvZl, DIR_Z);
+  parallel->updateBoundaryVlasov((CComplex *) SendZu, (CComplex *) SendZl, (CComplex *) RecvZu, (CComplex *) RecvZl, ArrayBoundZ.getNum(),  DIR_Z);
   
   // We do not need to communicate for M and S as we do not have boundary cells (yet)
   
@@ -139,7 +142,7 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
   if(parallel->decomposition[DIR_V] > 1) {
        SendVl[:][:][:][:][:][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD][NvLlD  :2]; 
        SendVu[:][:][:][:][:][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD][NvLuD-1:2]; 
-       parallel->updateNeighbours(Vlasov::SendVu, Vlasov::SendVl, Vlasov::RecvVu, Vlasov::RecvVl, DIR_V);
+       parallel->updateBoundaryVlasov((CComplex *) SendVu, (CComplex *) SendVl, (CComplex *) RecvVu, (CComplex *) RecvVl, ArrayBoundV.getNum(), DIR_V);
   } else {
        g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD][NvLlB  :2] = 0.;
        g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD][NvLuD+1:2] = 0.;
@@ -177,9 +180,9 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
   }
 
 }  ((A6zz) f, 
-    (A6zz) SendXl.data(),  (A6zz) SendXu.data(),  (A6zz) RecvXl.data(),  (A6zz) RecvXu.data(),
-    (A6zz) SendZl.data(),  (A6zz) SendZu.data(),  (A6zz) RecvZl.data(),  (A6zz) RecvZu.data(),
-    (A6zz) SendVl.data(),  (A6zz) SendVu.data(),  (A6zz) RecvVl.data(),  (A6zz) RecvVu.data());
+    (A6zz) SendXl,  (A6zz) SendXu,  (A6zz) RecvXl,  (A6zz) RecvXu,
+    (A6zz) SendZl,  (A6zz) SendZu,  (A6zz) RecvZl,  (A6zz) RecvZu,
+    (A6zz) SendVl,  (A6zz) SendVu,  (A6zz) RecvVl,  (A6zz) RecvVu);
 
 
 

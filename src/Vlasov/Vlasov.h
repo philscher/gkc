@@ -76,13 +76,13 @@ class Vlasov : public IfaceGKC {
    /**
    *  @brief Buffer for exchange ghost cells in each direction
    */ 
-   Array6C  SendYu, SendXu, SendYl, SendXl, SendVl, SendVu, SendZl, SendZu; 
-  
-   /**
-   *  @brief Buffer for exchange ghost cells in each direction
-   */ 
-   Array6C  RecvYu, RecvXu, RecvYl, RecvXl, RecvVl, RecvVu, RecvZl, RecvZu;
-      
+   CComplex *SendXl, *SendXu, *SendZl, *SendZu, *SendVl, *SendVu;
+   CComplex *RecvXl, *RecvXu, *RecvZl, *RecvZu, *RecvVl, *RecvVu;
+   nct::allocate ArrayBoundX, ArrayBoundZ, ArrayBoundV;
+    
+
+
+
    /**
    *   @brief Update boundary conditions in case non-blocking MPI is used
    *
@@ -130,7 +130,7 @@ class Vlasov : public IfaceGKC {
    *
    *  Interface to solve Vlasov equation of name equation_type
    *
-   *
+   *  set fs to const f_in 
    **/
    virtual int solve(std::string equation_type, Fields *fields, CComplex *fs, CComplex *fss, double dt, int rk_step, const double rk[3]) = 0;
  public:

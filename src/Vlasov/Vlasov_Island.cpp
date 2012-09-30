@@ -54,7 +54,7 @@ VlasovIsland::VlasovIsland(Grid *_grid, Parallel *_parallel, Setup *_setup, File
 }
 
 
-int VlasovIsland::solve(std::string equation_type, Fields *fields, Array6C f_in, Array6C f_out, double dt, int rk_step, const double rk[3]) 
+int VlasovIsland::solve(std::string equation_type, Fields *fields, CComplex *f_in, CComplex *f_out, double dt, int rk_step, const double rk[3]) 
 {
 
   // do I need both, we can stick to e-m ? Speed penality ?
@@ -62,8 +62,8 @@ int VlasovIsland::solve(std::string equation_type, Fields *fields, Array6C f_in,
   
   else if(equation_type == "2D_Island") 
     
-      Vlasov_2D_Island((A6zz) f_in.dataZero(), (A6zz) f_out.dataZero(), (A6zz) f0.dataZero(), (A6zz) f.dataZero(), 
-                       (A6zz) ft.dataZero()  , (A6zz) fields->Field.dataZero(), (A3zz) nonLinearTerms,
+      Vlasov_2D_Island((A6zz) f_in, (A6zz) f_out, (A6zz) f0, (A6zz) f, 
+                       (A6zz) ft  , (A6zz) fields->Field.dataZero(), (A3zz) nonLinearTerms,
                        MagIs, dMagIs_dx, X, V, M, dt, rk_step, rk);
   
   else   check(-1, DMESG("No Such Equation"));

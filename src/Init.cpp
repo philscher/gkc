@@ -297,6 +297,8 @@ void Init::PerturbationPSFExp(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][N
                                     CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB])
 { 
    const double pert = plasma->global ? 1. : 0.; 
+   const bool  isGlobal = plasma->global;
+
 
    auto  Perturbation = [=] (int x,int y,int z, const double epsilon_0, const double sigma) -> double {
             return  epsilon_0*exp(-(  pow2(X[x]/Lx) + pow2(Y[y]/Ly - 0.5) + pow2(Z[z]/Lz - 0.5))/(2.*pow2(sigma))); 
