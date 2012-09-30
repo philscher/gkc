@@ -523,7 +523,7 @@ void Analysis::writeData(Timing timing, double dt)
     
     //  Get scalar Values for every species ( this is bad calculate them alltogether)
     // gives bus error ?!
-    calculateScalarValues((A6zz) vlasov->f.dataZero(), (A6zz) vlasov->f0.dataZero(), V, M, 1, scalarValues); 
+    calculateScalarValues((A6zz) vlasov->f, (A6zz) vlasov->f0, V, M, 1, scalarValues); 
 
     
     SVTable->append(&scalarValues);

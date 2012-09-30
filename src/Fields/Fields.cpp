@@ -60,15 +60,15 @@ Fields::~Fields()
 }
 
 
-void Fields::solve(Array6C f0, Array6C  f, Timing timing)
+void Fields::solve(CComplex *f0, CComplex *f, Timing timing)
 {
   
   // calculate source terms  Q (Q is overwritten in the first iteration )
   for(int s = NsLlD, loop=0; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++, loop++) {
 
-      if(solveEq & Field::phi) calculateChargeDensity               ((A6zz) f0.dataZero(), (A6zz) f.dataZero(), (A4zz) Field0,               m, s);
-      if(solveEq & Field::Ap ) calculateParallelCurrentDensity      ((A6zz) f0.dataZero(), (A6zz) f.dataZero(), (A4zz) Field0, V, m, s);
-      if(solveEq & Field::Bpp) calculatePerpendicularCurrentDensity ((A6zz) f0.dataZero(), (A6zz) f.dataZero(), (A4zz) Field0, M, m, s);
+      if(solveEq & Field::phi) calculateChargeDensity               ((A6zz) f0, (A6zz) f, (A4zz) Field0,               m, s);
+      if(solveEq & Field::Ap ) calculateParallelCurrentDensity      ((A6zz) f0, (A6zz) f, (A4zz) Field0, V, m, s);
+      if(solveEq & Field::Bpp) calculatePerpendicularCurrentDensity ((A6zz) f0, (A6zz) f, (A4zz) Field0, M, m, s);
   
       // thus uses AllReduce, Reduce is more effective (with false flag...)
       parallel->collect(ArrayField0.data(Field0), Op::SUM, DIR_V, ArrayField0.getNum(), true); 

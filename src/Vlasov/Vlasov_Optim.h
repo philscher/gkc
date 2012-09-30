@@ -75,7 +75,7 @@ class VlasovOptim : public Vlasov {
    *    Please Document Me !
    *
    **/
-   int solve(std::string equation_tyoe, Fields *fields, Array6C fs, Array6C fss, double dt, int rk_step, const double rk[3]);
+   int solve(std::string equation_tyoe, Fields *fields, CComplex *fs, CComplex *fss, double dt, int rk_step, const double rk[3]);
  
   
 };

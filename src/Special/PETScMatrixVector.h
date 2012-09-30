@@ -39,7 +39,7 @@ class PETScMatrixVector
   public:
         PETScMatrixVector(Vlasov *vlasov, Fields *fields);
         static PetscErrorCode MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_y) ;
-        static Complex* getCreateVector(Grid *grid, Vec &Vec_x);
+        static CComplex* getCreateVector(Grid *grid, Vec &Vec_x);
 };
 
 

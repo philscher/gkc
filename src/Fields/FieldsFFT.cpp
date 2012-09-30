@@ -161,7 +161,7 @@ void FieldsFFT::calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_Nk
      // A(x_k, 0) is the sum over y, thus A(x_k, 0)/Ny is the average 
      const CComplex rhs  =  kXOut[Field::phi][z][0][x_k]/((double) (grid->NyGD*Nz));
      
-    // phi_yz[x_k] = rhs/lhs;
+     phi_yz[x_k] = rhs/lhs;
     
   } } }
 

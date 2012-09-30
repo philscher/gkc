@@ -323,7 +323,7 @@ public:
    *
    *
    **/
-   void solve(Array6C f0, Array6C  f, Timing timing=0);
+   void solve(CComplex *f0, CComplex  *f, Timing timing=0);
 
    /**
    *  @brief set which equation to solve if one field is assumed to be fixed

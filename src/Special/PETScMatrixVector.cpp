@@ -82,14 +82,14 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
    VecRestoreArrayRead(Vec_x, (const PetscScalar **) &x_F1);
    VecRestoreArray    (Vec_y, (      PetscScalar **) &y_F1);
 
-   } ((A6zz) GL_vlasov->fs.dataZero(), (A6zz) GL_vlasov->fss.dataZero());
+   } ((A6zz) GL_vlasov->fs, (A6zz) GL_vlasov->fss);
    
    return 0; // return 0 (success) required for PETSc
 }
 
-Complex* PETScMatrixVector::getCreateVector(Grid *grid, Vec &Vec_x) {
+CComplex* PETScMatrixVector::getCreateVector(Grid *grid, Vec &Vec_x) {
 
-    Complex *xp;
+    CComplex *xp;
 
     VecCreateMPI(MPI_COMM_WORLD, grid->getLocalSize(), grid->getGlobalSize(), &Vec_x);
     VecAssemblyBegin(Vec_x);

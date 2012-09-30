@@ -26,10 +26,10 @@ VlasovCilk::VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *
 }
 
 
-int VlasovCilk::solve(std::string equation_type, Fields *fields, Array6C _fs, Array6C _fss, double dt, int rk_step, const double rk[3]) 
+int VlasovCilk::solve(std::string equation_type, Fields *fields, CComplex *_fs, CComplex *_fss, double dt, int rk_step, const double rk[3]) 
 {
   if(0);
-  else if(equation_type == "Vlasov_EM") Vlasov_EM((A6zz) _fs.dataZero(), (A6zz) _fss.dataZero(), (A6zz) f0.dataZero(), (A6zz) f.dataZero(), (A6zz) ft.dataZero(), 
+  else if(equation_type == "Vlasov_EM") Vlasov_EM((A6zz) _fs, (A6zz) _fss, (A6zz) f0, (A6zz) f, (A6zz) ft, 
                                                   (A6zz) fields->Field.dataZero(), (A4zz) Xi, (A4zz) G, (A3zz) nonLinearTerms,
                                                   X, V, M,  dt, rk_step, rk);
   else   check(-1, DMESG("No Such Equation"));

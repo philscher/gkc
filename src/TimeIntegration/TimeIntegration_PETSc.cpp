@@ -43,13 +43,18 @@ TimeIntegration_PETSc::TimeIntegration_PETSc(Setup *setup, Grid *grid, Parallel 
 
       // Setup inital vector
       Vec Vec_init;
-      Complex *init_x = PETScMatrixVector::getCreateVector(grid, Vec_init);
-    
-      for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
-      for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD ; m   <= NmLuD ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
-                init_x[n++] = vlasov->f(x,y_k,z,v,m,s);
+      CComplex *init_x = PETScMatrixVector::getCreateVector(grid, Vec_init);
+   
+        [=](const CComplex f[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB]) {
 
-      }}} }}}
+          for(int s = NsLlD; s <= NsLuD; s++) { for(int m   = NmLlD ; m   <= NmLuD ; m++  ) { for(int z = NzLlD; z <= NzLuD; z++) {
+          for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD, n = 0; x <= NxLuD; x++) {  for(int v = NvLlD       ; v <= NvLuD; v++) { 
+
+                init_x[n++] = f[s][m][z][y_k][x][v];
+
+        }}} }}}
+      
+      }((A6zz) vlasov->f);
 
       VecRestoreArray(Vec_init, (PetscScalar **) &init_x);
       TSSetSolution(ts, Vec_init);
@@ -69,39 +74,43 @@ TimeIntegration_PETSc::~TimeIntegration_PETSc()
 
 double TimeIntegration_PETSc::solveTimeStep(Vlasov *vlasov, Fields *fields, TestParticles *particles, Timing &timing)
 {
-            if(timeIntegrationScheme == "Implicit_RK4") {
-                    PETScMatrixVector pMV(vlasov, fields);
-                    TSSetTimeStep(ts, dt);
-                    TSStep(ts); 
-                    // Get Solution
-    Vec    Vec_F1;   
-    Complex  *x_F1; 
     
+    PETScMatrixVector pMV(vlasov, fields);
+    TSSetTimeStep(ts, dt);
+    TSStep(ts); 
+    
+    // Get Solution
+    Vec    Vec_F1;   
+    CComplex  *x_F1; 
+    
+    TSGetSolution(ts, &Vec_F1);
+    VecGetArray(Vec_F1, (PetscScalar **) &x_F1);
 
-                    TSGetSolution(ts, &Vec_F1);
-                    VecGetArray(Vec_F1, (PetscScalar **) &x_F1);
+    
+    // copy whole phase space function (waste but starting point) (important due to bounday conditions
+    // we can built wrapper around this and directly pass it
+    [=](CComplex f[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB]) {
+     
+          for(int s = NsLlD; s <= NsLuD; s++) { for(int m   = NmLlD ; m   <= NmLuD ; m++  ) { for(int z = NzLlD; z <= NzLuD; z++) {
+          for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD, n = 0; x <= NxLuD; x++) {  for(int v = NvLlD       ; v <= NvLuD; v++) { 
 
-            // copy whole phase space function (waste but starting point) (important due to bounday conditions
-           // we can built wrapper around this and directly pass it
-   for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
-   for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD ; m   <= NmLuD ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
+               //fs[s][m][z][y_k][x][v] = x_F1[n];
+               f [s][m][z][y_k][x][v] = x_F1[n++];
 
-                vlasov->fs(x,y_k,z,v,m,s) = x_F1[n];
-                vlasov->f(x,y_k,z,v,m,s) = x_F1[n++];
-
-           }}} }}}
+      
+     }}} }}}
+      
+    }((A6zz) vlasov->f);
            
-           fields->solve(vlasov->f0,  vlasov->f); 
-           VecRestoreArray    (Vec_F1, (PetscScalar **) &x_F1);
+    fields->solve(vlasov->f0,  vlasov->f); 
+    VecRestoreArray    (Vec_F1, (PetscScalar **) &x_F1);
             
-           timing.time += dt;
-            timing.step++;
-            writeTimeStep(timing, maxTiming, dt);
+    
+    timing.time += dt;
+    timing.step++;
+    writeTimeStep(timing, maxTiming, dt);
         
-            }
-            else TimeIntegration::solveTimeStep(vlasov, fields, particles, timing);
-
-      return dt;
+    return dt;
 }
 
 

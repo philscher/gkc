@@ -77,9 +77,9 @@ Complex Eigenvalue_SLEPc::getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields)
     EPSGetConverged(EigvSolver, &nconv);
 
     Vec    Vec_F1;   
-    Complex *x_Vec_F1 = PETScMatrixVector::getCreateVector(grid, Vec_F1);//, DIR_ALL);
+    CComplex *x_Vec_F1 = PETScMatrixVector::getCreateVector(grid, Vec_F1);//, DIR_ALL);
    
-    Complex eigv, eigv_dummy;
+    CComplex eigv, eigv_dummy;
     if(nconv > 0) MatGetVecs(A_F1, PETSC_NULL, &Vec_F1);
     EPSGetEigenpair(EigvSolver, 0, (PetscScalar *) &eigv, (PetscScalar *) &eigv_dummy, Vec_F1, Vec_F1);
 
@@ -105,18 +105,26 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
     // init intial solution vector 
     if(1 == 0) {
         Vec Vec_init;
-        Complex *init_x = PETScMatrixVector::getCreateVector(grid, Vec_init);
+        CComplex *init_x = PETScMatrixVector::getCreateVector(grid, Vec_init);
     
-        for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD-1; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
-        for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD   ; m   <= NmLuD ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
+        // Copy initial vector to PETSc vector
+        [=](const CComplex f[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB]) {
 
-                init_x[n++] = 1.e-5 * vlasov->f1(x,y_k,z,v,m,s);
+             // copy whole phase space function (waste but starting point) (important due to bounday conditions
+             // we can built wrapper around this and directly pass it
+             int n = 0;
+             for(int s = NsLlD; s <= NsLuD; s++) { for(int m   = NmLlD ; m   <= NmLuD ; m++  ) { for(int z = NzLlD; z <= NzLuD; z++) {
+             for(int y_k = NkyLlD+1; y_k <= NkyLuD-1; y_k++) { for(int x = NxLlD, n = 0; x <= NxLuD; x++) {  for(int v = NvLlD       ; v <= NvLuD; v++) { 
 
-        }}} }}}
+                 init_x[n++] = 1.e-5 * f[s][m][z][y_k][x][v];
 
-     VecRestoreArray    (Vec_init, (PetscScalar **)  &init_x);
-     EPSSetInitialSpace(EigvSolver, 0, &Vec_init);
-     VecDestroy(&Vec_init);
+             }}} }}}
+    
+       }((A6zz) vlasov->f);
+     
+        VecRestoreArray    (Vec_init, (PetscScalar **)  &init_x);
+       EPSSetInitialSpace(EigvSolver, 0, &Vec_init);
+       VecDestroy(&Vec_init);
     }
 
     //////// Solve ////////
@@ -141,7 +149,7 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
 
     std::cout << "Number of Converged Eigenvalues : " << nconv << std::endl;
        
-    Complex  *x_F1; 
+    CComplex  *x_F1; 
     if(nconv > 0) MatGetVecs(A_F1, PETSC_NULL, &Vec_F1);
 
 
@@ -166,15 +174,21 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
            std::cout << "Saving eigenvector : " << eigv << std::endl;
          
            VecGetArray(Vec_F1, (PetscScalar **) &x_F1);
+   
+           // Copy back PETSc solution vector to array
+           [=](CComplex fs[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB]) {
 
-            // copy whole phase space function (waste but starting point) (important due to bounday conditions
-           // we can built wrapper around this and directly pass it
-   for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD-1; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
-   for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD   ; m   <= NmLuD ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
+             // copy whole phase space function (waste but starting point) (important due to bounday conditions
+             // we can built wrapper around this and directly pass it
+             int n = 0;
+             for(int s = NsLlD; s <= NsLuD; s++) { for(int m   = NmLlD ; m   <= NmLuD ; m++  ) { for(int z = NzLlD; z <= NzLuD; z++) {
+             for(int y_k = NkyLlD+1; y_k <= NkyLuD-1; y_k++) { for(int x = NxLlD, n = 0; x <= NxLuD; x++) {  for(int v = NvLlD       ; v <= NvLuD; v++) { 
 
-                vlasov->fs(x,y_k,z,v,m,s) = x_F1[n++];
+                 fs[s][m][z][y_k][x][v] = x_F1[n++];
 
-           }}} }}}
+             }}} }}}
+    
+           }((A6zz) vlasov->fs);
            
            fields->solve(vlasov->f0,  vlasov->fs); 
    

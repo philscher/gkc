@@ -84,24 +84,11 @@ class Vlasov : public IfaceGKC {
    Array6C  RecvYu, RecvXu, RecvYl, RecvXl, RecvVl, RecvVu, RecvZl, RecvZu;
       
    /**
-   *    Please Document Me !
-   *
-   **/
-   bool boundary_isclean;
-  
-   /**
    *   @brief Update boundary conditions in case non-blocking MPI is used
    *
    **/
    void cleanBoundary(Array6C A);
         
-   /**
-   *   @brief reference to last used array used for non-blocking
-   *         boundaries
-   *
-   **/
-   Array6C f_boundary;
-
 
  protected:
    FFTSolver *fft;
@@ -145,7 +132,7 @@ class Vlasov : public IfaceGKC {
    *
    *
    **/
-   virtual int solve(std::string equation_type, Fields *fields, Array6C fs, Array6C fss, double dt, int rk_step, const double rk[3]) = 0;
+   virtual int solve(std::string equation_type, Fields *fields, CComplex *fs, CComplex *fss, double dt, int rk_step, const double rk[3]) = 0;
  public:
   
   /**
@@ -164,7 +151,7 @@ class Vlasov : public IfaceGKC {
                 _kw_16_dx4  ;    ///< \f$ \frac{1}{16 dx^4} \f$
 
 
-// set protected: and set TimeIntegation friend
+
    /**
    *    Please Document Me !
    *
@@ -177,20 +164,15 @@ class Vlasov : public IfaceGKC {
    *   @note should this be allocated in TimeIntegation or set to 7dim ?
    *
    **/
-   Array6C f0, f, fs, fss, ft, f1;
+   nct::allocate ArrayPhase;
+   CComplex *f0, *f, *fs, *fss, *ft, *f1;
    
    /**
    *    Please Document Me !
    *
    **/
    CComplex *G, *Xi;
-   
-   /**
-   *    @brief Holds the non-linear terms from the ExB
-   *
-   **/
-   CComplex *nonLinearTerms; 
- public:
+
    /**
    *    Please Document Me !
    *
@@ -208,16 +190,16 @@ class Vlasov : public IfaceGKC {
    *  Handles boundary conditions
    *
    **/
-   int solve(Fields *fields, Array6C fs, Array6C fss, double dt, int rk_step, const double rk[3],  bool useNonBlockingBoundary=true);
+   int solve(Fields *fields, CComplex *fs, CComplex *fss, double dt, int rk_step, const double rk[3],  bool useNonBlockingBoundary=true);
 
    /**
    *    Please Document Me !
    *
    **/
-   void setBoundary(Array6C);
+   void setBoundary(CComplex *f);
 
 
-   void setBoundary(Array6C, const Boundary boundary_type);
+   void setBoundary(CComplex *f, const Boundary boundary_type);
 
    /**
    *    Please Document Me !
@@ -244,6 +226,11 @@ class Vlasov : public IfaceGKC {
 
    
    
+   /**
+   *    @brief Holds the non-linear terms from the ExB
+   *
+   **/
+   CComplex *nonLinearTerms; 
 
  protected :
 

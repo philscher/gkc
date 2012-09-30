@@ -114,8 +114,6 @@ class allocate : public ArrayBase
       Off; ///< Offset from p[0] to p[n] = first element
 
   int flags; // Deallocate all arrays after usage
-   
-  //std::vector<T> allocated_pointers; ///< Stores all allocated array pointers
 
   public:
 

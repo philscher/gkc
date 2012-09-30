@@ -15,9 +15,8 @@
 
 
 Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *_fft, Benchmark *_bench)
-: fft(_fft), bench(_bench),
-boundary_isclean(true),   parallel(_parallel), grid(_grid), setup(_setup), geo(_geo),
-f0(GKCStorage), f(GKCStorage), fs(GKCStorage), fss(GKCStorage), ft(GKCStorage),   f1(GKCStorage), 
+
+: fft(_fft), bench(_bench), parallel(_parallel), grid(_grid), setup(_setup), geo(_geo),
 
 SendXu(GKCStorage), SendXl(GKCStorage),  RecvXu(GKCStorage), RecvXl(GKCStorage),
 SendYu(GKCStorage), SendYl(GKCStorage),  RecvYu(GKCStorage), RecvYl(GKCStorage),
@@ -33,12 +32,10 @@ SendVu(GKCStorage), SendVl(GKCStorage),  RecvVu(GKCStorage), RecvVl(GKCStorage)
 
 {
 
-   //ArrayPhase = nct::allocate(nct::Range(NsLlD , NsLD ), nct::Range(NmLlD, NmLD), nct::Range(NzLlB, NzLB), 
-   //                           nct::Range(NkyLlD, NkyLB), nct::Range(NxLlB, NxLB), nct::Range(NvLlB, NvLB));
-   //ArrayPhase(&f0, &f, &fss, &fs, &f1, &ft);
-  
+   ArrayPhase = nct::allocate(nct::Range(NsLlD , NsLD ), nct::Range(NmLlD, NmLD), nct::Range(NzLlB, NzLB), 
+                              nct::Range(NkyLlD, NkyLB), nct::Range(NxLlB, NxLB), nct::Range(NvLlB, NvLB));
+   ArrayPhase(&f0, &f, &fss, &fs, &f1, &ft);
    
-   blitz::allocate(RxLB, RkyLD, RzLB, RvLB, RmLD, RsLD, f0, f, fss, fs, f1, ft);
    
    nct::allocate(nct::Range(NzLlB,NzLB), nct::Range(NkyLlB,NkyLB), nct::Range(NxLlB-2, NxLB+4), nct::Range(NvLlB,NvLB))(&Xi);
    nct::allocate(nct::Range(NzLlB,NzLB), nct::Range(NkyLlB,NkyLB), nct::Range(NxLlB  , NxLB  ), nct::Range(NvLlB,NvLB))(&G );
@@ -71,14 +68,15 @@ Vlasov::~Vlasov()
 };
 
 
-int Vlasov::solve(Fields *fields, Array6C  _fs, Array6C  _fss, double dt, int rk_step, const double rk[3], bool useNonBlockingBoundary)
+int Vlasov::solve(Fields *fields, CComplex  *_fs, CComplex  *_fss, double dt, int rk_step, const double rk[3], bool useNonBlockingBoundary)
 {
 
-   // use static function
-   
-   useNonBlockingBoundary =  true; 
+   static CComplex *f_boundary       = nullptr;
+
+   useNonBlockingBoundary =  false;
+
    // Need boundary_isclean to avoid deadlock at first iteration
-   if((boundary_isclean == false) && useNonBlockingBoundary) setBoundary(f_boundary, Boundary::RECV);
+   if((f_boundary != nullptr) && useNonBlockingBoundary) setBoundary(f_boundary, Boundary::RECV);
   
    Xi_max[:] = 0.; // Needed to calculate CFL time step 
    
@@ -88,19 +86,20 @@ int Vlasov::solve(Fields *fields, Array6C  _fs, Array6C  _fss, double dt, int rk
    // Note : we have non-blocking boundaries as Poisson solver does not require ghosts
    (useNonBlockingBoundary) ? setBoundary(_fss, Boundary::SEND) :  setBoundary(_fss, Boundary::SENDRECV); 
 
-   f_boundary.reference(_fss); boundary_isclean = false;
+   f_boundary = _fss; 
   
    return 1;
 }
 
-void Vlasov::setBoundary(Array6C A) 
+void Vlasov::setBoundary(CComplex *f) 
 { 
-  setBoundary(A, Boundary::SENDRECV); 
+  setBoundary(f, Boundary::SENDRECV); 
 };
 
 
-void Vlasov::setBoundary(Array6C A, Boundary boundary_type)
+void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
 {
+
     [=] (
          CComplex g     [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
          CComplex SendXl[NsLD][NmLD][NzLD][NkyLD][GC2 ][NvLD], CComplex SendXu[NsLD][NmLD][NzLD][NkyLD][GC2 ][NvLD], 
@@ -112,7 +111,6 @@ void Vlasov::setBoundary(Array6C A, Boundary boundary_type)
 {
 
   /////////////////////////// Send Boundaries //////////////////////////////
-  //if((boundary_type == Boundary::SEND) || (boundary_type == Boundary::SENDRECV)) {
   if(boundary_type & Boundary::SEND) {
 
    // X-Boundary (Note, we may have different boundaries for global simulations)
@@ -122,10 +120,8 @@ void Vlasov::setBoundary(Array6C A, Boundary boundary_type)
   
    // We do not domain decompose poloidal (y) fourier modes, thus boundaries not required
   
-   // Z-Boundary (skip exchange in case we use only 2D (Nz == 1) simulations 
-   if(Nz > 1) {
-          
-            for(int x=NxLlD; x<= NxLuD;x++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
+   // Z-Boundary 
+   if(Nz > 1) for(int x=NxLlD; x<= NxLuD;x++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
            
             const CComplex a = ((CComplex) 0. + 1.j) *  (2.*M_PI * (2.* M_PI/Ly) * y_k);
             
@@ -133,10 +129,9 @@ void Vlasov::setBoundary(Array6C A, Boundary boundary_type)
             SendZl[:][:][:][:][y_k][x-3] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD  :2][y_k][x][NvLlD:NvLD] * cexp( ((NzLlD == NzGlD) ? a : 0.) * geo->nu(x));
             SendZu[:][:][:][:][y_k][x-3] = g[NsLlD:NsLD][NmLlD:NmLD][NzLuD-1:2][y_k][x][NvLlD:NvLD] * cexp(-((NzLlD == NzGlD) ? a : 0.) * geo->nu(x));
                
-            } }
-            parallel->updateNeighbours(Vlasov::SendZu, Vlasov::SendZl, Vlasov::RecvZu, Vlasov::RecvZl, DIR_Z);
-  }
-
+  } }
+  parallel->updateNeighbours(Vlasov::SendZu, Vlasov::SendZl, Vlasov::RecvZu, Vlasov::RecvZl, DIR_Z);
+  
   // We do not need to communicate for M and S as we do not have boundary cells (yet)
   
   // Decomposition in velocity is rather unlikely, thus give non-decomposed version too
@@ -154,14 +149,15 @@ void Vlasov::setBoundary(Array6C A, Boundary boundary_type)
   }
 
   /////////////////////////// Receive Boundaries //////////////////////////////
-  if(boundary_type & Boundary::RECV) {
-     
+  else if(boundary_type & Boundary::RECV)
+  {
+ 
     // Wait until boundaries are communicated
      parallel->updateNeighboursBarrier();
    
-     // Set boundary in X (take care of Neumann boundary ?!) 
-     g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlB  :2][NvLlD:NvLD] = RecvXl[:][:][:][:][:][:]; 
-     g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLuD+1:2][NvLlD:NvLD] = RecvXu[:][:][:][:][:][:]; 
+   // Set boundary in X (take care of Neumann boundary ?!) 
+   g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlB  :2][NvLlD:NvLD] = RecvXl[:][:][:][:][:][:]; 
+   g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLuD+1:2][NvLlD:NvLD] = RecvXu[:][:][:][:][:][:]; 
     
    // Set boundary in Z
    if(Nz > 1) {
@@ -178,11 +174,9 @@ void Vlasov::setBoundary(Array6C A, Boundary boundary_type)
 
    }
    
-   boundary_isclean = true;
-  
   }
 
-}  ((A6zz) A.dataZero(), 
+}  ((A6zz) f, 
     (A6zz) SendXl.data(),  (A6zz) SendXu.data(),  (A6zz) RecvXl.data(),  (A6zz) RecvXu.data(),
     (A6zz) SendZl.data(),  (A6zz) SendZu.data(),  (A6zz) RecvZl.data(),  (A6zz) RecvZu.data(),
     (A6zz) SendVl.data(),  (A6zz) SendVu.data(),  (A6zz) RecvVl.data(),  (A6zz) RecvVu.data());

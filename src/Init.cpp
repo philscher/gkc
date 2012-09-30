@@ -27,15 +27,15 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    epsilon_0          = setup->get("Init.Epsilon0", 1.e-14); 
    sigma              = setup->get("Init.Sigma"   , 8.    ); 
 
-   initMaxwellian(setup, (A6zz) vlasov->f0.dataZero(), (A6zz) vlasov->f.dataZero(), V, M, grid);
+   initMaxwellian(setup, (A6zz) vlasov->f0, (A6zz) vlasov->f, V, M, grid);
   
    // check for predefined perturbations
    PerturbationMethod = setup->get("Init.Perturbation", "");
 
    if(PerturbationMethod == "NoPerturbation") ;
-   else if (PerturbationMethod == "EqualModePower")  PerturbationPSFMode ((A6zz) vlasov->f0.dataZero(), (A6zz) vlasov->f.dataZero()); 
-   else if(PerturbationMethod == "Noise")            PerturbationPSFNoise((A6zz) vlasov->f0.dataZero(), (A6zz) vlasov->f.dataZero()); 
-   else if(PerturbationMethod == "Exp")              PerturbationPSFExp  ((A6zz) vlasov->f0.dataZero(), (A6zz) vlasov->f.dataZero()); 
+   else if (PerturbationMethod == "EqualModePower")  PerturbationPSFMode ((A6zz) vlasov->f0, (A6zz) vlasov->f); 
+   else if(PerturbationMethod == "Noise")            PerturbationPSFNoise((A6zz) vlasov->f0, (A6zz) vlasov->f); 
+   else if(PerturbationMethod == "Exp")              PerturbationPSFExp  ((A6zz) vlasov->f0, (A6zz) vlasov->f); 
    //else if(PerturbationMethod == "PSFHermitePoly")    PerturbationHermitePolynomial(vlasov, s, plasma->global ? 1. : 0., setup->get("Init.HermitePolynomial", 0));
    else check(-1, DMESG("No such Perturbation Method"));  
    
@@ -129,7 +129,7 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    }}} }}}
 
     
-   } ( (A6zz) vlasov->f0.dataZero(), (A6zz) vlasov->f.dataZero(), (A4zz) fields->Field0, (A6zz) fields->Field.dataZero(), (A4zz) fields->Q);
+   } ( (A6zz) vlasov->f0, (A6zz) vlasov->f, (A4zz) fields->Field0, (A6zz) fields->Field.dataZero(), (A4zz) fields->Q);
 
    ////////////////////////////////////////////////////////    Set Fixed Fields  phi, Ap, Bp //////////////////
    // set fixed fields if requested,  initialize Fields, Ap
@@ -296,14 +296,12 @@ void Init::PerturbationPSFNoise(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB]
 void Init::PerturbationPSFExp(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                     CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB])
 { 
-   const double isGlobal = plasma->global ? 1. : 0.; 
+   const double pert = plasma->global ? 1. : 0.; 
 
    auto  Perturbation = [=] (int x,int y,int z, const double epsilon_0, const double sigma) -> double {
-            return  epsilon_0*exp(-(  pow2(X[x]/Lx) + pow2(Z[z]/Lz - 0.5))/(2.*pow2(sigma))); 
+            return  epsilon_0*exp(-(  pow2(X[x]/Lx) + pow2(Y[y]/Ly - 0.5) + pow2(Z[z]/Lz - 0.5))/(2.*pow2(sigma))); 
    };
 
-   // Note : Ignore species dependence
- 
 
 
    for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { 

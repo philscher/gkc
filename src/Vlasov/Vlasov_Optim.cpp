@@ -29,13 +29,13 @@ VlasovOptim::VlasovOptim(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO
 }
 
 
-int VlasovOptim::solve(std::string equation_type, Fields *fields, Array6C _fs, Array6C _fss, double dt, int rk_step, const double rk[3]) 
+int VlasovOptim::solve(std::string equation_type, Fields *fields, CComplex *_fs, CComplex *_fss, double dt, int rk_step, const double rk[3]) 
 {
  
   if((equation_type == "VlasovAux_ES")) {
 
-      Vlasov_2D((A6sz) _fs.dataZero(), (A6sz) _fss.dataZero(), (A6sz) f0.dataZero(), 
-                (A6sz) f.dataZero(), (A6sz) ft.dataZero(), (A6sz) fields->Field.dataZero(),
+      Vlasov_2D((A6sz) _fs, (A6sz) _fss, (A6sz) f0, 
+                (A6sz) f, (A6sz) ft, (A6sz) fields->Field.dataZero(),
                 (A4sz) nonLinearTerms, X, V, M, dt, rk_step, rk);
   }
 
