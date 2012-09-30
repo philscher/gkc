@@ -54,10 +54,9 @@ RecvXu(blitz::FortranArray<6>()), RecvXl(blitz::FortranArray<6>()), RecvZu(blitz
    initDataOutput(setup, fileIO);
 } 
 
-Fields::~Fields() {
-
+Fields::~Fields() 
+{
    closeData() ;
-
 }
 
 
@@ -129,7 +128,6 @@ void Fields::solve(Array6C f0, Array6C  f, Timing timing)
    }   
   
    parallel->send(Field, DIR_V);
-   //parallel->send(Field[1][NsLlD][NmLlD][NzLlD][NkyLlD][NxLlD], DIR_V, );
         
    return;
 

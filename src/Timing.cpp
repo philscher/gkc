@@ -51,7 +51,6 @@ bool Timing::operator%(Timing &b)
 {
         bool doWrite = false;
         if((step != -1 ) && (b.step != -1 )) doWrite |=  (step % b.step     == 0 );
-   //     if((step ==  0 ) && (b.step != -1 )) doWrite |=  true;
 
 
         // Note : We can have variable timesteps, thus fmod is most of the time != 0.
@@ -81,14 +80,6 @@ double Timing::operator&(Timing h_time)
 
 };
 
-    /**
-     *
-     * Show time in hour 
-     *
-     *
-     * */
-    //static std::string Timing::getRemainingTimeString(Timing timing, Timing maxTiming, time_t start_time) {
-
 std::string Timing::getRemainingTimeString(Timing timing, Timing maxTiming, time_t start_time) 
 {
 
@@ -114,17 +105,15 @@ std::string Timing::getRemainingTimeString(Timing timing, Timing maxTiming, time
         return remainTimeString;
 };
 
-   //static std::string Timing::TimeStringFromSeconds(int secs) {
-
 std::string Timing::TimeStringFromSeconds(int secs) 
 {
 
             int days    = secs / (60*60*24 ); secs -= days    * (60*60*24);
-            int hours   = secs / (60*60   ); secs -= hours   * (60*60)   ;
-            int minutes = secs / (60      ); secs -= minutes *  60       ;
+            int hours   = secs / (60*60    ); secs -= hours   * (60*60)   ;
+            int minutes = secs / (60       ); secs -= minutes *  60       ;
             int seconds = secs;
       
-       std::stringstream ss;
+            std::stringstream ss;
             
             if(days > 0   )  ss << days    << "d ";
             if(hours > 0  )  ss << hours   << "h ";

@@ -14,7 +14,6 @@
 
 #include "Vlasov/Vlasov_Island.h"
 
-
   
 VlasovIsland::VlasovIsland(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *fft, Benchmark *_bench)    
 : VlasovAux(_grid, _parallel, _setup, fileIO, _geo, fft, _bench) 
@@ -24,10 +23,6 @@ VlasovIsland::VlasovIsland(Grid *_grid, Parallel *_parallel, Setup *_setup, File
     width = setup->get("Island.Width"  , 0.); 
     shear = setup->get("Geometry.Shear", 0.4); 
 
-    //p = { 0.13828847,  0.70216594, -0.01033686 };
-    p[0] =  0.13828847;
-    p[1] =  0.70216594;
-    p[2] = -0.01033686;
     
 
     //// Setup Magnetic Island structure
@@ -36,15 +31,23 @@ VlasovIsland::VlasovIsland(Grid *_grid, Parallel *_parallel, Setup *_setup, File
     for(int x=NxLlD; x<= NxLuD;x++) {  
 
     const double zeta      = 2.*M_PI/Ly;
-        
+       
+    // Island cos(k_T y) = 0.5 [ exp(-i m) + exp( i m ) ]
+    // The poloidal island term is direclty included per 
+    // mode-mode coupling
     
+    // we used simple fitting model to get least square coefficient
+    const double p[] = { 0.13828847,  0.70216594, -0.01033686 };
+
     const double xx   = pow2(X[x]);
     const double psi  = (1. + p[0]*pow(xx,p[1])) * exp( p[2] * xx);
     const double dpsi = (X[x] == 0.) ? 0. :  (p[0] * 2. * X[x] * p[1]*pow(xx, p[1]-1.) + (1. + p[0] * pow(xx,p[1])) * p[2] * 2. * X[x]) * exp(p[2]*xx);
 
     
-       MagIs[x]     = - 0.5 * width*width*shear/16.  * psi ;//cos(zeta * X[x]);
-       dMagIs_dx[x] = - 0.5 * width*width*shear/16. * dpsi;// - sin(zeta * X[x]) * zeta;
+    MagIs[x]     = 0.5 * width*width*shear/16.  * psi ;//cos(zeta * X[x]);
+    dMagIs_dx[x] = 0.5 * width*width*shear/16. * dpsi;// - sin(zeta * X[x]) * zeta;
+    //MagIs[x]     = 0.5 * width*width*shear/16.  * cos(zeta * X[x]);
+    //dMagIs_dx[x] = 0.5 * width*width*shear/16. *  (-sin(zeta * X[x])) * zeta;
  
     }
 
@@ -120,15 +123,14 @@ void VlasovIsland::Vlasov_2D_Island(
         
         // We need to take care of boundaries. For poloidal numbers y_k > N_k-1, we  use zero.
         // For y_k < 0, the corresponding complex conjugate value is used.
-        const CComplex ky_p1  = (y_k == Nky-1) ? 0.                 :  imag * fft->ky(y_k+1);
-        const CComplex ky_m1  = (y_k == 0    ) ? imag * -fft->ky(1) : imag * fft->ky(y_k-1); 
+        const CComplex ky_p1  = (y_k == Nky-1) ? 0.                  : imag * fft->ky(y_k+1);
+        const CComplex ky_m1  = (y_k == 0    ) ? - imag * fft->ky(1) : imag * fft->ky(y_k-1); 
         const CComplex ky_1   = imag * fft->ky(1);
 
         
         for(int x=NxLlD; x<= NxLuD;x++) {  
 
           
-          // calculate for estimation of CFL condition
           const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];
           
           const CComplex dphi_dx  = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1])
@@ -138,18 +140,19 @@ void VlasovIsland::Vlasov_2D_Island(
         
           // NOTE :  at the Nyquist frequency we have no coupling with higher frequencies (actually phi(m=Ny) = 0. anyway)
 
-
-          const CComplex     phi_p1 = ( y_k == Nky-1) ? 0.                       : Fields[Field::phi][s][m][z][y_k+1][x] ;
+          const CComplex     phi_p1 = ( y_k == Nky-1) ? 0.                                      : Fields[Field::phi][s][m][z][y_k+1][x] ;
           const CComplex     phi_m1 = ( y_k ==  0   ) ? conj(Fields[Field::phi][s][m][z][1][x]) : Fields[Field::phi][s][m][z][y_k-1][x] ;
 
-
+          
+          // X-derivative (First Derivative with Central Difference 4th) of phi for poloidal mode +1, take care of Nyquist frequency
           const CComplex dphi_dx_p1 = ( y_k == Nky-1) 
                                    ? 0.
 
-                                   : (8.*(Fields[Field::phi][s][m][z][y_k+1][x+1] - Fields[Field::phi][s][m][z][y_k+1][x-1]) 
-                                       - (Fields[Field::phi][s][m][z][y_k+1][x+2] - Fields[Field::phi][s][m][z][y_k+1][x-2])) * _kw_12_dx  ;
+                                   :      (8.*(Fields[Field::phi][s][m][z][y_k+1][x+1] - Fields[Field::phi][s][m][z][y_k+1][x-1]) 
+                                            - (Fields[Field::phi][s][m][z][y_k+1][x+2] - Fields[Field::phi][s][m][z][y_k+1][x-2])) * _kw_12_dx  ;
 
-        const CComplex dphi_dx_m1 = ( y_k ==    0 ) 
+          // X-derivative (1st deriv. CD-4 )of phi for poloidal mode -1, take care of complex conjugate relation for y_k=-1
+          const CComplex dphi_dx_m1 = ( y_k ==    0 ) 
                                    ?  conj(8.*(Fields[Field::phi][s][m][z][    1][x+1] - Fields[Field::phi][s][m][z][    1][x-1]) 
                                             - (Fields[Field::phi][s][m][z][    1][x+2] - Fields[Field::phi][s][m][z][    1][x-2])) * _kw_12_dx
 
@@ -163,7 +166,7 @@ void VlasovIsland::Vlasov_2D_Island(
         //  remember the island structure is 
         //  \partial_y (e^{imx} + e^{-imx}) = (i m) * ( e^{imx} - e^{-imx} )
         //
-        const CComplex Island_A_phi =   dMagIs_dx[x] * ( ky_m1 * phi_m1 + ky_p1 * phi_p1) - MagIs[x] *  ky_1 * ( dphi_dx_m1 -  dphi_dx_p1);
+        const CComplex Island_phi =   dMagIs_dx[x] * ( ky_m1 * phi_m1 + ky_p1 * phi_p1) - MagIs[x] *  ky_1 * ( dphi_dx_m1 -  dphi_dx_p1);
         
              ///////////////////////////////////////////////////////////////////////////////
             
@@ -179,9 +182,8 @@ void VlasovIsland::Vlasov_2D_Island(
              half_eta_kperp2_phi     = rho_t2 * 0.5 * w_T  * ( (ky*ky) * phi_ + ddphi_dx_dx ) ; 
          }
              
-           // Sign has no influence on result ...
-
-               // velocity space magic
+        
+        // velocity space magic
         simd_for(int v=NvLlD; v<= NvLuD;v++) {
 
             const CComplex g    = fs[s][m][z][y_k][x][v];
@@ -190,6 +192,8 @@ void VlasovIsland::Vlasov_2D_Island(
 
         /////////////////////////////////////////////////// Magnetic Island Contribution    /////////////////////////////////////////
       
+          
+        // X-derivative of f1 (1-CD4) for poloidal mode +1, take care of Nyquist frequency
         const CComplex dfs_dx_p1  =  (y_k == Nky-1)
 
                             ? 0.
@@ -197,6 +201,8 @@ void VlasovIsland::Vlasov_2D_Island(
                             : (8. *(fs[s][m][z][y_k+1][x+1][v] - fs[s][m][z][y_k+1][x-1][v])  
                                  - (fs[s][m][z][y_k+1][x+2][v] - fs[s][m][z][y_k+1][x-2][v])) * _kw_12_dx;
 
+
+        // X-derivative of f1 (1-CD4) for poloidal mode -1, take care of complex conjugate relation for y_k=-1 
         const CComplex dfs_dx_m1  =  ( y_k == 0   )
 
                         ? conj(8. *(fs[s][m][z][    1][x+1][v] - fs[s][m][z][    1][x-1][v])  
@@ -209,9 +215,8 @@ void VlasovIsland::Vlasov_2D_Island(
         const CComplex fs_p1      = (y_k == Nky-1) ? 0.                         : fs[s][m][z][y_k+1][x][v] ;
         const CComplex fs_m1      = (y_k ==  0   ) ? conj(fs[s][m][z][1][x][v]) : fs[s][m][z][y_k-1][x][v] ;
          
-        // at the Nyquist frequency we have no coupling with higher frequencies
-        // mode-mode coupling
-        register const CComplex Island_A_F1 =  dMagIs_dx[x] * (ky_m1 * fs_m1  + ky_p1 * fs_p1 )  -  MagIs[x]  * ky_1 *  (dfs_dx_m1  - dfs_dx_p1 )  ;
+        // Coupling of phase-space with Island mode-mode coupling
+        const CComplex Island_g =  dMagIs_dx[x] * (ky_m1 * fs_m1  + ky_p1 * fs_p1 )  -  MagIs[x]  * ky_1 *  (dfs_dx_m1  - dfs_dx_p1 )  ;
 
         
         /////////// Collisions ////////////////////////////////////////////////////////////////////
@@ -223,11 +228,21 @@ void VlasovIsland::Vlasov_2D_Island(
                                          (fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) 
                                     - 30.*fs[s][m][z][y_k][x][v  ]) * _kw_12_dv_dv;
 
+        //// Hypervisocisty to stabilize simulation
+        const double hypvisc_phi_val = -1.e-5;
+        
+        const CComplex d4_dx_phi    = (-39. *(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1])  
+                                      + 12. *(Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2]) 
+                                      + 56. * Fields[Field::phi][s][m][z][y_k][x  ])/pow4(dx);
+
+        const CComplex hypvisc_phi    = hypvisc_phi_val * ( d4_dx_phi + pow4(ky) * phi_);
+
 
         /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
              
-        const CComplex dg_dt = 
-             -  alpha * V[v] * (Island_A_F1 + sigma * Island_A_phi * f0_) +           // Island term
+        const CComplex dg_dt =
+             +  hypvisc_phi
+             -  alpha * V[v] * (Island_g + sigma * Island_phi * f0_) +           // Island term
              +  nonLinear[y_k][x][v]                                                  // Non-linear ( array is zero for linear simulations) 
              +  ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])*kw_T  - sub)) * f0_ * phi_    // Driving term (Temperature/Density gradient)
              -  half_eta_kperp2_phi * f0_)                                            // Contributions from gyro-1 (0 if not neq Gyro-1)

@@ -164,7 +164,7 @@ class Vlasov : public IfaceGKC {
                 _kw_16_dx4  ;    ///< \f$ \frac{1}{16 dx^4} \f$
 
 
-
+// set protected: and set TimeIntegation friend
    /**
    *    Please Document Me !
    *
@@ -184,7 +184,13 @@ class Vlasov : public IfaceGKC {
    *
    **/
    CComplex *G, *Xi;
-
+   
+   /**
+   *    @brief Holds the non-linear terms from the ExB
+   *
+   **/
+   CComplex *nonLinearTerms; 
+ public:
    /**
    *    Please Document Me !
    *
@@ -238,11 +244,6 @@ class Vlasov : public IfaceGKC {
 
    
    
-   /**
-   *    @brief Holds the non-linear terms from the ExB
-   *
-   **/
-   CComplex *nonLinearTerms; 
 
  protected :
 

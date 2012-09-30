@@ -38,7 +38,7 @@ class Plasma : public IfaceGKC {
    **/
    typedef struct Species 
    {
-  
+
      Species() : q(0.), m(0.), collision(0.), w_n(0.), w_T(0.), doGyro(true), T0(0.), n0(0.) 
      { 
        alpha   = 0.;

@@ -17,9 +17,14 @@
  * =====================================================================================
  */
 
+#ifndef __NCT_ALLOCATE_
+#define __NCT_ALLOCATE_
+
 
 #include <stdlib.h>
 #include <iostream>
+#include <vector>
+
 
 namespace nct { /// use better nct for numerical computing toolkit
 
@@ -35,6 +40,8 @@ class Range
 
    int Start,  ///< Starting point
        Length; ///< Length of range
+
+
 
   public:
    Range(int _Start, int _Length) : Start(_Start), Length(_Length) {};
@@ -87,12 +94,28 @@ enum class alloc_flags  {
 *
 *
 **/
-class allocate 
+// template<class T>
+//
+#include<typeinfo>
+
+class ArrayBase
+{
+   protected:
+//     int Num;
+//     int sizeOfType;
+     
+//     const std::type_info *typeInfo;
+};
+
+
+class allocate : public ArrayBase 
 {
   int Num, ///< Number of Elements 
       Off; ///< Offset from p[0] to p[n] = first element
 
   int flags; // Deallocate all arrays after usage
+   
+  //std::vector<T> allocated_pointers; ///< Stores all allocated array pointers
 
   public:
 
@@ -104,7 +127,6 @@ class allocate
       Num = 0;
       Off = 0;
    };
-
 
    template<class T> T* data(T *g0)
    {
@@ -407,3 +429,6 @@ class allocate
 };
 
 } // namespace nct 
+
+
+#endif // __NCT_ALLOCATE_

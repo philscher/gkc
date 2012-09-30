@@ -20,8 +20,6 @@ VlasovCilk::VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *
 : Vlasov(_grid, _parallel, _setup, fileIO, _geo, fft, _bench)
 {
 
-    //nonLinearTerms.resize(RxLD , RkyLD , RvLD);  nonLinearTerms = 0.e0;
-        
     collisionBeta = setup->get("Vlasov.CollisionBeta", 0.);
     
     Vlasov::initDataOutput(fileIO);    

@@ -31,12 +31,14 @@ fftw_plan plan_transpose(char storage_type, int rows, int cols, double *in, doub
 
 
 
-FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo) : FFTSolver(setup, parallel, geo, Nx*(2*Nky-2)*Nz, Nx*(2*Nky-2), Nx,  (2*Nky-2)) {
+FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo) 
 
-  
+: FFTSolver(setup, parallel, geo, Nx*(2*Nky-2)*Nz, Nx*(2*Nky-2), Nx,  (2*Nky-2)) 
+
+{
+
   if(parallel->Coord[DIR_V] == 0) {          // Fourier solver required in velocity space
 
-  
     // Setup plans
     int perf_flag = FFTW_ESTIMATE;
     
@@ -60,10 +62,7 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
 #ifdef GKC_PARALLEL_MPI
     fftw_mpi_init();
 #endif
-    
-    // needs for poissons equation
-    
-         
+    ////////////////////// Set for X-direction (FFT Poisson solver) /////////// 
     
       // set and check bounds 
       long X_NxLD, X_NxLlD, X_NkxL, X_NkxLlD, X_numElements, X_Nx = Nx; 
@@ -151,7 +150,7 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
       //           Distance for the next mode is thus 1          
       //
       
-      perf_flag |= FFTW_UNALIGNED;
+      //perf_flag |= FFTW_UNALIGNED;
       
       // Orginal
       
@@ -272,27 +271,30 @@ std::string FFTSolver_fftw3::getLibraryName()
 FFTSolver_fftw3::~FFTSolver_fftw3()
 {
 
-    //  release fftw-3  
-        fftw_destroy_plan(plan_XForward_Fields);
-       fftw_destroy_plan(plan_XBackward_Fields);
+  //  release fftw-3 plans
+  fftw_destroy_plan(plan_XForward_Fields);
+  fftw_destroy_plan(plan_XBackward_Fields);
        
-       fftw_destroy_plan(plan_YForward_Field);
-       fftw_destroy_plan(plan_YBackward_Field);
+  
+  fftw_destroy_plan(plan_YForward_Field);
+  fftw_destroy_plan(plan_YBackward_Field);
         
-       fftw_destroy_plan(plan_AA_YForward);
-       fftw_destroy_plan(plan_AA_YBackward);
+  
+  fftw_destroy_plan(plan_AA_YForward);
+  fftw_destroy_plan(plan_AA_YBackward);
+  
+  //fftw_destroy_plan(plan_FieldTranspose_1);
+  //fftw_destroy_plan(plan_FieldTranspose_2);
 
 #ifdef PARALLEL_OPENMP
-    fftw_cleanup_threads();
+  fftw_cleanup_threads();
 #endif
-    fftw_free(data_X_rOut);
-    fftw_free(data_X_rIn );
-    fftw_free(data_kXOut );
-    fftw_free(data_kXIn  );
+  
+  fftw_free(data_X_rOut);
+  fftw_free(data_X_rIn );
+  fftw_free(data_kXOut );
+  fftw_free(data_kXIn  );
     
-
-    fftw_destroy_plan(plan_FieldTranspose_1);
-    fftw_destroy_plan(plan_FieldTranspose_2);
 }
 
 

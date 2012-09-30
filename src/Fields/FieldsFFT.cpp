@@ -148,11 +148,9 @@ void FieldsFFT::calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_Nk
 
   if(parallel->Coord[DIR_VMS] != 0) check(-1, DMESG("calcFluxAverg should only be called by XYZ-main nodes"));
    
-  phi_yz[:] = 0.; 
-
   // Note : In FFT the ky=0 components carries the offset over y (integrated value), thus
   //        by divinding through the number of points we get the averaged valued
-  for(int z=NzLlD; z<=NzLuD;z++) { if((NkyLlD <= 0) && (NkyLuD >= 0)) { for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD; x_k++) {
+  for(int z=NzLlD; z<=NzLuD;z++) { if(NkyLlD == 0) { for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD; x_k++) {
             
      if(x_k == 0) { phi_yz[x_k] = (CComplex) 0.e0 ; continue; }
           
@@ -163,12 +161,12 @@ void FieldsFFT::calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_Nk
      // A(x_k, 0) is the sum over y, thus A(x_k, 0)/Ny is the average 
      const CComplex rhs  =  kXOut[Field::phi][z][0][x_k]/((double) (grid->NyGD*Nz));
      
-     phi_yz[x_k] = rhs/lhs;
+    // phi_yz[x_k] = rhs/lhs;
     
   } } }
 
-  // average over z-direction & distribute over y 
-//  parallel->collect(phi_yz, OP_SUM, DIR_XYZ);  
+  // average over z-direction 
+  parallel->collect(phi_yz, Op::SUM, DIR_Z, FFTSolver::X_NkxL);  
 
   return;
 

@@ -27,7 +27,8 @@ class Event;
 
 
 /**
-*  @brief Implementation of Vlasov's equation using Cilk Array Notation
+*  @brief  Vlasov Solver Implementation for two-dimensional Geometry
+*          and other special reduced Geometries.
 *
 *  Making extensively use of Intel's Cilk Plus Array Notation to faciliate
 *  array operations (especially vectorization). (http://software.intel.com/en-us/articles/intel-cilk-plus/)
