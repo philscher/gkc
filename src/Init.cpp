@@ -25,7 +25,7 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
 
 
    epsilon_0          = setup->get("Init.Epsilon0", 1.e-14); 
-   sigma              = setup->get("Init.Sigma"   , 3.e-1); 
+   sigma              = setup->get("Init.Sigma"   , 8.    ); 
 
    initMaxwellian(setup, (A6zz) vlasov->f0.dataZero(), (A6zz) vlasov->f.dataZero(), V, M, grid);
   
@@ -33,9 +33,9 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    PerturbationMethod = setup->get("Init.Perturbation", "");
 
    if(PerturbationMethod == "NoPerturbation") ;
-   //else if (PerturbationMethod == "PSFEqualModePower") PerturbationPSFMode ((A6zz) vlasov->f0.dataZero, (A6zz) vlasov->f.dataZero()); 
-   else if(PerturbationMethod == "PSFNoise")          PerturbationPSFNoise((A6zz) vlasov->f0.dataZero(), (A6zz) vlasov->f.dataZero()); 
-   else if(PerturbationMethod == "PSFExp")            PerturbationPSFExp  ((A6zz) vlasov->f0.dataZero(), (A6zz) vlasov->f.dataZero()); 
+   else if (PerturbationMethod == "EqualModePower")  PerturbationPSFMode ((A6zz) vlasov->f0.dataZero(), (A6zz) vlasov->f.dataZero()); 
+   else if(PerturbationMethod == "Noise")            PerturbationPSFNoise((A6zz) vlasov->f0.dataZero(), (A6zz) vlasov->f.dataZero()); 
+   else if(PerturbationMethod == "Exp")              PerturbationPSFExp  ((A6zz) vlasov->f0.dataZero(), (A6zz) vlasov->f.dataZero()); 
    //else if(PerturbationMethod == "PSFHermitePoly")    PerturbationHermitePolynomial(vlasov, s, plasma->global ? 1. : 0., setup->get("Init.HermitePolynomial", 0));
    else check(-1, DMESG("No such Perturbation Method"));  
    
@@ -296,17 +296,28 @@ void Init::PerturbationPSFNoise(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB]
 void Init::PerturbationPSFExp(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                     CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB])
 { 
-   const double pert = plasma->global ? 1. : 0.; 
+   const double isGlobal = plasma->global ? 1. : 0.; 
 
    auto  Perturbation = [=] (int x,int y,int z, const double epsilon_0, const double sigma) -> double {
-            return  epsilon_0*exp(-(  pow2(X[x]/Lx) + pow2(Y[y]/Ly - 0.5) + pow2(Z[z]/Lz - 0.5))/(2.*pow2(sigma))); 
+            return  epsilon_0*exp(-(  pow2(X[x]/Lx) + pow2(Z[z]/Lz - 0.5))/(2.*pow2(sigma))); 
    };
 
+   // Note : Ignore species dependence
+ 
 
-   for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { for(int v = NvLlD; v<=NvLuD; v++) {
-   for(int x = NxLlD; x <= NxLuD; x++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z<=NzLuD; z++) {
-      f[s][m][z][y_k][x][v] += f0[s][m][z][y_k][x][v] * (pert + Perturbation(x,y_k,z,1.e-10,0.1));
-   }}}}}}
+
+   for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { 
+   for(int z = NzLlD; z<=NzLuD; z++) {   for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {
+   
+   // Add shifted phase information for poloidal modes
+
+   const CComplex phase  = cexp((CComplex (1.j)) * ((double) y_k) / Nky * 2. * M_PI);
+
+   for(int x = NxLlD; x <= NxLuD; x++) {  simd_for(int v = NvLlD; v<=NvLuD; v++) {
+      
+      f[s][m][z][y_k][x][v] += f0[s][m][z][y_k][x][v] * (isGlobal + phase * Perturbation(x,y_k,z, epsilon_0, sigma));
+
+   }} }} }}
 
    return;
 }
