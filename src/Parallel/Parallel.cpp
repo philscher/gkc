@@ -232,35 +232,38 @@ void Parallel::updateNeighboursBarrier()
 
 // There should be a better way instead of defininng 2 updateNEighbours as all same the same functions
 // but template arguments are different ... :(
-void Parallel::updateNeighbours(Array6C  SendXl, Array6C  SendXu, Array6C  SendYl, Array6C  SendYu, Array6C SendZl, Array6C SendZu, 
-                                Array6C  RecvXl, Array6C  RecvXu, Array6C  RecvYl, Array6C  RecvYu, Array6C RecvZl, Array6C RecvZu) 
+
+void  Parallel::updateBoundaryFields(CComplex *SendXl, CComplex *SendXu, CComplex *RecvXl, CComplex *RecvXu, int numElements_X,
+                                     CComplex *SendZl, CComplex *SendZu, CComplex *RecvZl, CComplex *RecvZu, int numElements_Z) 
+//void Parallel::updateNeighbours(Array6C  SendXl, Array6C  SendXu, Array6C  SendYl, Array6C  SendYu, Array6C SendZl, Array6C SendZu, 
+//                                Array6C  RecvXl, Array6C  RecvXu, Array6C  RecvYl, Array6C  RecvYu, Array6C RecvZl, Array6C RecvZu) 
 {
-      MPI_Status  msg_status[12];
-      MPI_Request msg_request[12];
+      MPI_Status  msg_status[8];
+      MPI_Request msg_request[8];
       
       // For X-Direction 
-      MPI_Irecv(RecvXl.data(), RecvXl.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_X].rank_l, Talk[DIR_X].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[0]); 
-      MPI_Isend(SendXu.data(), SendXu.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_X].rank_u, Talk[DIR_X].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[1]);
+      MPI_Irecv(RecvXl, numElements_X, MPI_DOUBLE_COMPLEX, Talk[DIR_X].rank_l, Talk[DIR_X].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[0]); 
+      MPI_Isend(SendXu, numElements_X, MPI_DOUBLE_COMPLEX, Talk[DIR_X].rank_u, Talk[DIR_X].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[1]);
       
-      MPI_Irecv(RecvXu.data(), RecvXu.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_X].rank_u, Talk[DIR_X].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[2]); 
-      MPI_Isend(SendXl.data(), SendXl.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_X].rank_l, Talk[DIR_X].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[3]);
+      MPI_Irecv(RecvXu, numElements_X, MPI_DOUBLE_COMPLEX, Talk[DIR_X].rank_u, Talk[DIR_X].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[2]); 
+      MPI_Isend(SendXl, numElements_X, MPI_DOUBLE_COMPLEX, Talk[DIR_X].rank_l, Talk[DIR_X].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[3]);
 
       // For Y-Direction
-      MPI_Irecv(RecvYl.data(), RecvYl.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_Y].rank_l, Talk[DIR_Y].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[4]); 
-      MPI_Isend(SendYu.data(), SendYu.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_Y].rank_u, Talk[DIR_Y].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[5]);
+//      MPI_Irecv(RecvYl, RecvYl.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_Y].rank_l, Talk[DIR_Y].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[4]); 
+//      MPI_Isend(SendYu, SendYu.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_Y].rank_u, Talk[DIR_Y].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[5]);
       
-      MPI_Irecv(RecvYu.data(), RecvYu.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_Y].rank_u, Talk[DIR_Y].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[6]); 
-      MPI_Isend(SendYl.data(), SendYl.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_Y].rank_l, Talk[DIR_Y].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[7]);
+//      MPI_Irecv(RecvYu, RecvYu.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_Y].rank_u, Talk[DIR_Y].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[6]); 
+//      MPI_Isend(SendYl, SendYl.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_Y].rank_l, Talk[DIR_Y].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[7]);
       
       // For Z-Direction
-      MPI_Irecv(RecvZl.data(), RecvZl.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_l, Talk[DIR_Z].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[8]); 
-      MPI_Isend(SendZu.data(), SendZu.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_u, Talk[DIR_Z].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[9]);
+      MPI_Irecv(RecvZl, numElements_Z, MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_l, Talk[DIR_Z].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[4]); 
+      MPI_Isend(SendZu, numElements_Z, MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_u, Talk[DIR_Z].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[5]);
       
-      MPI_Irecv(RecvZu.data(), RecvZu.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_u, Talk[DIR_Z].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[10]); 
-      MPI_Isend(SendZl.data(), SendZl.numElements(), MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_l, Talk[DIR_Z].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[11]);
+      MPI_Irecv(RecvZu, numElements_Z, MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_u, Talk[DIR_Z].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[6]); 
+      MPI_Isend(SendZl, numElements_Z, MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_l, Talk[DIR_Z].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[7]);
 
       // Ok let's wait here ....
-      MPI_Waitall(12, msg_request, msg_status);
+      MPI_Waitall(8, msg_request, msg_status);
       
       return;
 }

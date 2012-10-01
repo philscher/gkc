@@ -29,11 +29,7 @@ class Interpolate {
 
     std::string type;
   public:
-    Interpolate(Array1R _X, Array1R _Y, Array2R _A, Setup *setup, std::string interpol = "Linear") : type(interpol) {
-
-
-
-//         A.resize(Range(0,X.size),  Range(0, Y.size), Range(0, ZSize));
+    Interpolate(int Nx, int Ny, const double  *_X, const double  *_Y, const double  *_A, std::string interpol = "Linear") : type(interpol) {
 
 
          A.reference(_A);

@@ -28,15 +28,12 @@ typedef double               Real   ;
 
 
 #include<blitz/array.h>
-#include<blitz/allocate.h>
-#include<blitz/types.h>
 
 #include "external/allocate.h"
 
 typedef _Complex double CComplex;  
 
 #define _Imaginary ((CComplex) (0.+1.j)); 
-//typedef (__extension__ 1.0i) Imaginary; 
 
 extern "C" double cabs  (CComplex z);
 extern "C" double creal (CComplex z);
@@ -45,17 +42,6 @@ extern "C" double carg  (CComplex z);
 extern "C" CComplex conj(CComplex z);
 extern "C" CComplex cexp (CComplex z);
 
-
-typedef blitz::Array<Complex, 1>  Array1C;
-typedef blitz::Array<Complex, 2>  Array2C;
-typedef blitz::Array<Complex, 4>  Array4C;
-typedef blitz::Array<Complex, 3>  Array3C;
-typedef blitz::Array<Complex, 5>  Array5C;
-typedef blitz::Array<Complex, 6>  Array6C;
-
-typedef blitz::Array<double, 1>  Array1R;
-typedef blitz::Array<double, 2>  Array2R;
-   
 
 using namespace std;
 
@@ -227,16 +213,13 @@ class Plasma;
 extern Plasma *plasma;
 
 
-extern blitz::GeneralArrayStorage<6> GKCStorage;
-
-
 typedef CComplex(*A6zz)[][][][][];
 typedef CComplex(*A5zz)[][][][];
 typedef CComplex(*A4zz)[][][];
 typedef CComplex(*A3zz)[][];
 typedef CComplex(*A2zz)[];
 
-typedef Real(*A2rr)[][];
+typedef Real(*A2rr)[];
 
 
 #endif // __GLOBAL_H

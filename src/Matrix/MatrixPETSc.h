@@ -231,8 +231,8 @@ class Matrix
           checkAndAssemble();
           Mat Matrix_AllReduce;
                
-          
-          Array2C ReduceArray(blitz::Range(0, n_local-1),  blitz::Range(0, n_local-1)); 
+          CComplex ReduceArray[n_local][n_local];
+
 
           //Array2C ReduceArray(Range(start, stop),  Range(start, stop)); 
           MatConvert(PETSc_Matrix, MATMPIDENSE,  MAT_INITIAL_MATRIX, &Matrix_AllReduce);
@@ -244,17 +244,17 @@ class Matrix
           
           for(int x = 0, n = 0; x < n_local-1; x++) {  for(int x2 = 0; x2 < n_local-1; x2++) {
 
-                        ReduceArray(x,x2) = matrix_val[n++];
+                        ReduceArray[x][x2] = matrix_val[n++];
           
           } }
 
           
           // Reduction over dimension, take care that size is the same
-          parallel->collect(ReduceArray, Op::SUM, dir);
+          parallel->collect((CComplex *)ReduceArray, Op::SUM, dir, pow2(n_local));
                
          check(-1, DMESG("BUG")); // reinterpret 
           for(int x = 0, n = 0; x < n_local-1; x++) {  for(int x2 = 0; x2 < n_local-1; x2++) {
-                  //  matrix_val[n++] = reinterpret_cast<CComplex>(ReduceArray(x,x2));
+                  matrix_val[n++] = ReduceArray[x][x2];
           
           } }     
                

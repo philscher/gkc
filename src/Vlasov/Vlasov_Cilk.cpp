@@ -312,7 +312,7 @@ void VlasovCilk::Vlasov_EM(
         // note j0 is calculated and needs to be replaced, or ? no we calculate j1 ne ?!
         const double j0 = 0.;
         const double Bpre  = 1.; //1./(1. + plasma->beta * sqrt(m * T/2.) * j0 / (q * pow2(geo->B(x,y,z))) * V[v]);
-        const double CoJB = 1./geo->J(x,z);
+        const double CoJB = 1./geo->get_J(x,z);
 
         
         ///////////////   The time derivative of the Vlasov equation      //////////////////////
@@ -322,11 +322,11 @@ void VlasovCilk::Vlasov_EM(
                 ExB[y_k][x][v]                                                                 // Non-linear ( array is zero for linear simulations) 
           + Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - sub)) * f0_ * Xi_ * ky         // Driving Term
           - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0) *                                   
-            (geo->Kx(x,z) * dG_dx - geo->Ky(x,z) * ky * G_)                                    // Magnetic curvature term
+            (geo->get_Kx(x,z) * dG_dx - geo->get_Ky(x,z) * ky * G_)                                    // Magnetic curvature term
           //- alpha * pow2(V[v]) * plasma->beta * plasma->w_p * G_ * ky                        // Plasma pressure gradient
           -  CoJB *  alpha * V[v]* dG_dz                                                       // Landau damping term
-          + alpha  / 2. * M[m] * geo->dB_dz(x,z) * dg_dv                                       // Magnetic mirror term    
-          + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * geo->Kx(x,z) * 
+          + alpha  / 2. * M[m] * geo->get_dB_dz(x,z) * dg_dv                                       // Magnetic mirror term    
+          + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * geo->get_Kx(x,z) * 
           ((w_n + w_T * (pow2(V[v]) + M[m] * B0)/Temp - sub) * dG_dx + sigma * dphi_dx * f0_); // ??
            + collisionBeta  * (g_  + alpha * V[v] * dg_dv + v2_rms * ddg_dvv);                 // Lennard-Bernstein Collision term
 

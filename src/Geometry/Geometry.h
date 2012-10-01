@@ -47,13 +47,16 @@ protected:
 
 
 public:
-  Array2R Kx, Ky, B, dB_dx, dB_dy, dB_dz, J;
+  double *Kx, *Ky, *B, *dB_dx, *dB_dy, *dB_dz, *J;
+  nct::allocate ArrayGeom;
 
   double eps_hat, C;
 
   Geometry(Setup *setup, FileIO *fileIO) {
 
-        allocate(RxLD, RzLD, Kx, Ky, B, dB_dx, dB_dy, dB_dz, J);
+        ArrayGeom = nct::allocate(nct::Range(NzLlD, NzLD), nct::Range(NxLlD, NxLD));
+        ArrayGeom(&Kx, &Ky, &B, &dB_dx, &dB_dy, &dB_dz, &J);
+        //allocate(RxLD, RzLD, Kx, Ky, B, dB_dx, dB_dy, dB_dz, J);
     
         eps_hat = setup->get("Geometry.eps", 1.);
         C       = 1.;
@@ -72,20 +75,24 @@ protected:
   *
   **/ 
   void setupArrays() {
-        
-        // set metric elements
-        for(int x=NxLlD; x <= NxLuD; x++) {  for(int z=NzLlD; z <= NzLuD; z++) { 
 
-             Kx(x,z)    = get_Kx   (x,z);
-             Ky(x,z)    = get_Ky   (x,z);
-             B(x,z)     = get_B    (x,z);
-             dB_dx(x,z) = get_dB_dx(x,z);
-             dB_dy(x,z) = get_dB_dy(x,z);
-             dB_dz(x,z) = get_dB_dz(x,z);
-             J(x,z)     = get_J    (x,z);
+
+    [=](double Kx[NzLD][NxLD], double Ky[NzLD][NxLD], double B[NzLD][NxLD], double dB_dx[NzLD][NxLD], 
+        double dB_dy[NzLD][NxLD], double dB_dz[NzLD][NxLD], double J [NzLD][NxLD])
+    {
+        // set metric elements
+       for(int x=NxLlD; x <= NxLuD; x++) {  for(int z=NzLlD; z <= NzLuD; z++) { 
+
+             Kx   [z][x] = get_Kx   (x,z);
+             Ky   [z][x] = get_Ky   (x,z);
+             B    [z][x] = get_B    (x,z);
+             dB_dx[z][x] = get_dB_dx(x,z);
+             dB_dy[z][x] = get_dB_dy(x,z);
+             dB_dz[z][x] = get_dB_dz(x,z);
+             J    [z][x] = get_J    (x,z);
 
        } }
-
+    } ((A2rr) Kx, (A2rr) Ky, (A2rr) B, (A2rr) dB_dx, (A2rr) dB_dy, (A2rr) dB_dz, (A2rr) J);
 
   }
 
@@ -116,7 +123,7 @@ public:
   **/ 
   virtual  double get_Kx(const int x, const int z)  { 
     
-        return - 1./C * ( dB_dy(x,z) + g_1(x,z)/g_2(x,z) * dB_dz(x,z));
+        return - 1./C * ( get_dB_dy(x,z) + g_1(x,z)/g_2(x,z) * get_dB_dz(x,z));
   };
 
   /**
@@ -136,7 +143,7 @@ public:
   virtual double get_Ky(const int x, const int z)  
   {
     
-      return 1./C * ( dB_dx(x,z) - g_3(x,z)/g_1(x,z) * dB_dz(x,z));
+      return 1./C * ( get_dB_dx(x,z) - g_3(x,z)/g_1(x,z) * get_dB_dz(x,z));
   
   };
   ///@} 

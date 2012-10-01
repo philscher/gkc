@@ -110,30 +110,28 @@ struct NeighbourDir {
    *
    *
    **/
-   void  updateNeighbours(Array6C  SendXl, Array6C  SendXu, Array6C  SendYl, Array6C  SendYu, Array6C SendZl, Array6C SendZu, 
-                         Array6C  RecvXl, Array6C  RecvXu, Array6C  RecvYl, Array6C  RecvYu, Array6C RecvZl, Array6C RecvZu); 
+   void  updateBoundaryFields(CComplex *SendXl, CComplex *SendXu, CComplex *RecvXl, CComplex *RecvXu, int numElements_X,
+                              CComplex *SendZl, CComplex *SendZu, CComplex *RecvZl, CComplex *RecvZu, int numElements_Z); 
+
    
-   /**
-   *  @brief updates boundaries in specific direction (non-blocking)
-   *
-   *  This assumes all domains to be periodic, except for velocity, which
-   *  is assumed to be zero. Thus if rank is MPI_PROC_NULL we set value to zero
-   **/
-   template<typename T, int W> void updateNeighbours(blitz::Array<T,W>  Sendu,  blitz::Array<T,W>  Sendl,  blitz::Array<T,W>  Recvu, blitz::Array<T,W>  Recvl, int dir) {
+   
+   template<class T> void updateBoundaryVlasov(T *Sendu, T *Sendl, T *Recvu, T  *Recvl, int numElements, int dir) {
         
 #ifdef GKC_PARALLEL_MPI
-     MPI_Irecv(Recvl.data(), Recvl.numElements(), getMPIDataType(typeid(T)), Talk[dir].rank_l, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_request[1]);
-     MPI_Isend(Sendu.data(), Sendu.numElements(), getMPIDataType(typeid(T)), Talk[dir].rank_u, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_request[0]);
+     MPI_Irecv(Recvl, numElements, getMPIDataType(typeid(T)), Talk[dir].rank_l, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_request[1]);
+     MPI_Isend(Sendu, numElements, getMPIDataType(typeid(T)), Talk[dir].rank_u, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_request[0]);
      
-     if(Talk[dir].rank_u == MPI_PROC_NULL)   Recvl = 0.e0;
+     if(Talk[dir].rank_u == MPI_PROC_NULL)   Recvl[0:numElements] = 0.e0;
      
-     MPI_Irecv(Recvu.data(), Recvu.numElements(), getMPIDataType(typeid(T)), Talk[dir].rank_u, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_request[3]); 
-     MPI_Isend(Sendl.data(), Sendl.numElements(), getMPIDataType(typeid(T)), Talk[dir].rank_l, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_request[2]);
-     if(Talk[dir].rank_l == MPI_PROC_NULL)   Recvu = 0.e0;
+     MPI_Irecv(Recvu, numElements, getMPIDataType(typeid(T)), Talk[dir].rank_u, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_request[3]); 
+     MPI_Isend(Sendl, numElements, getMPIDataType(typeid(T)), Talk[dir].rank_l, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_request[2]);
+     if(Talk[dir].rank_l == MPI_PROC_NULL)   Recvu[0:numElements] = 0.e0;
 #endif // GKC_PARALLEL_MPI
      return;
 
    };
+
+
    void updateNeighboursBarrier();
  
    /**
