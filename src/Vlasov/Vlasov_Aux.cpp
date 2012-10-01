@@ -34,19 +34,19 @@ int VlasovAux::solve(std::string equation_type, Fields *fields, CComplex *f_in, 
   if(equation_type == "ES")
 
       Vlasov_ES   ((A6zz) f_in, (A6zz) f_out     , (A6zz) f0, (A6zz) f, 
-                   (A6zz) ft , (A6zz) fields->Field.dataZero(), 
+                   (A6zz) ft , (A6zz) fields->Field, 
                    (A3zz) nonLinearTerms, X, V, M, dt, rk_step, rk);
 
   else if(equation_type == "EM")
 
       Vlasov_EM    ((A6zz) f_in, (A6zz) f_out, (A6zz) f0, (A6zz) f,
-                   (A6zz) ft, (A6zz) fields->Field.dataZero(), (A3zz) nonLinearTerms,
+                   (A6zz) ft, (A6zz) fields->Field, (A3zz) nonLinearTerms,
                    (A4zz) Xi, (A4zz) G, X, V, M, dt, rk_step, rk);
 
   else if(equation_type == "Landau_Damping")
     
       Landau_Damping((A6zz) f_in, (A6zz) f_out, (A6zz) f0, (A6zz) f, 
-                     (A6zz) ft , (A6zz) fields->Field.dataZero(), 
+                     (A6zz) ft , (A6zz) fields->Field, 
                       X, V, M, dt, rk_step, rk);
   
   else   check(-1, DMESG("No Such Equation"));

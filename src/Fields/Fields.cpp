@@ -21,10 +21,8 @@ blitz::Range RFields;
 int GC2, GC4, Nq;
 
 Fields::Fields(Setup *setup, Grid *_grid, Parallel *_parallel, FileIO *fileIO, Geometry *_geo)  : 
-grid(_grid), parallel(_parallel), geo(_geo), 
-Field(blitz::FortranArray<6>()), solveEq(0),
-SendXu(blitz::FortranArray<6>()), SendXl(blitz::FortranArray<6>()), SendZu(blitz::FortranArray<6>()), SendZl(blitz::FortranArray<6>()), 
-RecvXu(blitz::FortranArray<6>()), RecvXl(blitz::FortranArray<6>()), RecvZu(blitz::FortranArray<6>()), RecvZl(blitz::FortranArray<6>()) 
+
+grid(_grid), parallel(_parallel), geo(_geo), solveEq(0)
 
 {
    GC2 = 2; GC4 = 4, Nq=plasma->nfields;
@@ -37,19 +35,24 @@ RecvXu(blitz::FortranArray<6>()), RecvXl(blitz::FortranArray<6>()), RecvZu(blitz
 
 
    // for phi terms
-   allocate(RxLB4,RkyLD,RzLB, RmLB, RsLB, RFields, Field);
-  
+   //allocate(RxLB4,RkyLD,RzLB, RmLB, RsLB, RFields, Field);
+   
+   ArrayField = nct::allocate(nct::Range(1,Nq), nct::Range(NsLlD, NsLuD), nct::Range(NmLlD, NmLuD), nct::Range(NzLlD, NzLD), nct::Range(NkyLlD,NkyLD), nct::Range(NxLlD-4, NxLD+8));
+   ArrayField(&Field);
+
    ArrayField0 = nct::allocate(nct::Range(1,Nq), nct::Range(NzLlD, NzLD), nct::Range(NkyLlD,NkyLD), nct::Range(NxLlD, NxLD));
    ArrayField0(&Q, &Qm, &Field0);
-   //nct::allocate(nct::Range(1,Nq), nct::Range(NzLlD, NzLD), nct::Range(NkyLlD,NkyLD), nct::Range(NxLlD, NxLD))(&Q, &Qm, &Field0);
+
+   // Allocate boundary conditions, allocate Send/Recv buffers, note we have 4 ghost cells for X, 0 for Y
+   ArrayBoundX = nct::allocate(nct::Range(0, 4 * NkyLD * NzLD * NmLD * NsLD * Nq));
+   ArrayBoundX(&SendXl, &SendXu, &RecvXl, &RecvXu);
+   
+   ArrayBoundZ = nct::allocate(nct::Range(0, NxLD * NkyLD * 2 * NmLD * NsLD * Nq));
+   ArrayBoundZ(&SendZl, &SendZu, &RecvZl, &RecvZu);
+       
       
    //  brackets should be 1/2 but due to numerical errors, we should calculate it ourselves, see Dannert[2] 
    Yeb = (1./sqrt(M_PI) * __sec_reduce_add(pow2(V[NvLlD:NvLD]) * exp(-pow2(V[NvLlD:NvLD]))) * dv) * geo->eps_hat * plasma->beta; 
-
-   // Allocate boundary conditions, allocate Send/Recv buffers, note we have 4 ghost cells for X, 0 for Y
-   allocate(RB4 , RkyLD, RzLD, RmLD, RsLD, RFields, SendXu, SendXl, RecvXu, RecvXl);
-   //allocate(RxLD, RB4  , RzLD, RmLD, RsLD, RFields, SendYu, SendYl, RecvYu, RecvYl);
-   allocate(RxLD, RkyLD, RB  , RmLD, RsLD, RFields, SendZu, SendZl, RecvZu, RecvZl);
 
    initDataOutput(setup, fileIO);
 } 
@@ -119,7 +122,7 @@ void Fields::solve(CComplex *f0, CComplex *f, Timing timing)
                   Field[1:Nq][s][m][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD] 
                 =    Qm[1:Nq]      [NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]   ;
 
-           } ((A4zz) Qm, (A6zz) Field.dataZero());
+           } ((A4zz) Qm, (A6zz) Field);
         
       } }
    
@@ -198,9 +201,9 @@ void Fields::calculatePerpendicularCurrentDensity(const CComplex f0     [NsLD][N
 // only support parallelized version (assuming we run always parallized).
 void Fields::updateBoundary()
 {
-  updateBoundary((A6zz ) Field.dataZero(), 
-                  (A6zz ) SendXl.data()   , (A6zz) SendXu.data(), (A6zz) RecvXl.data(), (A6zz) RecvXu.data(),
-                  (A6zz ) SendZl.data()   , (A6zz) SendZu.data(), (A6zz) RecvZl.data(), (A6zz) RecvZu.data());
+  updateBoundary((A6zz ) Field, 
+                  (A6zz ) SendXl   , (A6zz) SendXu, (A6zz) RecvXl, (A6zz) RecvXu,
+                  (A6zz ) SendZl   , (A6zz) SendZu, (A6zz) RecvZl, (A6zz) RecvZu);
    return;
 }
 
@@ -233,8 +236,8 @@ void Fields::updateBoundary(
    } }
    
    // Exchange ghostcells between processors [ SendXu (CPU 1) ->RecvXl (CPU 2) ]
-   parallel->updateNeighbours(Fields::SendXl, Fields::SendXu,  Fields::SendYl, Fields::SendYu, Fields::SendZl,  Fields::SendZu, 
-                              Fields::RecvXl, Fields::RecvXu,  Fields::RecvYl, Fields::RecvYu, Fields::RecvZl,  Fields::RecvZu); 
+//   parallel->updateBoundaryFields(Fields::SendXl, Fields::SendXu,  Fields::SendYl, Fields::SendYu, Fields::SendZl,  Fields::SendZu, 
+//                                  Fields::RecvXl, Fields::RecvXu,  Fields::RecvYl, Fields::RecvYu, Fields::RecvZl,  Fields::RecvZu); 
 
    // Back copy X-Boundary cell data
    Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlB-2:4] = RecvXl[:][:][:][:][:][:];

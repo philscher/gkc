@@ -17,7 +17,6 @@
 
 #include "Global.h"
 
-#include<random/uniform.h>
 
 
 #include "Grid.h"
@@ -44,11 +43,11 @@ class Init   : public IfaceGKC {
    /**
    *   @brief document me please
    **/
-   void setFieldFromDataFile(Setup *setup, Array4C field, int n, std::string path);
+   void setFieldFromDataFile(Setup *setup, CComplex  *Field0, int n, std::string path);
    /**
    *   @brief document me please
    **/
-   void setFieldFromFunction(Setup *setup, Array4C field, int n , std::string func);
+   void setFieldFromFunction(Setup *setup, CComplex *Field0, int n , std::string func);
 /**
  *   @brief inits the Maxwellian 
  **/

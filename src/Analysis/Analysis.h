@@ -84,10 +84,8 @@ class Analysis : public IfaceGKC {
    Geometry *geo;
 
 
-   Array1R  initialEkin;//, dT;
-   Array2C spectrumXZ, spectrumYZ, spectrumXY;
-   Array2R heatFluxKy;
-   Array4C A4_z;
+   CComplex *A4;
+   nct::allocate ArrayA4;
    
    Timing dataOutputStatistics, ///< Timing to define output of scalarValues
           dataOutputMoments;    ///< Timing to define output of moments
@@ -207,7 +205,6 @@ class Analysis : public IfaceGKC {
 
 
    int updateSpectrum      (unsigned int dir);
-   Array2C getSpectrum(unsigned int dir);
    
    /**
    *    Get the field energy

@@ -30,7 +30,7 @@ int VlasovCilk::solve(std::string equation_type, Fields *fields, CComplex *_fs, 
 {
   if(0);
   else if(equation_type == "Vlasov_EM") Vlasov_EM((A6zz) _fs, (A6zz) _fss, (A6zz) f0, (A6zz) f, (A6zz) ft, 
-                                                  (A6zz) fields->Field.dataZero(), (A4zz) Xi, (A4zz) G, (A3zz) nonLinearTerms,
+                                                  (A6zz) fields->Field, (A4zz) Xi, (A4zz) G, (A3zz) nonLinearTerms,
                                                   X, V, M,  dt, rk_step, rk);
   else   check(-1, DMESG("No Such Equation"));
 

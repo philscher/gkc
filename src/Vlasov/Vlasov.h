@@ -81,15 +81,6 @@ class Vlasov : public IfaceGKC {
    nct::allocate ArrayBoundX, ArrayBoundZ, ArrayBoundV;
     
 
-
-
-   /**
-   *   @brief Update boundary conditions in case non-blocking MPI is used
-   *
-   **/
-   void cleanBoundary(Array6C A);
-        
-
  protected:
    FFTSolver *fft;
    Parallel *parallel;

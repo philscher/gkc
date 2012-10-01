@@ -14,7 +14,7 @@
 #include "Plasma.h"
 #include "Special/HermitePoly.h"
 
-#include "Tools/Reader/ReaderXYV.h"
+//#include "Tools/Reader/ReaderXYV.h"
 #include "System.h"
 
 Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields *fields, Geometry *_geo) : geo(_geo)
@@ -129,7 +129,7 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    }}} }}}
 
     
-   } ( (A6zz) vlasov->f0, (A6zz) vlasov->f, (A4zz) fields->Field0, (A6zz) fields->Field.dataZero(), (A4zz) fields->Q);
+   } ( (A6zz) vlasov->f0, (A6zz) vlasov->f, (A4zz) fields->Field0, (A6zz) fields->Field, (A4zz) fields->Q);
 
    ////////////////////////////////////////////////////////    Set Fixed Fields  phi, Ap, Bp //////////////////
    // set fixed fields if requested,  initialize Fields, Ap
@@ -161,26 +161,26 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
 
 
 
-void Init::setFieldFromDataFile(Setup *setup, Array4C Field0, int n, std::string path) {
+void Init::setFieldFromDataFile(Setup *setup, CComplex *Field0, int n, std::string path) {
 
   
    std::vector<std::string> token = Setup::split(path, ":");
    std::cout << "Use Reader : " << token[1] << std::endl;
    
-   Reader *reader = new ReaderXYV(token[2],setup);
+   //Reader *reader = new ReaderXYV(token[2],setup);
 
    for(int z = NzLlD; z <= NzLuD; z++) { for(int y = NkyLlD; y <= NkyLuD; y++) {  for(int x = NxLlD; x <= NxLuD; x++) {
         
-          Field0(x,y,z,n) = reader->getValue(X[x],Y[y],Z[z]);
+ //         Field0(x,y,z,n) = reader->getValue(X[x],Y[y],Z[z]);
 
    }}}
 
-    delete(reader);
+    //delete(reader);
 
 }
    
 
-void Init::setFieldFromFunction(Setup *setup, Array4C Field0, int n , std::string func) {
+void Init::setFieldFromFunction(Setup *setup, CComplex *Field0, int n , std::string func) {
 
    FunctionParser parser = setup->getFParser();
 
@@ -191,7 +191,7 @@ void Init::setFieldFromFunction(Setup *setup, Array4C Field0, int n , std::strin
 
       const double pos[3] = { X[x], y_k, Z[z] };
 
-      if(plasma->nfields >= n) Field0(x,y_k,z,n) = parser.Eval(pos);
+//      if(plasma->nfields >= n) Field0(x,y_k,z,n) = parser.Eval(pos);
 
    }}}
    

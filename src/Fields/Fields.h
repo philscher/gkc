@@ -94,11 +94,13 @@ class Fields : public IfaceGKC {
    *  @todo : current version does not need to communicate Y
    *          direction. Thus remove. 
    **/
-   Array6C  SendXu, SendYu, SendZu, SendXl, SendYl, SendZl; 
+   CComplex  *SendXu, *SendYu, *SendZu, *SendXl, *SendYl, *SendZl; 
    /**
    *  @brief please document me
    **/
-   Array6C  RecvXu, RecvYu, RecvZu, RecvXl, RecvYl, RecvZl;
+   CComplex  *RecvXu, *RecvYu, *RecvZu, *RecvXl, *RecvYl, *RecvZl;
+   
+   nct::allocate ArrayBoundX, ArrayBoundZ;
 
 protected:
 
@@ -275,6 +277,7 @@ public:
    **/
    CComplex *Q,
             *Qm; ///< Array to held intermediate Q results
+
    
    /**
    *  @brief four-dimensional array hold the field terms in drift-coordinates.
@@ -286,8 +289,9 @@ public:
    /**
    *  @brief gyro-averaged field quantities as \f$ \left( <\phi>, <A_{1\parallel}>, <B_{1\parallel}> \right)\f$
    **/
-   Array6C  Field;
-   
+   //Array6C  Field;
+   CComplex *Field;
+   nct::allocate ArrayField;
    /**
    * 
    *  @brief \f$ \tfrac{1}{2} \hat{e} \hat{B} \f$ normalization constants 

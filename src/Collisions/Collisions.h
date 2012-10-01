@@ -41,7 +41,7 @@ public:
     *
     *
    **/
-   virtual int solve(std::string equation_type, Fields *fields, Array6C fs, Array6C fss, double dt, int rk_step) 
+   virtual int solve(std::string equation_type, Fields *fields, CComplex  *fs, CComplex *fss, double dt, int rk_step) 
    {
             // we have collisionless system
             return 0;

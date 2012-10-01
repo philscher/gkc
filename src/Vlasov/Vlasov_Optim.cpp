@@ -35,7 +35,7 @@ int VlasovOptim::solve(std::string equation_type, Fields *fields, CComplex *_fs,
   if((equation_type == "VlasovAux_ES")) {
 
       Vlasov_2D((A6sz) _fs, (A6sz) _fss, (A6sz) f0, 
-                (A6sz) f, (A6sz) ft, (A6sz) fields->Field.dataZero(),
+                (A6sz) f, (A6sz) ft, (A6sz) fields->Field,
                 (A4sz) nonLinearTerms, X, V, M, dt, rk_step, rk);
   }
 

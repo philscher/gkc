@@ -21,22 +21,16 @@ enum SpecDir   {SPEC_NO=-1, SPEC_XY=0, SPEC_XZ=1, SPEC_YZ=2};
 
 Analysis::Analysis(Parallel *_parallel, Vlasov *_vlasov, Fields *_fields, Grid *_grid, Setup *_setup, FFTSolver *_fft, FileIO *fileIO, Geometry *_geo) : 
  
-parallel(_parallel),setup(_setup), vlasov(_vlasov), grid(_grid), fields(_fields), geo(_geo),  fft(_fft), A4_z(blitz::FortranArray<4>())
+parallel(_parallel),setup(_setup), vlasov(_vlasov), grid(_grid), fields(_fields), geo(_geo),  fft(_fft)
 
 {
 
-       // set initial energy
-       initialEkin.resize(blitz::Range(0, NsGuD)); initialEkin = 0.e0;
-       //for(int s=NsLlD; s<= NsLuD; s++)  initialEkin(s) = 0. ;//getKineticEnergy((A6zz) vlasov->f0.dataZero(), V.dataZero(), M, s);
-       initialEkin(0) = sum(initialEkin(RsLD));
-       
-       // Spectrum
+ // Spectrum
 //       if(setup->dirSpectrumAvrg & SPEC_XZ)  spectrumXZ.resize(fft->RkxL, fft->RkzL); spectrumXZ = 0.0;
 //       if(setup->dirSpectrumAvrg & SPEC_YZ)  spectrumYZ.resize(fft->RkyL, fft->RkzL); spectrumYZ = 0.0;
 //       if(setup->dirSpectrumAvrg & SPEC_XY)  spectrumXY.resize(fft->RkxL, fft->RkyL); spectrumXY = 0.0;
 
-    
-     A4_z.resize(RxLD, RkyLD, RzLD, RsLD);
+     ArrayA4 = nct::allocate(nct::Range(NsLlD, NsLD),  nct::Range(NzLlD, NzLD), nct::Range(NkyLlD, NkyLD), nct::Range(NxLlD, NxLD));
        
      initDataOutput(setup, fileIO);
 }
@@ -357,18 +351,6 @@ int Analysis::updateSpectrum(unsigned int dir) {
 
 
 ////////////////////////     Calculate x-dependent values     /////////////////////
-
-Array2C Analysis::getSpectrum(unsigned int dir) {
-       Array2C spectrum;
-       if     (dir == SPEC_XZ)  spectrum.reference(spectrumXZ);
-       else if(dir == SPEC_YZ)  spectrum.reference(spectrumXZ);
-       else if(dir == SPEC_XY)  spectrum.reference(spectrumXY);
-       else   check(-1, DMESG("No such direction for get spectrum"));
-    
-       return spectrum;
-   };
-
-  
 
 void Analysis::initDataOutput(Setup *setup, FileIO *fileIO) {
         
