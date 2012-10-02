@@ -32,7 +32,7 @@
 *   as a complex-to-complex transformation. 
 * 
 *   \f[
-*        Q(x,y_k,z) \rightarrow \hat{Q}(k_x,k_y,z)
+*        Q(x,k_y,z) \rightarrow \hat{Q}(k_x,k_y,z)
 *   \f]
 *
 *   @note that this  implicitly assumes periodicity in x-direction.
@@ -52,16 +52,16 @@
 *   be analytically integrated.
 *
 *   \f[
-*       I_0(b) e^{-b} = int_{\mu=0}^\infty J_0^2 e^{-\mu} quad,
+*       I_0(b) e^{-b} = \int_{\mu=0}^\infty J_0^2 e^{-\mu} \quad,
 *   \f]
-*   with \f$ b = k_perp^2 rho_{t\sigma}^2 \f$ and $I_0$ is the
+*   with \f$ b = k_\perp^2 \rho_{t\sigma}^2 \f$ and \f$ I_0 \f$ is the
 *   modified Bessel function of first kind and zeroth order.
 *   Further we use the common definition \f$ \Gamma_0(b) = I_0(b) e^{-b}  \f$.
 *   
 *   Geometry factors enter the equations by a modification of the
 *   perpendicular wavenumber (?) 
 *   \f[
-*        k_\perp^2 = g_xx k_x^2 + g_{xy} k_x k_y + g_yy k_y^2 
+*        k_\perp^2 = g_{xx} k_x^2 + g_{xy} k_x k_y + g_{yy} k_y^2 
 *   \f]
 *
 *   
