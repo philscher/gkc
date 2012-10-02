@@ -1,7 +1,7 @@
 /*
  * =====================================================================================
  *
- *       Filename:Geometry.h
+ *       Filename: Geometry.h
  *
  *    Description: Geometry interface
  *
@@ -24,19 +24,8 @@
 /** 
 *   @brief Base class for the Geometry abstraction using CRTP
 *
-*   For efficiency, we don't
-*   use virtual inheritance but CRTP. The latter enables to resolve all
-*   inline functions directly and thus should avoid any overhead due to 
-*   Geometry abstraction, see
-*
 *
 *  This part mostly relyies on Gorles, PhD, Eq. (2.51)  and goemetric parts
-*
-* BUG : if u compile and derive and doe not implement one of the function you
-*        will get a self-recursion. Any idea how to fix this  ? 
-*        See
-*        http://stackoverflow.com/questions/4721047/this-is-crtp-usage-for-static-polymorphism-but-without-implementation-of-a-derive
-*  @note Do we really see the overhead from virtual functions ? Test implementation
 *
 *
 **/
@@ -47,7 +36,15 @@ protected:
 
 
 public:
-  double *Kx, *Ky, *B, *dB_dx, *dB_dy, *dB_dz, *J;
+  double *Kx,     ///< Curvature term
+         *Ky,     ///< Curvature term 
+         *B,      ///< Equilibrium magnetic field strength
+         *dB_dx,  ///< $\frac{\partial B}{\partial x}$
+         *dB_dy,  ///< $\frac{\partial B}{\partial y}$ 
+         *dB_dz,  ///< $\frac{\partial B}{\partial z}$
+         *J;      ///< $J$
+
+
   nct::allocate ArrayGeom;
 
   double eps_hat, C;
@@ -56,7 +53,6 @@ public:
 
         ArrayGeom = nct::allocate(nct::Range(NzLlD, NzLD), nct::Range(NxLlD, NxLD));
         ArrayGeom(&Kx, &Ky, &B, &dB_dx, &dB_dy, &dB_dz, &J);
-        //allocate(RxLD, RzLD, Kx, Ky, B, dB_dx, dB_dy, dB_dz, J);
     
         eps_hat = setup->get("Geometry.eps", 1.);
         C       = 1.;
@@ -73,12 +69,16 @@ protected:
   *          from the base constructor is not allowed. 
   *          See http://stackoverflow.com/questions/99552/
   *
+  *    Set virtual, as for efficiency reason can be set directly when
+  *    numerical MHD equilibrium is used
+  *
   **/ 
-  void setupArrays() {
+  virtual void setupArrays() {
 
 
-    [=](double Kx[NzLD][NxLD], double Ky[NzLD][NxLD], double B[NzLD][NxLD], double dB_dx[NzLD][NxLD], 
-        double dB_dy[NzLD][NxLD], double dB_dz[NzLD][NxLD], double J [NzLD][NxLD])
+    // Setup Arrays
+    [=](double Kx   [NzLD][NxLD], double Ky   [NzLD][NxLD], double B[NzLD][NxLD], double dB_dx[NzLD][NxLD], 
+        double dB_dy[NzLD][NxLD], double dB_dz[NzLD][NxLD], double J[NzLD][NxLD])
     {
         // set metric elements
        for(int x=NxLlD; x <= NxLuD; x++) {  for(int z=NzLlD; z <= NzLuD; z++) { 
