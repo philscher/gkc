@@ -142,7 +142,8 @@ void Fields::calculateChargeDensity(const CComplex f0         [NsLD][NmLD][NzLB]
  
    // In case of a full-f simulation the Maxwellian is subtracted
 
-   const double pqnB_dvdm = M_PI * plasma->species[s].q * plasma->species[s].n0 * plasma->B0 * dv * grid->dm[m] ;
+   const double pqnB_dvdm = M_PI * plasma->species[s].q * plasma->species[s].n0 * plasma->B0 * dv * 
+                            (plasma->species[s].doGyro ? grid->dm[m] : 1.);
     
    omp_C2_for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
@@ -296,7 +297,8 @@ void Fields::writeData(Timing timing, double dt)
    }
 } 
       
-void Fields::closeData() {
+void Fields::closeData() 
+{
 
    delete FA_phi;
    delete FA_Ap;
@@ -306,7 +308,8 @@ void Fields::closeData() {
 }
 
 
-void Fields::printOn(std::ostream &output) const {
+void Fields::printOn(std::ostream &output) const 
+{
 
          output   << "Poisson    |  " << "Base class" << std::endl;
          output   << "Ampere     |  " << ((plasma->nfields >= 2) ? "beta :  " + Setup::num2str(plasma->beta) : " --- no electromagnetic effects ---") << std::endl;
