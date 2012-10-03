@@ -85,12 +85,6 @@ class Interpolate {
           +  A(nx+1, ny+1)/dyULdxUL * (x  - xL) * (y  - yL);
           
 
-
-
-
-
-
-
     };
 
 };

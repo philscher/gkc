@@ -25,6 +25,10 @@
 
 #include "petscmat.h" 
 
+static char FieldsHermite_help[] = "Help for PETSc Interface not available, please look up gkc & PETSc manual.";
+
+
+
 FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry *geo) 
 : Fields(setup, grid, parallel,fileIO, geo)
 {
@@ -35,7 +39,8 @@ FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileI
   
   //PetscPopSignalHandler();
   
-  GyroMatrix.resize(RkyLD, RzLD, RmLD, RsLD); 
+  GyroMatrix = Array4<Matrix *>(RkyLD, RzLD, RmLD, RsLD); 
+  MatrixPoissonSolverLHS = Array2<MatrixSolver *>(RkyLD, RzLD);
        
   interpolationOrder = setup->get("FieldsHermite.InterpolationOrder", 5);
 
@@ -61,7 +66,6 @@ FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileI
 }
 
 
-//void FieldsHermite::gyroAverage(Array4C In, Array4C Out, const int m, const int s, const bool gyroField)  
 void FieldsHermite::gyroAverage(CComplex In [Nq][NzLD][NkyLD][NxLD], 
                    CComplex Out[Nq][NzLD][NkyLD][NxLD],
                    const int m, const int s, const bool forward)
@@ -85,16 +89,15 @@ void FieldsHermite::gyroAverage(CComplex In [Nq][NzLD][NkyLD][NxLD],
             for(int x=NxLlD, n = 0; x <= NxLuD; x++)  Out[q][z][y_k][x] = vec_XAvrg[n++]; 
             VecRestoreArrayRead(GyroVector_XAvrg, (const PetscScalar **) &vec_XAvrg);
         
-        }
-        
-        } } 
+        } } } 
 
        return;
 
 };
 
 
-CComplex FieldsHermite::getElements(const int x, const int n, const double r, int y_k, const int z) {
+CComplex FieldsHermite::getElements(const int x, const int n, const double r, int y_k, const int z) 
+{
   
         const double ky = (2. * M_PI/Ly) * y_k;
          // Assign the lambda expression that adds two numbers to an auto variable.
@@ -159,7 +162,8 @@ void FieldsHermite::solveFieldEquations(CComplex Q     [plasma->nfields][NxLD][N
 
 
 // Take care of X[n] overflow
-double FieldsHermite::Lambda(const double x, const int n) {
+double FieldsHermite::Lambda(const double x, const int n) 
+{
         
         // Scale input to [ 0 , 1 ]
         auto N = [=] (const double x, const int n) -> double { return (x-X[n])/dx ; };
@@ -220,9 +224,11 @@ double FieldsHermite::Lambda(const double x, const int n) {
         return 0.;      
 }
 
-void FieldsHermite::printOn(std::ostream &output) const {
+
+void FieldsHermite::printOn(std::ostream &output) const 
+{
          output   << "Fields    |  Hermite      Order : "  << interpolationOrder << std::endl;
-   }
+}
  
 
 void FieldsHermite::solvePoissonEquation(const CComplex Q     [plasma->nfields][NxLD][NkyLD][Nz],
@@ -286,12 +292,12 @@ void FieldsHermite::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& 
 };
         
 
-void FieldsHermite::setDoubleGyroAverageMatrix(Setup *setup) {
+void FieldsHermite::setDoubleGyroAverageMatrix(Setup *setup)
+{
 
          ///////////////////////     Create Double GyroAverageMatrix /////////////////////
         // Note : int_0^infty J cdot J e^{mu} is sensitiv, thus we use higher order matrix
         //        to setup this matrix (linear matrix) Increase by factor 8
-        MatrixPoissonSolverLHS.resize(RkyLD, RzLD);
         Matrix Matrix_Gamma0    (NxLD, grid->NxGD, DIR_X, parallel);
         Matrix Matrix_PoissonLHS(NxLD, grid->NxGD, DIR_X, parallel);
 

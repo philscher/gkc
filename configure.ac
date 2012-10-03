@@ -88,17 +88,6 @@ AC_SUBST(DIR_HDF5)
 
 
 
-AC_ARG_WITH(blitzdir,
-  AC_HELP_STRING(
-    [--with-blitzdir=prefix],
-    [use specified prefix install directory of Blitz++ library]
-  ),
-  DIR_BLITZ="$with_blitzdir",
-  DIR_BLITZ="$DIR_BLITZDIR"
-)
-AC_SUBST(DIR_BLITZ)
-
-
 AC_ARG_WITH(p3dfftdir,
   AC_HELP_STRING(
     [--with-p3dfftdir=prefix],
@@ -462,16 +451,6 @@ fi
 
 
 
-AC_ARG_ENABLE(bzdebug, AC_HELP_STRING([--enable-bzdebug], [Build with boundary check with blitz++ (slow!).]), [bzdebug=yes], [bzdebug=no])           
-if test x$bzdebug = xyes ; then
-   CXXFLAGS+=" -DBZ_DEBUG"
-fi
-
-#CXXFLAGS+=" -DBZ_DEBUG"
-
-
-
-
 echo " -------Compiler Settings -------"
 if test x$static = xyes ; then 
   echo " static: $static (static linking of Intel-MPI library) "
@@ -486,7 +465,6 @@ echo " LIBS_USER    = $LIBS_USER "
 echo " --------------------------------"
 
 echo " HDF5   DIR    = $DIR_HDF5 "
-echo " BLITZ  DIR    = $DIR_BLITZ "
 
 
 AC_CONFIG_FILES([

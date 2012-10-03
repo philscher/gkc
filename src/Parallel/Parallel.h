@@ -133,21 +133,6 @@ struct NeighbourDir {
 
 
    void updateNeighboursBarrier();
- 
-   /**
-   *   @brief sends Array data to other CPU 
-   *
-   *   @todo rename to bcast
-   *
-   **/
-   template<typename T, int W> int send(blitz::Array<T,W> A, int dir=DIR_ALL) {
-#ifdef GKC_PARALLEL_MPI
-     if(dir <= DIR_S) if(decomposition[dir] == 1) return GKC_SUCCESS;
-     // rank differ between communicators, so we should take care of rankFFTMaster
-     check(MPI_Bcast(A.data(), A.numElements(), getMPIDataType(typeid(T)), dirMaster[dir], Comm[dir]), DMESG("MPI_Bcast")); 
-#endif
-     return GKC_SUCCESS; 
-   };
    
    template<typename T> int send(T *A, int dir, int num) {
 #ifdef GKC_PARALLEL_MPI
@@ -219,23 +204,6 @@ struct NeighbourDir {
         check(MPI_Reduce((myRank == dirMaster[dir]) ? MPI_IN_PLACE : A, A, Num, getMPIDataType(typeid(T)), getMPIOp(op), dirMaster[dir], Comm[dir]), DMESG("MPI_Reduce"   )); 
 #endif
      return;
-   }
-
-   /**
-   *  @Depreciated
-   *
-   **/
-   template<typename T, int W> blitz::Array<T,W> collect(blitz::Array<T,W> A, Op op=Op::SUM, int dir=DIR_ALL, bool allreduce=true) {
-#ifdef GKC_PARALLEL_MPI
-     // Return immediately if we don't decompose in this direction
-     if(dir <= DIR_S) if(decomposition[dir] == 1) return A;
-    
-     if(allreduce == true)
-        MPI_Allreduce(MPI_IN_PLACE, A.data(), A.numElements(), getMPIDataType(typeid(T)), getMPIOp(op),                Comm[dir]), DMESG("MPI_Allreduce");
-     else    // note, for MPI_Reduce only root process can specify MPI_IN_PLACE
-        check(MPI_Reduce((myRank == dirMaster[dir]) ? MPI_IN_PLACE : A.data(), A.data(), A.numElements(), getMPIDataType(typeid(T)), getMPIOp(op), dirMaster[dir], Comm[dir]), DMESG("MPI_Reduce"   )); 
-#endif
-     return A;
    }
 
    /**

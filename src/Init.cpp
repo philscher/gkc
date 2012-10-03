@@ -14,7 +14,6 @@
 #include "Plasma.h"
 #include "Special/HermitePoly.h"
 
-//#include "Tools/Reader/ReaderXYV.h"
 #include "System.h"
 
 Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields *fields, Geometry *_geo) : geo(_geo)
@@ -154,50 +153,6 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
 
 
 };
-
-
-
-
-
-
-
-void Init::setFieldFromDataFile(Setup *setup, CComplex *Field0, int n, std::string path) {
-
-  
-   std::vector<std::string> token = Setup::split(path, ":");
-   std::cout << "Use Reader : " << token[1] << std::endl;
-   
-   //Reader *reader = new ReaderXYV(token[2],setup);
-
-   for(int z = NzLlD; z <= NzLuD; z++) { for(int y = NkyLlD; y <= NkyLuD; y++) {  for(int x = NxLlD; x <= NxLuD; x++) {
-        
- //         Field0(x,y,z,n) = reader->getValue(X[x],Y[y],Z[z]);
-
-   }}}
-
-    //delete(reader);
-
-}
-   
-
-void Init::setFieldFromFunction(Setup *setup, CComplex *Field0, int n , std::string func) {
-
-   FunctionParser parser = setup->getFParser();
-
-   check(((parser.Parse (func, "x,y_k,z") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition"));
-
-
-   for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  for(int x = NxLlD; x <= NxLuD; x++) {
-
-      const double pos[3] = { X[x], y_k, Z[z] };
-
-//      if(plasma->nfields >= n) Field0(x,y_k,z,n) = parser.Eval(pos);
-
-   }}}
-   
-};
-
-
 
 
 

@@ -16,7 +16,6 @@
 
 
 
-blitz::Range RFields;
 
 int GC2, GC4, Nq;
 
@@ -27,7 +26,6 @@ grid(_grid), parallel(_parallel), geo(_geo), solveEq(0)
 {
    GC2 = 2; GC4 = 4, Nq=plasma->nfields;
  
-   RFields.setRange(1, plasma->nfields);
    // Note : Fixed fields are initialized in Init.cpp
    solveEq |=  ((plasma->nfields >= 1) && (setup->get("Init.FixedPhi", ".0") == ".0")) ? Field::phi : 0;
    solveEq |=  ((plasma->nfields >= 2) && (setup->get("Init.FixedAp" , ".0") == ".0")) ? Field::Ap  : 0;
@@ -35,8 +33,6 @@ grid(_grid), parallel(_parallel), geo(_geo), solveEq(0)
 
 
    // for phi terms
-   //allocate(RxLB4,RkyLD,RzLB, RmLB, RsLB, RFields, Field);
-   
    ArrayField = nct::allocate(nct::Range(1,Nq), nct::Range(NsLlD, NsLuD), nct::Range(NmLlD, NmLuD), nct::Range(NzLlD, NzLD), nct::Range(NkyLlD,NkyLD), nct::Range(NxLlD-4, NxLD+8));
    ArrayField(&Field);
 

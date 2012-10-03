@@ -10,9 +10,9 @@ AUTOMAKE_OPTIONS = subdir-objects
 # compile FFT
 gkc_SOURCES += external/FunctionParser/fparser.cc external/SFL/SFL.cpp
 
-AM_CPPFLAGS     = -ggdb -O3 -Wall -Wno-unknown-pragmas  -I$(DIR_HDF5)/include/ -I$(DIR_BLITZ)/include -I./external  -I./FFTSolver -I./Geometry -I./Special -I./TimeIntegration -I./Fields
-gkc_LDFLAGS  = -L$(DIR_HDF5)/lib/ -L$(DIR_BLITZ)/lib
-gkc_LDADD    =   -lblitz $(DIR_HDF5)/lib/libhdf5_hl.a $(DIR_HDF5)/lib/libhdf5.a  -lz 
+AM_CPPFLAGS     = -ggdb -O3 -Wall -Wno-unknown-pragmas  -I$(DIR_HDF5)/include/ -I./external  -I./FFTSolver -I./Geometry -I./Special -I./TimeIntegration -I./Fields
+gkc_LDFLAGS  = -L$(DIR_HDF5)/lib/
+gkc_LDADD    = $(DIR_HDF5)/lib/libhdf5_hl.a $(DIR_HDF5)/lib/libhdf5.a  -lz 
  
 EXTRA_DIST      =  GKC.h FileIO.h Vlasov/Vlasov_Cilk.h Vlasov/Vlasov_Aux.h Vlasov/Vlasov_Optim.h Vlasov/Vlasov_Island.h Vlasov.h Fields.h Fields/FieldsFFT.h\
                     Setup.h Grid.h Parallel.h Init.h \
@@ -22,11 +22,11 @@ EXTRA_DIST      =  GKC.h FileIO.h Vlasov/Vlasov_Cilk.h Vlasov/Vlasov_Aux.h Vlaso
 
 
 if SHARED
-gkc_LDADD +=  -lblitz  -lhdf5_hl -lhdf5 -lz 
+gkc_LDADD +=  -lhdf5_hl -lhdf5 -lz 
 endif
 
 if STATIC
-gkc_LDADD += $(DIR_BLITZ)/lib/liblitz.a   $(DIR_HDF5)/lib/libhdf5_hl.a $(DIR_HDF5)/lib/libhdf5.a  -lz -lgfortran
+gkc_LDADD += $(DIR_HDF5)/lib/libhdf5_hl.a $(DIR_HDF5)/lib/libhdf5.a  -lz -lgfortran
 endif
 
 if PAPI

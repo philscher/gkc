@@ -24,12 +24,11 @@
 #include <petscksp.h>
 
 #include "FieldsFFT.h"
-
+#include "external/Array.h"
 #include "Matrix/MatrixSolver.h"
 #include "Matrix/MatrixPETSc.h"
 
 
-static char FieldsHermite_help[] = "Help for PETSc Interface not available, please look up gkc & PETSc manual.";
 
 
 
@@ -82,12 +81,12 @@ class FieldsHermite : public Fields {
    *    Please Document Me !
    *
    **/
-  blitz::Array<Matrix*      ,4>  GyroMatrix;    
+  Array4<Matrix*>  GyroMatrix;    
   /**
    *    Please Document Me !
    *
    **/
-  blitz::Array<MatrixSolver*,2>  MatrixPoissonSolverLHS;
+  Array2<MatrixSolver*>  MatrixPoissonSolverLHS;
 
   void setDoubleGyroAverageMatrix(Setup *setup);
 

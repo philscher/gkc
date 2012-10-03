@@ -44,7 +44,7 @@ class Range
 
 
   public:
-   Range(int _Start, int _Length) : Start(_Start), Length(_Length) {};
+   Range(int _Start=0, int _Length=0) : Start(_Start), Length(_Length) {};
 
    /**
    *   @brief get number of elements inside the range
@@ -60,7 +60,12 @@ class Range
    *
    **/
    int Off() const { return Start ; };
-   
+
+   void setRange(int _Start, int _Length) 
+   {
+      Start  = _Start;
+      Length = _Length;
+   };
 };
 
 
@@ -335,8 +340,6 @@ class allocate : public ArrayBase
          //*g = ((T *) malloc(N * sizeof(T)));
          *g = ((T *) _mm_malloc(Num * sizeof(T), 64));
     
-         // Set all elements to zero
-         for(int n = 0; n < Num; n++) (*g)[n] = 0.;
          
          // Take care, pointer arithmetic is typed, only char* is 1 Byte !!!
          // Substract offset to calculate p[0][0]....
@@ -424,7 +427,18 @@ class allocate : public ArrayBase
          operator()(g5);
     }
 
-};
+    template<class T> void operator()(T **g0, T **g1, T **g2, T **g3, T **g4, T **g5, T**g6)
+    {
+         operator()(g0);
+         operator()(g1);
+         operator()(g2);
+         operator()(g3);
+         operator()(g4);
+         operator()(g5);
+         operator()(g6);
+    }
+
+ };
 
 } // namespace nct 
 

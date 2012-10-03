@@ -86,7 +86,6 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
          
       // set and check bounds 
       K1xLlD = X_NkxLlD;       K1xLuD = X_NkxLlD + X_NkxL - 1;
-      Rk1xL.setRange(K1xLlD, K1xLuD);
 
       // used only to calculate offset
       nct::allocate Array_kX = nct::allocate(nct::Range(1,plasma->nfields), nct::Range(NzLlD, NzLD), nct::Range(NkyLlD,NkyLD), nct::Range(X_NkxLlD, X_NkxL));
@@ -271,30 +270,27 @@ std::string FFTSolver_fftw3::getLibraryName()
 FFTSolver_fftw3::~FFTSolver_fftw3()
 {
 
-  //  release fftw-3 plans
-  fftw_destroy_plan(plan_XForward_Fields);
-  fftw_destroy_plan(plan_XBackward_Fields);
+    //  release fftw-3  
+        fftw_destroy_plan(plan_XForward_Fields);
+       fftw_destroy_plan(plan_XBackward_Fields);
        
-  
-  fftw_destroy_plan(plan_YForward_Field);
-  fftw_destroy_plan(plan_YBackward_Field);
+       fftw_destroy_plan(plan_YForward_Field);
+       fftw_destroy_plan(plan_YBackward_Field);
         
-  
-  fftw_destroy_plan(plan_AA_YForward);
-  fftw_destroy_plan(plan_AA_YBackward);
-  
-  //fftw_destroy_plan(plan_FieldTranspose_1);
-  //fftw_destroy_plan(plan_FieldTranspose_2);
+       fftw_destroy_plan(plan_AA_YForward);
+       fftw_destroy_plan(plan_AA_YBackward);
 
 #ifdef PARALLEL_OPENMP
-  fftw_cleanup_threads();
+    fftw_cleanup_threads();
 #endif
-  
-  fftw_free(data_X_rOut);
-  fftw_free(data_X_rIn );
-  fftw_free(data_kXOut );
-  fftw_free(data_kXIn  );
+    fftw_free(data_X_rOut);
+    fftw_free(data_X_rIn );
+    fftw_free(data_kXOut );
+    fftw_free(data_kXIn  );
     
+
+    fftw_destroy_plan(plan_FieldTranspose_1);
+    fftw_destroy_plan(plan_FieldTranspose_2);
 }
 
 

@@ -31,26 +31,19 @@
 *
 *
 **/ 
-class Init   : public IfaceGKC {
+class Init   : public IfaceGKC 
+{
 
+   Geometry *geo;
    /**
    *   @brief document me please
    **/
    double epsilon_0, sigma;  
    
-   Geometry *geo;
 
    /**
-   *   @brief document me please
+   *   @brief inits the Maxwellian 
    **/
-   void setFieldFromDataFile(Setup *setup, CComplex  *Field0, int n, std::string path);
-   /**
-   *   @brief document me please
-   **/
-   void setFieldFromFunction(Setup *setup, CComplex *Field0, int n , std::string func);
-/**
- *   @brief inits the Maxwellian 
- **/
    void initMaxwellian(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                      CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                     const double V[NvGB], const double M[NmGB], Grid *grid);

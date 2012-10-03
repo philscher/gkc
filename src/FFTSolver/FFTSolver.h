@@ -144,7 +144,6 @@ class FFTSolver : public IfaceGKC {
    static int X_NkxL;
    int K1xLlD, K1xLuD;
    int K1yLlD, K1yLuD;
-   blitz::Range Rk1xL, Rk1yL;
    // @}
 
    /**

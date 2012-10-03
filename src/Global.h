@@ -27,8 +27,8 @@ typedef std::complex<double> Complex;
 typedef double               Real   ;
 
 
-#include<blitz/array.h>
-
+#include<typeinfo>
+#include <iomanip>
 #include "external/allocate.h"
 
 typedef _Complex double CComplex;  
@@ -124,10 +124,10 @@ inline int check( int status, std::string file, int line, std::string error_text
 
 
 /// Deprecated
-extern blitz::Range RzLD, RyLD, RxLD, RvLD, RmLD, RsLD, RkyLD; 
-extern blitz::Range RxLB, RyLB, RzLB, RvLB, RmLB, RsLB;
-extern blitz::Range RxLB4, RyLB4; 
-extern blitz::Range RB, RB4,  RFields ; 
+extern nct::Range RzLD, RyLD, RxLD, RvLD, RmLD, RsLD, RkyLD; 
+extern nct::Range RxLB, RyLB, RzLB, RvLB, RmLB, RsLB;
+extern nct::Range RxLB4, RyLB4; 
+extern nct::Range RB, RB4;//,  RFields ; 
 
 
 // use assert instead !
