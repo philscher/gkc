@@ -58,7 +58,7 @@ Eigenvalue_SLEPc::Eigenvalue_SLEPc(FileIO *fileIO, Setup *setup, Grid *grid, Par
 
 
 
-Complex Eigenvalue_SLEPc::getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields) 
+double Eigenvalue_SLEPc::getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields) 
 {
     
     EPSSetWhichEigenpairs(EigvSolver, EPS_LARGEST_MAGNITUDE);
@@ -88,7 +88,7 @@ Complex Eigenvalue_SLEPc::getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields)
     std::stringstream msg; msg << " Eigenvalue : " << eigv << std::endl;
     parallel->print(msg.str());
 
-    return eigv;
+    return abs(eigv);
 
 }
 
@@ -208,7 +208,9 @@ Eigenvalue_SLEPc::~Eigenvalue_SLEPc() {
 };
 
 void Eigenvalue_SLEPc::printOn(std::ostream &output) const {
+           int global_size = grid->NxGD * (includeZF ? NkyLD-1 : NkyLD-2) * grid->NzGD * grid->NvGD * grid->NmGD * grid->NsGD;
            output << "Eigenvalue |  using SLEPc interface " << std::endl;
+           output << "           | Approx ~ " << global_size << " Iterations " << std::endl;
  }
 
 

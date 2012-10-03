@@ -84,7 +84,7 @@ class Eigenvalue : public IfaceGKC {
    *         the maximum stable linear timestep
    *
    **/
-   virtual Complex getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields) = 0;
+   virtual double getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields) = 0;
 
   protected :
   
