@@ -126,7 +126,7 @@ void Fields::solve(CComplex *f0, CComplex *f, Timing timing)
    
    }   
   
-   parallel->send(Field, DIR_V);
+   parallel->send(ArrayField0.data(Field), DIR_V, ArrayField0.getNum());
         
    return;
 
