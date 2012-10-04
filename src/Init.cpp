@@ -167,15 +167,15 @@ void Init::initMaxwellian(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxL
     // Initialize Form of f, Ap, phi, and g, we need superposition between genereal f1 pertubration and species dependent
     const double VOff = 0.;//setup->get("Plasma.Species" + Setup::num2str(s) + ".VelocityOffset", 0.);
    
-    omp_C3_for(int m   = NmLlD ; m   <= NmLuD ; m++  ) {  for(int z = NzLlD; z <= NzLuD; z++) { 
-           for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  for(int x = NxLlD; x <= NxLuD; x++) { 
+    omp_C3_for(int m   = NmLlB ; m   <= NmLuB ; m++  ) {  for(int z = NzLlB; z <= NzLuB; z++) { 
+           for(int y_k = NkyLlB; y_k <= NkyLuB; y_k++) {  for(int x = NxLlB; x <= NxLuB; x++) { 
       
       const double n = plasma->species[s].n[x];
       const double T = plasma->species[s].T[x];
       
       const double w = 0., r = 0; // roation not needed 
       
-      simd_for(int v = NvLlD; v <= NvLuD; v++) { 
+      simd_for(int v = NvLlB; v <= NvLuB; v++) { 
       
       // although only F0(x,k_y=0,...) is not equal zero, we perturb all modes, as F0 in Fourier space "acts" like a nonlinearity,
       // which couples modes together
