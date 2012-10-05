@@ -31,8 +31,8 @@ int NmLlD, NmLuD, NmLlB, NmLuB;
 int NsLlD, NsLuD, NsLlB, NsLuB; 
       
 int NxLD, NyLD, NkyLD, NzLD, NvLD, NmLD, NsLD;
-int NxLB, NyLB, NkyLB, NzLB, NvLB, NmLB, NsLB;
-int NxGB, NyGB, NkyGB, NzGB, NvGB, NmGB, NsGB;
+int NxLB, NyLB, NzLB, NvLB, NmLB, NsLB;
+int NxGB, NyGB, NkyGD, NzGB, NvGB, NmGB, NsGB;
 
 int KxLuD, KyLuD, KzLuD, KxLlD, KyLlD, KzLlD;
 

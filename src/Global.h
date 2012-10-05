@@ -169,8 +169,8 @@ extern int NkyLlD, NkyLuD, NkyLlB, NkyLuB;
 extern double Lx, Ly, Lz, Lv, Lm;
 extern int    Nx, Nky, Nz, Nv, Nm, Ns;
 extern int    NxLD, NyLD, NkyLD, NzLD, NvLD, NmLD, NsLD;
-extern int    NxLB, NyLB, NkyLB, NzLB, NvLB, NmLB, NsLB;
-extern int    NxGB, NyGB, NkyGB, NzGB, NvGB, NmGB, NsGB;
+extern int    NxLB, NyLB, NzLB, NvLB, NmLB, NsLB;
+extern int    NxGB, NyGB, NkyGD, NzGB, NvGB, NmGB, NsGB;
 extern double dx, dy, dz, dv;
 
 extern double *X, *Y, *Z, *V, *M, *Z;

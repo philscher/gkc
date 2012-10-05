@@ -199,7 +199,7 @@ class Analysis : public IfaceGKC {
    **/
    void getParticleHeatFlux(const int m, const int s, 
                             CComplex ParticleFlux[NkyLD][NxLD], CComplex HeatFlux[NkyLD][NxLD],
-                            const CComplex f[NsLB][NmLB][NzLB][NkyLB][NxLB][NvLB],
+                            const CComplex f[NsLB][NmLB][NzLB][NkyLD][NxLB][NvLB],
                             const CComplex phi[NsLD][NmLD][NzLD][NkyLD][NxLB+4],
                             const double V[NvGB], const double M[NmGB]);
 
@@ -225,7 +225,7 @@ class Analysis : public IfaceGKC {
    *
    **/
    
-   void getTemperatureParallel(const  CComplex f[NsLB][NmLB][NzLB][NkyLB][NxLB][NvLB],
+   void getTemperatureParallel(const  CComplex f[NsLB][NmLB][NzLB][NkyLD][NxLB][NvLB],
                                       CComplex A4_z[NsLD][NzLD][NkyLD][NxLD], 
                                const double V[NvGB], const double M[NmGB]);
    // depreciated
@@ -233,7 +233,7 @@ class Analysis : public IfaceGKC {
    void getHeatFluxOrthogonal();
    void getHeatFluxParallel ();
    
-   void getNumberDensity(const  CComplex f[NsLB][NmLB][NzLB][NkyLB][NxLB][NvLB],
+   void getNumberDensity(const  CComplex f[NsLB][NmLB][NzLB][NkyLD][NxLB][NvLB],
                                 CComplex D[NsLD][NzLD][NkyLD][NxLD], 
                          const double V[NvGB], const double M[NmGB]);
    void getMomentumParallel();

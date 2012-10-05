@@ -179,7 +179,7 @@ void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][
 
 ///////////////////////////////// Calculate Moments  /////////////////////////////////////////////////
 
-void Analysis::getNumberDensity(const  CComplex f[NsLB][NmLB][NzLB][NkyLB][NxLB][NvLB],
+void Analysis::getNumberDensity(const  CComplex f[NsLB][NmLB][NzLB][NkyLD][NxLB][NvLB],
                                        CComplex D[NsLD][NzLD][NkyLD][NxLD], 
                                 const double V[NvGB], const double M[NmGB])
 {
@@ -212,7 +212,7 @@ void Analysis::getMomentumParallel() {
 }
 
 
-void Analysis::getTemperatureParallel(const  CComplex f[NsLB][NmLB][NzLB][NkyLB][NxLB][NvLB],
+void Analysis::getTemperatureParallel(const  CComplex f[NsLB][NmLB][NzLB][NkyLD][NxLB][NvLB],
                                              CComplex A4_z[NsLD][NzLD][NkyLD][NxLD], 
                                       const double V[NvGB], const double M[NmGB])
 {
@@ -276,7 +276,7 @@ void Analysis::getHeatFluxOrthogonal() {
 
 void Analysis::getParticleHeatFlux(const int m, const int s, 
                                    CComplex ParticleFlux[NkyLD][NxLD], CComplex HeatFlux[NkyLD][NxLD],
-                                   const CComplex   f[NsLB][NmLB][NzLB][NkyLB][NxLB][NvLB],
+                                   const CComplex   f[NsLB][NmLB][NzLB][NkyLD][NxLB][NvLB],
                                    const CComplex phi[NsLD][NmLD][NzLD][NkyLD][NxLB+4],
                                    const double V[NvGB], const double M[NmGB])
 {
