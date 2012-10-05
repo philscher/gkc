@@ -27,14 +27,12 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
 
 {
 
-   ArrayPhase = nct::allocate(nct::Range(NsLlD , NsLD ), nct::Range(NmLlD, NmLD), nct::Range(NzLlB, NzLB), 
-                              nct::Range(NkyLlD, NkyLB), nct::Range(NxLlB, NxLB), nct::Range(NvLlB, NvLB));
-   ArrayPhase(&f0, &f, &fss, &fs, &f1, &ft);
+   ArrayPhase = nct::allocate(RsLD, RmLD, RzLB, RkyLD, RxLB, RvLB); ArrayPhase(&f0, &f, &fss, &fs, &f1, &ft);
    
    
-   nct::allocate(nct::Range(NzLlB,NzLB), nct::Range(NkyLlB,NkyLB), nct::Range(NxLlB-2, NxLB+4), nct::Range(NvLlB,NvLB))(&Xi);
-   nct::allocate(nct::Range(NzLlB,NzLB), nct::Range(NkyLlB,NkyLB), nct::Range(NxLlB  , NxLB  ), nct::Range(NvLlB,NvLB))(&G );
-   nct::allocate(nct::Range(NkyLlD,NkyLD), nct::Range(NxLlD, NxLD), nct::Range(NvLlD,NvLD))(&nonLinearTerms);
+   nct::allocate(RzLB , RkyLD, nct::Range(NxLlB-2, NxLB+4), RvLB)(&Xi);
+   nct::allocate(RzLB , RkyLD, RxLB, RvLB)(&G );
+   nct::allocate(RkyLD, RxLD , RvLD)(&nonLinearTerms);
    
    // allocate boundary (mpi) buffers
    //allocate(RB  , RkyLD, RzLD, RvLD, RmLD, RsLD, SendXu, SendXl, RecvXu, RecvXl);

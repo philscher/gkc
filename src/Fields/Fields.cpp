@@ -33,10 +33,10 @@ grid(_grid), parallel(_parallel), geo(_geo), solveEq(0)
 
 
    // for phi terms
-   ArrayField = nct::allocate(nct::Range(1,Nq), nct::Range(NsLlD, NsLuD), nct::Range(NmLlD, NmLuD), nct::Range(NzLlD, NzLD), nct::Range(NkyLlD,NkyLD), nct::Range(NxLlD-4, NxLD+8));
+   ArrayField = nct::allocate(nct::Range(1,Nq), RsLD, RmLD, RzLB, RkyLD, nct::Range(NxLlD-4, NxLD+8));
    ArrayField(&Field);
 
-   ArrayField0 = nct::allocate(nct::Range(1,Nq), nct::Range(NzLlD, NzLD), nct::Range(NkyLlD,NkyLD), nct::Range(NxLlD, NxLD));
+   ArrayField0 = nct::allocate(nct::Range(1,Nq), RzLD, RkyLD, RxLD);
    ArrayField0(&Q, &Qm, &Field0);
 
    // Allocate boundary conditions, allocate Send/Recv buffers, note we have 4 ghost cells for X, 0 for Y
