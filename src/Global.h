@@ -123,12 +123,6 @@ inline int check( int status, std::string file, int line, std::string error_text
 
 
 
-/// Deprecated
-extern nct::Range RzLD, RyLD, RxLD, RvLD, RmLD, RsLD, RkyLD; 
-extern nct::Range RxLB, RyLB, RzLB, RvLB, RmLB, RsLB;
-extern nct::Range RxLB4, RyLB4; 
-extern nct::Range RB, RB4;//,  RFields ; 
-
 
 // use assert instead !
 #define DMESG(mesg)  std::string(__FILE__), __LINE__, std::string(mesg)

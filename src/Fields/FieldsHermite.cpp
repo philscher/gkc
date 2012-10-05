@@ -39,8 +39,8 @@ FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileI
   
   //PetscPopSignalHandler();
   
-  GyroMatrix = Array4<Matrix *>(RkyLD, RzLD, RmLD, RsLD); 
-  MatrixPoissonSolverLHS = Array2<MatrixSolver *>(RkyLD, RzLD);
+  GyroMatrix = Array4<Matrix *>(grid->RkyLD, grid->RzLD, grid->RmLD, grid->RsLD); 
+  MatrixPoissonSolverLHS = Array2<MatrixSolver *>(grid->RkyLD, grid->RzLD);
        
   interpolationOrder = setup->get("FieldsHermite.InterpolationOrder", 5);
 

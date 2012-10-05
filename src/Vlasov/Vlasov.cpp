@@ -27,12 +27,13 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
 
 {
 
-   ArrayPhase = nct::allocate(RsLD, RmLD, RzLB, RkyLD, RxLB, RvLB); ArrayPhase(&f0, &f, &fss, &fs, &f1, &ft);
+   ArrayPhase = nct::allocate(grid->RsLD, grid->RmLD, grid->RzLB, grid->RkyLD, grid->RxLB, grid->RvLB);
+   ArrayPhase(&f0, &f, &fss, &fs, &f1, &ft);
    
    
-   nct::allocate(RzLB , RkyLD, nct::Range(NxLlB-2, NxLB+4), RvLB)(&Xi);
-   nct::allocate(RzLB , RkyLD, RxLB, RvLB)(&G );
-   nct::allocate(RkyLD, RxLD , RvLD)(&nonLinearTerms);
+   nct::allocate(grid->RzLB , grid->RkyLD, nct::Range(NxLlB-2, NxLB+4), grid->RvLB)(&Xi);
+   nct::allocate(grid->RzLB , grid->RkyLD, grid->RxLB, grid->RvLB)(&G );
+   nct::allocate(grid->RkyLD, grid->RxLD , grid->RvLD)(&nonLinearTerms);
    
    // allocate boundary (mpi) buffers
    //allocate(RB  , RkyLD, RzLD, RvLD, RmLD, RsLD, SendXu, SendXl, RecvXu, RecvXl);

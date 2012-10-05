@@ -17,11 +17,6 @@
 
 
 // **************** Define Global Variables ************* //
-nct::Range RzLD, RyLD, RkyLD, RxLD, RvLD, RmLD, RsLD; 
-nct::Range RzLB, RyLB, RxLB, RvLB, RmLB, RsLB;
-nct::Range RxLB4, RyLB4;
-nct::Range RB, RB4 ; 
-
 int NxLlD, NxLuD, NxLlB, NxLuB; 
 int NyLlD, NyLuD, NyLlB, NyLuB; 
 int NkyLlD, NkyLuD, NkyLlB, NkyLuB; 
@@ -152,7 +147,7 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
 
     // Ranges of Local Domain (LD)
     RxLD.setRange(NxLlD,NxLD);
-    RyLD.setRange(NyLlD,NyLD);
+    //RyLD.setRange(NyLlD,NyLD);
     RzLD.setRange(NzLlD,NzLD);
     RvLD.setRange(NvLlD,NvLD);
     RmLD.setRange(NmLlD,NmLD);
@@ -162,18 +157,18 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
   
     // Ranges of Local Boundary (LB)
     RxLB.setRange(NxLlB,NxLB);
-    RyLB.setRange(NyLlB,NyLB);
+    //RyLB.setRange(NyLlB,NyLB);
     RzLB.setRange(NzLlB,NzLB);
     RvLB.setRange(NvLlB,NvLB);
     RmLB.setRange(NmLlB,NmLB);
     RsLB.setRange(NsLlB,NsLB);
     
     RxLB4.setRange(NxLlB-2,NxLB+4);
-    RyLB4.setRange(NyLlB-2,NyLB+4);
+   // RyLB4.setRange(NyLlB-2,NyLB+4);
   
     // Ranges of Global Boundary (LB)
     RxGB.setRange(NxGlB, NxGB);
-    RyGB.setRange(NyGlB, NyGB);
+   // RyGB.setRange(NyGlB, NyGB);
     RzGB.setRange(NzGlB, NzGB);
     RvGB.setRange(NvGlB, NvGB);
     RmGB.setRange(NmGlB, NmGB);
@@ -181,15 +176,15 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
   
     // Ranges of Global Domain (LD)
     RxGD.setRange(NxGlD, NxGD);
-    RyGD.setRange(NyGlD, NyGD);
+  //  RyGD.setRange(NyGlD, NyGD);
     RzGD.setRange(NzGlD, NzGD);
     RvGD.setRange(NvGlD, NvGD);
     RmGD.setRange(NmGlD, NmGD);
     RsGD.setRange(NsGlD, NsGD);
  
     // Resize Send/Recv buffers for program to fit the ghost cells
-    RB.setRange(0,2);
-    RB4.setRange(0,4);
+    //RB.setRange(0,2);
+    //RB4.setRange(0,4);
 
 
     ///////////////  Set Grid  Domain ////////////

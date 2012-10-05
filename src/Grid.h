@@ -42,12 +42,18 @@ class Grid : public IfaceGKC {
   
    /// @name Ranges for computational domain
    ///@{
-   nct::Range RxGB, RyGB, RzGB, RvGB, RmGB, RsGB; ///< The boundary domain
+   //nct::Range RxGB, RyGB, RzGB, RvGB, RmGB, RsGB; ///< The boundary domain
+   nct::Range RzLD, RxLD, RvLD, RmLD, RsLD, RkyLD; 
+   nct::Range RxLB, RzLB, RvLB, RmLB, RsLB;
+   
+   nct::Range RxGB, RzGB, RvGB, RmGB, RsGB;
+   nct::Range RxLB4;
+
    ///@}
    
    /// @name Ranges for computational domain
    ///@{
-   nct::Range RxGD, RyGD, RzGD, RvGD, RmGD, RsGD; 
+   nct::Range RxGD, RkyGD, RzGD, RvGD, RmGD, RsGD; 
    ///@}
 
    /** \f$ textrm{d}x textrm{d}y textrm{d}z \f$
