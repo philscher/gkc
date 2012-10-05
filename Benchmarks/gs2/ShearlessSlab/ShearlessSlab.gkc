@@ -1,0 +1,52 @@
+Grid.Nx  = 128
+Grid.Nky = 65
+Grid.Nv  = 32
+Grid.Nz  = 8
+Grid.Ns  = 1
+Grid.Nm  = 8
+
+# scale by sqrt(2.)
+Grid.Lx = 32.
+Grid.Ly = 16.
+Grid.Lz = 8000.
+Grid.Lv = 3.5
+Grid.Lm = 8.
+
+
+DataOutput.OutputFileName = Smolyakov_Adiabatic_2.h5
+
+GKC.Geometry= Slab
+
+
+Vlasov.Solver = Cilk
+Vlasov.Equation = Vlasov_EM
+Vlasov.NonLinear = 0
+Vlasov.CollisionBeta = 0.
+
+DataOutput.Statistics.Time     =  500.
+
+Plasma.Beta   = 0.e0
+Plasma.Debye2 = 0.00
+
+Plasma.Species0.Name        =  Proton
+Plasma.Species0.Charge      =  1.
+Plasma.Species0.Density     =  1. 
+Plasma.Species0.Temperature =  1.
+
+Plasma.Species1.Name        = Electron
+Plasma.Species1.Density     = 1. 
+Plasma.Species1.Temperature = 1.
+Plasma.Species1.Mass        = 1.
+Plasma.Species1.Charge      = -1.
+Plasma.Species1.w_T         = 0.14142
+Plasma.Species1.w_n         = 0.028284
+Plasma.Species1.gyroModel   = Gyro
+
+Helios.MaxTime     = 50000.
+Helios.MaxSteps    = 1000
+
+Init.Perturbation = Noise
+Init.Epsilon0     = 1.e-120
+
+
+SuppressModeX = (0-0)

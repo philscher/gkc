@@ -1,0 +1,202 @@
+!==============================================================================
+!  GS2 INPUT FILE
+!
+
+!==============================================================================
+!GENERAL PARAMETERS
+&parameters
+ beta = 0.0  !Reference Beta, not total beta:  beta=n_0 T_0 /( B^2 / (8 pi))
+/
+
+&kt_grids_knobs
+ grid_option='range'
+ norm_option='mtk'
+/
+
+&kt_grids_range_parameters
+ naky = 33
+ aky_min=0.0
+ aky_max=10.
+! nakx = 33
+ ntheta0=1
+!theta0_min=6.28318531
+!theta0_max=6.28
+akx_max=0.14142135623730953
+akx_min=0.14142135623730953
+/
+
+! Look in theta grid about definitions
+&theta_grid_parameters
+ ntheta=  8    !Number of points along field line (theta) per 2 pi segment
+ nperiod= 1    !Number of 2 pi segments
+ eps = 0.18 !0.18      !eps=r/R
+ epsl = 0.1 !2.0    !epsl=2 a/R
+ shat = 0.0
+ kp   = 0.0004501581580785531
+/
+
+&theta_grid_knobs
+ equilibrium_option='s-alpha'  
+	!Use high aspect-ratio toroidal equilbrium (which can be simplified 
+	! to slab or cylinder), controlled by the subsidiary namelists 
+	! theta_grid_parameters and theta_grid_salpha_knobs.
+/
+
+&theta_grid_salpha_knobs
+/
+&theta_grid_file_knobs
+/
+&theta_grid_gridgen_knobs
+/
+&theta_grid_eik_knobs
+/ 
+
+!==============================================================================
+! PITCH ANGLE/ENERGY GRID SETUP	
+&le_grids_knobs
+ vgrid = T
+ vcut = 3.5
+ ngauss = 8    !# of untrapped pitch-angles moving in one direction along 
+ negrid = 32     !Total number of energy grid points
+/
+
+!==============================================================================
+! BOUNDARY CONDITIONS
+&dist_fn_knobs
+ gridfac=   1.0              !Affects boundary condition at end of theta grid. 
+ boundary_option="default"    !BC along field line is periodic
+ adiabatic_option="iphi00=2"
+ test = .false.              !For debugging
+/
+!==============================================================================
+! ALGORITHMIC CHOICES
+&fields_knobs
+ field_option='implicit'   !Advance linear terms with Kotschenreuther's 
+                           !implicit algorithm.
+/
+&knobs
+ wstar_units = .false.     !T for linear runs only. Evolves each k_y with 
+			   ! different timestep.
+ fphi =   1.0              !Multiplies Phi (electrostatic potential). 
+			   ! Non-experts use 1.0
+ fapar =  0.0              !Multiplies A_par. Use 1 for finite beta, 0 otherwise
+ fbpar = 0.0              !Multiplies A_perp. Use 1 for high beta, 0 otherwise.
+ delt = 0.1              !Time step
+ nstep = 6000             !Maximum number of timesteps
+/
+&reinit_knobs
+ delt_adj = 2.0         !When the time step needs to be changed, it is adjusted 
+		       ! by a factor of delt_adj.
+ delt_minimum = 5.0e-07  !The minimum time step is delt_minimum.
+/
+&layouts_knobs
+ layout = 'lxyes'    !'yxles', 'lxyes', 'lyxes', 'lexys' Strongly affects performance on parallel computers
+ local_field_solve = .false. !Strongly affects initialization time on some 
+	 		     ! parallel computers.
+/
+
+!==============================================================================
+! PHYSICS
+!------------------------------------------------------------------------------
+! COLLISIONS
+&collisions_knobs
+ collision_model='none'     !'default'  !Default =pitch angle scattering
+/
+
+!------------------------------------------------------------------------------
+! NONLINEARITY
+&nonlinear_terms_knobs
+ nonlinear_mode='off'   !'on' Include nonlinear terms.
+ cfl = 0.2             !The maximum delt < cfl * min(Delta_perp/v_perp)
+/    
+!------------------------------------------------------------------------------
+! ADDITIONAL LINEAR TERMS
+&additional_linear_terms_knobs
+/
+
+!==============================================================================
+! EVOLVED SPECIES
+&species_knobs
+ nspec=         2    !Number of kinetic species evolved.
+/
+!------------------------------------------------------------------------------
+! IONS
+&species_parameters_1
+ z=      1.0   !Charge
+ mass=   1.0   !Mass
+ dens=   1.0   !Density	
+ temp=   1.0   !Temperature
+ tprim=  0.14142135623730953
+ fprim=  0.028284271247461905
+ uprim=  0.0   !?
+ vnewk=  0.0   !1.e-2   !collisionality parameter
+ type='ion'    !'ion' Thermal ion species 
+/
+
+&species_parameters_2
+ z=      -1.0   !Charge
+ mass=   0.00054436581382689172   !Mass
+ dens=   1.0   !Density	
+ temp=   1.0   !Temperature
+ tprim=  0.14142135623730953
+ fprim=  0.028284271247461905
+ uprim=  0.0   !?
+ vnewk=  0.0   !1.e-2   !collisionality parameter
+ type='electron'    !'ion' Thermal ion species 
+/
+
+&dist_fn_species_knobs_1
+ fexpr= 0.48  !0.5   !Temporal implicitness parameter. Recommended value: 0.48
+ bakdif= 0.0 !0.0   !Spatial implicitness parameter. Recommended value: 0.05
+/
+
+&dist_fn_species_knobs_2
+ fexpr= 0.48  !0.5   !Temporal implicitness parameter. Recommended value: 0.48
+ bakdif= 0.0 !0.0   !Spatial implicitness parameter. Recommended value: 0.05
+/
+
+!==============================================================================
+! INITIAL CONDITIONS
+&init_g_knobs
+ refac = 1.0            !Used in rare cases.
+ imfac = 1.0            !Used in rare cases.
+ den0 = 0.0             !Parameters for setting up special initial conditions.
+ den1 = 1.0             !Parameters for setting up special initial conditions.
+ chop_side = .false.   !Rarely needed. Forces asymmetry into initial condition.
+ width0 =  -4.0        !Initial perturbation has Gaussian envelope in theta, 
+		       ! with width width0
+ phiinit=   1.e-12      !Average amplitude of initial perturbation of each 
+		       ! Fourier mode.
+ restart_file = "nc/ent15.nc"  !Base of filenames with restart data.
+ ginit_option= "noise"             ! ???
+ zf_init = 0.0
+/
+
+!==============================================================================
+! DIAGNOSTICS
+&gs2_diagnostics_knobs
+ print_flux_line=.f.                   !Instantaneous fluxes output to screen 
+ write_nl_flux = .true.                   !Phi**2(kx,ky) written to runname.out
+ print_line=.true.                     !Estimated frequencies and output to the 
+! write_verr = T
+ write_g = F
+ write_line=.true.                        !If (write_ascii = T) estimated 
+ write_phi=.true.                      !No longer used.
+ write_hrate = F                       ! ???
+ write_final_epar = .true.             !If (write_ascii = T) E_parallel(theta) 
+ write_avg_moments = .true.            !Ignored unless grid_option='box'. Flux 
+ write_lorentzian = .true.             !Frequency Sweep Data
+ write_omega=.false.                   !If (write_ascii = T) instantaneous 
+ write_omavg=.false.                   !If (write_ascii = T) time-averaged 
+ write_dmix=.false.                    !If (write_ascii = T) write D_ML to 
+ write_eigenfunc=.true.               !If (write_ascii = T) Normalized Phi
+ write_final_fields=.true.             !If (write_ascii = T) Phi(theta) written 
+ nwrite=     10                        !Output diagnostic data every nwrite 
+ navg=       10                         !Any time averages performed over navg 
+ omegatol=  -0.001                    !The convergence has to be better than 
+ omegatinst = 500.0                    !Recommended value: 500.
+ save_for_restart = .false.             !Restart files written to 
+/
+!==============================================================================
+!==============================================================================
+
