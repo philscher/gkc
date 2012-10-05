@@ -126,6 +126,7 @@ class VlasovCilk : public Vlasov {
                            CComplex Xi       [NzLD][NkyLD][NxLD  ][NvLD],
                            CComplex G        [NzLD][NkyLD][NxLD  ][NvLD],
                            CComplex ExB            [NkyLD][NxLB  ][NvLB],
+                           const double Kx[NzLD][NxLD], const double Ky[NzLD][NxLD], const double dB_dz[NzLD][NxLD], // Geometry stuff
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3]);
 

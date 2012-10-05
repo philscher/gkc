@@ -21,6 +21,7 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
    , _kw_12_dx_dx(1./(12.*dx*dx))
    , _kw_12_dv   ( 1./(12.*dv)  )
    , _kw_12_dx   ( 1./(12.*dx)  )
+   , _kw_12_dz   ( 1./(12.*dz)  )
    , _kw_12_dv_dv( 1./(12.*dv*dv))
    , _kw_16_dx4  ( 1./(16.*pow4(dx)))
 

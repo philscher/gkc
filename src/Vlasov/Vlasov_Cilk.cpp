@@ -31,6 +31,7 @@ int VlasovCilk::solve(std::string equation_type, Fields *fields, CComplex *_fs, 
   if(0);
   else if(equation_type == "Vlasov_EM") Vlasov_EM((A6zz) _fs, (A6zz) _fss, (A6zz) f0, (A6zz) f, (A6zz) ft, 
                                                   (A6zz) fields->Field, (A4zz) Xi, (A4zz) G, (A3zz) nonLinearTerms,
+                                                  (A2rr) geo->Kx, (A2rr) geo->Ky, (A2rr) geo->dB_dz,
                                                   X, V, M,  dt, rk_step, rk);
   else   check(-1, DMESG("No Such Equation"));
 
@@ -238,7 +239,8 @@ void VlasovCilk::Vlasov_EM(
                            const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                                  CComplex Xi             [NzLB][NkyLD][NxLB+4][NvLB],
                                  CComplex G              [NzLB][NkyLD][NxLB  ][NvLB],
-                                 CComplex ExB                  [NkyLD][NxLD  ][NvLB],
+                                 CComplex ExB                  [NkyLD][NxLD  ][NvLD],
+                           const double Kx[NzLD][NxLD], const double Ky[NzLD][NxLD], const double dB_dz[NzLD][NxLD], // Geometry stuff
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3])
 { 
@@ -279,10 +281,12 @@ void VlasovCilk::Vlasov_EM(
        
             const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];
 
-            const CComplex dphi_dx = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1]) - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2]))/(12.*dx)  ;  
+            const CComplex dphi_dx = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1]) 
+                                       - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2])) * _kw_12_dx  ;  
 
             const CComplex ky = (CComplex (0. + 1.j)) * fft->ky(y_k);
 
+        const double CoJB = 1.;///geo->get_J(x,z);
      
       simd_for(int v=NvLlD; v<= NvLuD;v++) {
         
@@ -295,8 +299,11 @@ void VlasovCilk::Vlasov_EM(
 
         
         // Velocity derivaties for Lennard-Bernstein Collisional Model
-        const CComplex dg_dv   = (8. *(g[s][m][z][y_k][x][v+1] - g[s][m][z][y_k][x][v-1]) - (g[s][m][z][y_k][x][v+2] - g[s][m][z][y_k][x][v-2]))/(12.*dv);
-        const CComplex ddg_dvv = (16.*(g[s][m][z][y_k][x][v+1] + g[s][m][z][y_k][x][v-1]) - (g[s][m][z][y_k][x][v+2] + g[s][m][z][y_k][x][v-2]) - 30.*g[s][m][z][y_k][x][v])/(12.*dv*dv);
+        const CComplex dg_dv   = (8. *(g[s][m][z][y_k][x][v+1] - g[s][m][z][y_k][x][v-1]) 
+                                    - (g[s][m][z][y_k][x][v+2] - g[s][m][z][y_k][x][v-2])) * _kw_12_dv;
+        const CComplex ddg_dvv = (16.*(g[s][m][z][y_k][x][v+1] + g[s][m][z][y_k][x][v-1]) 
+                                    - (g[s][m][z][y_k][x][v+2] + g[s][m][z][y_k][x][v-2]) 
+                                 - 30.*g[s][m][z][y_k][x][v]) * _kw_12_dv_dv;
         const double v2_rms = 1.;//pow2(alpha)
     
         
@@ -304,29 +311,31 @@ void VlasovCilk::Vlasov_EM(
 
         // We use CD-4 (central difference fourth order for every variable)
 
-        const CComplex dG_dz   = (8.*(G[z+1][y_k][x][v] - G[z-1][y_k][x][v])    -1.*(G[z+2][y_k][x][v] - G[z-2][y_k][x][v]))/(12.*dz);
-        const CComplex dG_dx   = (8.*(G[z][y_k][x+1][v] - G[z][y_k][x-1][v])    -1.*(G[z][y_k][x+2][v] - G[z][y_k][x-2][v]))/(12.*dx);
+        const CComplex dG_dz   = (8.*(G[z+1][y_k][x][v] - G[z-1][y_k][x][v])    
+                                 -1.*(G[z+2][y_k][x][v] - G[z-2][y_k][x][v])) * _kw_12_dz;
+
+        const CComplex dG_dx   = (8.*(G[z][y_k][x+1][v] - G[z][y_k][x-1][v]) 
+                                 -1.*(G[z][y_k][x+2][v] - G[z][y_k][x-2][v])) * _kw_12_dx;
 
         
         // magnetic prefactor defined as  $ \hat{B}_0 / \hat{B}_{0\parallel}^\star = \left[ 1 + \beta_{ref} \sqrt{\frac{\hat{m_\sigma T_{0\sigma}{2}}}}
         // note j0 is calculated and needs to be replaced, or ? no we calculate j1 ne ?!
         const double j0 = 0.;
         const double Bpre  = 1.; //1./(1. + plasma->beta * sqrt(m * T/2.) * j0 / (q * pow2(geo->B(x,y,z))) * V[v]);
-        const double CoJB = 1./geo->get_J(x,z);
 
         
         ///////////////   The time derivative of the Vlasov equation      //////////////////////
         
         const CComplex dg_dt = 
             
-                ExB[y_k][x][v]                                                                 // Non-linear ( array is zero for linear simulations) 
+           // have to set zero     ExB[y_k][x][v]                                                                 // Non-linear ( array is zero for linear simulations) 
           + Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - sub)) * f0_ * Xi_ * ky         // Driving Term
           - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0) *                                   
-            (geo->get_Kx(x,z) * dG_dx - geo->get_Ky(x,z) * ky * G_)                                    // Magnetic curvature term
+            (Kx[z][x] * dG_dx - Ky[z][x] * ky * G_)                                    // Magnetic curvature term
           //- alpha * pow2(V[v]) * plasma->beta * plasma->w_p * G_ * ky                        // Plasma pressure gradient
           -  CoJB *  alpha * V[v]* dG_dz                                                       // Landau damping term
-          + alpha  / 2. * M[m] * geo->get_dB_dz(x,z) * dg_dv                                       // Magnetic mirror term    
-          + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * geo->get_Kx(x,z) * 
+          + alpha  / 2. * M[m] * dB_dz[z][x] * dg_dv                                       // Magnetic mirror term    
+          + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * Kx[z][x] * 
           ((w_n + w_T * (pow2(V[v]) + M[m] * B0)/Temp - sub) * dG_dx + sigma * dphi_dx * f0_); // ??
            + collisionBeta  * (g_  + alpha * V[v] * dg_dv + v2_rms * ddg_dvv);                 // Lennard-Bernstein Collision term
 
@@ -335,7 +344,7 @@ void VlasovCilk::Vlasov_EM(
 
         //  time-integrate the distribution function    
         ft[s][m][z][y_k][x][v] = rk[0] * ft[s][m][z][y_k][x][v] + rk[1] * dg_dt             ;
-        h [s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v]         + (rk[2] * ft[s][m][z][y_k][x][v] + dg_dt) * dt;
+        h [s][m][z][y_k][x][v] =         f1[s][m][z][y_k][x][v] + (rk[2] * ft[s][m][z][y_k][x][v] + dg_dt) * dt;
         
       }}} }}
    }
