@@ -99,8 +99,7 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
        
        NkyGlD = 0; NkyGuD=Nky-1; NkyGlB=0; NkyGuB=Nky-1; 
        NkyLlD = 0; NkyLuD=Nky-1; NkyLlB=0; NkyLuB=Nky-1;
-       NkyLD=Nky; NkyGB=Nky; NkyGD=Nky;
-
+       NkyLD=Nky; NkyGB=Nky; NkyGD=Nky, NkyLB=Nky;
 
     // Set Domain for all processes
 
