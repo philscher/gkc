@@ -35,7 +35,7 @@ class GeometryCHEASE : public Geometry
 
 
 
-  GeometryCHEASE(Setup *setup, FileIO *fileIO) : Geometry(setup, fileIO) 
+  GeometryCHEASE(Setup *setup, Grid *grid, FileIO *fileIO) : Geometry(setup, grid, fileIO) 
   {
 
     chease_file = setup->get("Geometry.MHDFile", "");

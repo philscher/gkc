@@ -17,8 +17,9 @@
 
 
 #include "Global.h"
-#include "Setup.h"
 
+#include "Setup.h"
+#include "Grid.h"
 #include "FileIO.h"
 
 /** 
@@ -49,9 +50,9 @@ public:
 
   double eps_hat, C;
 
-  Geometry(Setup *setup, FileIO *fileIO) {
+  Geometry(Setup *setup, Grid *grid, FileIO *fileIO) {
 
-        ArrayGeom = nct::allocate(nct::Range(NzLlD, NzLD), nct::Range(NxLlD, NxLD));
+        ArrayGeom = nct::allocate(grid->RzLD, grid->RxLD);
         ArrayGeom(&Kx, &Ky, &B, &dB_dx, &dB_dy, &dB_dz, &J);
     
         eps_hat = setup->get("Geometry.eps", 1.);

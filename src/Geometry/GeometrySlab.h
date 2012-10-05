@@ -40,7 +40,7 @@ public:
 
 
 
-   GeometrySlab(Setup *setup, FileIO *fileIO) : Geometry(setup, fileIO) 
+   GeometrySlab(Setup *setup, Grid *grid, FileIO *fileIO) : Geometry(setup, grid, fileIO) 
    { 
   
   

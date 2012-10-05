@@ -50,7 +50,7 @@ class Geometry2D : public Geometry
          shear, ///< Magnetic field shear
          kz;    ///< Constant wavenumber factor
 
-  Geometry2D(Setup *setup, FileIO *fileIO) : Geometry(setup, fileIO)  {
+  Geometry2D(Setup *setup, Grid *grid, FileIO *fileIO) : Geometry(setup, grid, fileIO)  {
  
     // Parse magnetic field 
     theta               = setup->get("Geometry.Theta"   , 0.);

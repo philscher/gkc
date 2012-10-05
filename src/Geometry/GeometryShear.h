@@ -90,7 +90,7 @@ class GeometryShear : public Geometry
 
 
 
-   GeometryShear(Setup *setup, FileIO *fileIO) : Geometry(setup, fileIO)  {
+   GeometryShear(Setup *setup, Grid *grid, FileIO *fileIO) : Geometry(setup, grid, fileIO)  {
      
 
       shear               = setup->get("Geometry.Shear"   , 0.);

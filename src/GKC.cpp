@@ -64,8 +64,9 @@ GKC::GKC(Setup *_setup) : setup(_setup)
     fileIO    = new FileIO(parallel, setup);
     grid      = new Grid(setup, parallel, fileIO);
     
-    if     (geometry_Type == "GeometrySA") geometry  = new GeometrySA(setup, fileIO);
-    else if(geometry_Type == "Geometry2D") geometry  = new Geometry2D(setup, fileIO);
+    if     (geometry_Type == "GeometrySA") geometry  = new GeometrySA(setup, grid, fileIO);
+    else if(geometry_Type == "Geometry2D") geometry  = new Geometry2D(setup, grid, fileIO);
+    else if(geometry_Type == "Slab"      ) geometry  = new Geometry2D(setup, grid, fileIO);
     else check(-1, DMESG("No such Geometry"));
 
     plasma    = new Plasma(setup, fileIO, geometry);

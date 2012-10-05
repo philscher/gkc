@@ -59,7 +59,7 @@ class GeometrySA : public Geometry
 
     double Bhat2;
 
-   GeometrySA(Setup *setup, FileIO *fileIO) : Geometry(setup, fileIO) {
+   GeometrySA(Setup *setup, Grid *grid, FileIO *fileIO) : Geometry(setup, grid, fileIO) {
     
    
       Bhat2 = 1.;
