@@ -62,21 +62,21 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
     // Note : We have domain decomposition in X but not in Y
     fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, &Field0[1][NzLlD][NkyLlD][NxLlD]);
          
-    for(int n = 1; n <= plasma->nfields; n++) {
+    for(int q = 1; q <= plasma->nfields; q++) {
                 
       // Mode power & Phase shifts for X (domain decomposed)
       omp_for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD; x_k++) {
 
-        pSpec[n-1][x_k] = sqrt(__sec_reduce_add(cabs(kXOut[n][NzLlD:NzLD][NkyLlD:NkyLD][x_k]))/fft->Norm_X); 
-        pFreq[n-1][x_k] =      __sec_reduce_add(     kXOut[n][NzLlD:NzLD][NkyLlD:NkyLD][x_k] )/fft->Norm_X;
+        pSpec[q-1][x_k] = sqrt(__sec_reduce_add(cabs(kXOut[q][NzLlD:NzLD][NkyLlD:NkyLD][x_k]))/fft->Norm_X); 
+        pFreq[q-1][x_k] =      __sec_reduce_add(     kXOut[q][NzLlD:NzLD][NkyLlD:NkyLD][x_k] )/fft->Norm_X;
       }
             
       
       // Mode power & Phase shifts for Y (not decomposed)
       omp_for(int y_k = NkyLlD; y_k <=  NkyLuD ; y_k++) { 
         
-        pSpecY [n-1][y_k] = sqrt(__sec_reduce_add(cabs(Field0[n][NzLlD:NzLD][y_k][NxLlD:NxLD]))); 
-        pPhaseY[n-1][y_k] = carg(__sec_reduce_add(     Field0[n][NzLlD:NzLD][y_k][NxLlD:NxLD]));
+        pSpecY [q-1][y_k] = sqrt(__sec_reduce_add(cabs(Field0[q][NzLlD:NzLD][y_k][NxLlD:NxLD]))); 
+        pPhaseY[q-1][y_k] = carg(__sec_reduce_add(     Field0[q][NzLlD:NzLD][y_k][NxLlD:NxLD]));
       }
       
     }
@@ -88,11 +88,11 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
     parallel->collect(&pFreq[0][0], Op::SUM, DIR_XYZ, Nq * Nx);        
          
     // map back from fftw [k0, k1, k2, ..., k_Ny, -k_(N/y-2), ... -k_1]
-    for(int x_k = 1; x_k < Nx/2; x_k++) pFreq [:][x_k] = pFreq[:][Nx-x_k];
-    for(int x_k = 1; x_k < Nx/2; x_k++) pSpec [:][x_k] = pSpec[:][Nx-x_k];
+    for(int x_k = 1; x_k < Nx/2; x_k++) pFreq [:][x_k] += pFreq[:][Nx-x_k];
+    for(int x_k = 1; x_k < Nx/2; x_k++) pSpec [:][x_k] += pSpec[:][Nx-x_k];
 
-    pPhaseX[:][0:Nx/2] = carg(pFreq[:][0:Nx/2]);
-    pSpecX [:][0:Nx/2] =      pSpec[:][0:Nx/2];
+    pPhaseX[:][0:Nx/2+1] = carg(pFreq[:][0:Nx/2+1]);
+    pSpecX [:][0:Nx/2+1] =      pSpec[:][0:Nx/2+1];
          
   } // if DIR_XYZ
 
