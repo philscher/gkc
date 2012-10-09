@@ -63,10 +63,10 @@ Complex Eigenvalue_SLEPc::getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields)
     
     EPSSetWhichEigenpairs(EigvSolver, EPS_LARGEST_MAGNITUDE);
 
+    parallel->print("Using SLEPc to find maximum abolute eigenvalue ...");
     // Solve Eigenvalues
     PETScMatrixVector pMV(vlasov, fields);
-    
-    
+   
     //control->signalForceExit(true);
     EPSSolve(EigvSolver);
     //control->signalForceExit(false);
@@ -85,7 +85,7 @@ Complex Eigenvalue_SLEPc::getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields)
 
     VecDestroy(&Vec_F1);
 
-    std::stringstream msg; msg << " Eigenvalue : " << eigv << std::endl;
+    std::stringstream msg; msg << "Maximum Absolute Eigenvalue : " << eigv << std::endl;
     parallel->print(msg.str());
 
     return eigv;

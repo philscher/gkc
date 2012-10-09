@@ -71,7 +71,7 @@ Vlasov::~Vlasov()
 };
 
 
-int Vlasov::solve(Fields *fields, CComplex  *_fs, CComplex  *_fss, double dt, int rk_step, const double rk[3], bool useNonBlockingBoundary)
+void Vlasov::solve(Fields *fields, CComplex  *_fs, CComplex  *_fss, double dt, int rk_step, const double rk[3], bool useNonBlockingBoundary)
 {
 
    static CComplex *f_boundary       = nullptr;
@@ -91,7 +91,7 @@ int Vlasov::solve(Fields *fields, CComplex  *_fs, CComplex  *_fss, double dt, in
 
    f_boundary = _fss; 
   
-   return 1;
+   return;
 }
 
 void Vlasov::setBoundary(CComplex *f) 

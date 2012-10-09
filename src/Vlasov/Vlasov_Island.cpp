@@ -54,7 +54,7 @@ VlasovIsland::VlasovIsland(Grid *_grid, Parallel *_parallel, Setup *_setup, File
 }
 
 
-int VlasovIsland::solve(std::string equation_type, Fields *fields, CComplex *f_in, CComplex *f_out, double dt, int rk_step, const double rk[3]) 
+void VlasovIsland::solve(std::string equation_type, Fields *fields, CComplex *f_in, CComplex *f_out, double dt, int rk_step, const double rk[3]) 
 {
 
   // do I need both, we can stick to e-m ? Speed penality ?
@@ -70,7 +70,7 @@ int VlasovIsland::solve(std::string equation_type, Fields *fields, CComplex *f_i
 
 
 
-  return GKC_SUCCESS;
+  return;
 
 }
 

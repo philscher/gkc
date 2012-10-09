@@ -174,7 +174,7 @@ public:
    *   @brief parser configuration files
    *
    **/ 
-   int parseOption(std::string line, bool fromFile = true);
+   void parseOption(std::string line, bool fromFile = true);
 
    /**
    *  @brief checks if all options were red.
@@ -185,7 +185,7 @@ public:
    *  (e.g. which may happen due to a spelling error)
    *
    **/ 
-   int check_config();
+   void check_config();
 
    /** 
    *    @brief Access Elements from Configuration file

@@ -168,7 +168,7 @@ int GKC::mainLoop()
 
    parallel->print("Simulation finished normally ... ");
 
-   return GKC_SUCCESS;
+   return 0;
 }
 
 

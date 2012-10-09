@@ -26,7 +26,7 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    epsilon_0          = setup->get("Init.Epsilon0", 1.e-14); 
    sigma              = setup->get("Init.Sigma"   , 8.    ); 
 
-   initMaxwellian(setup, (A6zz) vlasov->f0, (A6zz) vlasov->f, V, M, grid);
+   initBackground(setup, (A6zz) vlasov->f0, (A6zz) vlasov->f, V, M, grid);
   
    // check for predefined perturbations
    PerturbationMethod = setup->get("Init.Perturbation", "");
@@ -156,7 +156,7 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
 
 
 
-void Init::initMaxwellian(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+void Init::initBackground(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                         CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                           const double V[NvGB], const double M[NmGB], Grid *grid)
 {
@@ -207,7 +207,7 @@ void Init::initMaxwellian(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxL
 
 
 
-int Init::PerturbationHermitePolynomial(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+void Init::PerturbationHermitePolynomial(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                               CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB])
 {
 
@@ -225,7 +225,7 @@ int Init::PerturbationHermitePolynomial(const CComplex f0[NsLD][NmLD][NzLB][NkyL
       f[s][m][z][y_k][x][v] += epsilon_0 * phi_x * f0[s][m][z][y_k][x][v];
    }}}}}}
   
-   return GKC_SUCCESS;
+   return;
 }
 
 

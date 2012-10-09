@@ -96,7 +96,7 @@ public:
 
   private:
 
-   int create(Setup *setup);
+   void create(Setup *setup);
 };
 
 #endif // __FILEIO_H_

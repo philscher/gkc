@@ -123,7 +123,7 @@ class Vlasov : public IfaceGKC {
    *
    *  set fs to const f_in 
    **/
-   virtual int solve(std::string equation_type, Fields *fields, CComplex *fs, CComplex *fss, double dt, int rk_step, const double rk[3]) = 0;
+   virtual void solve(std::string equation_type, Fields *fields, CComplex *fs, CComplex *fss, double dt, int rk_step, const double rk[3]) = 0;
  public:
   
   /**
@@ -182,7 +182,7 @@ class Vlasov : public IfaceGKC {
    *  Handles boundary conditions
    *
    **/
-   int solve(Fields *fields, CComplex *fs, CComplex *fss, double dt, int rk_step, const double rk[3],  bool useNonBlockingBoundary=true);
+   void solve(Fields *fields, CComplex *fs, CComplex *fss, double dt, int rk_step, const double rk[3],  bool useNonBlockingBoundary=true);
 
    /**
    *    Please Document Me !
@@ -207,7 +207,7 @@ class Vlasov : public IfaceGKC {
    *   ToDo : Skeleton, update new Naxwellian background
    *   this is a dummy functions only
    */ 
-   int updateMaxwellian() { return GKC_SUCCESS;};
+   //int updateMaxwellian() { return GKC_SUCCESS;};
 
    /**
    *   Calculates the timestep according to a defined CFL number. For the Vlasov equation

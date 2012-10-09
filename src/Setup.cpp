@@ -178,13 +178,13 @@ argv=_argv;
 
 
 
-int Setup::parseOption(std::string line, bool fromFile) 
+void Setup::parseOption(std::string line, bool fromFile) 
 {
 
   // Skip comments  
-  if((line[0] == '#') || (line[0] == '!')) return GKC_SUCCESS;
+  if((line[0] == '#') || (line[0] == '!')) return;
   // Skip empty file
-  if(line.empty() == true) return GKC_SUCCESS;
+  if(line.empty() == true) return;
   
   int posEqual=line.find('=');
   
@@ -204,7 +204,7 @@ int Setup::parseOption(std::string line, bool fromFile)
   if(fromFile) config_check.push_back(key) ;
   config[key] = value;
   
-  return GKC_SUCCESS;
+  return;
 }
 
 
@@ -219,6 +219,7 @@ FunctionParser Setup::getFParser()
    parser.AddConstant("Lz", Lz); parser.AddConstant("Nz" , (double) Nz);
    parser.AddConstant("Lv", Lv); parser.AddConstant("Nv" , (double) Nv);
    parser.AddConstant("Lm", Lm); parser.AddConstant("Nm" , (double) Nm);
+   
    parser.AddConstant("Ns", (double) Ns);
     
    //  BUG : Crashes if parser_constants is empty. Why ?
@@ -274,7 +275,7 @@ int Setup::getSecondsFromTimeString(std::string time_string)
         return seconds;
 };
    
-int Setup::check_config() 
+void Setup::check_config() 
 {
    
    if(config_check.size() != 0) {
@@ -288,7 +289,7 @@ int Setup::check_config()
     
    }
   
-   return GKC_SUCCESS;
+   return;
 
 };
    
@@ -304,7 +305,9 @@ void Setup::printOn(std::ostream &output) const
 
 template<class T> T Setup::get(std::string key, const T default_Value)
 {
-        if( config.count(key) == 1) {
+   // In case type is a double, we replaced common math functions with
+   // value
+   if( config.count(key) == 1) {
             std::string s = config[key];
             std::istringstream stream (s);
             T t;

@@ -67,7 +67,7 @@ class VlasovIsland : public VlasovAux {
    *    Please Document Me !
    *
    **/
-   int solve(std::string equation_tyoe, Fields *fields, CComplex  *fs, CComplex *fss, double dt, int rk_step, const double rk[3]);
+   void solve(std::string equation_tyoe, Fields *fields, CComplex  *fs, CComplex *fss, double dt, int rk_step, const double rk[3]);
  
   protected :
  

@@ -256,9 +256,6 @@ class FieldsFFT : public Fields {
                  const int s, const bool gyroField=false) ; 
   
   /**
-  *   Constructor
-  
-  /**
   *   @brief performs gyro-averaging in Fourier space
   *  
   *  \f{align}{
@@ -279,12 +276,11 @@ class FieldsFFT : public Fields {
   *  @param gyroField forward- or backward transformation
   *
   */
-  //Array4C gyroFull (Array4C fields, int m, int s, int nField, bool gyroField=false);
   void gyroFull(CComplex In [Nq][NzLD][NkyLD][NxLD], 
                 CComplex Out[Nq][NzLD][NkyLD][NxLD],
                 CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
                 CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
-                const int m, const int s, const bool gyroField=false);  
+                const int m, const int s);  
   
   /**
   *   Constructor

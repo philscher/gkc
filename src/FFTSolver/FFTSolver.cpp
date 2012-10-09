@@ -78,7 +78,8 @@ void FFTSolver::parseSuppressMode(const std::string &value, std::vector<int> &su
 
     std::string sub_str = Setup::eraseCharacter(value, " ") ;
     std::vector<std::string> result = Setup::split(sub_str, ",");
-                                              
+                     
+    // needs cleanup !
     vector<std::string>::const_iterator it;
                                                for(it = result.begin(); it != result.end(); it++) {
                                                    if((*it).find("-") == string::npos) {
@@ -92,28 +93,27 @@ void FFTSolver::parseSuppressMode(const std::string &value, std::vector<int> &su
               
               }
 
-
-/* 
+/*
 // BUG : Input SuppressModeX = 0 does not work (Crashes)
-void FFTSolver::suppressModes(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL], const int field) 
+void FFTSolver::suppressModes(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL]) 
 {
 
   // suppress x,y, z - Modes
-  vector<int>::const_iterator mode;
+  //vector<int>::const_iterator mode;
 
-  for(mode = suppressModeX.begin(); (!suppressModeX.empty()) && (mode <= suppressModeX.end()) ; mode++) { 
-   if((*mode < K1xLlD) || (*mode > K1xLuD)) continue;
-    A(*mode, RkyLD, RzLD, RFields) = 1.e-128;
+  for(auto mode_x = suppressModeX.begin(); (!suppressModeX.empty()) && (mode_x <= suppressModeX.end()) ; mode_x++) { 
+   if((*mode_x < K1xLlD) || (*mode_x > K1xLuD)) continue;
+    int x_k = *mode_x;
+    kXOut[:][:][:][x_k] = 0.
   }
 //  for(mode = suppressModeY.begin(); mode <= suppressModeY.end(); mode++) {
   for(mode = suppressModeY.begin(); (!suppressModeY.empty()) && (mode <= suppressModeY.end()) ; mode++) { 
        if((*mode < NkyLlD) || (*mode > NkyLuD)) continue;
-        A(Rk1xL, *mode, RzLD, RFields) = 1.e-128;
+        kXOut[:][:][y_k][:] = 0.
   }
 
 
   return;
 }
- * */
-
+*/
 

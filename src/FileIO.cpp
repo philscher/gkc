@@ -75,7 +75,7 @@ FileIO::FileIO(Parallel *_parallel, Setup *setup)  :  parallel(_parallel)
 }
 
 
-int FileIO::create(Setup *setup) 
+void FileIO::create(Setup *setup) 
 {
      
         hid_t file_plist = H5Pcreate(H5P_FILE_ACCESS);
@@ -144,7 +144,6 @@ int FileIO::create(Setup *setup)
          
           H5Gclose(constantsGroup);
 
-         return GKC_SUCCESS;
 }
 
 
@@ -198,7 +197,6 @@ int FileIO::create(Setup *setup)
              phiCount=1; psfCount=1;
         }
             //file = check(H5Fopen( setup->outputFileName.c_str(), H5F_ACC_RDWR, H5P_DEFAULT), DMESG("H5Fopen"));
-           return GKC_SUCCESS;
     }
 
      

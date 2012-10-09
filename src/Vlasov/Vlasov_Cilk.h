@@ -117,7 +117,7 @@ class VlasovCilk : public Vlasov {
    *
    **/
    void Vlasov_EM(
-                           CComplex fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            CComplex fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
@@ -159,7 +159,7 @@ class VlasovCilk : public Vlasov {
    *    Please Document Me !
    *
    **/
-   virtual int solve(std::string equation_tyoe, Fields *fields, CComplex *fs, CComplex *fss, double dt, int rk_step, const double rk[3]);
+   virtual void solve(std::string equation_tyoe, Fields *fields, CComplex *fs, CComplex *fss, double dt, int rk_step, const double rk[3]);
    
  
   protected :

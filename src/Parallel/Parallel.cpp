@@ -316,7 +316,7 @@ void Parallel::getAutoDecomposition(int numCPU)
 };
   
 
-bool Parallel::checkValidDecomposition(Setup *setup) 
+void Parallel::checkValidDecomposition(Setup *setup) 
 {
 
    // Check basic decomposition sizes
@@ -335,7 +335,7 @@ bool Parallel::checkValidDecomposition(Setup *setup)
    if(((pNs %   decomposition[DIR_S]) != 0    ) && (myRank == 0)) check(-1, DMESG("Decomposition in s have to be modulo of the total number"));
 
 
-    return GKC_SUCCESS;
+    return;
 };
 
 

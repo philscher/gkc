@@ -26,7 +26,7 @@ VlasovCilk::VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *
 }
 
 
-int VlasovCilk::solve(std::string equation_type, Fields *fields, CComplex *_fs, CComplex *_fss, double dt, int rk_step, const double rk[3]) 
+void VlasovCilk::solve(std::string equation_type, Fields *fields, CComplex *_fs, CComplex *_fss, double dt, int rk_step, const double rk[3]) 
 {
   if(0);
   else if(equation_type == "Vlasov_EM") Vlasov_EM((A6zz) _fs, (A6zz) _fss, (A6zz) f0, (A6zz) f, (A6zz) ft, 
@@ -35,7 +35,7 @@ int VlasovCilk::solve(std::string equation_type, Fields *fields, CComplex *_fs, 
                                                   X, V, M,  dt, rk_step, rk);
   else   check(-1, DMESG("No Such Equation"));
 
-  return GKC_SUCCESS;
+  return;
 }
 
 
@@ -231,25 +231,24 @@ void VlasovCilk::setupXiAndG(
 
 
 void VlasovCilk::Vlasov_EM(
-                                 CComplex g  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB], // Current step phase-space function
-                                 CComplex h  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Phase-space function for next step
-                           const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                                 CComplex ft [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                                 CComplex Xi             [NzLB][NkyLD][NxLB+4][NvLB],
-                                 CComplex G              [NzLB][NkyLD][NxLB  ][NvLB],
-                                 CComplex ExB                  [NkyLD][NxLD  ][NvLD],
-                           const double Kx[NzLD][NxLD], const double Ky[NzLD][NxLD], const double dB_dz[NzLD][NxLD], // Geometry stuff
-                           const double X[NxGB], const double V[NvGB], const double M[NmGB],
-                           const double dt, const int rk_step, const double rk[3])
+    const CComplex g  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Current step phase-space function
+    CComplex h  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Phase-space function for next step
+    const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Background Maxwellian
+    const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // previous RK-Step
+    CComplex ft [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // previous RK-Step
+    const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+    CComplex Xi             [NzLB][NkyLD][NxLB+4][NvLB],
+    CComplex G              [NzLB][NkyLD][NxLB  ][NvLB],
+    CComplex ExB                  [NkyLD][NxLD  ][NvLD],
+    const double Kx[NzLD][NxLD], const double Ky[NzLD][NxLD], const double dB_dz[NzLD][NxLD], // Geometry stuff
+    const double X[NxGB], const double V[NvGB], const double M[NmGB],
+    const double dt, const int rk_step, const double rk[3])
 { 
 
    
    const double B0 = plasma->B0;
 
-   const bool nonLinear = false;
-
+   
    for(int s = NsLlD; s <= NsLuD; s++) {
         
       // small abbrevations
@@ -298,7 +297,7 @@ void VlasovCilk::Vlasov_EM(
         const CComplex Xi_  = Xi[z][y_k][x][v];
 
         
-        // Velocity derivaties for Lennard-Bernstein Collisional Model
+        // Velocity derivaties for Lennard-Bernstein Collisional Model (shouln't I use G ?)
         const CComplex dg_dv   = (8. *(g[s][m][z][y_k][x][v+1] - g[s][m][z][y_k][x][v-1]) 
                                     - (g[s][m][z][y_k][x][v+2] - g[s][m][z][y_k][x][v-2])) * _kw_12_dv;
         const CComplex ddg_dvv = (16.*(g[s][m][z][y_k][x][v+1] + g[s][m][z][y_k][x][v-1]) 

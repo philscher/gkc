@@ -44,7 +44,7 @@ class Init   : public IfaceGKC
    /**
    *   @brief inits the Maxwellian 
    **/
-   void initMaxwellian(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+   void initBackground(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                      CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                     const double V[NvGB], const double M[NmGB], Grid *grid);
 
@@ -108,7 +108,7 @@ class Init   : public IfaceGKC
    /**
    *   @brief document me please
    **/
-   int PerturbationHermitePolynomial(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+   void PerturbationHermitePolynomial(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                            CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB]);
 
   protected:

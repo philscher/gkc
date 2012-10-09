@@ -61,7 +61,7 @@ class FileAttr
 
 
 
-    template<typename T> int write(T data, int increase=+1) 
+    template<typename T> void write(T data, int increase=+1) 
     {
           dim[n_dim-1] += increase;
           offset[n_dim-1]+= increase;
@@ -74,7 +74,6 @@ class FileAttr
           check(  H5Dwrite(dataset_hdf, typeId_hdf, memory_space_hdf, dspace, propery_hdf, data)  , DMESG(name + " : H5DWrite Dataset"));
           H5Sclose(dspace);
         
-          return GKC_SUCCESS;
     };
 
 

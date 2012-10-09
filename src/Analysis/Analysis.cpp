@@ -323,7 +323,7 @@ void Analysis::getParticleHeatFlux(const int m, const int s,
 };
 
         
-int Analysis::updateSpectrum(unsigned int dir) {
+void Analysis::updateSpectrum(unsigned int dir) {
        /* 
         firstIndex  i_idx;
         secondIndex j_idx;
@@ -346,7 +346,7 @@ int Analysis::updateSpectrum(unsigned int dir) {
 
       // set to zero
         * */ 
-        return GKC_SUCCESS;
+        return;
    };
 
 
@@ -565,7 +565,6 @@ void Analysis::writeData(Timing timing, double dt)
 /* 
   int FileIO::writeSpectrum(Array3C phi_k, Analysis *analysis, Timing timing)
   {
-      return GKC_SUCCESS;
     if((parallel->isFFTGroup) && (setup->spectrumAvrg[SPEC_XZ][SPEC_START] <= timing.step) && (timing.step <= setup->spectrumAvrg[SPEC_XZ][SPEC_END])) 
       analysis->updateSpectrum(SPEC_XZ);
     
@@ -581,7 +580,6 @@ void Analysis::writeData(Timing timing, double dt)
 //      if(timeStep == setup->spectrumAvrg[SPEC_XZ][SPEC_END]) FA_spec_xz->write(analysis->getSpectrum(SPEC_XZ).data());
 //      if(timeStep == setup->spectrumAvrg[SPEC_XY][SPEC_END]) FA_spec_xy->write(analysis->getSpectrum(SPEC_XY).data());
 
-      return GKC_SUCCESS;
         
 
   }

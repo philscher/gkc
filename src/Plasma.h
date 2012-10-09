@@ -54,10 +54,10 @@ class Plasma : public IfaceGKC {
      double w_T;        ///< Temperature gradient
      double T0;         ///< Temperature normalization
      double n0;         ///< Density normalization
-     bool   doGyro;     ///< 
+     bool   doGyro;     ///< Set if gyro-averaging is performed
    
      double scale_v;    ///< Velocity scale / Thermal velocity
-     double scale_n;    
+     double scale_n;    ///< Density scale 
      double sigma;      ///< sigma 
      double alpha;      ///< alpha
    
@@ -65,9 +65,11 @@ class Plasma : public IfaceGKC {
      char name[64];     ///< name of species
      char n_name[64];   ///< dont know
      char T_name[64];   ///< dont know
-   
+  
+     /////////// Below non-POD types (and not saved [yet] in HDF-5 file) ////////////
      std::string gyroModel;
-   
+     std::string f0_str;
+      
      // stupid fix, but we have to otherwise all stuff is private
    
    void update(Geometry *geo, double cs) { 

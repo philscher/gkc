@@ -204,7 +204,7 @@ class Analysis : public IfaceGKC {
                             const double V[NvGB], const double M[NmGB]);
 
 
-   int updateSpectrum      (unsigned int dir);
+   void updateSpectrum      (unsigned int dir);
    
    /**
    *    Get the field energy

@@ -134,13 +134,13 @@ struct NeighbourDir {
 
    void updateNeighboursBarrier();
    
-   template<typename T> int send(T *A, int dir, int num) {
+   template<typename T> void send(T *A, int dir, int num) {
 #ifdef GKC_PARALLEL_MPI
-     if(dir <= DIR_S) if(decomposition[dir] == 1) return GKC_SUCCESS;
+     if(dir <= DIR_S) if(decomposition[dir] == 1) return;
      // rank differ between communicators, so we should take care of rankFFTMaster
      check(MPI_Bcast(A,num, getMPIDataType(typeid(T)), dirMaster[dir], Comm[dir]), DMESG("MPI_Bcast")); 
 #endif
-     return GKC_SUCCESS; 
+     return;
    };
 
 
@@ -151,7 +151,7 @@ struct NeighbourDir {
    *   @todo rename to bcast
    *
    **/
-   template<class T> int send(T &x, bool isRoot, int dir=DIR_ALL) 
+   template<class T> void send(T &x, bool isRoot, int dir=DIR_ALL) 
    {
 
      // Notify all process who is root (is there a simpler way ?), take care it fails 
@@ -160,11 +160,11 @@ struct NeighbourDir {
      master_rank = 0;
 
 #ifdef GKC_PARALLEL_MPI
-     if(dir <= DIR_S) if(decomposition[dir] == 1) return GKC_SUCCESS;
+     if(dir <= DIR_S) if(decomposition[dir] == 1) return;
      // rank differ between communicators, so we should take care of rankFFTMaster
      check(MPI_Bcast(&x, 1, getMPIDataType(typeid(T)), master_rank, Comm[dir]), DMESG("MPI_Bcast")); 
 #endif
-     return GKC_SUCCESS; 
+     return; 
    }
    
 
@@ -224,7 +224,7 @@ struct NeighbourDir {
    /**
    *    @brief simple checks determine if decomposition is logical correct
    **/
-   bool    checkValidDecomposition(Setup *setup);
+   void   checkValidDecomposition(Setup *setup);
 
    /**
    *   @brief determines recommendend decomposition 

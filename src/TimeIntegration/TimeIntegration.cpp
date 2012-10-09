@@ -246,7 +246,6 @@ void TimeIntegration::printOn(std::ostream &output) const
           check(H5TBmake_table("cflTable", file, "cfl", (hsize_t) 7, (hsize_t) 0, sizeof(CFLTable), (const char**) cfl_names,
                                cfl_offset, cfl_type, 32, NULL, 0, cfl_table ), DMESG("H5Tmake_table : cfl"));
   int FileIO::writeCFLValues(Analysis *analysis, Fields *fields, Timing timing) {
-      return GKC_SUCCESS;
         
     cfl_table->timeStep  = timing.step;
     cfl_table->time  = timing.time;
@@ -258,7 +257,6 @@ void TimeIntegration::printOn(std::ostream &output) const
     
     check(H5TBappend_records (file, "cfl", 1, sizeof(CFLTable), cfl_offset, cfl_sizes, cfl_table), DMESG("Append Table")); 
 
-      return GKC_SUCCESS;
   }
    //
   //  @brief Table to store the CFL values and various contributions

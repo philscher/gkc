@@ -26,7 +26,7 @@ VlasovAux::VlasovAux(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *_f
 }
 
 
-int VlasovAux::solve(std::string equation_type, Fields *fields, CComplex *f_in, CComplex *f_out, double dt, int rk_step, const double rk[3]) 
+void VlasovAux::solve(std::string equation_type, Fields *fields, CComplex *f_in, CComplex *f_out, double dt, int rk_step, const double rk[3]) 
 {
 
   // do I need both, we can stick to e-m ? Speed penality ?
@@ -51,7 +51,7 @@ int VlasovAux::solve(std::string equation_type, Fields *fields, CComplex *f_in, 
   
   else   check(-1, DMESG("No Such Equation"));
 
-  return GKC_SUCCESS;
+  return;
 }
 
 

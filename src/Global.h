@@ -15,14 +15,14 @@
 #define __GLOBAL_H
 
 
-#define GKC_SUCCESS  1
+
 
 #include <cilk/cilk.h>
 
 
 #include<string>
-#include <complex>
-#include <iostream>
+#include<complex>
+#include<iostream>
 typedef std::complex<double> Complex;  
 typedef double               Real   ;
 
@@ -45,14 +45,14 @@ extern "C" CComplex cexp (CComplex z);
 
 using namespace std;
 
-template<class T> inline T pow2(T x) { return x*x; };
-template<class T> inline T pow3(T x) { return x*x*x; };
-template<class T> inline T pow4(T x) { const T x2 =  (x*x); return x2*x2; };
-template<class T> inline T pow5(T x) { const T x2 = x * x; return x2*x2*x; };
-template<class T> inline T pow6(T x) { const T x2 = x * x; return x2*x2*x2; };
-template<class T> inline T pow8(T x) { const T x2 = x * x; x2 *= x2; return x2*x2; };
+constexpr template<class T> inline T pow2(T x) { return x*x; };
+//constexpr template<class T> inline T pow3(T x) { return x*x*x; };
+//constexpr template<class T> inline T pow4(T x) { const T x2 =  (x*x); return x2*x2; };
+//template<class T> inline T pow5(T x) { const T x2 = x * x; return x2*x2*x; };
+//template<class T> inline T pow6(T x) { const T x2 = x * x; return x2*x2*x2; };
+//template<class T> inline T pow8(T x) { const T x2 = x * x; x2 *= x2; return x2*x2; };
 //__declspec(vector) inline CComplex square(CComplex x) { return x*x; };
-inline CComplex square(CComplex x) { return x*x; };
+//inline CComplex square(CComplex x) { return x*x; };
 
 
 
@@ -138,6 +138,7 @@ inline int check( int status, std::string file, int line, std::string error_text
 // OR CONFIG !!
 
 // Gx[LlD], Gx[LuD], Gx[LuB], Gx[LuD] // should improve speed due to caching
+// Remove to a minimum
 
 extern int NkyLlD, NkyLuD;
 
