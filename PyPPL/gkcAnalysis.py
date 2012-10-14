@@ -502,7 +502,7 @@ def plotTurbulenceTime(fileh5, dir='Y', pos=(-2,-1), doFit='False', posT=(1,-1))
     """
     D = gkcData.getDomain(fileh5)
     data = fileh5.root.Analysis.PowerSpectrum.Y[1:,:]
-    T = gkcData.getTime(fileh5.root.Analysis.PowerSpectrum.Timing)[:,1]
+    T = gkcData.getTime(fileh5.root.Analysis.PowerSpectrum.Time)[:,1]
     timeEvolution = []
     for step in range(len(data[0,:])):
        timeEvolution.append(data[:,step]/sum(data[:,step]))
@@ -626,7 +626,7 @@ def plotXPropTempDensity(fileh5, time=0, Z=4, Y=6):
   leg.draw_frame(0)
 
 
-def plotModeStructure(fileh5, mode, part = "r",  **kwargs):
+def plotModeStructure(fileh5, mode, part = "b", phaseCorrect=True, **kwargs):
     """
         Plots time evolution of mode power.
 
@@ -656,9 +656,13 @@ def plotModeStructure(fileh5, mode, part = "r",  **kwargs):
     Z        = kwargs.pop('Z', 0)  
     frame    = kwargs.pop('frame', -1)  
     label    = kwargs.pop('label', "")  
-    norm     = kwargs.pop('norm', 'sum2')  
+    norm     = kwargs.pop('norm', 'max')  
     m        = kwargs.pop('m', 0)  
+    phase    = kwargs.pop('phase', 0.)  
+    color    = kwargs.pop('color', '')  
 
+
+    phase = np.exp(1.j * phase)
     
     if   field == 'phi' : 
       data_X = fileh5.root.Visualization.Phi[Z,mode,:,frame]
@@ -676,17 +680,33 @@ def plotModeStructure(fileh5, mode, part = "r",  **kwargs):
     print "Mode Structure at T = ", gkcData.getTime(fileh5.root.Visualization.Time)[frame,:]
 
     # Normalization
-    def Normalize(data):
+    def Normalize_data(data):
+      print norm
       if    norm == 'sum2' : return np.sum(abs(data))
       elif  norm == 'max'  : return abs(data).max()
       else         : raise TypeError("No such normalization")
 
-    if   part == "a" : data_X = abs(data_X)     / Normalize(data_X)
-    elif part == "r" or part == 'b': data_X = np.real(data_X) / Normalize(np.real(data_X))
-    elif part == "i" or part == 'b' : data_X = np.imag(data_X) / Normalize(np.imag(data_X))
-    else : raise TypeError("Wrong argument for part : " + str(part))
+    if(phaseCorrect == True): 
+            # Calculate phase 
+            phase_shift = np.arctan2(np.sum(np.imag(np.sum(data_X))), np.real(np.sum(data_X)))
+            print "phaseCorrect = True : Correcting for phase ", phase_shift
+            data_X = data_X * np.exp(- 1.j * phase_shift)
+   
+    # Normalization is to real part
+    if part == "a" : 
+                     if color=='' : color='g'
+                     data_X = abs(data_X)     / Normalize_data(data_X)
+                     pylab.plot(D['X'], data_X, color=color, label=label)
+    if part in [ 'r' , 'b' ]:
+                     if color=='' : color='r'
+                     data_X = np.real(data_X * phase) / Normalize_data(np.real(data_X))
+                     pylab.plot(D['X'], data_X, color=color, label=label)
+    if part in [ 'i', 'b' ] : 
+                     if color=='' : color=gkcStyle.color_indigo
+                     data_X = np.imag(data_X * phase) / Normalize_data(np.real(data_X)) 
+                     pylab.plot(D['X'], data_X, color=color, label=label)
+    #else : raise TypeError("Wrong argument for part : " + str(part))
 
-    pylab.plot(D['X'], data_X, color=gkcStyle.markers_C[m], label=label)
 
     if    field == "phi" : pylab.ylabel("Mode Power $|\\phi|^2$")
     elif  field == "A"   : pylab.ylabel("Mode Power $|A_\\parallel|^2$")

@@ -87,7 +87,18 @@ def Gamma1(b) : return    mp.besseli(1,b)*mp.exp(-b)
 #def Gamma1(b) : return    #mp.besseli(1,b)*mp.exp(-b)
 
 
+def getZero(Func, init=1.+1.j, solver='muller'):
+  import mpmath as mp
+  w0 = complex(float('nan'), float('nan'))
+  try:
+     w0 = mp.findroot(lambda w : Func(complex(w)), (init, init+0.1, init+0.1j), solver=solver, maxsteps=600, ftol=1.e-3)
+  except:
+   try:
+     w0 = mp.findroot(lambda w : Func(complex(w)), init, solver='halley', maxsteps=600, ftol=1.e-3)
+   except:   
+     print "Could not find zero"
 
+  return complex(w0)
 # ***************** Other
 """
 # Number density, charge, mass
