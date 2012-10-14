@@ -147,7 +147,7 @@ protected:
 
     virtual void printOn(std::ostream &output) const;
 
-    void initDataOutput(FileIO *fileIO) ;
+    void initData(FileIO *fileIO) ;
     virtual void writeData(Timing *timing) {};
     virtual void closeData() {};
 };

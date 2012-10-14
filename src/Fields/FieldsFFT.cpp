@@ -82,6 +82,9 @@ void FieldsFFT::solvePoissonEquation(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::
           const CComplex rhs  = (kXOut[Q::rho][z][y_k][x_k])/fft->Norm_X; 
           
           kXIn[Field::phi][z][y_k][x_k] = rhs/lhs;
+         
+          // where to remove ? Here or @ gyroFull ? ... I guess better here ... !
+          if(( (y_k == Nky-1) || (x_k == Nx/2)) && screenNyquist) kXIn[Field::phi][z][y_k][x_k]  = 0.;
     
     } } } // z, y_k, x_k
         

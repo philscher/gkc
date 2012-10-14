@@ -50,7 +50,7 @@ grid(_grid), parallel(_parallel), geo(_geo), solveEq(0)
    //  brackets should be 1/2 but due to numerical errors, we should calculate it ourselves, see Dannert[2] 
    Yeb = (1./sqrt(M_PI) * __sec_reduce_add(pow2(V[NvLlD:NvLD]) * exp(-pow2(V[NvLlD:NvLD]))) * dv) * geo->eps_hat * plasma->beta; 
 
-   initDataOutput(setup, fileIO);
+   initData(setup, fileIO);
 } 
 
 Fields::~Fields() 
@@ -226,14 +226,14 @@ void Fields::updateBoundary(
         const CComplex a = ((CComplex) 0. + 1.j) *  (2.*M_PI * (2.* M_PI/Ly) * y_k);
       
         // NzLlD == NzGlD -> Connect only physcial boundaries after mode made one loop 
-        SendZl[:][:][:][:][y_k][x-3] = Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD  :2][y_k][x] * cexp( ((NzLuD == NzGuD) ? a : 0.) * geo->nu(x));
-        SendZu[:][:][:][:][y_k][x-3] = Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLuD-1:2][y_k][x] * cexp(-((NzLlD == NzGlD) ? a : 0.) * geo->nu(x));
+        SendZl[:][:][:][:][y_k-NkyLlD][x-NxLlD] = Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD  :2][y_k][x] * cexp( ((NzLuD == NzGuD) ? a : 0.) * geo->nu(x));
+        SendZu[:][:][:][:][y_k-NkyLlD][x-NxLlD] = Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLuD-1:2][y_k][x] * cexp(-((NzLlD == NzGlD) ? a : 0.) * geo->nu(x));
 
    } }
    
    // Exchange ghostcells between processors [ SendXu (CPU 1) ->RecvXl (CPU 2) ]
-//   parallel->updateBoundaryFields(Fields::SendXl, Fields::SendXu,  Fields::SendYl, Fields::SendYu, Fields::SendZl,  Fields::SendZu, 
-//                                  Fields::RecvXl, Fields::RecvXu,  Fields::RecvYl, Fields::RecvYu, Fields::RecvZl,  Fields::RecvZu); 
+  parallel->updateBoundaryFields(Fields::SendXl, Fields::SendXu, Fields::RecvXl, Fields::RecvXu, ArrayBoundX.getNum(),
+                                 Fields::SendZl, Fields::SendZu, Fields::RecvZl, Fields::RecvZu, ArrayBoundZ.getNum()); 
 
    // Back copy X-Boundary cell data
    Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlB-2:4] = RecvXl[:][:][:][:][:][:];
@@ -255,10 +255,10 @@ void Fields::updateBoundary(
 
 
 
-//////////////////////// Data I/O //////////////////
+///////////////////////////////////////////// Data I/O ///////////////////////////////
 
 
-void Fields::initDataOutput(Setup *setup, FileIO *fileIO) {
+void Fields::initData(Setup *setup, FileIO *fileIO) {
     
    // Set sizes : Note, we use fortran ordering for field variables 
    hsize_t field_dim[]       = { grid->NzGD, grid->NkyGD, grid->NxGD  ,             1};

@@ -95,7 +95,7 @@ protected:
    };
 
 
-   void initDataOutput(hid_t geometryGroup) 
+   void initData(hid_t geometryGroup) 
    {
           check(H5LTset_attribute_string(geometryGroup, ".", "Type", "CHEASE"), DMESG("H5LTset_attribute"));
    }

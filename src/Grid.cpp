@@ -216,7 +216,7 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
    dXYZ  = dx * dy * dz;
    dXYZV = dx * dy * dz * dv;
 
-    initDataOutput(fileIO);
+    initData(fileIO);
 
 }
 

@@ -83,7 +83,7 @@ class Grid : public IfaceGKC {
    *
    *    @param fileIO class
    **/
-   void initDataOutput(FileIO *fileIO);
+   void initData(FileIO *fileIO);
    
    /// Class information
    virtual void writeData(Timing *timing) {};

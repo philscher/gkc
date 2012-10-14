@@ -247,7 +247,7 @@ class Analysis : public IfaceGKC {
 
    //////////////////////////////////  Data-I/0 stuff ////////////////////////////////////////
 
-   void initDataOutput(Setup *setup, FileIO *fileIO) ;
+   void initData(Setup *setup, FileIO *fileIO) ;
    void writeData(Timing timing, double dt);
    void closeData();
       

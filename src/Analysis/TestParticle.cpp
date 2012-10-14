@@ -81,7 +81,7 @@ void TestParticles::printOn(std::ostream &output) const {
 }
 
   
-void TestParticles::initDataOutput(Setup *setup, FileIO *fileIO) {
+void TestParticles::initData(Setup *setup, FileIO *fileIO) {
 
      hid_t particleGroup = check(H5Gcreate(fileIO->getFileID(), "/Tracer",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
      

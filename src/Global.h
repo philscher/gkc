@@ -198,7 +198,7 @@ class IfaceGKC {
     
 class IfaceDataIO {
     virtual ~IfaceDataIO() { };
-    virtual void initDataOutput(FileIO *fileIO) = 0;
+    virtual void initData(FileIO *fileIO) = 0;
     virtual void writeData(Timing timing, double dt) = 0;
     virtual void closeData() = 0;
 };

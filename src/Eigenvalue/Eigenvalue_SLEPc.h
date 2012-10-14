@@ -80,7 +80,7 @@ protected :
    *    Please Document Me !
    *
    **/
-   void initDataOutput(Setup *setup, FileIO *fileIO);
+   void initData(Setup *setup, FileIO *fileIO);
 };
 
 

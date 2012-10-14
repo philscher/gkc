@@ -92,7 +92,7 @@ public:
    };
 
 
-   void initDataOutput(hid_t geometryGroup) 
+   void initData(hid_t geometryGroup) 
    {
           check(H5LTset_attribute_string(geometryGroup, ".", "Type", "Shearless Slab"), DMESG("H5LTset_attribute"));
           check(H5LTset_attribute_double(geometryGroup, ".", "eps_hat"   ,  &eps_hat, 1), DMESG("H5LTset_attribute"));

@@ -66,7 +66,7 @@ void integrate(Vlasov *vlasov, Fields *fields, int step);
 
         virtual void printOn(std::ostream &output) const;
       
-        virtual void initDataOutput(Setup *setup, FileIO *fileIO);
+        virtual void initData(Setup *setup, FileIO *fileIO);
         virtual void writeData(Timing timing, double dt);
         virtual void closeData();
 

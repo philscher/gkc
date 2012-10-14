@@ -48,7 +48,7 @@ protected:
         *   Set Data output parameters
         *
         * */
-       virtual void initDataOutput(hid_t fileID) {
+       virtual void initData(hid_t fileID) {
             hid_t collisionGroup = check(H5Gcreate(fileID, "/Collisions",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Collision : H5Gcreate"));
      
             check(H5LTset_attribute_string(collisionGroup, ".", "Model", "Lenard-Bernstein"), DMESG("H5LTset_attribute"));

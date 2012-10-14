@@ -161,7 +161,7 @@ class GeometryShear : public Geometry
                                    ")   RoundShear (" << (roundShearToConnect ? "true" : "false") << ")" << std::endl;
    };
 
-   void initDataOutput(hid_t geometryGroup) {
+   void initData(hid_t geometryGroup) {
 
       check(H5LTset_attribute_string(geometryGroup, ".", "Type", "Sheared Slab"), DMESG("H5LTset_attribute"));
       check(H5LTset_attribute_string(geometryGroup, ".", "ConnectFieldLines", connectFieldLines ? "true" : "false"), DMESG("H5LTset_attribute"));

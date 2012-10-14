@@ -146,7 +146,7 @@ void Plasma::printOn(std::ostream &output) const
 
 
 
-void Plasma::initDataOutput(FileIO *fileIO) 
+void Plasma::initData(FileIO *fileIO) 
 {
           hid_t plasmaGroup = check(H5Gcreate(fileIO->getFileID(), "/Plasma",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group for Geometry : H5Gcreate"));
 

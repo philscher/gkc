@@ -75,7 +75,7 @@ class Geometry2D : public Geometry
 
 
         // BUG
-    Geometry::initDataOutput(fileIO);
+    Geometry::initData(fileIO);
     
     setupArrays();
 

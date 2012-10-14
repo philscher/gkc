@@ -169,7 +169,7 @@ double Benchmark::stop(std::string id, int type)
 
 
     
-void Benchmark::initDataOutput(Setup *setup, FileIO *fileIO)
+void Benchmark::initData(Setup *setup, FileIO *fileIO)
 {
    // create HDF-5 table
     

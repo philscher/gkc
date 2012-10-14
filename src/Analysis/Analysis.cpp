@@ -32,7 +32,7 @@ parallel(_parallel),setup(_setup), vlasov(_vlasov), grid(_grid), fields(_fields)
 
      ArrayA4 = nct::allocate(nct::Range(NsLlD, NsLD),  nct::Range(NzLlD, NzLD), nct::Range(NkyLlD, NkyLD), nct::Range(NxLlD, NxLD));
        
-     initDataOutput(setup, fileIO);
+     initData(setup, fileIO);
 }
 
 
@@ -352,7 +352,7 @@ void Analysis::updateSpectrum(unsigned int dir) {
 
 ////////////////////////     Calculate x-dependent values     /////////////////////
 
-void Analysis::initDataOutput(Setup *setup, FileIO *fileIO) {
+void Analysis::initData(Setup *setup, FileIO *fileIO) {
         
      analysisGroup = fileIO->newGroup("Analysis");
         

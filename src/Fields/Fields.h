@@ -367,7 +367,7 @@ protected:
    /**
    *  @brief please document me
    **/
-   void initDataOutput(Setup *setup, FileIO *fileIO);
+   void initData(Setup *setup, FileIO *fileIO);
    
    /**
    *  @brief please document me

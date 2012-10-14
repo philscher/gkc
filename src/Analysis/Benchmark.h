@@ -105,7 +105,7 @@ class Benchmark : public IfaceGKC
 
 protected:
    virtual void writeData(Timing timing, double dt);
-   void initDataOutput(Setup *setup, FileIO *fileIO);
+   void initData(Setup *setup, FileIO *fileIO);
    void closeData();
    virtual void printOn(std::ostream &output) const ;
 };

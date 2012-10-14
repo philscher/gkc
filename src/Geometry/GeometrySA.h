@@ -73,7 +73,7 @@ class GeometrySA : public Geometry
 
       setupArrays();
       
-      Geometry::initDataOutput(fileIO);
+      Geometry::initData(fileIO);
    };
 
   
@@ -164,7 +164,7 @@ class GeometrySA : public Geometry
          output   << "           |  Aspect Ratio           : " << eps   << " Shfaranov-Shift : " << alpha << std::endl;
    };
     
-   void initDataOutput(hid_t GeometryGroup) {
+   void initData(hid_t GeometryGroup) {
 
           check(H5LTset_attribute_string(GeometryGroup, ".", "Geometry"      , "s-alpha"), DMESG("H5LTset_attribute"));
           check(H5LTset_attribute_double(GeometryGroup, ".", "Shear"         , &shear, 1), DMESG("H5LTset_attribute"));
