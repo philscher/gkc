@@ -50,13 +50,16 @@ def fitDampedOscillationFourier(T, Y):
 def getGrowthrate(T, D, start, stop):
 
   print "Fitting growthrates from T : ", T[start], " - ", T[stop]
+  
 
   def fitExpGrowthOptimize(T,Y):
 
        fitfunc = lambda p, x: p[0]*x + p[1] 
        errfunc = lambda p, x, y: fitfunc(p, x) - y
        
-       p, success = scipy.optimize.leastsq(errfunc, [-1.0e-5, 0.0001], args=(T, np.log(abs(Y))))
+       #p, success = scipy.optimize.leastsq(errfunc, [0.001, min(np.log(abs(Y)))], args=(T, np.log(abs(Y))))
+       p, success = scipy.optimize.leastsq(errfunc, [0.05, 0.], args=(T, np.log(abs(Y))))
+       print p, success
        return p[0]
   
   if D.ndim == 1:
@@ -89,7 +92,8 @@ def getFrequency(T, D, start=0, stop=-1):
     # Get Maximum Frequency (ignore DC component)
     m     = np.argmax(abs(FS[1:]))+1
     fftfreq = np.fft.fftfreq(len(time_series), d = (T[-10]-T[-11])) 
-    
+   
+    # crap should use rfftfreq and skip the two
     abs_freq =  2.*np.pi*fftfreq[m]
 
     # Needs sqrt(2.) from velocity normalization
@@ -307,4 +311,16 @@ def plotEigenfunctions(fileh5, mode=1, n_max=5, **kwargs):
 
     pylab.legend(labels).draw_frame(0)
 
-    
+def getFrequencyGrowthrates(fileh5, start=1, stop=-1, q=0):
+          
+   T = gkcData.getTime(fileh5.root.Analysis.PowerSpectrum.Time)[:,1]
+
+   power = fileh5.root.Analysis.PowerSpectrum.Y[q, :,:]
+   phase = fileh5.root.Analysis.PhaseShift.Y   [q, :,:]
+        
+   frequency   = getFrequency (T,phase, start,stop)
+   growthrates = getGrowthrate(T,power, start, stop)
+
+   return np.array(frequency) + 1.j * np.array(growthrates)
+
+

@@ -7,7 +7,9 @@ rcParams['axes.labelsize'] = 18.
 rcParams['xtick.labelsize'] = 'large'
 rcParams['ytick.labelsize'] = 'large'
 
-markers_D = [ '<', 's', 'v', '^', '>', '^', 'd', 'p', '*', 'h',  '1', '2', '3', '4']
+color_indigo='#4B0082'
+
+markers_D = [ '<', 's', 'v', '^', '>', '^', 'd', 'p', '*', 'h',  '1', '2', '3', '4', '+', 'x', 'D', '_', '|' ]
 markers_C = [ 'r', 'g', 'b', 'c', 'm', 'y', 'k', '#CC0066', '#A21F12', '#9632F1' , '#1BC243', 'FF9900', '#92CC44',\
               '#99FFCC', '#AAFF33', '#FF00CC', '#FF33AA', '#33FFAA', '33AAFF' ]
 
@@ -94,7 +96,7 @@ def setPlotOutputThesis():
     #rcParams['axes.color_cycle'] = markers_C
 
 
-def newHeliosFigure(style="Normal", ratio="1.41:1", basesize=7):
+def newFigure(style="Normal", ratio="1.41:1", basesize=7):
   rcdefaults()
 
   if   style == "Normal" : pass
@@ -117,6 +119,7 @@ def newHeliosFigure(style="Normal", ratio="1.41:1", basesize=7):
   elif ratio == "1.41:1" : figsize = (1.41*basesize,basesize) 
   elif ratio == "1.33:1" : figsize = (1.33*basesize,basesize) 
   elif ratio == "5:3"    : figsize = (1.66*basesize,basesize) 
+  elif ratio == "1.66:1"    : figsize = (1.66*basesize,basesize) 
   elif ratio == "1.00:1" : figsize = (1.00*basesize,basesize) 
   elif ratio == "1:1" : figsize = (1.00*basesize,basesize) 
 
@@ -156,6 +159,8 @@ def plotContourWithColorbar(X,Y,data, **kwargs):
    cmap          = kwargs.pop('cmap' , cm.jet)
    clearPlot     = kwargs.pop('clearPlot' , True)
    CBexp         = kwargs.pop('CBExp' , True)
+   lineLev       = kwargs.pop('lineLev' , 0)
+ 
 
    if CBexp == True:
         v_absmax =  max(abs(data.min()), abs(data.max()))
@@ -170,8 +175,11 @@ def plotContourWithColorbar(X,Y,data, **kwargs):
    if clearPlot == True  : clf()
 
    
-   pylab.contourf(X,Y,data, 100, cmap=cmap, norm=norm, interpolation=interpolation, vmin=-v_minmax, vmax=v_minmax)
-   
+   if (lineLev > 0) : 
+     pylab.contour(X,Y,data, lineLev, colors='k', linewidths=1.)
+     pylab.contourf(X,Y,data, lineLev, cmap=cmap, norm=norm, interpolation=interpolation, vmin=-v_minmax, vmax=v_minmax)
+   else : 
+     pylab.contourf(X,Y,data, 100, cmap=cmap, norm=norm, interpolation=interpolation, vmin=-v_minmax, vmax=v_minmax)
    # Set Colorbar so that in goes from -9.9 - +9.9 x exp
    #sf = ScalarFormatter(useOffset=True)
    #sf._set_data_interval(-10., 10.)
