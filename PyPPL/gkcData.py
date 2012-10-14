@@ -85,26 +85,20 @@ def getData(Var, fileh5, Z=0, frame=-1, species=0):
 def getRealFromXky(fileh5, data, modes=[], min_modes=129, interpolate=False):
 
    D = getDomain(fileh5)
+   
    # Fourier back transform c2r, renormaliza, not it stored in fftw shape
    Nky = len(data[:,0])
-   Nx  = len(D['X'])
+   Nx  = len(data[0,:])
    
-   
-   #X,Y = np.meshgrid(D['X'], Y)
-
    if modes != [] :
-     for m in range(Nky/2+1):
+     for m in range(Nky):
         # remove unwanted frequencies
         if m not in modes :
           data[m,:] = 0.
-          # and negative freq.
-          # index :
-          #print "Index : ", m , "   Ny - m : ", Ny - m
-          #if (m != 0) and (m != Ny/2): data[Ny-m,:] = 0.
    
    Ny_mod = 2 * max(len(data[:,0]), min_modes)-2
    data = np.fft.irfft(data, n=Ny_mod, axis=0)
-   #print "Nkyt Momodmo mod : ", Nky_mod, " --- " , Nky, " --- " , np.shape(data)
+   
    Y = np.linspace(D['Y'].min(), D['Y'].max(), Ny_mod)
 
    return D['X'], Y, data
