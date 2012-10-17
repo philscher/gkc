@@ -1,18 +1,17 @@
 Grid.Nx  = 2
 Grid.Nky = 129
-Grid.Nv  = 32
+Grid.Nv  = 64 
 Grid.Nz  = 1
 Grid.Ns  = 1
-Grid.Nm  = 16
+Grid.Nm  = 32
 
 
 # scale by sqrt(2.)
 Grid.Lx = 44.428829
-Grid.Ly = 64.
+Grid.Ly = 128.
 Grid.Lz = 1.
 Grid.Lv = 4.5
-Grid.Lm = 8.
-
+Grid.Lm = 13.
 
 DataOutput.OutputFileName = Smolyakov_Adiabatic.h5
 
@@ -21,7 +20,7 @@ Geometry.kz = 0.0028284271247461905
 
 Vlasov.Equation = ES
 Vlasov.NonLinear = 0
-Vlasov.CollisionBeta = 0.
+Vlasov.CollisionBeta = 3.e-5
 
 DataOutput.Statistics.Time     =  50.
 
@@ -43,9 +42,9 @@ Plasma.Species1.w_n         = 0.028284
 Plasma.Species1.gyroModel   = Gyro
 
 Helios.MaxTime     = 50000.
-Helios.MaxSteps    = 1000
+#Helios.MaxSteps    = 1000
 
-Init.Perturbation = PSFNoise
+Init.Perturbation = Noise
 Init.Epsilon0     = 1.e-120
 
 

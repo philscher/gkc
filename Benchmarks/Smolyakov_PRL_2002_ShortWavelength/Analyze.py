@@ -3,6 +3,8 @@ from scipy.special import *
 import numpy as np
 import mpmath as mp
 
+import gkcStyle
+
  
 def getDispersion(ky, parameters):  
   
@@ -96,10 +98,18 @@ def getDispersion(ky, parameters):
     return d
   
   # Take care of extra pie due to normalization
-  #init, solver =  (0.01 +.0026j, 0.02 + 0.03j, 0.015 + 0.01j), 'muller'
-  #init, solver =  (0.01 +.0026j, 0.02 + 0.03j, 0.015 + 0.01j), 'muller'
+  if (mode == "EM"):
+    #init, solver =  (-0.01 +.005j, -0.015 + 0.008j, 0.008 + 0.002j), 'muller'
+    init, solver =  (-0.1 +.05j, -0.2 + 0.08j, -0.00 + 0.02j), 'muller'
+    if ky < 2.:
+         init, solver =  ( 0.02 -.02j,  0.04 + 0.04j,  0.01 - 0.0j), 'muller'
+    else : 
+         #goes init, solver =  ( -0.4 - .012j,  -0.1 - 0.03j,  -0.2 - 0.012j), 'muller'
+         init, solver =  ( -0.4 - .012j,  -0.1 - 0.03j,  -0.2 - 0.012j), 'muller'
+  else : 
+    init, solver =  (0.01 +.0026j, 0.02 + 0.03j, 0.015 + 0.01j), 'muller'
   
-  init, solver =  0.01 + .03j, 'muller'
+  #init, solver =  0.01 + .03j, 'muller'
   
   return getZero(DR_Smoly, init=init, solver=solver)
 
@@ -140,7 +150,7 @@ D = gkcData.getDomain(fileh5)
 omega_sim =  gkcLinear.getFrequencyGrowthrates(fileh5, start=50, stop=-1)
 
 # get Theory
-ky_list = np.logspace(np.log10(D['ky'][1]), np.log10(D['ky'][-1]), 48)
+ky_list = np.logspace(np.log10(D['ky'][1]), np.log10(D['ky'][-1]), 256)
 
 if (isKinetic) : 
      mode = 'EM'
@@ -162,30 +172,35 @@ omega_th = np.array(omega_th) * param['kp']#/sqrt(1837.)
 
 fileh5.close()
 
+############################## Plot Figure ###################
 
-pylab.figure(figsize=(10,8))
+gkcStyle.newFigure(ratio="1:1.33", basesize=12)
 
 # Plot Growthrates
 pylab.subplot(211, title="Benchmark of Smolykov et al. (PRL, 2002)  using gkc++ (rev. 173)")
      
 
 
-pylab.semilogx(D['ky'][1:-1], np.imag(omega_sim[1:-1]), '^')
-pylab.semilogx(ky_list, np.imag(omega_th), '-', color='#444444', alpha=0.8, linewidth=5.)
+pylab.semilogx(D['ky'][1:-1], 2. * np.imag(omega_sim[1:-1]), '^', label='gkc++')
+pylab.semilogx(ky_list, np.imag(omega_th), '-', color='#FF4444', alpha=0.8, linewidth=5., label='Theory')
+gkcStyle.plotZeroLine(D['ky'][1], D['ky'][-1], direction='horizontal', color="#666666", lw=1.5)
 
 pylab.xlim((D['ky'][1], D['ky'][-1]))
-pylab.ylim((-0.01, 0.02))
-#pylab.legend(loc='best').draw_frame(0)
+
+if (isKinetic) : pylab.ylim((-0.005, 0.015))
+else           : pylab.ylim((-0.002, 0.005))
+
+pylab.legend(loc='best').draw_frame(0)
 pylab.xlabel("$k_y$")
 pylab.ylabel("Growthrate  $\\omega_i [L_n / v_{te}]$")
-
 
 # Plot Frequency
 pylab.subplot(212)
 
 
-pylab.semilogx(D['ky'][1:-1], np.real(omega_sim[1:-1]), '^-')
-pylab.semilogx(ky_list, np.real(omega_th), '-', color='#444444', alpha=0.8, linewidth=5.)
+pylab.semilogx(D['ky'][1:-1], np.real(omega_sim[1:-1]), '^')
+pylab.semilogx(ky_list, np.real(omega_th), '-', color='#FF4444', alpha=0.8, linewidth=5.)
+gkcStyle.plotZeroLine(D['ky'][1], D['ky'][-1], direction='horizontal', color="#666666", lw=1.5)
 
 pylab.xlim((D['ky'][1], D['ky'][-1]))
 #pylab.ylim((0., 2.))
@@ -194,6 +209,9 @@ pylab.ylabel("Frequency  $\\omega_r [L_n / v_{te}]$")
 
 if(isKinetic) : pylab.savefig("Smolyakov_Kinetic.png"  , bbox_inches='tight')
 else          : pylab.savefig("Smolyakov_Adiabatic.png", bbox_inches='tight')
+
+if(isKinetic) : pylab.savefig("Smolyakov_Kinetic.pdf"  , bbox_inches='tight')
+else          : pylab.savefig("Smolyakov_Adiabatic.pdf", bbox_inches='tight')
 
 
 
