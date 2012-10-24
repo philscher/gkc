@@ -174,7 +174,7 @@ class VlasovCilk : public Vlasov {
    *    Please Document Me !
    *
    **/
-   void initDataOutput(FileIO *fileIO);
+   void initData(FileIO *fileIO);
 
 };
 

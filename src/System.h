@@ -16,7 +16,7 @@
 
 
 
-#include <time.h>      // sjhould be ctime for C++-11
+#include <time.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <iostream>

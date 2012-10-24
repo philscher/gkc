@@ -40,7 +40,7 @@ class Eigenvalue : public IfaceGKC {
 
   protected:
    /**
-   *  @brief structu to store the eigenvalue
+   *  @brief structure to store the eigenvalue
    *
    **/
    struct EigenValue {

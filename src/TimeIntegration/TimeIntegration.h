@@ -67,7 +67,7 @@ class TimeIntegration  : public IfaceGKC{
    Parallel *parallel;
    Benchmark *bench;
  public:
-
+   int outputRatio; ///< Frequency (time step) of step output
    bool useCFL;
    double maxCFLNumber;
    double linearSafetyFactor;

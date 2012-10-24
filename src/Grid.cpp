@@ -249,7 +249,7 @@ void Grid::printOn(std::ostream &output) const {
            
     }
     
-void Grid::initDataOutput(FileIO *fileIO) {
+void Grid::initData(FileIO *fileIO) {
           
       hid_t gridGroup = check(H5Gcreate(fileIO->getFileID(), "/Grid",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phasespace : H5Gcreate"));
           

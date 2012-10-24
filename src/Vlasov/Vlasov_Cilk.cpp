@@ -22,7 +22,7 @@ VlasovCilk::VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *
 
     collisionBeta = setup->get("Vlasov.CollisionBeta", 0.);
     
-    Vlasov::initDataOutput(fileIO);    
+    Vlasov::initData(fileIO);    
 }
 
 
@@ -200,8 +200,8 @@ void VlasovCilk::setupXiAndG(
 
 
   // ICC vectorizes useAp/useBp into seperate lopps, check for any speed penelity ? 
-  for(int z = NzLlB; z <= NzLuB; z++) {  omp_for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
-  for(int x = NxLlB; x <= NxLuB; x++) { simd_for(int v   = NvLlB ;   v <= NvLuB ;   v++) { 
+  omp_C3_for(int z = NzLlB; z <= NzLuB; z++) {      for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
+         for(int x = NxLlB; x <= NxLuB; x++) { simd_for(int v   = NvLlB ;   v <= NvLuB ;   v++) { 
 
      Xi[z][y_k][x][v] = Fields[Field::phi][s][m][z][y_k][x] - (useAp ? aeb*V[v]*Fields[Field::Ap][s][m][z][y_k][x] : 0.) 
                                                             - (useBp ? aeb*M[m]*Fields[Field::Bp][s][m][z][y_k][x] : 0.);
@@ -311,10 +311,10 @@ void VlasovCilk::Vlasov_EM(
         // We use CD-4 (central difference fourth order for every variable)
 
         const CComplex dG_dz   = (8.*(G[z+1][y_k][x][v] - G[z-1][y_k][x][v])    
-                                 -1.*(G[z+2][y_k][x][v] - G[z-2][y_k][x][v])) * _kw_12_dz;
+                                 -   (G[z+2][y_k][x][v] - G[z-2][y_k][x][v])) * _kw_12_dz;
 
         const CComplex dG_dx   = (8.*(G[z][y_k][x+1][v] - G[z][y_k][x-1][v]) 
-                                 -1.*(G[z][y_k][x+2][v] - G[z][y_k][x-2][v])) * _kw_12_dx;
+                                 -   (G[z][y_k][x+2][v] - G[z][y_k][x-2][v])) * _kw_12_dx;
 
         
         // magnetic prefactor defined as  $ \hat{B}_0 / \hat{B}_{0\parallel}^\star = \left[ 1 + \beta_{ref} \sqrt{\frac{\hat{m_\sigma T_{0\sigma}{2}}}}
@@ -329,13 +329,13 @@ void VlasovCilk::Vlasov_EM(
             
            // have to set zero     ExB[y_k][x][v]                                                                 // Non-linear ( array is zero for linear simulations) 
           + Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - sub)) * f0_ * Xi_ * ky         // Driving Term
-          - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0) *                                   
-            (Kx[z][x] * dG_dx - Ky[z][x] * ky * G_)                                    // Magnetic curvature term
+//          - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0) *                                   
+//            (Kx[z][x] * dG_dx - Ky[z][x] * ky * G_)                                    // Magnetic curvature term
           //- alpha * pow2(V[v]) * plasma->beta * plasma->w_p * G_ * ky                        // Plasma pressure gradient
           -  CoJB *  alpha * V[v]* dG_dz                                                       // Landau damping term
-          + alpha  / 2. * M[m] * dB_dz[z][x] * dg_dv                                       // Magnetic mirror term    
-          + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * Kx[z][x] * 
-          ((w_n + w_T * (pow2(V[v]) + M[m] * B0)/Temp - sub) * dG_dx + sigma * dphi_dx * f0_); // ??
+//          + alpha  / 2. * M[m] * dB_dz[z][x] * dg_dv                                       // Magnetic mirror term    
+ //         + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * Kx[z][x] * 
+ //         ((w_n + w_T * (pow2(V[v]) + M[m] * B0)/Temp - sub) * dG_dx + sigma * dphi_dx * f0_); // ??
            + collisionBeta  * (g_  + alpha * V[v] * dg_dv + v2_rms * ddg_dvv);                 // Lennard-Bernstein Collision term
 
           
@@ -361,9 +361,9 @@ void VlasovCilk::printOn(std::ostream &output) const
 };
 
 
-void VlasovCilk::initDataOutput(FileIO *fileIO) 
+void VlasovCilk::initData(FileIO *fileIO) 
 {
-                Vlasov::initDataOutput(fileIO); 
+                Vlasov::initData(fileIO); 
 
 };
 

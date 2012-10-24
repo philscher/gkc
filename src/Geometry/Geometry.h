@@ -124,6 +124,7 @@ public:
   **/ 
   virtual  double get_Kx(const int x, const int z)  { 
     
+        return - 1./C * ( get_dB_dy(x,z) + g_2(x,z)/g_1(x,z) * get_dB_dz(x,z));
         return - 1./C * ( get_dB_dy(x,z) + g_1(x,z)/g_2(x,z) * get_dB_dz(x,z));
   };
 

@@ -69,7 +69,7 @@ class Range
 };
 
 
-enum class alloc_flags  { 
+enum alloc_flags  { 
                MA  =1      ,    ///< do use Memory Aligned (default)
                ZERO=2      ,    ///< do not set to Zero 
                DEALLOC=4   ,    ///< do not deallocate 
@@ -305,26 +305,20 @@ class allocate : public ArrayBase
    };
 
    
-   /**
-   *    @brief calculated offset for four dimensional arrays.
-   *
-   *    Note : R0 has largest stride
-   *           R2 is  continuous 
-   *
-   *    @param R0 range in third  dimension
-   *           R1 Range in second dimension
-   *           R2 Range in first  dimension
-   *
-   **/ 
-   ~allocate()
-   {
+    /**
+    *    @brief deallocate arrays
+    *
+    *
+    **/ 
+    ~allocate()
+    {
          if(flags & alloc_flags::DEALLOC) { 
 
             // Deallocate all arrays
          
          };
 
-   };
+    };
 
     /**
     *     @brief allocate memory space for function.

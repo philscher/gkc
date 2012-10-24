@@ -157,50 +157,6 @@ void FileIO::create(Setup *setup)
     else
 
            file_in = check(H5Fopen( inputFileName.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT), DMESG("H5Fopen : inputFileName"));
-          // E-Potential
-          hid_t phi_plist_in = H5P_DEFAULT; 
-#ifdef GKC_PARALLEL_MPI
-          phi_plist_in = H5Pcreate(H5P_DATASET_XFER);
-          H5Pset_dxpl_mpio(phi_plist_in, H5FD_MPIO_COLLECTIVE);
-#endif     
-          hid_t phi_dset_in = check(H5Dopen(file_in, "Phi", H5P_DEFAULT), DMESG(" H5Dopen : Phi"));
-          H5LTget_attribute_int(phi_dset_in, ".", "phiCount", &phiCount);
-          hid_t phi_dspace_in = H5Dget_space (phi_dset_in);
-          // get last entry
-          hsize_t phi_offset[] = {NzLlB-1, NyLlB-1, NxLlB-1, phiCount-1 }; 
-        check(H5Sselect_hyperslab(phi_dspace_in, H5S_SELECT_SET, phi_offset, NULL, phi_chunkdim, NULL), DMESG("Selecting Hyperslab for phi"));
-        check(H5Dread(phi_dset_in, H5T_NATIVE_DOUBLE, phi_mspace, phi_dspace_in, phi_plist, fields->phi.data()), DMESG("H5Dread : Phi"));
-       
-        // Phasespace function
-        hid_t psf_plist_in = H5P_DEFAULT;
-#ifdef GKC_PARALLEL_MPI
-        psf_plist_in = H5Pcreate(H5P_DATASET_XFER);
-        H5Pset_dxpl_mpio(psf_plist_in, H5FD_MPIO_COLLECTIVE);
-#endif
-        hid_t psf_dset_in = check(H5Dopen(file_in, "Phasespace", H5P_DEFAULT), DMESG(" H5Dopen : PSF"));
-        check(H5LTget_attribute_int(psf_dset_in, ".", "psfCount", &psfCount), DMESG("H5LT_getattribute"));
-        hid_t psf_dspace_in = H5Dget_space (psf_dset_in);
-        hsize_t psf_offset[7] =  { 0, NmLlB-1,  NvLlB-1, NzLlB-1, NyLlB-1, NxLlB-1, psfCount-1 };
-        check ( H5Sselect_hyperslab (psf_dspace_in, H5S_SELECT_SET, psf_offset, NULL, psf_chunkdim, NULL), DMESG("Selecting Hyperslab for PSF"));
-        check(H5Dread(psf_dset_in, H5T_NATIVE_DOUBLE, psf_mspace, psf_dspace_in, psf_plist_in, vlasov->f.data()), DMESG("H5Dread : PSF"));
-        
-        // Get f0 ! .. definition the t=0 value is the f0 value !
-        //psf_offset =  { NvLlB-1, NzLlB-1, NyLlB-1, NxLlB-1, 0 };
-        psf_offset[6] = 0;
-        check ( H5Sselect_hyperslab (psf_dspace_in, H5S_SELECT_SET, psf_offset, NULL, psf_chunkdim, NULL), DMESG("Selecting Hyperslab for PSF"));
-        check(H5Dread(psf_dset_in, H5T_NATIVE_DOUBLE, psf_mspace, psf_dspace_in, psf_plist_in, vlasov->f0.data()), DMESG("H5Dread : PSF"));
-        
-       if (setup->inputFileName == setup->outputFileName) { file = file_in; }
-        else {
-             check( H5Fclose(file_in) , DMESG("Unable to close file ... exiting"));
-             // reset position counters for new file
-             phiCount=1; psfCount=1;
-        }
-            //file = check(H5Fopen( setup->outputFileName.c_str(), H5F_ACC_RDWR, H5P_DEFAULT), DMESG("H5Fopen"));
-    }
-
-     
-
 
 
  * */

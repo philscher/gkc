@@ -330,7 +330,7 @@ void    VlasovAux::Vlasov_2D_Fullf(
              const CComplex ky = ((CComplex) (0. + 1.i)) *  fft->ky(y_k);
              const CComplex kp = geo->get_kp(x, ky, z);
 
-            for(int v=NvLlD; v<= NvLuD;v++) {
+            simd_for(int v=NvLlD; v<= NvLuD;v++) {
         
 
 

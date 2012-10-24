@@ -41,6 +41,7 @@ class PETScMatrixVector;
 *
 **/
 class Vlasov : public IfaceGKC {
+
    /**
    *    Please Document Me !
    *
@@ -63,7 +64,7 @@ class Vlasov : public IfaceGKC {
   /**
   *
   **/
-  enum class Boundary  { SEND=1,  RECV=2, SENDRECV=3};
+  enum class Boundary : int { SEND=1,  RECV=2, SENDRECV=3};
 
 
    /**
@@ -236,7 +237,10 @@ class Vlasov : public IfaceGKC {
    *    Please Document Me !
    *
    **/
-   virtual void initDataOutput(FileIO *fileIO);
+   virtual void initData(FileIO *fileIO);
+//   virtual void initData(hid_t groupID, FileIO *fileIO);
+
+   void loadData(FileIO *fileIO);
 
    /**
    *    Please Document Me !
@@ -248,8 +252,10 @@ class Vlasov : public IfaceGKC {
    *    Please Document Me !
    *
    **/
-   virtual void closeData() {};
+   virtual void closeData();
 
+ private:
+   FileAttr *FA_psf, *FA_psfTime; 
 
 };
 

@@ -21,19 +21,22 @@
 
 
 #include<string>
-#include<complex>
-#include<iostream>
-typedef std::complex<double> Complex;  
-typedef double               Real   ;
+#include <complex>
+#include <iostream>
 
+///////////////////// Define data types ////////////////
+typedef std::complex<double> Complex;  
+
+typedef _Complex double CComplex;  
+typedef double               Real   ;
+#define _Imaginary ((CComplex) (0.+1.j)); 
+
+////////////////////////////////////////////////////////
 
 #include<typeinfo>
 #include <iomanip>
 #include "external/allocate.h"
 
-typedef _Complex double CComplex;  
-
-#define _Imaginary ((CComplex) (0.+1.j)); 
 
 extern "C" double cabs  (CComplex z);
 extern "C" double creal (CComplex z);
@@ -45,14 +48,14 @@ extern "C" CComplex cexp (CComplex z);
 
 using namespace std;
 
-constexpr template<class T> inline T pow2(T x) { return x*x; };
-//constexpr template<class T> inline T pow3(T x) { return x*x*x; };
-//constexpr template<class T> inline T pow4(T x) { const T x2 =  (x*x); return x2*x2; };
-//template<class T> inline T pow5(T x) { const T x2 = x * x; return x2*x2*x; };
-//template<class T> inline T pow6(T x) { const T x2 = x * x; return x2*x2*x2; };
-//template<class T> inline T pow8(T x) { const T x2 = x * x; x2 *= x2; return x2*x2; };
+template<class T> inline T pow2(T x) { return x*x; };
+template<class T> inline T pow3(T x) { return x*x*x; };
+template<class T> inline T pow4(T x) { const T x2 =  (x*x); return x2*x2; };
+template<class T> inline T pow5(T x) { const T x2 = x * x; return x2*x2*x; };
+template<class T> inline T pow6(T x) { const T x2 = x * x; return x2*x2*x2; };
+template<class T> inline T pow8(T x) { const T x2 = x * x; x2 *= x2; return x2*x2; };
 //__declspec(vector) inline CComplex square(CComplex x) { return x*x; };
-//inline CComplex square(CComplex x) { return x*x; };
+inline CComplex square(CComplex x) { return x*x; };
 
 
 
@@ -89,6 +92,7 @@ int ipow(int base, int exp)
 // warning This is an OpenMP 3.0 function, is it possible to check for it ? (_OPENMP)
 #define omp_C2_for  _Pragma("omp parallel for collapse(2)") for
 #define omp_C3_for  _Pragma("omp parallel for collapse(3)") for
+#define omp_C4_for  _Pragma("omp parallel for collapse(4)") for
 // for vectorization support, see 
 #define simd_for _Pragma("simd") for
 
@@ -138,7 +142,6 @@ inline int check( int status, std::string file, int line, std::string error_text
 // OR CONFIG !!
 
 // Gx[LlD], Gx[LuD], Gx[LuB], Gx[LuD] // should improve speed due to caching
-// Remove to a minimum
 
 extern int NkyLlD, NkyLuD;
 
@@ -199,6 +202,7 @@ class IfaceGKC {
 class IfaceDataIO {
     virtual ~IfaceDataIO() { };
     virtual void initData(FileIO *fileIO) = 0;
+    virtual void loadData() {};
     virtual void writeData(Timing timing, double dt) = 0;
     virtual void closeData() = 0;
 };
@@ -208,13 +212,13 @@ class Plasma;
 extern Plasma *plasma;
 
 
-typedef CComplex(*A6zz)[][][][][];
-typedef CComplex(*A5zz)[][][][];
-typedef CComplex(*A4zz)[][][];
-typedef CComplex(*A3zz)[][];
-typedef CComplex(*A2zz)[];
+typedef CComplex(*A6zz)[0][0][0][0][0];
+typedef CComplex(*A5zz)[0][0][0][0];
+typedef CComplex(*A4zz)[0][0][0];
+typedef CComplex(*A3zz)[0][0];
+typedef CComplex(*A2zz)[0];
 
-typedef Real(*A2rr)[];
+typedef Real(*A2rr)[0];
 
 
 #endif // __GLOBAL_H

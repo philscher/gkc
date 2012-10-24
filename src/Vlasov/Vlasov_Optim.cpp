@@ -25,7 +25,7 @@
 VlasovOptim::VlasovOptim(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *fft, Benchmark *_bench)    
 : Vlasov(_grid, _parallel, _setup, fileIO, _geo, fft, _bench)
 {
-   // no need to call : Is done is base constructor -- or ?    Vlasov::initDataOutput(fileIO);    
+   // no need to call : Is done is base constructor -- or ?    Vlasov::initData(fileIO);    
 }
 
 

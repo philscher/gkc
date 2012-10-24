@@ -68,7 +68,9 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
         species[s].T0  = setup->get(key + ".Temperature", 1. );
         species[s].q   = setup->get(key + ".Charge"     , 1. );
         species[s].gyroModel  = setup->get(key + ".gyroModel", (Nm > 1) ? "Gyro" : "Gyro-1" );
-        //species[s].f0_str = setup->get(key + ".F0"      , "n/(pi*T)^1.5*exp(-v^2/T)*exp(-m*B/T)" );
+
+        if  (species[s].doGyro)  species[s].f0_str = setup->get(key + ".F0"      , "n/(pi*T)^1.5*exp(-v^2/T)*exp(-m/T)" );
+        else          species[s].f0_str = setup->get(key + ".F0"      , "n/(pi*T)^1.5*exp(-v^2/T)*T/Nm" );
         //species[s].f1_str = setup->get(key + ".F1"      , "0.");
         
         species[s].doGyro = (species[s].gyroModel == "Gyro") ? 1 : 0;
@@ -114,7 +116,7 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
 
         if(rho0_tot > 1.e-8) check(setup->get("Plasma.checkTotalCharge", -1), DMESG("VIOLATING charge neutrality, check species q * n and TOTAL_SPECIES! Exciting...")); 
 
-       initDataOutput(fileIO);
+       initData(fileIO);
    
 };
 

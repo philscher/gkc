@@ -135,7 +135,7 @@ class Geometry2D : public Geometry
          output   << "Geometry   |  Sheared Slab   By : " << By_str  << " Shear : " << shear << " Theta : "  <<  theta << std::endl;
    };
 
-   void initDataOutput(hid_t geometryGroup) {
+   void initData(hid_t geometryGroup) {
           check(H5LTset_attribute_string(geometryGroup, ".", "Type", "2D"), DMESG("H5LTset_attribute"));
         //check(H5LTset_attribute_double(geometryGroup, ".", "By"   ,  By.data(), Nx), DMESG("H5LTset_attribute"));
           check(H5LTset_attribute_double(geometryGroup, ".", "Shear"   ,  &shear, 1), DMESG("H5LTset_attribute"));

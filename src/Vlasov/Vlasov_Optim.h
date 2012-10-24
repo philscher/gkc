@@ -38,10 +38,10 @@ class VlasovOptim : public Vlasov {
 
   typedef struct{ double re; double im; } cmplx16;
 
-  typedef cmplx16(*A6sz)[][][][][];
-  typedef cmplx16(*A5sz)[][][][];
-  typedef cmplx16(*A4sz)[][][];
-  typedef cmplx16(*A3sz)[][];
+  typedef cmplx16(*A6sz)[0][0][0][0][0];
+  typedef cmplx16(*A5sz)[0][0][0][0];
+  typedef cmplx16(*A4sz)[0][0][0];
+  typedef cmplx16(*A3sz)[0][0];
 
 
    /**

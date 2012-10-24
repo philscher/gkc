@@ -166,6 +166,9 @@ void Init::initBackground(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxL
    
     // Initialize Form of f, Ap, phi, and g, we need superposition between genereal f1 pertubration and species dependent
     const double VOff = 0.;//setup->get("Plasma.Species" + Setup::num2str(s) + ".VelocityOffset", 0.);
+      
+   FunctionParser f0_parser = setup->getFParser();
+   check(((f0_parser.Parse(plasma->species[s].f0_str, "x,z,v,m,n,T") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
    
     omp_C3_for(int m   = NmLlB ; m   <= NmLuB ; m++  ) {  for(int z = NzLlB; z <= NzLuB; z++) { 
            for(int y_k = NkyLlB; y_k <= NkyLuB; y_k++) {  for(int x = NxLlB; x <= NxLuB; x++) { 
@@ -174,12 +177,17 @@ void Init::initBackground(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxL
       const double T = plasma->species[s].T[x];
       
       const double w = 0., r = 0; // roation not needed 
+   	
       
-      simd_for(int v = NvLlB; v <= NvLuB; v++) { 
+      for(int v = NvLlB; v <= NvLuB; v++) { 
       
       // although only F0(x,k_y=0,...) is not equal zero, we perturb all modes, as F0 in Fourier space "acts" like a nonlinearity,
       // which couples modes together
+         	
+        const double pos[6] = { X[x], Z[z], V[v], M[m], plasma->species[s].n[x], plasma->species[s].T[x] };
 
+         f0[s][m][z][y_k][x][v]  =  f0_parser.Eval(pos); 
+/* 
       // Initialized gyro-kinetic Maxwellian
       if(plasma->species[s].doGyro == true) { 
          f0[s][m][z][y_k][x][v]  =  n / pow( M_PI*T, 1.5) * exp(-pow2(V[v] - w*r + VOff)/T) * exp(- M[m]    * plasma->B0/T); 
@@ -189,7 +197,7 @@ void Init::initBackground(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxL
       // (e.g. Gyro/Gyro-1, we homegenous distribute the gyro-1 species over f(mu) (to enable hybrid simulations)
          f0[s][m][z][y_k][x][v]  =  n / pow( M_PI*T, 1.5) * exp(-pow2(V[v] - w*r + VOff)/T) * T/(plasma->B0) /  ((double) Nm)  ;
       }
-
+ * */
 
    }
         

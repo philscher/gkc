@@ -21,10 +21,11 @@ TimeIntegration::TimeIntegration(Setup *setup, Grid *grid, Parallel *_parallel, 
     start_time = std::time(0); 
     timeIntegrationScheme = setup->get("Helios.TimeIntegration", "Explicit_RK4");
 
-    linearSafetyFactor  = setup->get("Helios.LinearSafetyFactor", 0.9);
+    linearSafetyFactor  = setup->get("Helios.LinearSafetyFactor", 0.7);
     linearTimeStep      = setup->get("Helios.LinearTimeStep"    , "Eigenvalue");
     useCFL              = setup->get("Helios.useCFL"            , 1);
     maxCFLNumber        = setup->get("Helios.maxCFLNumber"      , 0.4);
+    outputRatio         = setup->get("Helios.OutputRatio"       , 1);
     
     
     maxTiming.time = setup->get("Helios.MaxTime" , -1.);
@@ -196,7 +197,7 @@ void TimeIntegration::writeTimeStep(Timing timing, Timing maxTiming, double dt)
         
   // should I use flush ? For many CPU maybe not good.
   
-  if(parallel->myRank == 0) {
+  if(parallel->myRank == 0 && !(timing.step % outputRatio)) {
   
     std::cout   << "\r" << "Steps  : " << timing.step  << "/" << maxTiming.step 
                 << "  Time : " << timing.time  << "/" << maxTiming.time 

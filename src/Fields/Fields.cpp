@@ -19,6 +19,7 @@
 
 int GC2, GC4, Nq;
 
+
 Fields::Fields(Setup *setup, Grid *_grid, Parallel *_parallel, FileIO *fileIO, Geometry *_geo)  : 
 
 grid(_grid), parallel(_parallel), geo(_geo), solveEq(0)
@@ -142,7 +143,6 @@ void Fields::calculateChargeDensity(const CComplex f0         [NsLD][NmLD][NzLB]
    // In case of a full-f simulation the Maxwellian is subtracted
 
    const double pqnB_dvdm = M_PI * plasma->species[s].q * plasma->species[s].n0 * plasma->B0 * dv * grid->dm[m] ;
-    
    omp_C2_for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
               Field0[Q::rho][z][y_k][x] = ( __sec_reduce_add(f [s][m][z][y_k][x][NvLlD:NvLD]) 

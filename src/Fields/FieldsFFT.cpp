@@ -176,12 +176,11 @@ void FieldsFFT::calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_Nk
 }
 
 
-// Pretty sure needs to be turned around
 void FieldsFFT::gyroFull(CComplex In   [Nq][NzLD][NkyLD][NxLD             ], 
                          CComplex Out  [Nq][NzLD][NkyLD][NxLD             ],
                          CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
                          CComplex kXIn [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
-                         const int m, const int s, const bool gyroFields)  
+                         const int m, const int s)  
 {
    
    fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, &In[1][NzLlD][NkyLlD][NxLlD]);
@@ -203,7 +202,9 @@ void FieldsFFT::gyroFull(CComplex In   [Nq][NzLD][NkyLD][NxLD             ],
 
          // According to GENE code the Nyquiest frequency in x is unphysicall and thus needs to be screened out
          // highest modes explodes in kinetic simulations.
-         if((y_k == Nky-1) && screenNyquist) kXIn[n][z][y_k][x_k]  = 0.;
+         // We also exclude as in shearless slab it has huge contribution. 
+         // Because Nyqust frequency only has imaginary part ? and thus no phase ?
+         if(( (y_k == Nky-1) || (x_k == Nx/2)) && screenNyquist) kXIn[n][z][y_k][x_k]  = 0.;
       
        } } }
    }
@@ -243,7 +244,7 @@ void FieldsFFT::gyroFirst(CComplex In   [Nq][NzLD][NkyLD][NxLD],
           
       kXIn[n][z][y_k][x_k] = kXOut[n][z][y_k][x_k]/fft->Norm_X * exp(-k2p_rhoth2); 
 
-      if((y_k == Nky-1) && screenNyquist) kXIn[n][z][y_k][x_k]  = 0.;
+      if(((y_k == Nky-1) || (x_k == Nx/2)) && screenNyquist) kXIn[n][z][y_k][x_k]  = 0.;
             
     } } }
    
@@ -268,7 +269,7 @@ void FieldsFFT::gyroAverage(CComplex In [Nq][NzLD][NkyLD][NxLD],
       Out[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]
    =  In[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD];
   }
-  else if(plasma->species[s].gyroModel == "Gyro"  ) gyroFull (In, Out, (A4zz) fft->kXOut, (A4zz) fft->kXIn, m, s, gyroFields);  
+  else if(plasma->species[s].gyroModel == "Gyro"  ) gyroFull (In, Out, (A4zz) fft->kXOut, (A4zz) fft->kXIn, m, s);  
   else if(plasma->species[s].gyroModel == "Gyro-1") gyroFirst(In, Out, (A4zz) fft->kXOut, (A4zz) fft->kXIn,    s, gyroFields);  
   else   check(-1, DMESG("No such gyro-average Model"));
   
