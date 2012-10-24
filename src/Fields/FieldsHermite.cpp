@@ -81,7 +81,7 @@ void FieldsHermite::gyroAverage(CComplex In [Nq][NzLD][NkyLD][NxLD],
     
             VecGetArray    (GyroVector_X, (PetscScalar **) &vec_X);
             for(int x = NxLlD, n = 0; x <= NxLuD; x++)  vec_X[n++] = In[q][z][y_k][x];
-            VecRestoreArray(GyroVector_X, &vec_X);
+            VecRestoreArray(GyroVector_X, (PetscScalar **) &vec_X);
        
             MatMult(GyroMatrix(y_k,z,m,s)->getMat(), GyroVector_X, GyroVector_XAvrg);
            
