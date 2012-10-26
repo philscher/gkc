@@ -459,7 +459,7 @@ void Analysis::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEne
 
 };
   
-void Analysis::writeData(Timing timing, double dt)
+void Analysis::writeData(const Timing &timing, const double dt)
 
 {
 

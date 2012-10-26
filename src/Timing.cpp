@@ -60,7 +60,7 @@ bool Timing::operator%(Timing &b)
 };
 
 
-bool Timing::check(Timing &b, double dt) 
+bool Timing::check(const Timing &b, const double dt) const 
 {
 
         bool doWrite = false;

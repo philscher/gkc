@@ -46,7 +46,7 @@ class Visualization_Data : public Visualization {
     
    ~Visualization_Data();
 
-   void writeData(Timing timing, double dt, bool force=false) ;
+   void writeData(const Timing &timing, const double dt, const bool force=false) ;
 
 };
 

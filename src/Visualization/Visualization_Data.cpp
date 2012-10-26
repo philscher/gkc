@@ -107,7 +107,7 @@ Visualization_Data::~Visualization_Data() {
 
 };
 
-void Visualization_Data::writeData(Timing timing, double dt, bool force) 
+void Visualization_Data::writeData(const Timing &timing, const double dt, const bool force) 
 {
         if (timing.check(dataOutputVisual,dt) || (timing.step == 1) || force) {
             FA_slphi->write(fields->ArrayField0.data(fields->Field0));

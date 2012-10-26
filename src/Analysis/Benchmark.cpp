@@ -97,7 +97,7 @@ void Benchmark::bench(Vlasov *vlasov, Fields *fields)
 };
 
  
-void Benchmark::writeData(Timing timing, double dt) 
+void Benchmark::writeData(const Timing &timing, const double dt) 
 {
 
 

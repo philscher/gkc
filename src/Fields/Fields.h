@@ -37,6 +37,7 @@ extern int GC2, GC4, Nq;
 *         \f$ B_{1\parallel}\f$ parallel magnetic field
 **/
 namespace Field { const int phi=1, Ap=2, Bp=3, Bpp=4; }
+//namespace Field { constexpr const int phi=1, Ap=2, Bp=3, Bpp=4; }
 
 /**
 *  @brief defined offset to access source term variables S
@@ -94,11 +95,11 @@ class Fields : public IfaceGKC {
    *  @todo : current version does not need to communicate Y
    *          direction. Thus remove. 
    **/
-   CComplex  *SendXu, *SendYu, *SendZu, *SendXl, *SendYl, *SendZl; 
+   CComplex  *SendXu, *SendZu, *SendXl, *SendZl; 
    /**
    *  @brief please document me
    **/
-   CComplex  *RecvXu, *RecvYu, *RecvZu, *RecvXl, *RecvYl, *RecvZl;
+   CComplex  *RecvXu, *RecvZu, *RecvXl, *RecvZl;
    
    nct::allocate ArrayBoundX, ArrayBoundZ;
 
@@ -350,7 +351,7 @@ public:
    *  fileh5.root.Fields.Timing[frame]
    *
    **/ 
-   virtual void writeData(Timing timing, double dt);
+   virtual void writeData(const Timing &timing, const double dt);
 
 protected:
 

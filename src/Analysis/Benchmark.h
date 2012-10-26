@@ -104,7 +104,7 @@ class Benchmark : public IfaceGKC
    void bench(Vlasov *vlasov, Fields *fields) ;
 
 protected:
-   virtual void writeData(Timing timing, double dt);
+   virtual void writeData(const Timing &timing, const double dt);
    void initData(Setup *setup, FileIO *fileIO);
    void closeData();
    virtual void printOn(std::ostream &output) const ;

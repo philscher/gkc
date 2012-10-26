@@ -283,7 +283,7 @@ void Fields::initData(Setup *setup, FileIO *fileIO) {
 
 }   
 
-void Fields::writeData(Timing timing, double dt) 
+void Fields::writeData(const Timing &timing, const double dt) 
 {
    if (timing.check(dataOutputFields, dt)       )   {
       //FA_phi->write(&Field0[Fields::phi][NzLlD][NkyLlD][NzLlD]);

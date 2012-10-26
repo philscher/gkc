@@ -81,7 +81,7 @@ struct Timing {
   *
   **/
   
-  bool check(Timing &b, double dt) ;
+  bool check(const Timing &b, const double dt) const;
   /**
   *    Please Document Me !
   *

@@ -62,7 +62,7 @@ class Visualization {
   *
   *   The arrays can all be accessed from vlasov and fields
   **/
-  virtual void writeData(Timing timing, double dt, bool force=false)  = 0;
+  virtual void writeData(const Timing &timing, const double dt, const bool force=false)  = 0;
 
 };
 
