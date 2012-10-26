@@ -11,7 +11,7 @@
  * =====================================================================================
  */
 
-#include<string>
+#include <string>
 #include <sstream>
 #include <stddef.h>
 #include "hdf5.h"
@@ -37,16 +37,17 @@ FileIO::FileIO(Parallel *_parallel, Setup *setup)  :  parallel(_parallel)
 {
 
     // Set Initial values
-    inputFileName         = setup->get("DataOutput.InputFileName", "--- None ---");
+    inputFileName         = setup->get("DataOutput.InputFileName", "");
     outputFileName        = setup->get("DataOutput.OutputFileName", "default.h5");
     info                  = setup->get("DataOutput.Info", "No information provided");
-    resumeFile            = setup->get("DataOutput.Resume", 0);
     overwriteFile         = setup->get("DataOutput.Overwrite", 0) || (setup->flags & Setup::GKC_OVERWRITE);
    
     dataFileFlushTiming  = Timing(setup->get("DataOutput.Flush.Step", -1)       , setup->get("DataOutput.Flush.Time", 100.)); 
     
+    resumeFile            = inputFileName != "";
+    
 
-    ///////// Define Timeing Datatype
+    ///////// Define Timing Datatype
     timing_tid = H5Tcreate(H5T_COMPOUND, sizeof(Timing));
     H5Tinsert(timing_tid, "Timestep", HOFFSET(Timing, step), H5T_NATIVE_INT   );
     H5Tinsert(timing_tid, "Time"    , HOFFSET(Timing, time), H5T_NATIVE_DOUBLE);
@@ -77,47 +78,45 @@ FileIO::FileIO(Parallel *_parallel, Setup *setup)  :  parallel(_parallel)
 
 void FileIO::create(Setup *setup) 
 {
+
+  hid_t file_plist = H5Pcreate(H5P_FILE_ACCESS);
+#ifdef GKC_PARALLEL_MPI
+  // pass some information onto the underlying MPI_File_open call 
+  MPI_Info file_info;
+  check(MPI_Info_create(&file_info), DMESG("File info"));
+
+  /* 
+     H5Pset_sieve_buf_size(file_plist, 262144); 
+     H5Pset_alignment(file_plist, 524288, 262144);
      
-        hid_t file_plist = H5Pcreate(H5P_FILE_ACCESS);
-#ifdef GKC_PARALLEL_MPI
-   //       pass some information onto the underlying MPI_File_open call 
-          MPI_Info file_info;
-          check(MPI_Info_create(&file_info), DMESG("File info"));
-          /* 
-          H5Pset_sieve_buf_size(file_plist, 262144); 
-          H5Pset_alignment(file_plist, 524288, 262144);
-                
-          MPI_Info_set(file_info, (char *) "access_style"        , (char *) "write_once");
-          MPI_Info_set(file_info, (char *) "collective_buffering", (char *) "true");
-          MPI_Info_set(file_info, (char *) "cb_block_size"       , (char *) "1048576");
-          MPI_Info_set(file_info, (char *) "cb_buffer_size"      , (char *) "4194304");
-           * */
+     MPI_Info_set(file_info, (char *) "access_style"        , (char *) "write_once");
+     MPI_Info_set(file_info, (char *) "collective_buffering", (char *) "true");
+     MPI_Info_set(file_info, (char *) "cb_block_size"       , (char *) "1048576");
+     MPI_Info_set(file_info, (char *) "cb_buffer_size"      , (char *) "4194304");
+   */
 
-          check( H5Pset_fapl_mpio(file_plist, parallel->Comm[DIR_ALL], file_info), DMESG("Set MPI Property"));
+  check( H5Pset_fapl_mpio(file_plist, parallel->Comm[DIR_ALL], file_info), DMESG("Set MPI Property"));
 #endif
-        file = check(H5Fcreate(outputFileName.c_str(), (overwriteFile ? H5F_ACC_TRUNC : H5F_ACC_EXCL),
-                        H5P_DEFAULT, file_plist ), DMESG("H5FCreate : HDF5 File (File already exists ? use -f to overwrite) : " + outputFileName));
-        check( H5Pclose(file_plist),   DMESG("H5Pclose"));
+  
+  file = check(H5Fcreate(outputFileName.c_str(), (overwriteFile ? H5F_ACC_TRUNC : H5F_ACC_EXCL),
+              H5P_DEFAULT, file_plist ), DMESG("H5FCreate : HDF5 File (File already exists ? use -f to overwrite) : " + outputFileName));
+  
+  check( H5Pclose(file_plist),   DMESG("H5Pclose"));
 
 #ifdef GKC_PARALLEL_MPI
-        MPI_Info_free(&file_info);
+  MPI_Info_free(&file_info);
 #endif
         
          //////////////////////////////////////////////////////////////// Info Group ////////////////////////////////////////////////////////
 
-          hid_t infoGroup = check(H5Gcreate(file, "/Info",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phasespace : H5Gcreate"));
+         hid_t infoGroup = check(H5Gcreate(file, "/Info",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phasespace : H5Gcreate"));
 
          check(H5LTset_attribute_string(infoGroup, ".", "Output", outputFileName.c_str()), DMESG("H5LTset_attribute"));
-         check(H5LTset_attribute_string(infoGroup, ".", "Input",  inputFileName.c_str()), DMESG("H5LTset_attribute"));
+         check(H5LTset_attribute_string(infoGroup, ".", "Input" , inputFileName.c_str()), DMESG("H5LTset_attribute"));
          
          
-         check(H5LTset_attribute_string(infoGroup, ".", "Version", PACKAGE_VERSION), DMESG("H5LTset_attribute"));
-         // Some Simulation specific stuff
-         //check(H5LTset_attribute_string(infoGroup, ".", "Solver", ((setup->Solver & VL_LIN) ? "Linear" : "Non-Linear")), DMESG("H5LTset_attribute"));
-         //heck(H5LTset_attribute_string(infoGroup, ".", "Type",   ((setup->VlasovType   & VLASOV_LOCAL ) ? "Local"  : "Global"    )), DMESG("H5LTset_attribute"));
-         //heck(H5LTset_attribute_string(infoGroup, ".", "FFTSolverS",   ((setup->VlasovType   & VLASOV_LOCAL ) ? "Local"  : "Global"    )), DMESG("H5LTset_attribute"));
-         //check(H5LTset_attribute_string(infoGroup, ".", "Initial Condition", setup->PerturbationMethod.c_str()), DMESG("H5LTset_attribute"));
-         check(H5LTset_attribute_string(infoGroup, ".", "Info", info.c_str()), DMESG("H5LTset_attribute"));
+         check(H5LTset_attribute_string(infoGroup, ".","Version", PACKAGE_VERSION), DMESG("H5LTset_attribute"));
+         check(H5LTset_attribute_string(infoGroup, ".", "Info"  , info.c_str()), DMESG("H5LTset_attribute"));
          
          check(H5LTset_attribute_string(infoGroup, ".", "Config", setup->configFileString.c_str()), DMESG("H5LTset_attribute"));
 
@@ -126,7 +125,7 @@ void FileIO::create(Setup *setup)
          
          /// Wrote setup constants, ugly here ////
          hid_t constantsGroup = check(H5Gcreate(file, "/Constants",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phasespace : H5Gcreate"));
-         //
+         
          if (!setup->parser_constants.empty()) { 
             
            std::vector<std::string> const_vec = Setup::split(setup->parser_constants, ",");
@@ -147,22 +146,6 @@ void FileIO::create(Setup *setup)
 }
 
 
-      // This is a bit ugly ... :(
-/* 
-      int FileIO::load(Vlasov *vlasov, Fields *fields) {
-        return GKC_FAILED;
-        hid_t file_in;
-        if(inputFileName == outputFileName)
-           file_in = check(H5Fopen( inputFileName.c_str(), H5F_ACC_RDWR, H5P_DEFAULT), DMESG("H5Fopen : inputFileName"));
-    else
-
-           file_in = check(H5Fopen( inputFileName.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT), DMESG("H5Fopen : inputFileName"));
-
-
- * */
-
-
-
 // Destructor
 FileIO::~FileIO()  
 {
@@ -176,7 +159,7 @@ FileIO::~FileIO()
     
      
      // close file
-     check( H5Fclose(file) , DMESG("Unable to close file ..."));
+     check( H5Fclose(file)    , DMESG("Unable to close file ..."));
 
 }
 
@@ -199,7 +182,8 @@ void FileIO::flush(Timing timing, double dt)
 
 void FileIO::printOn(std::ostream &output) const {
          output << "            -------------------------------------------------------------------" << std::endl
-                << "Data       |  Input     : " << inputFileName        << " Output    : " <<  outputFileName        << " Resume : " << ((resumeFile)?"yes":"no") << std::endl;
+                << "Data       |  Input     : " << (inputFileName == "" ? "---None---" : inputFileName)   
+                <<              " Output    : " <<  outputFileName        << " Resume : " << ((resumeFile)?"yes":"no") << std::endl;
       };
 
 FileAttr* FileIO::newTiming(hid_t group, hsize_t offset, bool write)

@@ -86,7 +86,7 @@ class Grid : public IfaceGKC {
    void initData(FileIO *fileIO);
    
    /// Class information
-   virtual void writeData(Timing *timing) {};
+   virtual void writeData(const Timing &timing, const double dt) {};
    
    /// Class information
    virtual void closeData() {};

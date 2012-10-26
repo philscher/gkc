@@ -22,7 +22,7 @@ VlasovCilk::VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *
 
     collisionBeta = setup->get("Vlasov.CollisionBeta", 0.);
     
-    Vlasov::initData(fileIO);    
+    Vlasov::initData(setup, fileIO);    
 }
 
 
@@ -361,9 +361,9 @@ void VlasovCilk::printOn(std::ostream &output) const
 };
 
 
-void VlasovCilk::initData(FileIO *fileIO) 
+void VlasovCilk::initData(Setup *setup, FileIO *fileIO) 
 {
-                Vlasov::initData(fileIO); 
+                Vlasov::initData(setup, fileIO); 
 
 };
 

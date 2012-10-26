@@ -109,9 +109,8 @@ GKC::GKC(Setup *_setup) : setup(_setup)
     
     /////////////////////////////////////////////////////////////////////////////
 
-    // Note : Initalization also handles continueation from file
     // call before time integration (due to eigenvalue solver)
-    init           = new  Init(parallel, grid, setup, vlasov, fields, geometry);
+    init           = new  Init(parallel, grid, setup, fileIO, vlasov, fields, geometry);
     
     control   = new Control(setup, parallel, analysis);
     particles = new TestParticles(fileIO, setup, parallel);
@@ -148,10 +147,12 @@ int GKC::mainLoop()
 
                // Analysis results and output data if necessary
                // check if performed in writeData
-               event->checkEvent(timing, vlasov, fields);
-               analysis->writeData(timing, dt);
+               vlasov->writeData(timing, dt);
                fields->writeData(timing, dt);
                visual->writeData(timing, dt);
+               analysis->writeData(timing, dt);
+               
+               event->checkEvent(timing, vlasov, fields);
 
                // Make here scalar operations
            }

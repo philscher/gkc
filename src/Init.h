@@ -57,7 +57,7 @@ class Init   : public IfaceGKC
    /**
    *   @brief document me please
    **/
-   Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields *fields, Geometry *geo);
+   Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov *vlasov, Fields *fields, Geometry *geo);
    /**
    *   @brief document me please
    **/
@@ -116,7 +116,7 @@ class Init   : public IfaceGKC
     virtual void printOn(std::ostream &output) const ;
      
     virtual void initData(FileIO *fileIO) {};
-    virtual void writeData(Timing *timing) {};
+    virtual void writeData(const Timing &timing, const double dt) {};
     virtual void closeData() {};
 
 

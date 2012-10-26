@@ -16,20 +16,21 @@
 
 #include "System.h"
 
-Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields *fields, Geometry *_geo) : geo(_geo)
+Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov *vlasov, Fields *fields, Geometry *_geo) : geo(_geo)
 {
-
-
-    //if(fileIO->resumeFile == true) fileIO->load(vlasov, fields);
 
 
    epsilon_0          = setup->get("Init.Epsilon0", 1.e-14); 
    sigma              = setup->get("Init.Sigma"   , 8.    ); 
+   // check for predefined perturbations
+   PerturbationMethod = setup->get("Init.Perturbation", "");
+   
+   
+   // Only perturbed if not continued
+   if(fileIO->resumeFile == false) {
 
    initBackground(setup, (A6zz) vlasov->f0, (A6zz) vlasov->f, V, M, grid);
   
-   // check for predefined perturbations
-   PerturbationMethod = setup->get("Init.Perturbation", "");
 
    if(PerturbationMethod == "NoPerturbation") ;
    else if (PerturbationMethod == "EqualModePower")  PerturbationPSFMode ((A6zz) vlasov->f0, (A6zz) vlasov->f); 
@@ -143,7 +144,7 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, Vlasov *vlasov, Fields 
    else if (plasma->nfields >= 3) setFieldFromFunction(setup, fields->Field0, Field::Bp, setup->get("Init.FixedBp", "0."));
 
  * */
-
+   }
    
    //////////////////////////////////////// Done ///////////////
    // Boundaries and Done   

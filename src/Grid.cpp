@@ -94,8 +94,7 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
        
        NkyGlD = 0; NkyGuD=Nky-1; NkyGlB=0; NkyGuB=Nky-1; 
        NkyLlD = 0; NkyLuD=Nky-1; NkyLlB=0; NkyLuB=Nky-1;
-       NkyLD=Nky; NkyGD=Nky; NkyGD=Nky;
-
+       NkyLD=Nky; NkyGD=Nky; 
     // Set Domain for all processes
 
        // Number of Ghost/Halo cells

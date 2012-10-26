@@ -43,12 +43,12 @@ class FileIO : public IfaceGKC
    Timing dataFileFlushTiming; ///< Timing when to flush the HDF-5 file
    
    // Data files
-   string inputFileName;     ///< Input file name (not working)
    string outputFileName;    ///< Name of the output file
    string info;              ///< additional information to append to the file
 
 
 public:
+   string inputFileName;     ///< Input file name (move to protected!)
 
    /** 
    *
@@ -91,7 +91,7 @@ public:
   protected:
    virtual void printOn(std::ostream &output) const;
    virtual void initData(FileIO *fileIO) {};
-   virtual void writeData(Timing *timing) {};
+   virtual void writeData(const Timing &timing, const double dt) {};
    virtual void closeData() {};
 
   private:

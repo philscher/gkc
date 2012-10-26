@@ -224,6 +224,13 @@ class Vlasov : public IfaceGKC {
    *
    **/
    CComplex *nonLinearTerms; 
+   
+   /**
+   *    Please Document Me !
+   *
+   **/
+   virtual void writeData(const Timing &timing, const double dt);
+
 
  protected :
 
@@ -237,16 +244,12 @@ class Vlasov : public IfaceGKC {
    *    Please Document Me !
    *
    **/
-   virtual void initData(FileIO *fileIO);
+   virtual void initData(Setup *setup, FileIO *fileIO);
 //   virtual void initData(hid_t groupID, FileIO *fileIO);
 
    void loadData(FileIO *fileIO);
 
-   /**
-   *    Please Document Me !
-   *
-   **/
-   virtual void writeData(Timing *timing) {};
+   Timing dataOutputF1;
 
    /**
    *    Please Document Me !
@@ -255,7 +258,7 @@ class Vlasov : public IfaceGKC {
    virtual void closeData();
 
  private:
-   FileAttr *FA_psf, *FA_psfTime; 
+   FileAttr *FA_f1, *FA_f0, *FA_psfTime; 
 
 };
 

@@ -37,29 +37,27 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
    nct::allocate(grid->RkyLD, grid->RxLD , grid->RvLD)(&nonLinearTerms);
    
    // allocate boundary (mpi) buffers
-   //allocate(RB  , RkyLD, RzLD, RvLD, RmLD, RsLD, SendXu, SendXl, RecvXu, RecvXl);
    ArrayBoundX = nct::allocate(nct::Range(0 , 2 * NkyLD * NzLD * NvLD * NmLD * NsLD ));
    ArrayBoundX(&SendXu, &SendXl, &RecvXl, &RecvXu);
    
-   //allocate(RxLD, RkyLD, RB  , RvLD, RmLD, RsLD, SendZu, SendZl, RecvZu, RecvZl);
    ArrayBoundZ = nct::allocate(nct::Range(0 , NxLD * NkyLD * 2 * NvLD * NmLD * NsLD ));
    ArrayBoundZ(&SendZu, &SendZl, &RecvZl, &RecvZu);
    
-   //allocate(RxLD, RkyLD, RzLD, RB  , RmLD, RsLD, SendVu, SendVl, RecvVu, RecvVl);
    ArrayBoundV = nct::allocate(nct::Range(0 , NxLD * NkyLD * NzLD * 2 * NmLD * NsLD ));
    ArrayBoundV(&SendVu, &SendVl, &RecvVl, &RecvVu);
   
-
    equation_type       = setup->get("Vlasov.Equation" , "2D_ES");        
    nonLinear           = setup->get("Vlasov.NonLinear", 0      );
 
-   std::string dir_string[] = { "X", "Y", "Z", "V", "M", "S" };
+   const std::string dir_string[] = { "X", "Y", "Z", "V", "M", "S" };
    
 
    for(int dir = DIR_X ; dir <= DIR_S ; dir++) hyper_visc[dir] = setup->get("Vlasov.HyperViscosity." + dir_string[dir]   ,  0.0);
-       
    
    collisions = new Collisions(grid, parallel, setup, fileIO, geo, fft);
+    
+   dataOutputF1      = Timing( setup->get("DataOutput.Vlasov.Step", -1),
+                               setup->get("DataOutput.Vlasov.Time", -1.));
     
 }
 
@@ -73,7 +71,6 @@ Vlasov::~Vlasov()
 
 void Vlasov::solve(Fields *fields, CComplex  *_fs, CComplex  *_fss, double dt, int rk_step, const double rk[3], bool useNonBlockingBoundary)
 {
-
    static CComplex *f_boundary       = nullptr;
 
    useNonBlockingBoundary =  false;
@@ -111,7 +108,7 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
          CComplex RecvZl[NsLD][NmLD][GC2 ][NkyLD][NxLD][NvLD], CComplex RecvZu[NsLD][NmLD][GC2 ][NkyLD][NxLD][NvLD],
          CComplex SendVl[NsLD][NmLD][NzLD][NkyLD][NxLD][GC2 ], CComplex SendVu[NsLD][NmLD][NvLD][NkyLD][NxLD][GC2 ],
          CComplex RecvVl[NsLD][NmLD][NzLD][NkyLD][NxLD][GC2 ], CComplex RecvVu[NsLD][NmLD][NvLD][NkyLD][NxLD][GC2 ])
-{
+  {
 
   /////////////////////////// Send Boundaries //////////////////////////////
   if(boundary_type & Boundary::SEND) {
@@ -184,8 +181,6 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
     (A6zz) SendZl,  (A6zz) SendZu,  (A6zz) RecvZl,  (A6zz) RecvZu,
     (A6zz) SendVl,  (A6zz) SendVu,  (A6zz) RecvVl,  (A6zz) RecvVu);
 
-
-
 }
 
 
@@ -212,24 +207,22 @@ double Vlasov::getMaxTimeStep(int dir, const double maxCFL)
 ///////////////////////////////////////////   File I/O    ///////////////////////////////////////
 
 
-// BUG : Not working (HDF-5 intialized the whole size even if we don't write
-void Vlasov::initData(FileIO *fileIO) 
+void Vlasov::initData(Setup *setup, FileIO *fileIO) 
 {
    
   //// Phasespace Group 
   hid_t psfGroup =  fileIO->newGroup("/Vlasov", fileIO->getFileID());
-
-  // Initialize phase space
-  hsize_t psf_offset[7] =  { NsLlB-1, NmLlB-1, NvLlB-1, NzLlB-1, NyLlB-1, NxLlB-1, 0 };
   
   // Phase space dimensions
-  hsize_t psf_dim[]       = { grid->NsGD, grid->NmGD, grid->NvGD, grid->NzGD, grid->NkyGD, grid->NxGD,  1 };
-  hsize_t psf_maxdim[]    = { grid->NsGD, grid->NmGD, grid->NvGD, grid->NzGD, grid->NkyGD, grid->NxGD, H5S_UNLIMITED};
-  hsize_t psf_moffset[]   = { 0, 0, 2, 0, 2, 2, 0 };
-  hsize_t psf_chunkBdim[] = { NsLB, NmLB, NvLB, NzLB, NkyLD, NxLB, 1};
-  hsize_t psf_chunkdim[]  = { NsLD, NmLD, NvLD, NzLD, NkyLD, NxLD, 1};
+  hsize_t psf_dim[]       = { grid->NsGD, grid->NmGD, grid->NzGD, NkyLD , grid->NxGD, grid->NvGD,             1 };
+  hsize_t psf_maxdim[]    = { grid->NsGD, grid->NmGD, grid->NzGD, NkyLD , grid->NxGD, grid->NvGD, H5S_UNLIMITED };
+  hsize_t psf_chunkBdim[] = { NsLB      , NmLB      , NzLB      , NkyLD , NxLB      , NvLB      ,             1 };
+  hsize_t psf_chunkdim[]  = { NsLD      , NmLD      , NzLD      , NkyLD , NxLD      , NvLD      ,             1 };
+  hsize_t psf_offset[]    = { NsLlB-1   , NmLlB-1   , NzLlB-1   , NkyLlB, NxLlB-1   , NvLlB-1   ,             0 };
+  hsize_t psf_moffset[]   = { 0         , 0         , 2         , 0     , 2         , 2         , 0             };
      
-  FA_psf      = new FileAttr("Phasespace", psfGroup, 7, psf_dim, psf_maxdim, psf_chunkdim, psf_moffset,  psf_chunkBdim, psf_offset, true, fileIO->complex_tid);
+  FA_f0       = new FileAttr("f0", psfGroup, 7, psf_dim, psf_maxdim, psf_chunkdim, psf_moffset,  psf_chunkBdim, psf_offset, true, fileIO->complex_tid);
+  FA_f1       = new FileAttr("f1", psfGroup, 7, psf_dim, psf_maxdim, psf_chunkdim, psf_moffset,  psf_chunkBdim, psf_offset, true, fileIO->complex_tid);
   FA_psfTime  = fileIO->newTiming(psfGroup);
          
   // call additional routines
@@ -237,37 +230,59 @@ void Vlasov::initData(FileIO *fileIO)
 
   H5Gclose(psfGroup);
 
+  if(fileIO->resumeFile == true) {
+
+         // Currently we handle it here (should find better place)
+         hid_t file_in = check(H5Fopen (fileIO->inputFileName.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT), DMESG("H5Fopen"));
+
+         // have to read from new file 
+         FileAttr *FA_in_f0 = new FileAttr("/Vlasov/f0", file_in, 7, psf_dim, psf_maxdim, psf_chunkdim, psf_moffset,  psf_chunkBdim, psf_offset, true, fileIO->complex_tid, false);
+         FileAttr *FA_in_f1 = new FileAttr("/Vlasov/f1", file_in, 7, psf_dim, psf_maxdim, psf_chunkdim, psf_moffset,  psf_chunkBdim, psf_offset, true, fileIO->complex_tid, false);
+
+         FA_in_f0->read(ArrayPhase.data(f0));
+         FA_in_f1->read(ArrayPhase.data(f ));
+         
+         delete FA_in_f0;
+         delete FA_in_f1;
+
+         H5Fclose(file_in); 
+
+
+  };
 }
 
 void Vlasov::closeData() 
 {
-
-   delete FA_psf;
+   delete FA_f0;
+   delete FA_f1;
    delete FA_psfTime;
 }
 
+
+void Vlasov::writeData(const Timing &timing, const double dt) 
+{
+   if (timing.check(dataOutputF1, dt)       )   {
+      
+      FA_f0->write(ArrayPhase.data(f0));
+      FA_f1->write(ArrayPhase.data(f ));
+      FA_psfTime->write(&timing);
+      
+      parallel->print("Wrote phase-space data ... "); 
+   }
+}
+
+
 void Vlasov::loadData(FileIO *fileIO)
 {
- 
-   // what is exactly the difference between reading and writting HDF-5 ? Setup should be same.
-   // Anyway to tell FileAttr ?!
-
-
+  // what is exactly the difference between reading and writting HDF-5 ? Setup should be same.
   // Phase space dimensions
+  /*
   hsize_t psf_dim[]       = { grid->NsGD, grid->NmGD, grid->NvGD, grid->NzGD, grid->NkyGD, grid->NxGD,  1 };
   hsize_t psf_maxdim[]    = { grid->NsGD, grid->NmGD, grid->NvGD, grid->NzGD, grid->NkyGD, grid->NxGD, H5S_UNLIMITED};
   hsize_t psf_moffset[]   = { 0, 0, 2, 0, 2, 2, 0 };
   hsize_t psf_chunkBdim[] = { NsLB, NmLB, NvLB, NzLB, NkyLD, NxLB, 1};
   hsize_t psf_chunkdim[]  = { NsLD, NmLD, NvLD, NzLD, NkyLD, NxLD, 1};
-  
-  /* 
-  
-  // Get f0 ! .. definition the t=0 value is the f0 value !
-  //psf_offset =  { NvLlB-1, NzLlB-1, NyLlB-1, NxLlB-1, 0 };
-  psf_offset[6] = 0;
-   * */
-
-
+  */
 };
 
 void Vlasov::printOn(std::ostream &output) const
