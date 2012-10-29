@@ -16,12 +16,10 @@
 #include "Vlasov_Cilk.h"
 
 
-VlasovCilk::VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *fft, Benchmark *_bench)    
-: Vlasov(_grid, _parallel, _setup, fileIO, _geo, fft, _bench)
+VlasovCilk::VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *fft, Benchmark *_bench, Collisions *_coll)    
+: Vlasov(_grid, _parallel, _setup, fileIO, _geo, fft, _bench, _coll)
 {
 
-    collisionBeta = setup->get("Vlasov.CollisionBeta", 0.);
-    
     Vlasov::initData(setup, fileIO);    
 }
 
@@ -29,7 +27,7 @@ VlasovCilk::VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *
 void VlasovCilk::solve(std::string equation_type, Fields *fields, CComplex *_fs, CComplex *_fss, double dt, int rk_step, const double rk[3]) 
 {
   if(0);
-  else if(equation_type == "Vlasov_EM") Vlasov_EM((A6zz) _fs, (A6zz) _fss, (A6zz) f0, (A6zz) f, (A6zz) ft, 
+  else if(equation_type == "Vlasov_EM") Vlasov_EM((A6zz) _fs, (A6zz) _fss, (A6zz) f0, (A6zz) f, (A6zz) ft, (A6zz) Coll, 
                                                   (A6zz) fields->Field, (A4zz) Xi, (A4zz) G, (A3zz) nonLinearTerms,
                                                   (A2rr) geo->Kx, (A2rr) geo->Ky, (A2rr) geo->dB_dz,
                                                   X, V, M,  dt, rk_step, rk);
@@ -232,10 +230,11 @@ void VlasovCilk::setupXiAndG(
 
 void VlasovCilk::Vlasov_EM(
     const CComplex g  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Current step phase-space function
-    CComplex h  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Phase-space function for next step
+    CComplex       h  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Phase-space function for next step
     const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Background Maxwellian
     const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // previous RK-Step
-    CComplex ft [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // previous RK-Step
+    CComplex       ft [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // previous RK-Step
+    CComplex     Coll [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Collisional corrections
     const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
     CComplex Xi             [NzLB][NkyLD][NxLB+4][NvLB],
     CComplex G              [NzLB][NkyLD][NxLB  ][NvLB],
@@ -336,7 +335,7 @@ void VlasovCilk::Vlasov_EM(
 //          + alpha  / 2. * M[m] * dB_dz[z][x] * dg_dv                                       // Magnetic mirror term    
  //         + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * Kx[z][x] * 
  //         ((w_n + w_T * (pow2(V[v]) + M[m] * B0)/Temp - sub) * dG_dx + sigma * dphi_dx * f0_); // ??
-           + collisionBeta  * (g_  + alpha * V[v] * dg_dv + v2_rms * ddg_dvv);                 // Lennard-Bernstein Collision term
+           + Coll[s][m][z][y_k][x][v];                // Collision term
 
           
         //////////////////////////// Vlasov End ////////////////////////////

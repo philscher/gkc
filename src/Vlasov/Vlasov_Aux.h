@@ -78,6 +78,7 @@ class VlasovAux : public VlasovCilk {
                            const CComplex  f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex  f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            CComplex ft        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Coll[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                            CComplex nonLinear                  [NkyLD][NxLD  ][NvLD],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
@@ -92,6 +93,7 @@ class VlasovAux : public VlasovCilk {
                            const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Coll      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
                            CComplex    nonLinear               [NkyLD][NxLD  ][NvLD],
                            CComplex Xi       [NzLB][NkyLD][NxLB][NvLB],
@@ -110,6 +112,7 @@ class VlasovAux : public VlasovCilk {
                            const CComplex f0         [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f1         [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            CComplex ft               [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Coll       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const  CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                            const double dt, const int rk_step, const double rk[3]);
 
@@ -135,7 +138,7 @@ class VlasovAux : public VlasovCilk {
    *    Please Document Me !
    *
    **/
-   VlasovAux(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO * fileIO, Geometry *_geo, FFTSolver *fft, Benchmark *bench); 
+   VlasovAux(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO * fileIO, Geometry *_geo, FFTSolver *fft, Benchmark *bench, Collisions *coll); 
         
    /**
    *    Please Document Me !

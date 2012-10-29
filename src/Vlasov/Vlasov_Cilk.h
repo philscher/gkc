@@ -122,6 +122,7 @@ class VlasovCilk : public Vlasov {
                            const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex Coll     [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex Fields [Nq][NsLD][NmLD ][NzLB][NkyLD][NxLB+4],
                            CComplex Xi       [NzLD][NkyLD][NxLD  ][NvLD],
                            CComplex G        [NzLD][NkyLD][NxLD  ][NvLD],
@@ -153,7 +154,7 @@ class VlasovCilk : public Vlasov {
    *    Please Document Me !
    *
    **/
-   VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO * fileIO, Geometry *_geo, FFTSolver *fft, Benchmark *bench); 
+   VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO * fileIO, Geometry *_geo, FFTSolver *fft, Benchmark *bench, Collisions *coll); 
         
    /**
    *    Please Document Me !

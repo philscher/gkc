@@ -58,6 +58,7 @@ class VlasovOptim : public Vlasov {
                            const cmplx16 f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplx16 f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplx16 ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplx16 Coll      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplx16 Field[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                            cmplx16 nonLinear[NzLD][NkyLD][NxLD][NvLD],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
@@ -69,7 +70,7 @@ class VlasovOptim : public Vlasov {
    *    Please Document Me !
    *
    **/
-   VlasovOptim(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO * fileIO, Geometry *_geo, FFTSolver *fft, Benchmark *bench); 
+   VlasovOptim(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO * fileIO, Geometry *_geo, FFTSolver *fft, Benchmark *bench, Collisions *coll); 
         
    /**
    *    Please Document Me !

@@ -14,9 +14,9 @@
 #include "Vlasov.h"
 
 
-Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *_fft, Benchmark *_bench)
+Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *_fft, Benchmark *_bench, Collisions *_coll)
 
-: fft(_fft), bench(_bench), parallel(_parallel), grid(_grid), setup(_setup), geo(_geo)
+: fft(_fft), bench(_bench), parallel(_parallel), grid(_grid), setup(_setup), geo(_geo), coll(_coll)
 
    , _kw_12_dx_dx(1./(12.*dx*dx))
    , _kw_12_dv   ( 1./(12.*dv)  )
@@ -29,7 +29,7 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
 {
 
    ArrayPhase = nct::allocate(grid->RsLD, grid->RmLD, grid->RzLB, grid->RkyLD, grid->RxLB, grid->RvLB);
-   ArrayPhase(&f0, &f, &fss, &fs, &f1, &ft);
+   ArrayPhase(&f0, &f, &fss, &fs, &f1, &ft, &Coll);
    
    
    nct::allocate(grid->RzLB , grid->RkyLD, nct::Range(NxLlB-2, NxLB+4), grid->RvLB)(&Xi);
@@ -54,8 +54,6 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
 
    for(int dir = DIR_X ; dir <= DIR_S ; dir++) hyper_visc[dir] = setup->get("Vlasov.HyperViscosity." + dir_string[dir]   ,  0.0);
    
-   collisions = new Collisions(grid, parallel, setup, fileIO, geo, fft);
-    
    dataOutputF1      = Timing( setup->get("DataOutput.Vlasov.Step", -1),
                                setup->get("DataOutput.Vlasov.Time", -1.));
     
@@ -80,7 +78,8 @@ void Vlasov::solve(Fields *fields, CComplex  *_fs, CComplex  *_fss, double dt, i
   
    Xi_max[:] = 0.; // Needed to calculate CFL time step 
    
-   solve(equation_type, fields, _fs, _fss, dt, rk_step, rk);
+   coll->solve(fields, _fs, f0, Coll, dt, rk_step);
+         solve(equation_type, fields, _fs, _fss, dt, rk_step, rk);
 
 
    // Note : we have non-blocking boundaries as Poisson solver does not require ghosts

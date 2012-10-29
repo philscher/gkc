@@ -19,7 +19,7 @@ class FileAttr
 {
  
   // Copy Arrays
-  static void copy(hsize_t dim_from[], hsize_t dim_to[]) 
+  void copy(hsize_t dim_from[], hsize_t dim_to[]) 
   {
     for(int n=0; n < n_dim; n++) dim_to[n] = dim_from[n];
   };
@@ -36,7 +36,7 @@ class FileAttr
   hsize_t  dim[7],                    ///< Dimension of Array
            maxdim[7],                 ///< Maximum dimension of array 
            chunkdim[7],               ///< Chunk size 
-           offset[7];                 ///< (Boundary) Offset 
+           offset[7],                 ///< (Boundary) Offset 
            stride1[7];                ///< Set unit stride
 
   bool do_write;                      ///< Does process write to data

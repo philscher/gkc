@@ -16,8 +16,9 @@
 
 
   
-VlasovAux::VlasovAux(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *_fileIO, Geometry *_geo, FFTSolver *_fft, Benchmark *_bench)    
-        : VlasovCilk(_grid, _parallel, _setup, _fileIO, _geo, _fft, _bench) 
+VlasovAux::VlasovAux(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *_fileIO, Geometry *_geo, FFTSolver *_fft, Benchmark *_bench, Collisions *_coll)    
+        : VlasovCilk(_grid, _parallel, _setup, _fileIO, _geo, _fft, _bench, _coll) 
+          
 {
 
   // Cast to two dimensional geometry module (to access k_\parallel)
@@ -34,13 +35,13 @@ void VlasovAux::solve(std::string equation_type, Fields *fields, CComplex *f_in,
   if(equation_type == "ES")
 
       Vlasov_ES   ((A6zz) f_in, (A6zz) f_out     , (A6zz) f0, (A6zz) f, 
-                   (A6zz) ft , (A6zz) fields->Field, 
+                   (A6zz) ft , (A6zz) Coll, (A6zz) fields->Field, 
                    (A3zz) nonLinearTerms, X, V, M, dt, rk_step, rk);
 
   else if(equation_type == "EM")
 
       Vlasov_EM    ((A6zz) f_in, (A6zz) f_out, (A6zz) f0, (A6zz) f,
-                   (A6zz) ft, (A6zz) fields->Field, (A3zz) nonLinearTerms,
+                   (A6zz) ft, (A6zz) Coll, (A6zz) fields->Field, (A3zz) nonLinearTerms,
                    (A4zz) Xi, (A4zz) G, X, V, M, dt, rk_step, rk);
 
   else if(equation_type == "Landau_Damping")
@@ -62,6 +63,7 @@ void VlasovAux::Vlasov_ES(
                            const CComplex f0        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f1        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            CComplex ft              [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Coll      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex Fields[Nq][NsLD][NmLB][NzLB][NkyLD][NxLB+4],
                            CComplex       nonLinear                   [NkyLD][NxLD  ][NvLD],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
@@ -118,11 +120,9 @@ void VlasovAux::Vlasov_ES(
          //#pragma vector nontemporal(fss)
          simd_for(int v=NvLlD; v<= NvLuD; v++) { 
 
-            const  CComplex g      = fs [s][m][z][y_k][x][v];
             const  CComplex f0_    = f0 [s][m][z][y_k][x][v];
 
-            const CComplex dfs_dv  = (8.  *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))*_kw_12_dv;
-            const CComplex ddfs_dv = (16. *(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) - 30.*g) * _kw_12_dv_dv;
+            const  CComplex g      = fs [s][m][z][y_k][x][v];
         
             // hyperdiffusion terms
             // const Complex d4fs_d4x = (-(fs[s][m][z][y_k][x-2][v] + fs[s][m][z][y_k][x+2][v]) + 4. * (fs[s][m][z][y_k][x-1][v] + fs[s][m][z][y_k][x+1][v]) - 6.*fs[s][m][z][y_k][x][v])/_16_dx4;
@@ -136,7 +136,7 @@ void VlasovAux::Vlasov_ES(
              +  ky* (-(w_n + w_T * (((V[v]*V[v])+ (doGyro ? M[m] : 0.))*kw_T  - sub)) * f0_ * phi_    // Driving term (Temperature/Density gradient)
              -  half_eta_kperp2_phi * f0_)                                            // Contributions from gyro-1 (0 if not neq Gyro-1)
              -  alpha  * V[v]* kp  * ( g + sigma * phi_ * f0_)                        // Linear Landau damping
-             +  collisionBeta  * (g  + alpha * V[v] * dfs_dv + 2. * ddfs_dv);         // Lennard-Bernstein Collision term
+             +  Coll[s][m][z][y_k][x][v]  ;                                           // Collisional operator
          
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         
@@ -158,6 +158,7 @@ void VlasovAux::Vlasov_EM(
                            const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Coll      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
                            CComplex    nonLinear               [NkyLD][NxLD  ][NvLD],
                            CComplex Xi       [NzLB][NkyLD][NxLB+4][NvLB],
@@ -213,9 +214,9 @@ void VlasovAux::Vlasov_EM(
       const CComplex Xi_  = Xi[z][y_k][x][v];
 
       // Velocity derivaties for Lennard-Bernstein Collisional Model
-      const CComplex dfs_dv   = (8. *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))/(12.*dv);
-      const CComplex ddfs_dvv = (16.*(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) - 30.*fs[s][m][z][y_k][x][v])/(12.*dv*dv);
-      const double v2_rms = 1.;//pow2(alpha)
+      //const CComplex dfs_dv   = (8. *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))/(12.*dv);
+      //const CComplex ddfs_dvv = (16.*(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) - 30.*fs[s][m][z][y_k][x][v])/(12.*dv*dv);
+      //const double v2_rms = 1.;//pow2(alpha)
      
      
       // calculate first order Average
@@ -235,7 +236,7 @@ void VlasovAux::Vlasov_EM(
              +  ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])/Temp  - sub)) * F0 * Xi_     // Driving term (Temperature/Density gradient)
              -  half_eta_kperp2_Xi * F0)                                             // Contributions from gyro-1 (0 if not neq Gyro-1)
              -  alpha  * V[v]* kp  * ( g + sigma * Xi_ * F0)                         // Linear Landau damping
-             +  collisionBeta  * (g  + alpha * V[v] * dfs_dv + 2. * ddfs_dvv);       // Lennard-Bernstein Collision term
+             +  Coll[s][m][z][y_k][x][v]  ;                                           // Collisional operator
          
         
         //////////////////////////// Vlasov End ////////////////////////////
@@ -301,6 +302,7 @@ void    VlasovAux::Vlasov_2D_Fullf(
                            const CComplex f0         [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f1         [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            CComplex ft               [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Coll      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const  CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                            const double dt, const int rk_step, const double rk[3])
 { 
@@ -344,10 +346,6 @@ void    VlasovAux::Vlasov_2D_Fullf(
         //const Complex d4g_dv    =  0.;
 //        const Complex d4g_dv    =  -1.e-3 * (-39. *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1])  + 12. *(fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]) + 56. * fs[s][m][z][y_k][x][v]);///pow4(dv);
 
-        const CComplex dfs_dv    = (8.  *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))/(12.*dv);
-        const CComplex ddfs_dvv  = (16. *(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) - 30.*fs[s][m][z][y_k][x][v])/(12.*pow2(dv));
-        const double v2_rms = 1.;//pow2(alpha)
-        ;
         /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
         CComplex dg_dt = 
 
@@ -357,14 +355,11 @@ void    VlasovAux::Vlasov_2D_Fullf(
              //ky * (-(w_n + w_T * ((pow2(V[v])+ M[m])/Temp  - sub)) * F0 * phi_
              ky * (-(w_T * pow2(V[v]) )* f0_ * phi_
                     -(w_n + w_T * (M[m]/Temp  - sub)) * f0_ * phi_)
-
              // add first order gyro-average term (zero when full-gyro)
 //             + 0.5 * w_T  * k2_Fields[Field::phi][z][y_k][x] * F0
-
               // Landau Damping term and parallel ... ? - alpha  * V[v]* geo->get_kp(x)  * ( g + sigma * phi * F0)) 
            - alpha  * V[v]* kp * ( g_ + sigma * phi_ * f0_ )
-           // Collisional terms 
-             + collisionBeta * (g_  + V[v] * dfs_dv + v2_rms * ddfs_dvv)
+             +  Coll[s][m][z][y_k][x][v]  ;                                           // Collisional operator
           ;
 
             // Energy evolution term

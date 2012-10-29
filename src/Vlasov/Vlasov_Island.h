@@ -49,6 +49,7 @@ class VlasovIsland : public VlasovAux {
                            const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Coll      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
                            CComplex nonLinear                  [NkyLD][NxLD  ][NvLD],
                            const double MagIs[NxGB], const double dMagIs[NxGB], 
@@ -61,7 +62,7 @@ class VlasovIsland : public VlasovAux {
    *    Please Document Me !
    *
    **/
-   VlasovIsland(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO * fileIO, Geometry *_geo, FFTSolver *fft, Benchmark *bench); 
+   VlasovIsland(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO * fileIO, Geometry *_geo, FFTSolver *fft, Benchmark *bench, Collisions *coll); 
         
    /**
    *    Please Document Me !

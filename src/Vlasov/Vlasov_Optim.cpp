@@ -22,8 +22,8 @@
 
 
 
-VlasovOptim::VlasovOptim(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *fft, Benchmark *_bench)    
-: Vlasov(_grid, _parallel, _setup, fileIO, _geo, fft, _bench)
+VlasovOptim::VlasovOptim(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *fft, Benchmark *_bench, Collisions *_coll)    
+: Vlasov(_grid, _parallel, _setup, fileIO, _geo, fft, _bench, _coll)
 {
    // no need to call : Is done is base constructor -- or ?    Vlasov::initData(fileIO);    
 }
@@ -35,7 +35,7 @@ void VlasovOptim::solve(std::string equation_type, Fields *fields, CComplex *_fs
   if((equation_type == "VlasovAux_ES")) {
 
       Vlasov_2D((A6sz) _fs, (A6sz) _fss, (A6sz) f0, 
-                (A6sz) f, (A6sz) ft, (A6sz) fields->Field,
+                (A6sz) f, (A6sz) ft, (A6sz) Coll, (A6sz) fields->Field,
                 (A4sz) nonLinearTerms, X, V, M, dt, rk_step, rk);
   }
 
@@ -50,6 +50,7 @@ void VlasovOptim::solve(std::string equation_type, Fields *fields, CComplex *_fs
                            const cmplx16 f0        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplx16 f1        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            cmplx16 ft              [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const cmplx16 Coll      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplx16 Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
                            cmplx16 nonLinear                   [NzLD][NkyLD][NxLD][NvLD]  ,
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
@@ -138,7 +139,7 @@ void VlasovOptim::solve(std::string equation_type, Fields *fields, CComplex *_fs
        const double dg_dt_re = 
             ky_im* (-(w_n + w_T * (((V[vv]*V[vv])+ M[m])/kw_T  - 3./2.)) * f0 [s][m][z][y_k][xx][vv].re * phi_im )
              - alpha  * V[vv]* kp  * ( fs[s][m][z][y_k][xx][vv].im + sigma * phi_im * f0 [s][m][z][y_k][xx][vv].re)
-             + collisionBeta  * (fs[s][m][z][y_k][xx][vv].re  + alpha * V[vv] * dfs_dv_re + v2_rms * ddfs_dvv_re);
+             + Coll[s][m][z][y_k][xx][vv].re;
         
         ft [s][m][z][y_k][xx][vv].re = rk[0] * ft[s][m][z][y_k][xx][vv].re + rk[1] * dg_dt_re                                ;
         fss[s][m][z][y_k][xx][vv].re = f1[s][m][z][y_k][xx][vv].re         + (rk[2] * ft[s][m][z][y_k][xx][vv].re + dg_dt_re) * dt;
@@ -154,7 +155,7 @@ void VlasovOptim::solve(std::string equation_type, Fields *fields, CComplex *_fs
         const  double dg_dt_im = 
             ky_im* (-(w_n + w_T * (((V[vv]*V[vv])+ M[m])/kw_T  - 3./2.)) * f0 [s][m][z][y_k][xx][vv].re * phi_re )
              - alpha  * V[vv]* kp  * ( fs[s][m][z][y_k][xx][vv].re + sigma * phi_re * f0 [s][m][z][y_k][xx][vv].re)
-             + collisionBeta  * (fs[s][m][z][y_k][xx][vv].im  + alpha * V[vv] * dfs_dv_im + v2_rms * ddfs_dvv_im);
+             + Coll[s][m][z][y_k][xx][vv].im;
         
         ft [s][m][z][y_k][xx][vv].im = rk[0] * ft[s][m][z][y_k][xx][vv].im + rk[1] * dg_dt_im                                ;
         fss[s][m][z][y_k][xx][vv].im = f1[s][m][z][y_k][xx][vv].im         + (rk[2] * ft[s][m][z][y_k][xx][vv].im + dg_dt_im) * dt;

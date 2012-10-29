@@ -15,8 +15,8 @@
 #include "Vlasov/Vlasov_Island.h"
 
   
-VlasovIsland::VlasovIsland(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *fft, Benchmark *_bench)    
-: VlasovAux(_grid, _parallel, _setup, fileIO, _geo, fft, _bench) 
+VlasovIsland::VlasovIsland(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, Geometry *_geo, FFTSolver *fft, Benchmark *_bench, Collisions *_coll)    
+: VlasovAux(_grid, _parallel, _setup, fileIO, _geo, fft, _bench, _coll) 
 {
 
     /// Set Magnetic Island structure
@@ -63,7 +63,7 @@ void VlasovIsland::solve(std::string equation_type, Fields *fields, CComplex *f_
   else if(equation_type == "2D_Island") 
     
       Vlasov_2D_Island((A6zz) f_in, (A6zz) f_out, (A6zz) f0, (A6zz) f, 
-                       (A6zz) ft  , (A6zz) fields->Field, (A3zz) nonLinearTerms,
+                       (A6zz) ft  , (A6zz) Coll, (A6zz) fields->Field, (A3zz) nonLinearTerms,
                        MagIs, dMagIs_dx, X, V, M, dt, rk_step, rk);
   
   else   check(-1, DMESG("No Such Equation"));
@@ -80,6 +80,7 @@ void VlasovIsland::Vlasov_2D_Island(
                            const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Coll      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
                            CComplex nonLinear                  [NkyLD][NxLD  ][NvLD],
                            const double MagIs[NxGB], const double dMagIs[NxGB], 
@@ -220,14 +221,14 @@ void VlasovIsland::Vlasov_2D_Island(
 
         
         /////////// Collisions ////////////////////////////////////////////////////////////////////
-
+/*
         const CComplex dfs_dv    = (8.  *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - 
                                          (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2])) * _kw_12_dv;
 
         const CComplex ddfs_dvv  = (16. *(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) -
                                          (fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) 
                                     - 30.*fs[s][m][z][y_k][x][v  ]) * _kw_12_dv_dv;
-
+*/
         //// Hypervisocisty to stabilize simulation
         const double hypvisc_phi_val = -1.e-5;
         
@@ -247,7 +248,7 @@ void VlasovIsland::Vlasov_2D_Island(
              +  ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])*kw_T  - sub)) * f0_ * phi_    // Driving term (Temperature/Density gradient)
              -  half_eta_kperp2_phi * f0_)                                            // Contributions from gyro-1 (0 if not neq Gyro-1)
              -  alpha  * V[v]* kp  * ( g + sigma * phi_ * f0_)                        // Linear Landau damping
-             +  collisionBeta  * (g  + alpha * V[v] * dfs_dv + 2. * ddfs_dvv);        // Lennard-Bernstein Collision term
+             +  Coll[s][m][z][y_k][x][v]  ;                                           // Collisional operator
          
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         

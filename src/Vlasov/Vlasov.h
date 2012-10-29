@@ -67,12 +67,6 @@ class Vlasov : public IfaceGKC {
   enum class Boundary : int { SEND=1,  RECV=2, SENDRECV=3};
 
 
-   /**
-   *    Please Document Me !
-   *
-   **/
-   double collisionBeta;
-
  private:
    /**
    *  @brief Buffer for exchange ghost cells in each direction
@@ -89,7 +83,7 @@ class Vlasov : public IfaceGKC {
    Setup *setup;
    Geometry *geo;
    Benchmark *bench;  
-   Collisions     *collisions;
+   Collisions     *coll;
 
 
    /**
@@ -158,7 +152,13 @@ class Vlasov : public IfaceGKC {
    *
    **/
    nct::allocate ArrayPhase;
-   CComplex *f0, *f, *fs, *fss, *ft, *f1;
+   CComplex *f0,         ///< Maxwellian 
+            *f ,         ///< Perturbed Phase Space Function
+            *fs,         ///<
+            *fss,
+            *ft, 
+            *f1,         ///< f1
+            *Coll;       ///< Collisional corrections
    
    /**
    *    Please Document Me !
@@ -170,7 +170,7 @@ class Vlasov : public IfaceGKC {
    *    Please Document Me !
    *
    **/
-   Vlasov(Grid *grid, Parallel *parallel, Setup *setup, FileIO *fileIO, Geometry *geo, FFTSolver *fft, Benchmark *bench);
+   Vlasov(Grid *grid, Parallel *parallel, Setup *setup, FileIO *fileIO, Geometry *geo, FFTSolver *fft, Benchmark *bench, Collisions *coll);
 
    /**
    *
