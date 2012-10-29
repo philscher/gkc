@@ -52,7 +52,7 @@ class FFTSolver : public IfaceGKC {
    /**  We can suppress various modes, this is set in the setup of the fields.
    *   and sets the Fourier mode to zero. Move to FFT solver.
    */
-   //void suppressModes(CComplex kXOut[Nq][NzLD][NkyLD][X_NkxL], const int field=Field::phi); 
+//   void suppressModes(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL]); 
    void parseSuppressMode(const std::string &value, std::vector<int> &suppressMode);
 
   protected:

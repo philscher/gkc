@@ -23,6 +23,7 @@
 #include "Init.h"
 #include "Parallel/Parallel.h"
 #include "Collisions/Collisions.h"
+#include "Collisions/LenardBernstein.h"
 #include "FFTSolver/FFTSolver.h"
 #include "Control.h"
 #include "Timing.h"
@@ -30,6 +31,7 @@
 #include "Eigenvalue/Eigenvalue.h"
 #include "TimeIntegration/TimeIntegration.h"
 #include "Geometry.h"
+#include "Collisions/Collisions.h"
 #include "Analysis/Analysis.h"
 #include "Analysis/Benchmark.h"
 #include "Analysis/Event.h"
@@ -52,6 +54,7 @@ class GKC
 private:
     FileIO        *fileIO;             ///< Used for Data Input/Output
     Vlasov        *vlasov;             ///< Vlasov equation solver
+    Collisions    *collisions;         ///< Collisional operator
     Grid          *grid;               ///< Grid initialization and boundaries
     Setup        *setup;               ///< Reads configuration files
     Parallel      *parallel;           ///< Parallel communication functions

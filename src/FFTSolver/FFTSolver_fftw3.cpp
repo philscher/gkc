@@ -111,7 +111,9 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
       // plan_FieldTranspose_2 = plan_transpose('C', 2 * NkyLD * NzLD * nfields, 2 * X_NkxL, (double *) data_X_Transp_1, (double *) data_X_Transp_2);
       // check(((plan_FieldTranspose_1 == NULL) || (plan_FieldTranspose_2 == NULL)) ? -1 : 0, DMESG("Transpose planner null"));
 
-           
+       // check plans
+       if(plan_XForward_Fields  == NULL) check(-1, DMESG("Plan not supported"));
+       if(plan_XBackward_Fields == NULL) check(-1, DMESG("Plan not supported"));
             
    
     // Needed to calculate non-linearity in real space

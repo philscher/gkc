@@ -51,6 +51,7 @@ GKC::GKC(Setup *_setup) : setup(_setup)
     std::string fft_solver_name = setup->get("Helios.FFTSolver", "fftw3");
     std::string psolver_type    = setup->get("Fields.Solver", "DFT");
     std::string vlasov_type     = setup->get("Vlasov.Solver", "Aux");
+    std::string collision_type  = setup->get("Collisions.Solver", "None");
     Helios_Type                 = setup->get("GKC.Type", "IVP");
     std::string geometry_Type   = setup->get("GKC.Geometry", "Geometry2D");
 
@@ -91,13 +92,20 @@ GKC::GKC(Setup *_setup) : setup(_setup)
     else if(psolver_type == "Hermite") fields   = new FieldsHermite(setup, grid, parallel, fileIO,geometry);
     else    check(-1, DMESG("No such Fields Solver"));
 
+    // Load Collisonal Operator
+    if     (collision_type == "None" ) collisions = new Collisions                (grid, parallel, setup, fileIO, geometry); 
+    else if(collision_type == "LB"   ) collisions = new Collisions_LenardBernstein(grid, parallel, setup, fileIO, geometry); 
+    else    check(-1, DMESG("No such Collisions Solver"));
+    
     // Load Vlasov Solver
     if(vlasov_type == "None" ) check(-1, DMESG("No Vlasov Solver Selected"));
-    else if(vlasov_type == "Cilk"   ) vlasov  = new VlasovCilk  (grid, parallel, setup, fileIO, geometry, fftsolver, bench);
-    else if(vlasov_type == "Aux"    ) vlasov  = new VlasovAux   (grid, parallel, setup, fileIO, geometry, fftsolver, bench);
-    else if(vlasov_type == "Island" ) vlasov  = new VlasovIsland(grid, parallel, setup, fileIO, geometry, fftsolver, bench);
-    else if(vlasov_type == "Optim"  ) vlasov  = new VlasovOptim (grid, parallel, setup, fileIO, geometry, fftsolver, bench);
+    else if(vlasov_type == "Cilk"   ) vlasov  = new VlasovCilk  (grid, parallel, setup, fileIO, geometry, fftsolver, bench, collisions);
+    else if(vlasov_type == "Aux"    ) vlasov  = new VlasovAux   (grid, parallel, setup, fileIO, geometry, fftsolver, bench, collisions);
+    else if(vlasov_type == "Island" ) vlasov  = new VlasovIsland(grid, parallel, setup, fileIO, geometry, fftsolver, bench, collisions);
+    else if(vlasov_type == "Optim"  ) vlasov  = new VlasovOptim (grid, parallel, setup, fileIO, geometry, fftsolver, bench, collisions);
     else   check(-1, DMESG("No such Fields Solver"));
+
+
 
 
     analysis = new Analysis(parallel, vlasov, fields, grid, setup, fftsolver, fileIO, geometry); 
