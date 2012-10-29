@@ -25,6 +25,8 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov 
    // check for predefined perturbations
    PerturbationMethod = setup->get("Init.Perturbation", "");
    
+   random_seed = setup->get("Init.RandomSeed", 0);
+   
    
    // Only perturbed if not continued
    if(fileIO->resumeFile == false) {
@@ -244,7 +246,7 @@ void Init::PerturbationPSFNoise(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB]
     // add s to initialization of RNG due to fast iteration over s (which time is not resolved)
     for(int s = NsLlD; s <= NsLuD; s++) { 
 
-    std::srand(System::getTime() + System::getProcessID() + s); // provide better inteface (as own class ?!)
+    std::srand(random_seed == 0 ? System::getTime() + System::getProcessID() + s : random_seed); 
       
     for(int m   = NmLlD ; m   <= NmLuD ;   m++) { for(int z = NzLlD; z<=NzLuD; z++) {
     for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { for(int v = NvLlD; v<=NvLuD; v++) {

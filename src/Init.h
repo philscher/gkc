@@ -38,7 +38,19 @@ class Init   : public IfaceGKC
    /**
    *   @brief document me please
    **/
-   double epsilon_0, sigma;  
+   double epsilon_0, sigma; 
+
+   /**
+   *
+   *   @brief Defines seed to be used for random number generator (RNG)
+   *  
+   *   If set to zero, a combination of the system's time and 
+   *   process id will be used, with the effect that due to
+   *   the initial conditions, simulations are not reproduction
+   *   unless seed is same. 
+   *
+   **/
+   int random_seed; 
    
 
    /**
