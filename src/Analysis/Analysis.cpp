@@ -64,18 +64,18 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
          
     for(int q = 1; q <= plasma->nfields; q++) {
                 
-      // Mode power & Phase shifts for X (domain decomposed)
+      // Mode power & Phase shifts for X (domain decomposed) |\phi(k_x)|
       omp_for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD; x_k++) {
 
-        pSpec[q-1][x_k] = sqrt(__sec_reduce_add(cabs(kXOut[q][NzLlD:NzLD][NkyLlD:NkyLD][x_k]))/fft->Norm_X); 
-        pFreq[q-1][x_k] =      __sec_reduce_add(     kXOut[q][NzLlD:NzLD][NkyLlD:NkyLD][x_k] )/fft->Norm_X;
+        pSpec[q-1][x_k] = __sec_reduce_add(cabs(kXOut[q][NzLlD:NzLD][NkyLlD:NkyLD][x_k]))/fft->Norm_X; 
+        pFreq[q-1][x_k] = __sec_reduce_add(     kXOut[q][NzLlD:NzLD][NkyLlD:NkyLD][x_k] )/fft->Norm_X;
       }
             
       
-      // Mode power & Phase shifts for Y (not decomposed)
+      // Mode power & Phase shifts for Y (not decomposed) |\phi(k_y)|
       omp_for(int y_k = NkyLlD; y_k <=  NkyLuD ; y_k++) { 
         
-        pSpecY [q-1][y_k] = sqrt(__sec_reduce_add(cabs(Field0[q][NzLlD:NzLD][y_k][NxLlD:NxLD]))); 
+        pSpecY [q-1][y_k] =      __sec_reduce_add(cabs(Field0[q][NzLlD:NzLD][y_k][NxLlD:NxLD])); 
         pPhaseY[q-1][y_k] = carg(__sec_reduce_add(     Field0[q][NzLlD:NzLD][y_k][NxLlD:NxLD]));
       }
       
