@@ -1,0 +1,20 @@
+TimeMax = 3000.
+Lx = 5.
+Ly = 5.026
+dt = 0.01
+Resistivity=1.e-4
+Viscosity=1.e-50
+OutputTimeField=20.
+OutputTimePower=5.
+Psi0=1./cosh(x)^2
+doNonLinear=1
+Pert=1.e-10
+
+
+
+#Psi0=log(cosh(2.*x))/2.
+#Psi0=0.25*log(cosh(4.*x))
+#Psi0=abs(x)
+#Psi0=0.5*x^2
+OutputFilename=MHD_NL_Test.h5
+#OutputFilename=110811_MatrixTest_Original.h5
