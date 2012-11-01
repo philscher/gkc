@@ -90,9 +90,13 @@ class FieldsFFT : public Fields {
   * Result is given in Fourier space which is only k_x dependent. For solving
   * the fields equation, we need to subtract it from the adiabatic response, but
   * only for(ky=0, kz=0) modes !!!.
+  *
+  *
+  * Nx/2+1 ,  we do not know the exact size in advance thus have to
+  * included whole size and set to zero.
   **/
   void calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
-                        CComplex phi_yz[FFTSolver::X_NkxL]);
+                        CComplex phi_yz[Nx]);
 
   /**
   *   @brief Set if Nyquist frequency is removed from FFT spectra

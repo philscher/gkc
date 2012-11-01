@@ -63,7 +63,7 @@ void FieldsFFT::solvePoissonEquation(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::
                                      CComplex kXIn [Nq][NzLD][NkyLD][FFTSolver::X_NkxL])
 {
     // Calculate flux-surface averaging  Note : how to deal with FFT normalization here ?
-    CComplex phi_yz[FFTSolver::X_NkxL];
+    CComplex phi_yz[Nx]; phi_yz[:] = 0.;
 
     if(plasma->species[0].doGyro) calcFluxSurfAvrg(kXOut, phi_yz);
     
@@ -79,7 +79,7 @@ void FieldsFFT::solvePoissonEquation(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::
           const double k2_p = fft->k2_p(x_k,y_k,z);
           
           const double lhs    = plasma->debye2 * k2_p + sum_qqnT_1mG0(k2_p) + adiab;
-          const CComplex rhs  = (kXOut[Q::rho][z][y_k][x_k])/fft->Norm_X; 
+          const CComplex rhs  = (kXOut[Q::rho][z][y_k][x_k]+phi_yz[x_k])/fft->Norm_X; 
           
           kXIn[Field::phi][z][y_k][x_k] = rhs/lhs;
          
@@ -146,7 +146,7 @@ void FieldsFFT::solveBParallelEquation(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver
 
 // Note : This is very unpolished and is it also valid in toroidal case ? 
 void FieldsFFT::calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
-                                 CComplex phi_yz[FFTSolver::X_NkxL])
+                                 CComplex phi_yz[Nx])
 {
 
   if(parallel->Coord[DIR_VMS] != 0) check(-1, DMESG("calcFluxAverg should only be called by XYZ-main nodes"));
@@ -169,7 +169,7 @@ void FieldsFFT::calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_Nk
   } } }
 
   // average over z-direction 
-  parallel->collect(phi_yz, Op::SUM, DIR_Z, FFTSolver::X_NkxL);  
+  parallel->collect(phi_yz, Op::SUM, DIR_Z, Nx);  
 
   return;
 
