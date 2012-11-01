@@ -48,12 +48,12 @@ Analysis::~Analysis()
 
 void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_NkxL], 
                                 CComplex  Field0 [Nq][NzLD][NkyLD][NxLD]      ,
-                                double    pSpecX [plasma->nfields][Nx/2], double pSpecY [plasma->nfields][Nky],
-                                double    pPhaseX[plasma->nfields][Nx/2], double pPhaseY[plasma->nfields][Nky])
+                                double    pSpecX [Nq][Nx/2+1], double pSpecY [Nq][Nky],
+                                double    pPhaseX[Nq][Nx/2+1], double pPhaseY[Nq][Nky])
 {
 
-  double   pSpec[plasma->nfields][Nx];
-  CComplex pFreq[plasma->nfields][Nx];
+  double   pSpec[Nq][Nx];
+  CComplex pFreq[Nq][Nx];
 
   // Note :  take care that the FFT output is of for e.g. an 8 number sequence [0, 1, 2, 3, 4,-3,-2,-1]
   // Note : atan2 is not a linear function, thus phase has to be calculated at last
@@ -62,10 +62,10 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
     // Note : We have domain decomposition in X but not in Y
     fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, &Field0[1][NzLlD][NkyLlD][NxLlD]);
          
-    for(int q = 1; q <= plasma->nfields; q++) {
+    for(int q = 1; q <= Nq; q++) {
                 
       // Mode power & Phase shifts for X (domain decomposed) |\phi(k_x)|
-      omp_for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD; x_k++) {
+      omp_for(int x_k=fft->K1xLlD; x_k <= fft->K1xLuD; x_k++) {
 
         pSpec[q-1][x_k] = __sec_reduce_add(cabs(kXOut[q][NzLlD:NzLD][NkyLlD:NkyLD][x_k]))/fft->Norm_X; 
         pFreq[q-1][x_k] = __sec_reduce_add(     kXOut[q][NzLlD:NzLD][NkyLlD:NkyLD][x_k] )/fft->Norm_X;
@@ -96,7 +96,7 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
          
   } // if DIR_XYZ
 
-         return;
+  return;
 };
 
 
@@ -363,10 +363,10 @@ void Analysis::initData(Setup *setup, FileIO *fileIO) {
      // Heat Flux ky and Particle FluxKy ( per species) 
      hid_t fluxGroup = fileIO->newGroup("Flux", analysisGroup);
      
-     hsize_t FSky_dim[]       = { plasma->nfields, Nky, Ns  , 1 }; 
-     hsize_t FSky_maxdim[]    = { plasma->nfields, Nky, Ns  , H5S_UNLIMITED} ;
-     hsize_t FSky_chunkdim[]  = { plasma->nfields, Nky, NsLD, 1 };
-     hsize_t FSky_chunkBdim[] = { plasma->nfields, Nky, NsLD, 1 };
+     hsize_t FSky_dim[]       = { Nq, Nky, Ns  , 1 }; 
+     hsize_t FSky_maxdim[]    = { Nq, Nky, Ns  , H5S_UNLIMITED} ;
+     hsize_t FSky_chunkdim[]  = { Nq, Nky, NsLD, 1 };
+     hsize_t FSky_chunkBdim[] = { Nq, Nky, NsLD, 1 };
      hsize_t FSky_offset[]    = { 0, 0  , NsLlD-1, 0  };
 
      FA_heatKy      = new FileAttr("Heat"   , fluxGroup, 4, FSky_dim, FSky_maxdim, FSky_chunkdim, offset0,  FSky_chunkBdim, FSky_offset, parallel->Coord[DIR_XYZVM] == 0);
@@ -401,17 +401,17 @@ void Analysis::initData(Setup *setup, FileIO *fileIO) {
      // X-scalarValue
       hid_t growGroup = fileIO->newGroup("PowerSpectrum", analysisGroup);
 
-     hsize_t grow_x_dim[]       = { plasma->nfields, Nx/2+1, 1 }; 
-     hsize_t grow_x_maxdim[]    = { plasma->nfields, Nx/2+1, H5S_UNLIMITED} ;
-     hsize_t grow_x_chunkdim[]  = { plasma->nfields, Nx/2+1, 1 };
-     hsize_t grow_x_chunkBdim[] = { plasma->nfields, Nx/2+1, 1 };
+     hsize_t grow_x_dim[]       = { Nq, Nx/2+1, 1 }; 
+     hsize_t grow_x_maxdim[]    = { Nq, Nx/2+1, H5S_UNLIMITED} ;
+     hsize_t grow_x_chunkdim[]  = { Nq, Nx/2+1, 1 };
+     hsize_t grow_x_chunkBdim[] = { Nq, Nx/2+1, 1 };
      FA_grow_x  = new FileAttr("X", growGroup, 3, grow_x_dim, grow_x_maxdim, grow_x_chunkdim, offset0,  grow_x_chunkBdim, offset0, parallel->myRank == 0);
 
      // Y-scalarValue
-     hsize_t grow_y_dim[]       = { plasma->nfields, Nky, 1 };
-     hsize_t grow_y_maxdim[]    = { plasma->nfields, Nky, H5S_UNLIMITED };
-     hsize_t grow_y_chunkdim[]  = { plasma->nfields, Nky, 1 };
-     hsize_t grow_y_chunkBdim[] = { plasma->nfields, Nky, 1 };
+     hsize_t grow_y_dim[]       = { Nq, Nky, 1 };
+     hsize_t grow_y_maxdim[]    = { Nq, Nky, H5S_UNLIMITED };
+     hsize_t grow_y_chunkdim[]  = { Nq, Nky, 1 };
+     hsize_t grow_y_chunkBdim[] = { Nq, Nky, 1 };
    
      FA_grow_y  = new FileAttr("Y", growGroup, 3, grow_y_dim, grow_y_maxdim, grow_y_chunkdim, offset0,  grow_y_chunkBdim, offset0, parallel->myRank == 0);
 
@@ -480,8 +480,8 @@ void Analysis::writeData(const Timing &timing, const double dt)
   if (timing.check(dataOutputStatistics, dt)       )   {
   
     // Stack allocation (size ok ?) and alignement ? (well, speed not critical here...)
-    double pSpecX [plasma->nfields] [Nx/2], pSpecY [plasma->nfields] [Nky ],
-           pPhaseX[plasma->nfields] [Nx/2], pPhaseY[plasma->nfields] [Nky ];
+    double pSpecX [Nq][Nx/2+1], pSpecY [Nq][Nky],
+           pPhaseX[Nq][Nx/2+1], pPhaseY[Nq][Nky];
      
     getPowerSpectrum((A4zz) fft->kXOut, (A4zz) fields->Field0, pSpecX, pSpecY, pPhaseX, pPhaseY);
     
