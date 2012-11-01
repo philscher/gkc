@@ -24,11 +24,9 @@
 
 #include "Collisions/Collisions.h"
 
-
-
-
 class Event;
 class PETScMatrixVector;
+
 /**
 *
 * @brief  class for solving the Vlasov equation
@@ -109,7 +107,7 @@ class Vlasov : public IfaceGKC {
    *    @brief set if non-linear simulations are performed
    *
    **/
-   bool nonLinear;
+   bool doNonLinear;
     
         
    /**
@@ -223,7 +221,7 @@ class Vlasov : public IfaceGKC {
    *    @brief Holds the non-linear terms from the ExB
    *
    **/
-   CComplex *nonLinearTerms; 
+   CComplex *nonLinearTerm; 
    
    /**
    *    Please Document Me !

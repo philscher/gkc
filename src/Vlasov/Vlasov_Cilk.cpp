@@ -28,7 +28,7 @@ void VlasovCilk::solve(std::string equation_type, Fields *fields, CComplex *_fs,
 {
   if(0);
   else if(equation_type == "Vlasov_EM") Vlasov_EM((A6zz) _fs, (A6zz) _fss, (A6zz) f0, (A6zz) f, (A6zz) ft, (A6zz) Coll, 
-                                                  (A6zz) fields->Field, (A4zz) Xi, (A4zz) G, (A3zz) nonLinearTerms,
+                                                  (A6zz) fields->Field, (A4zz) Xi, (A4zz) G, (A3zz) nonLinearTerm,
                                                   (A2rr) geo->Kx, (A2rr) geo->Ky, (A2rr) geo->dB_dz,
                                                   X, V, M,  dt, rk_step, rk);
   else   check(-1, DMESG("No Such Equation"));
@@ -238,7 +238,7 @@ void VlasovCilk::Vlasov_EM(
     const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
     CComplex Xi             [NzLB][NkyLD][NxLB+4][NvLB],
     CComplex G              [NzLB][NkyLD][NxLB  ][NvLB],
-    CComplex ExB                  [NkyLD][NxLD  ][NvLD],
+    CComplex NonLinearTerm        [NkyLD][NxLD  ][NvLD],
     const double Kx[NzLD][NxLD], const double Ky[NzLD][NxLD], const double dB_dz[NzLD][NxLD], // Geometry stuff
     const double X[NxGB], const double V[NvGB], const double M[NmGB],
     const double dt, const int rk_step, const double rk[3])
@@ -272,7 +272,7 @@ void VlasovCilk::Vlasov_EM(
            
          // calculate non-linear term (rk_step == 0 for eigenvalue calculatinullptr)
          // CFL condition is calculated inside calculatePoissonBracket
-         if(nonLinear && (rk_step != 0)) calculatePoissonBracket(G, Xi, nullptr, nullptr, z, m, s, ExB, Xi_max, true); 
+         if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(G, Xi, nullptr, nullptr, z, m, s, NonLinearTerm, Xi_max, true); 
            
          omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
            
@@ -326,7 +326,7 @@ void VlasovCilk::Vlasov_EM(
         
         const CComplex dg_dt = 
             
-           // have to set zero     ExB[y_k][x][v]                                                                 // Non-linear ( array is zero for linear simulations) 
+           // have to set zero     NonLinearTerm[y_k][x][v]                                                                 // Non-linear ( array is zero for linear simulations) 
           + Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - sub)) * f0_ * Xi_ * ky         // Driving Term
 //          - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0) *                                   
 //            (Kx[z][x] * dG_dx - Ky[z][x] * ky * G_)                                    // Magnetic curvature term

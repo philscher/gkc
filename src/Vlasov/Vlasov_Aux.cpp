@@ -36,12 +36,12 @@ void VlasovAux::solve(std::string equation_type, Fields *fields, CComplex *f_in,
 
       Vlasov_ES   ((A6zz) f_in, (A6zz) f_out     , (A6zz) f0, (A6zz) f, 
                    (A6zz) ft , (A6zz) Coll, (A6zz) fields->Field, 
-                   (A3zz) nonLinearTerms, X, V, M, dt, rk_step, rk);
+                   (A3zz) nonLinearTerm, X, V, M, dt, rk_step, rk);
 
   else if(equation_type == "EM")
 
       Vlasov_EM    ((A6zz) f_in, (A6zz) f_out, (A6zz) f0, (A6zz) f,
-                   (A6zz) ft, (A6zz) Coll, (A6zz) fields->Field, (A3zz) nonLinearTerms,
+                   (A6zz) ft, (A6zz) Coll, (A6zz) fields->Field, (A3zz) nonLinearTerm,
                    (A4zz) Xi, (A4zz) G, X, V, M, dt, rk_step, rk);
 
   else if(equation_type == "Landau_Damping")
@@ -65,7 +65,7 @@ void VlasovAux::Vlasov_ES(
                            CComplex ft              [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex Coll      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex Fields[Nq][NsLD][NmLB][NzLB][NkyLD][NxLB+4],
-                           CComplex       nonLinear                   [NkyLD][NxLD  ][NvLD],
+                           CComplex       nonLinearTerm               [NkyLD][NxLD  ][NvLD],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3])
 { 
@@ -94,7 +94,7 @@ void VlasovAux::Vlasov_ES(
       for(int m=NmLlD; m<= NmLuD;m++) { for(int z=NzLlD; z<= NzLuD;z++) { 
       
       // calculate non-linear term (rk_step == 0 for eigenvalue calculations)
-      if(nonLinear && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, Fields, z, m, s, nonLinear, Xi_max, false); 
+      if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
        
 
       omp_for(int y_k=NkyLlD; y_k <= NkyLuD; y_k++) { 
@@ -132,7 +132,7 @@ void VlasovAux::Vlasov_ES(
        
             const CComplex dg_dt =
 
-             +  nonLinear[y_k][x][v]                                                   // Non-linear ( array is zero for linear simulations) 
+             +  nonLinearTerm[y_k][x][v]                                                   // Non-linear ( array is zero for linear simulations) 
              +  ky* (-(w_n + w_T * (((V[v]*V[v])+ (doGyro ? M[m] : 0.))*kw_T  - sub)) * f0_ * phi_    // Driving term (Temperature/Density gradient)
              -  half_eta_kperp2_phi * f0_)                                            // Contributions from gyro-1 (0 if not neq Gyro-1)
              -  alpha  * V[v]* kp  * ( g + sigma * phi_ * f0_)                        // Linear Landau damping
@@ -160,7 +160,7 @@ void VlasovAux::Vlasov_EM(
                            CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex Coll      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
-                           CComplex    nonLinear               [NkyLD][NxLD  ][NvLD],
+                           CComplex    nonLinearTerm               [NkyLD][NxLD  ][NvLD],
                            CComplex Xi       [NzLB][NkyLD][NxLB+4][NvLB],
                            CComplex G        [NzLB][NkyLD][NxLB][NvLB],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
@@ -188,7 +188,7 @@ void VlasovAux::Vlasov_EM(
          
     for(int z=NzLlD; z<= NzLuD;z++) { 
       
-          if(nonLinear && (rk_step != 0)) calculatePoissonBracket(G, Xi, nullptr, nullptr, z, m, s, nonLinear, Xi_max, true); 
+          if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(G, Xi, nullptr, nullptr, z, m, s, nonLinearTerm, Xi_max, true); 
       
           omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
        
@@ -232,7 +232,7 @@ void VlasovAux::Vlasov_EM(
    
             
      const CComplex dg_dt = 
-             +  nonLinear[y_k][x][v]                                                 // Non-linear ( array is zero for linear simulations) 
+             +  nonLinearTerm[y_k][x][v]                                                 // Non-linear ( array is zero for linear simulations) 
              +  ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])/Temp  - sub)) * F0 * Xi_     // Driving term (Temperature/Density gradient)
              -  half_eta_kperp2_Xi * F0)                                             // Contributions from gyro-1 (0 if not neq Gyro-1)
              -  alpha  * V[v]* kp  * ( g + sigma * Xi_ * F0)                         // Linear Landau damping
@@ -322,7 +322,7 @@ void    VlasovAux::Vlasov_2D_Fullf(
   
        // gyro-fluid model
  //      if(calculate_nonLinear && (rk_step != 0)) calculatePoissonBracket(fields->phi, _fs,m, s);
-       //if(nonLinear)   calculatePoissonBracket(fields->phi(RxLD, RkyLD, RzLD, m, s), _fs,m, s);
+       //if(doNonLinear)   calculatePoissonBracket(fields->phi(RxLD, RkyLD, RzLD, m, s), _fs,m, s);
        
        // calculate for estimation of CFL condition
        for(int z=NzLlD; z<= NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 

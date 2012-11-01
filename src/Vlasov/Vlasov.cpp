@@ -34,7 +34,7 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
    
    nct::allocate(grid->RzLB , grid->RkyLD, nct::Range(NxLlB-2, NxLB+4), grid->RvLB)(&Xi);
    nct::allocate(grid->RzLB , grid->RkyLD, grid->RxLB, grid->RvLB)(&G );
-   nct::allocate(grid->RkyLD, grid->RxLD , grid->RvLD)(&nonLinearTerms);
+   nct::allocate(grid->RkyLD, grid->RxLD , grid->RvLD)(&nonLinearTerm);
    
    // allocate boundary (mpi) buffers
    ArrayBoundX = nct::allocate(nct::Range(0 , 2 * NkyLD * NzLD * NvLD * NmLD * NsLD ));
@@ -46,8 +46,8 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
    ArrayBoundV = nct::allocate(nct::Range(0 , NxLD * NkyLD * NzLD * 2 * NmLD * NsLD ));
    ArrayBoundV(&SendVu, &SendVl, &RecvVl, &RecvVu);
   
-   equation_type       = setup->get("Vlasov.Equation" , "2D_ES");        
-   nonLinear           = setup->get("Vlasov.NonLinear", 0      );
+   equation_type       = setup->get("Vlasov.Equation" , "ES");        
+   doNonLinear         = setup->get("Vlasov.doNonLinear", 0      );
 
    const std::string dir_string[] = { "X", "Y", "Z", "V", "M", "S" };
    
@@ -286,7 +286,7 @@ void Vlasov::loadData(FileIO *fileIO)
 
 void Vlasov::printOn(std::ostream &output) const
 {
-   output << "Vlasov     | Type : " << equation_type <<  " Non-Linear : " << (nonLinear ? "yes" : "no") << std::endl ;
+   output << "Vlasov     | Type : " << equation_type <<  " Non-Linear : " << (doNonLinear ? "yes" : "no") << std::endl ;
    output << "Vlasov     | Hyperviscosity [ " ;
    for(int dir = DIR_X ; dir <= DIR_S ; dir++) output << hyper_visc[dir] << " ";
    output << " ] " << std::endl;

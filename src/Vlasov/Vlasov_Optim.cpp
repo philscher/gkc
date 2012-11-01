@@ -28,7 +28,6 @@ VlasovOptim::VlasovOptim(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO
    // no need to call : Is done is base constructor -- or ?    Vlasov::initData(fileIO);    
 }
 
-
 void VlasovOptim::solve(std::string equation_type, Fields *fields, CComplex *_fs, CComplex *_fss, double dt, int rk_step, const double rk[3]) 
 {
  
@@ -36,7 +35,7 @@ void VlasovOptim::solve(std::string equation_type, Fields *fields, CComplex *_fs
 
       Vlasov_2D((A6sz) _fs, (A6sz) _fss, (A6sz) f0, 
                 (A6sz) f, (A6sz) ft, (A6sz) Coll, (A6sz) fields->Field,
-                (A4sz) nonLinearTerms, X, V, M, dt, rk_step, rk);
+                (A4sz) nonLinearTerm, X, V, M, dt, rk_step, rk);
   }
 
   return;
@@ -52,7 +51,7 @@ void VlasovOptim::solve(std::string equation_type, Fields *fields, CComplex *_fs
                            cmplx16 ft              [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplx16 Coll      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const cmplx16 Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
-                           cmplx16 nonLinear                   [NzLD][NkyLD][NxLD][NvLD]  ,
+                           cmplx16 nonLinearTerm               [NzLD][NkyLD][NxLD][NvLD]  ,
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3])
 { 
