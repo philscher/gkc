@@ -44,7 +44,8 @@ class FFTSolver_fftw3 : public FFTSolver
 
    CComplex *data_kXOut, *data_kXIn;
 
-   int AA_NkyLD, AA_NkyLlD, AA_NkyLuD, AA_NyLD; ///< use for anti-alias multiplication
+   int AA_NkyLD,    ///< use for anti-alias multiplication
+       AA_NyLD;     ///< use for anti-alias multiplication
 
    void transpose    (int Nx, int Ny, int Nz, int Nq, 
                       CComplex In[Nq][Nz][Ny][Nx], CComplex OutT[Nx][Ny][Nz][Nq]);
@@ -78,8 +79,8 @@ class FFTSolver_fftw3 : public FFTSolver
    **/
    void solve(const FFT_Type type, const FFT_Sign sign, void *in=nullptr, void *out=nullptr);
    
-   void multiply(const CComplex A[NkyLlD][NxLD], const CComplex B[NkyLlD][NxLD],
-                 CComplex R[NkyLlD][NxLD]);
+   void multiply(const CComplex A[NkyLD][NxLD], const CComplex B[NkyLD][NxLD],
+                       CComplex R[NkyLD][NxLD]);
    
 
 

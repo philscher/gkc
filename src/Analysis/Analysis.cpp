@@ -110,22 +110,27 @@ void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][
 
 {
   
-    for(int s = NsGlD; s <= NsGuD; s++) { for(int m=NmLlD; m<= NmLuD;m++) {
+    for(int s = NsGlD; s <= NsGuD; s++) {
       
+    double number = 0.e0;
+    double kineticEnergy=0.e0;
+    double entropy = 0.;
+    double particle = 0.; 
+    double heat = 0.;
     
+    for(int m=NmLlD; m<= NmLuD;m++) {
+      
     ////////////////////////////// Calculate Particle Number ////////////////////////
     const double pn_d6Z = M_PI  * dv * grid->dm[m] * grid->dXYZV;
    
-    double number = 0.e0;
     #pragma omp parallel for reduction(+:number)
-    for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
-
-               number +=  __sec_reduce_add(f[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][y_k][NxLlD:NxLD][NvLlD:NvLD]) * pn_d6Z;
+    for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) 
+    {
+               number +=  __sec_reduce_add(f[s][m][NzLlD:NzLD][y_k][NxLlD:NxLD][NvLlD:NvLD]) * pn_d6Z;
     } 
 
     //////////// Calculate Kinetic Energy  //////////////////////////
     
-    double kineticEnergy=0.e0;
     const double v2_d6Z = M_PI * plasma->species[s].n0 * plasma->species[s].T0 * plasma->B0 * dv * grid->dm[m] * grid->dXYZ * plasma->species[s].scale_v ;
               
     #pragma omp parallel for reduction(+:kineticEnergy) collapse (2)
@@ -140,36 +145,42 @@ void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][
     } } 
        // substract initial kientic energy or not ?
        // return  (parallel->collect(kineticEnergy, OP_SUM, DIR_ALL) - initialEkin(sp))/((initialEkin(sp) == 0.) ? 1. : initialEkin(sp));
-       // return  parallel->collect(kineticEnergy, OP_SUM, DIR_ALL);
 
     ////////////////////////////// Calculate Entropy ////////////////////////////////////
-    //- f0[s][m][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD][NvLlD:NvLD])))/
-    double entropy = 0.;//abs(pow2( __sec_reduce_add(f [s][m][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD][NvLlD:NvLD])))/ 
-                        //       __sec_reduce_add(f0[s][m][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD][NvLlD:NvLD]);
-                         // |f - f0|^2/n_0
-        
+    
+    /* 
+    #pragma omp parallel for reduction(+:kineticEnergy) collapse (2)
+    for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
+
+      entropy += cabs(pow2(__sec_reduce_add(f [s][m][z][y_k][x][NvLlD:NvLD])))/
+                           __sec_reduce_add(f0[s][m][z][y_k][x][NvLlD:NvLD]);
+    } } 
+     * */
 
     /////////////////////////// Calculate Total Heat & Particle Flux ////////////////////////
     CComplex ParticleFlux[NkyLD][NxLD], HeatFlux[NkyLD][NxLD];
+    ParticleFlux[:][:] = 0.;
+    HeatFlux[:][:] = 0.;
 
-    // BUG :  gives BUSERROR
-    // getParticleHeatFlux(m, s, ParticleFlux, HeatFlux, f, (A5zz) fields->phi.dataZero(), V, M);
+    getParticleHeatFlux(m, s, ParticleFlux, HeatFlux, f, (A6zz) fields->Field, V, M);
 
-    const double particle = 0.; //cabs(__sec_reduce_add(ParticleFlux[:][:]));
-    const double heat     = 0.; //cabs(__sec_reduce_add(    HeatFlux[:][:]));
-    
+    particle += __sec_reduce_add(cabs(ParticleFlux[:][:]));
+    heat     += __sec_reduce_add(cabs(    HeatFlux[:][:]));
     // so bad .... (looks to ugly, to be the right way ...)
-    #pragma omp atomic
-    scalarValues.entropy        [s-1]  += entropy        ;
-    #pragma omp atomic
-    scalarValues.kinetic_energy [s-1]  += kineticEnergy;
-    #pragma omp atomic
-    scalarValues.particle_flux  [s-1]  += particle;
-    #pragma omp atomic
-    scalarValues.heat_flux      [s-1]  += heat ;
-      
+    } // m 
 
-    } } // m, s
+    heat = parallel->collect(heat, Op::SUM, DIR_M);
+
+    #pragma omp single
+    {
+       scalarValues.particle_number[s-1]  = number        ;
+       scalarValues.entropy        [s-1]  = entropy        ;
+       scalarValues.kinetic_energy [s-1]  = kineticEnergy;
+       scalarValues.particle_flux  [s-1]  = particle;
+       scalarValues.heat_flux      [s-1]  = heat ;
+    }  
+
+    } // s
 
     return;
 };
@@ -277,7 +288,7 @@ void Analysis::getHeatFluxOrthogonal() {
 void Analysis::getParticleHeatFlux(const int m, const int s, 
                                    CComplex ParticleFlux[NkyLD][NxLD], CComplex HeatFlux[NkyLD][NxLD],
                                    const CComplex   f[NsLB][NmLB][NzLB][NkyLD][NxLB][NvLB],
-                                   const CComplex phi[NsLD][NmLD][NzLD][NkyLD][NxLB+4],
+                                   const CComplex Field[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                                    const double V[NvGB], const double M[NmGB])
 {
 
@@ -285,35 +296,37 @@ void Analysis::getParticleHeatFlux(const int m, const int s,
 
     omp_for(int z=NzLlD; z<= NzLuD;z++) { 
   
-        CComplex ky_phi[NkyLD][NxLD], Particle[NkyLD][NxLD], Energy[NkyLD][NxLD], T[NkyLD][NxLD];
+      CComplex   ky_phi[NkyLD][NxLD], 
+               Particle[NkyLD][NxLD], 
+                 Energy[NkyLD][NxLD],
+                      R[NkyLD][NxLD];
         
-        omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
+    omp_for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { 
        
           // Geometry ?!
           const CComplex ky = ((CComplex) (0. + 1.j))  * fft->ky(y_k);
         
-          for(int x=NxLlD; x  <= NxLuD ;  x++) { 
+          for(int x=NxLlD; x <= NxLuD ; x++) { 
 
-              
-              ky_phi[y_k][x] = ky * phi[s][m][z][y_k][x];
-        
+                ky_phi[y_k-NkyLlD][x-NxLlD] = ky * Field[Field::phi][s][m][z][y_k][x];
+
               // integrate over velocity space (calculate particle number and temperature)
-                Energy[y_k][x] = __sec_reduce_add((pow2(V[NvLlD:NvLD]) +  M[m] * plasma->B0) * f[s][m][z][y_k][x][NvLlD:NvLD]) * d6Z;
-              Particle[y_k][x] = __sec_reduce_add(                                             f[s][m][z][y_k][x][NvLlD:NvLD]) * d6Z;
+                Energy[y_k-NkyLlD][x-NxLlD] = __sec_reduce_add((pow2(V[NvLlD:NvLD]) +  M[m] * plasma->B0) * f[s][m][z][y_k][x][NvLlD:NvLD]) * d6Z;
+              Particle[y_k-NkyLlD][x-NxLlD] = __sec_reduce_add(                                             f[s][m][z][y_k][x][NvLlD:NvLD]) * d6Z;
 
-         } }
-
+      } } // x, y_k
+              
          // Multiply electric field with temperature in real space 
-         fft->multiply(ky_phi, Particle, T);
+         fft->multiply(ky_phi, Particle, R);
         
          // is atomic valid here (how about support, look gcc libatomic)?
          #pragma omp atomic
-         ParticleFlux[:][:] += T[:][:];
+         ParticleFlux[:][:] += R[:][:];
          
          // Multiply electric field with temperature in real space 
-         fft->multiply(ky_phi,   Energy, T);
+         fft->multiply(ky_phi,   Energy, R);
          #pragma omp atomic
-         HeatFlux[:][:]     += T[:][:];
+         HeatFlux[:][:]     += R[:][:];
       
     } // add for z,m
     

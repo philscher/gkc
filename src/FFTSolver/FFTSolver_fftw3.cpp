@@ -171,11 +171,13 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
                
       
       ////////////////////////   Define Anti-Aliased Arrays /////////////////////////////////////
+          
       
-      int AA_NkyLD  = 3 * Nky   / 2       , 
-          AA_NkyLlD = NkyLlD              , 
-          AA_NkyLuD = NkyLlD + AA_NkyLD -1,
-          AA_NyLD  = 2 * AA_NkyLD - 2     ;
+      AA_NkyLD  = 3 * (Nky+1)   / 2   ; 
+      AA_NyLD  = 2 * AA_NkyLD - 2     ;
+      
+      int AA_NkyLlD = NkyLlD              ; 
+      int AA_NkyLuD = NkyLlD + AA_NkyLD -1;
                 
           
       double   rY_AA[AA_NyLD][NxLD]; CComplex kY_AA[AA_NkyLD][NxLD];
@@ -298,22 +300,21 @@ FFTSolver_fftw3::~FFTSolver_fftw3()
 
 // Nice, no X-parallelization required !!
 void FFTSolver_fftw3::multiply(const CComplex A[NkyLD][NxLD], const CComplex B[NkyLD][NxLD],
-                               CComplex R[NkyLD][NxLD])
+                                     CComplex R[NkyLD][NxLD])
 {
    
-
    // Create antialiased arrays and copy and transform to real space
    CComplex AA_A[AA_NkyLD][NxLD];
-   double   RS_A[AA_NyLD ][NxLD], RS_B[AA_NyLD ][NxLD];
-   
+   double   RS_A[AA_NyLD ][NxLD], 
+            RS_B[AA_NyLD ][NxLD];
+   AA_A[:][:] = 0.;
  
    // Copy to larger Anti-Aliased array and transform to real space
-   AA_A[NkyLlD:NkyLD][:] = A[NkyLlD:NkyLD][:];
+   AA_A[0:NkyLD][:] = A[:][:];
    fftw_execute_dft_c2r(plan_AA_YBackward, (fftw_complex *) AA_A, (double *) RS_A);
 
-   AA_A[NkyLlD:NkyLD][:] = B[NkyLlD:NkyLD][:];
+   AA_A[0:NkyLD][:] = B[:][:];
    fftw_execute_dft_c2r(plan_AA_YBackward, (fftw_complex *) AA_A, (double *) RS_B);
-
    //////////////////////// Real Space (multiply values) /////////////////// 
    
    const double _kw_fft_Norm = 1./(1.5 * Norm_Y_Forward * pow2(Norm_Y_Backward));
@@ -322,7 +323,9 @@ void FFTSolver_fftw3::multiply(const CComplex A[NkyLD][NxLD], const CComplex B[N
    
    //////////////////////// End Real Space (multiply values) /////////////////// 
   
-   fftw_execute_dft_r2c(plan_AA_YForward, (double *) RS_A, (fftw_complex *) R);
+   fftw_execute_dft_r2c(plan_AA_YForward, (double *) RS_A, (fftw_complex *) AA_A);
+
+   R[:][:] = AA_A[0:NkyLD][:];
    
    return;
 
