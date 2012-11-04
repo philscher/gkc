@@ -38,7 +38,9 @@ class VlasovIsland : public VlasovAux {
 
    double *MagIs, *dMagIs_dx;
 
-   double p[3];
+   double p[3]; ///<  Coefficients for the island structure
+ 
+   int  i   ; ///< Mode number of Island
    /**
    *    Please Document Me !
    *
@@ -72,8 +74,9 @@ class VlasovIsland : public VlasovAux {
  
   protected :
  
+   void printOn(std::ostream &output) const;
+   void initDataOutput(Setup *setup, FileIO *fileIO); 
  
-   //void printOn(std::ostream &output) const;
 
 };
 

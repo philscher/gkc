@@ -83,10 +83,6 @@ void VlasovOptim::solve(std::string equation_type, Fields *fields, CComplex *_fs
     
       const double sub = (plasma->species[s].doGyro) ? 3./2. : 1./2.;
         
-      const double v2_rms   = 1.;//pow2(alpha);
-
-
-      
       for(int m=NmLlD; m<= NmLuD;m++) { 
   
        // calculate for estimation of CFL condition

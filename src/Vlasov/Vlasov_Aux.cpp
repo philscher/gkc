@@ -83,8 +83,6 @@ void VlasovAux::Vlasov_ES(
     
       const double sub = (plasma->species[s].doGyro) ? 3./2. : 1./2.;
         
-      const double v2_rms   = 1.;//pow2(alpha);
- 
       const bool doGyro  = (plasma->species[s].doGyro);
       const bool isGyro1 = (plasma->species[s].gyroModel == "Gyro-1");
     
@@ -107,7 +105,9 @@ void VlasovAux::Vlasov_ES(
        
            CComplex half_eta_kperp2_phi = 0;
            if(isGyro1) { // first order approximation for gyro-kinetics
-             const CComplex ddphi_dx_dx = (16. *(Fields[Field::phi][s][m][z][y_k][x+1] + Fields[Field::phi][s][m][z][y_k][x-1]) - (Fields[Field::phi][s][m][z][y_k][x+2] + Fields[Field::phi][s][m][z][y_k][x-2]) - 30.*phi_) * _kw_12_dx_dx;
+             const CComplex ddphi_dx_dx = (16. *(Fields[Field::phi][s][m][z][y_k][x+1] + Fields[Field::phi][s][m][z][y_k][x-1]) -
+                                                (Fields[Field::phi][s][m][z][y_k][x+2] + Fields[Field::phi][s][m][z][y_k][x-2]) 
+                                         - 30.*phi_) * _kw_12_dx_dx;
              half_eta_kperp2_phi     = rho_t2 * 0.5 * w_T  * ( (ky*ky) * phi_ + ddphi_dx_dx ) ; 
            }
              
@@ -132,7 +132,7 @@ void VlasovAux::Vlasov_ES(
        
             const CComplex dg_dt =
 
-             +  nonLinearTerm[y_k][x][v]                                                   // Non-linear ( array is zero for linear simulations) 
+             -  nonLinearTerm[y_k][x][v]                                                   // Non-linear ( array is zero for linear simulations) 
              +  ky* (-(w_n + w_T * (((V[v]*V[v])+ (doGyro ? M[m] : 0.))*kw_T  - sub)) * f0_ * phi_    // Driving term (Temperature/Density gradient)
              -  half_eta_kperp2_phi * f0_)                                            // Contributions from gyro-1 (0 if not neq Gyro-1)
              -  alpha  * V[v]* kp  * ( g + sigma * phi_ * f0_)                        // Linear Landau damping
@@ -213,12 +213,6 @@ void VlasovAux::Vlasov_EM(
       const CComplex G_   = G[z][y_k][x][v];
       const CComplex Xi_  = Xi[z][y_k][x][v];
 
-      // Velocity derivaties for Lennard-Bernstein Collisional Model
-      //const CComplex dfs_dv   = (8. *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))/(12.*dv);
-      //const CComplex ddfs_dvv = (16.*(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) - (fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) - 30.*fs[s][m][z][y_k][x][v])/(12.*dv*dv);
-      //const double v2_rms = 1.;//pow2(alpha)
-     
-     
       // calculate first order Average
       CComplex half_eta_kperp2_Xi = 0;
       if(isGyro1) { // first order approximation for gyro-kinetics
@@ -232,11 +226,11 @@ void VlasovAux::Vlasov_EM(
    
             
      const CComplex dg_dt = 
-             +  nonLinearTerm[y_k][x][v]                                                 // Non-linear ( array is zero for linear simulations) 
+             +  nonLinearTerm[y_k][x][v]                                             // Non-linear ( array is zero for linear simulations) 
              +  ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])/Temp  - sub)) * F0 * Xi_     // Driving term (Temperature/Density gradient)
              -  half_eta_kperp2_Xi * F0)                                             // Contributions from gyro-1 (0 if not neq Gyro-1)
              -  alpha  * V[v]* kp  * ( g + sigma * Xi_ * F0)                         // Linear Landau damping
-             +  Coll[s][m][z][y_k][x][v]  ;                                           // Collisional operator
+             +  Coll[s][m][z][y_k][x][v]  ;                                          // Collisional operator
          
         
         //////////////////////////// Vlasov End ////////////////////////////
@@ -348,8 +342,6 @@ void    VlasovAux::Vlasov_2D_Fullf(
 
         /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
         CComplex dg_dt = 
-
-
              
              // driving term (use dphi_dy instead of dXi_dy, because v * A does not vanish due to numerical errors)
              //ky * (-(w_n + w_T * ((pow2(V[v])+ M[m])/Temp  - sub)) * F0 * phi_

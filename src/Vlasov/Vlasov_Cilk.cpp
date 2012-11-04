@@ -81,9 +81,6 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
    // phase space function & Poisson bracket
    const double _kw_fft_Norm = 1./(fft->Norm_Y_Backward * fft->Norm_Y_Backward * fft->Norm_Y_Forward);
   
-   // all direclty at cache-lines
-   typedef __declspec(align(64)) double     doubleAA;
-   typedef __declspec(align(64)) CComplex CComplexAA;
 
    CComplexAA  xky_Xi [NkyLD][NxLB+4];
    CComplexAA  xky_f1 [NkyLD][NxLB  ];
@@ -128,9 +125,8 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
         } } 
         
         // get maximum value to calculate CFL condition 
-        // OPTIM : (is there sec_reduce_max_abs ? if not create)
-        Xi_max[DIR_Y] = max(Xi_max[DIR_Y], max(__sec_reduce_max(xy_dXi_dy[:][:]), -__sec_reduce_min(xy_dXi_dy[:][:])));
-        Xi_max[DIR_X] = max(Xi_max[DIR_X], max(__sec_reduce_max(xy_dXi_dx[:][:]), -__sec_reduce_min(xy_dXi_dx[:][:])));
+        Xi_max[DIR_Y] = max(Xi_max[DIR_Y], __sec_reduce_max(abs(xy_dXi_dy[:][:])));
+        Xi_max[DIR_X] = max(Xi_max[DIR_X], __sec_reduce_max(abs(xy_dXi_dx[:][:])));
         
 
         }
@@ -159,7 +155,7 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
                                                  - (xy_dXi_dx[y][x] + xy_dXi_dx[y-2][x]) * xy_f1[y-2][x]) ) * _kw_24_dy;
             
            // Take care of Fourier normalization : A*sqrt(N) * B*sqrt(N) 
-           xy_ExB[y-2][x-2]  = -(dXi_dy__dG_dx - dXi_dx__dG_dy) * _kw_fft_Norm;
+           xy_ExB[y-2][x-2]  = - (dXi_dy__dG_dx - dXi_dx__dG_dy) * _kw_fft_Norm;
       } } // x,y
    
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -302,8 +298,6 @@ void VlasovCilk::Vlasov_EM(
         const CComplex ddg_dvv = (16.*(g[s][m][z][y_k][x][v+1] + g[s][m][z][y_k][x][v-1]) 
                                     - (g[s][m][z][y_k][x][v+2] + g[s][m][z][y_k][x][v-2]) 
                                  - 30.*g[s][m][z][y_k][x][v]) * _kw_12_dv_dv;
-        const double v2_rms = 1.;//pow2(alpha)
-    
         
         /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
 
