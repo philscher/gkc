@@ -59,22 +59,40 @@ class Analysis : public IfaceGKC {
       double heat_flux      [SPECIES_MAX];
       double particle_flux  [SPECIES_MAX];
 
-      // Below are variables not included in HDF-5 file
-      // however also included in MPI reduce operation
-
-
    } ScalarValues;
+   
+   //////////////  Data Output Stuff //////////////////
+   
+   Timing dataOutputStatistics, ///< Timing to define output of scalarValues
+          dataOutputMoments,    ///< Timing to define output of moments
+          dataOutputXDep   ;    ///< Timing to define output of X-dependent variables
 
    /// Moments Variables 
-   FileAttr *FA_Mom_Density, *FA_mom_up, *FA_Mom_Tp, *FA_mom_To, *FA_mom_qp, *FA_mom_qo, * FA_mom_QES, *FA_Mom_Time, *FA_Mom_HeatFlux;
-   /// Spectrum Variables   
-   FileAttr *FA_spec_yz, *FA_spec_xy, *FA_spec_xz, *FA_spec_time;
-   /// Data Output Stuff
-   FileAttr  *FA_heatKy, *FA_particleKy;
-   FileAttr  *FA_grow_x, *FA_grow_y, *FA_grow_z, *FA_grow_t;
-   FileAttr  *FA_freq_x, *FA_freq_y, *FA_freq_z, *FA_freq_t;
-   TableAttr *SVTable;
+   FileAttr *FA_Mom_Density,   ///< Density  
+            *FA_Mom_Tp,        ///< Temperature 
+            *FA_Mom_HeatFlux,  ///< Heat flux
+            *FA_Mom_Time;      ///< Time 
 
+   FileAttr  *FA_heatKy,     ///< Heat Flux as  Q(s,x,ky)
+             *FA_particleKy; ///< Particle Flux as X(s,x,ky)
+
+   FileAttr  *FA_grow_x,     ///< Mode-Power (kx)
+             *FA_grow_y,     ///< Mode-Power (ky) 
+             *FA_grow_t;     ///< Mode-Power Time
+
+   FileAttr  *FA_freq_x,     ///< Phase (kx)
+             *FA_freq_y,     ///< Phase (ky)
+             *FA_freq_t;     ///< Time
+
+   TableAttr *SVTable;       ///< Table for scalar Values
+     
+   FileAttr *FA_XDep_Tp,     ///< X-Dependence (Temperature)
+            *FA_XDep_n,      ///< X-Dependence (Density)
+            *FA_XDep_Time;   ///< X-Depdndence (Time)
+
+
+
+   //////////////////////////////////////////////////////////////
    Parallel *parallel;
    Setup *setup;
    Vlasov *vlasov;
@@ -83,12 +101,6 @@ class Analysis : public IfaceGKC {
    FFTSolver *fft;   ///< required for heat flux calculations
    Geometry *geo;
 
-
-   CComplex *A4;
-   nct::allocate ArrayA4;
-   
-   Timing dataOutputStatistics, ///< Timing to define output of scalarValues
-          dataOutputMoments;    ///< Timing to define output of moments
 
    // MPI structures
    void setMPIStruct();
@@ -200,12 +212,10 @@ class Analysis : public IfaceGKC {
    void getParticleHeatFlux(const int m, const int s, 
                             CComplex ParticleFlux[NkyLD][NxLD], CComplex HeatFlux[NkyLD][NxLD],
                             const CComplex f[NsLB][NmLB][NzLB][NkyLD][NxLB][NvLB],
-                            const CComplex phi[NsLD][NmLD][NzLD][NkyLD][NxLB+4],
+                            const CComplex Field[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                             const double V[NvGB], const double M[NmGB]);
 
 
-   void updateSpectrum      (unsigned int dir);
-   
    /**
    *    Get the field energy
    *
@@ -225,24 +235,12 @@ class Analysis : public IfaceGKC {
    *
    **/
    
-   void getTemperatureParallel(const  CComplex f[NsLB][NmLB][NzLB][NkyLD][NxLB][NvLB],
-                                      CComplex A4_z[NsLD][NzLD][NkyLD][NxLD], 
-                               const double V[NvGB], const double M[NmGB]);
-   // depreciated
-   void getTemperatureOthogonal();
-   void getHeatFluxOrthogonal();
-   void getHeatFluxParallel ();
-   
+   void getTemperature(const  CComplex f[NsLB][NmLB][NzLB][NkyLD][NxLB][NvLB],
+                              CComplex A4_z[NsLD][NzLD][NkyLD][NxLD], 
+                       const double V[NvGB], const double M[NmGB]);
    void getNumberDensity(const  CComplex f[NsLB][NmLB][NzLB][NkyLD][NxLB][NvLB],
                                 CComplex D[NsLD][NzLD][NkyLD][NxLD], 
                          const double V[NvGB], const double M[NmGB]);
-   void getMomentumParallel();
-
-
-   //////////// Calculate X-Dependent variables ( 2-dimensional species & X) /////////////
-
-
-
 
 
    //////////////////////////////////  Data-I/0 stuff ////////////////////////////////////////

@@ -15,23 +15,12 @@
 
 
 
-
-enum SpecDir   {SPEC_NO=-1, SPEC_XY=0, SPEC_XZ=1, SPEC_YZ=2};
-
-
 Analysis::Analysis(Parallel *_parallel, Vlasov *_vlasov, Fields *_fields, Grid *_grid, Setup *_setup, FFTSolver *_fft, FileIO *fileIO, Geometry *_geo) : 
  
 parallel(_parallel),setup(_setup), vlasov(_vlasov), grid(_grid), fields(_fields), geo(_geo),  fft(_fft)
 
 {
 
- // Spectrum
-//       if(setup->dirSpectrumAvrg & SPEC_XZ)  spectrumXZ.resize(fft->RkxL, fft->RkzL); spectrumXZ = 0.0;
-//       if(setup->dirSpectrumAvrg & SPEC_YZ)  spectrumYZ.resize(fft->RkyL, fft->RkzL); spectrumYZ = 0.0;
-//       if(setup->dirSpectrumAvrg & SPEC_XY)  spectrumXY.resize(fft->RkxL, fft->RkyL); spectrumXY = 0.0;
-
-     ArrayA4 = nct::allocate(nct::Range(NsLlD, NsLD),  nct::Range(NzLlD, NzLD), nct::Range(NkyLlD, NkyLD), nct::Range(NxLlD, NxLD));
-       
      initData(setup, fileIO);
 }
 
@@ -52,8 +41,8 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
                                 double    pPhaseX[Nq][Nx/2+1], double pPhaseY[Nq][Nky])
 {
 
-  double   pSpec[Nq][Nx];
-  CComplex pFreq[Nq][Nx];
+  double   pSpec[Nq][Nx]; pSpec[:][:] = 0.;
+  CComplex pFreq[Nq][Nx]; pFreq[:][:] = 0.;
 
   // Note :  take care that the FFT output is of for e.g. an 8 number sequence [0, 1, 2, 3, 4,-3,-2,-1]
   // Note : atan2 is not a linear function, thus phase has to be calculated at last
@@ -84,8 +73,8 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
     // Finalized calculations for x-domain (decomposed and negative frequency modes)
 
     // Sum up with X-values from other processes
-    parallel->collect(&pSpec[0][0], Op::SUM, DIR_XYZ, Nq * Nx);        
-    parallel->collect(&pFreq[0][0], Op::SUM, DIR_XYZ, Nq * Nx);        
+    parallel->reduce(&pSpec[0][0], Op::SUM, DIR_XYZ, Nq * Nx);        
+    parallel->reduce(&pFreq[0][0], Op::SUM, DIR_XYZ, Nq * Nx);        
          
     // map back from fftw [k0, k1, k2, ..., k_Ny, -k_(N/y-2), ... -k_1]
     for(int x_k = 1; x_k < Nx/2; x_k++) pFreq [:][x_k] += pFreq[:][Nx-x_k];
@@ -131,32 +120,25 @@ void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][
 
     //////////// Calculate Kinetic Energy  //////////////////////////
     
-    const double v2_d6Z = M_PI * plasma->species[s].n0 * plasma->species[s].T0 * plasma->B0 * dv * grid->dm[m] * grid->dXYZ * plasma->species[s].scale_v ;
+    const double v2_d6Z = 0.5 * plasma->species[s].m * M_PI * plasma->species[s].n0 * dv * grid->dm[m] * grid->dXYZ * pow2(plasma->species[s].scale_v) ;
               
     #pragma omp parallel for reduction(+:kineticEnergy) collapse (2)
-    for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
+    for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x <= NxLuD; x++) {
              
-             for(int v=NvLlD; v<=NvLuD; v++) { 
-                 kineticEnergy += cabs(__sec_reduce_add(f[s][m][NzLlD:NzLD][y_k][NxLlD:NxLD][v]) * pow2(V[v]) * v2_d6Z);
-             }
-             // What about perpendicular energy ? Include ??
-             //kineticEnergy    += cabs(__sec_reduce_add(f[s][m][NzLlD:NzLD][y_k][NxLlD:NxLD][NvLlD:NvLD]) * M[m]) * v2_d6Z;
-
-    } } 
-       // substract initial kientic energy or not ?
-       // return  (parallel->collect(kineticEnergy, OP_SUM, DIR_ALL) - initialEkin(sp))/((initialEkin(sp) == 0.) ? 1. : initialEkin(sp));
+                 kineticEnergy += cabs(__sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD] * (pow2(V[NvLlD:NvLD])+M[m]) ) * v2_d6Z);
+    } } }
+    // substract initial kinetic energy or not ?
+    // return  (parallel->reduce(kineticEnergy, OP_SUM, DIR_ALL) - initialEkin(sp))/((initialEkin(sp) == 0.) ? 1. : initialEkin(sp));
 
     ////////////////////////////// Calculate Entropy ////////////////////////////////////
     
-    /* 
-    #pragma omp parallel for reduction(+:kineticEnergy) collapse (2)
+    //#pragma omp parallel for reduction(+:kineticEnergy) collapse (2)
     for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
+    for(int x=NxLlD; x<= NxLuD;x++) { 
 
       entropy += cabs(pow2(__sec_reduce_add(f [s][m][z][y_k][x][NvLlD:NvLD])))/
                            __sec_reduce_add(f0[s][m][z][y_k][x][NvLlD:NvLD]);
-    } } 
-     * */
-
+    } } }
     /////////////////////////// Calculate Total Heat & Particle Flux ////////////////////////
     CComplex ParticleFlux[NkyLD][NxLD], HeatFlux[NkyLD][NxLD];
     ParticleFlux[:][:] = 0.;
@@ -169,7 +151,11 @@ void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][
     // so bad .... (looks to ugly, to be the right way ...)
     } // m 
 
-    heat = parallel->collect(heat, Op::SUM, DIR_M);
+    // Communicate with other groups (make reduce whole structre)
+    heat          = parallel->reduce(heat         , Op::SUM, DIR_M);
+    particle      = parallel->reduce(particle     , Op::SUM, DIR_M);
+    kineticEnergy = parallel->reduce(kineticEnergy, Op::SUM, DIR_M);
+    number        = parallel->reduce(number       , Op::SUM, DIR_M);
 
     #pragma omp single
     {
@@ -186,113 +172,80 @@ void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][
 };
 
 
-
-
 ///////////////////////////////// Calculate Moments  /////////////////////////////////////////////////
 
 void Analysis::getNumberDensity(const  CComplex f[NsLB][NmLB][NzLB][NkyLD][NxLB][NvLB],
-                                       CComplex D[NsLD][NzLD][NkyLD][NxLD], 
+                                       CComplex R[NsLD][NzLD][NkyLD][NxLD], 
                                 const double V[NvGB], const double M[NmGB])
 {
+  R[:][:][:][:] = 0.;
 
-    for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { 
+  for(int s=NsLlD; s<= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { 
 
-       const double pn_d6Z = M_PI  * dv * grid->dm[m] * grid->dXYZV;
+  const double pn_d6Z = M_PI  * dv * grid->dm[m] * grid->dXYZV;
 
-    for(int x=NxLlD; x<= NxLuD;x++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int z=NzLlD; z<= NzLuD;z++){
+  for(int z=NzLlD; z<= NzLuD;z++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
+  for(int x=NxLlD; x<= NxLuD;x++) { 
 
-          D[s][z][y_k][x] =  __sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD]) * pn_d6Z;
+          R[s-NsLlD][z-NzLlD][y_k][x-NxLlD] +=  __sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD]) * pn_d6Z;
 
-    }}} }} 
+  } } }
+  
+  } } 
 
-    parallel->collect(&D[NsLlD][NzLlD][NkyLlD][NxLlD], Op::SUM, DIR_VM, NsLD * NzLD * NkyLD * NxLD);
+  parallel->reduce( (CComplex *) R, Op::SUM, DIR_VM, NsLD * NzLD * NkyLD * NxLD);
 
-    return;
+  return;
+
 };
 
 
-void Analysis::getMomentumParallel() {
-/* 
-    const double d6Z = dXYZV * plasma->B0 * M_PI;
-    const double alpha_s = plasma->species[s].q / plasma->species[s].T0;
-
-       for(int v=NvLlD; v<= NvLuD;v++)  A4(x,y,z,s) = alpha_s * V[v] * F(x, y, z, v, RmLD, s) * d6Z;
- * */
-
-    //return real(parallel->collect(A4_z, OP_SUM, DIR_VM));
-}
-
-
-void Analysis::getTemperatureParallel(const  CComplex f[NsLB][NmLB][NzLB][NkyLD][NxLB][NvLB],
-                                             CComplex A4_z[NsLD][NzLD][NkyLD][NxLD], 
-                                      const double V[NvGB], const double M[NmGB])
+void Analysis::getTemperature(const  CComplex f[NsLB][NmLB][NzLB][NkyLD][NxLB][NvLB],
+                                     CComplex R[NsLD][NzLD][NkyLD][NxLD], 
+                              const double V[NvGB], const double M[NmGB])
 {
+  // We cannot rely that R is set to zero (and we use += later)
+  R[:][:][:][:] = 0.;
+
 
   for(int s = NsLlD; s <= NsLuD; s++) { omp_for(int m=NmLlD; m<=NmLuD; m++) { 
 
-    // BUG need to use grid->dm
-      const double d6Z = M_PI * plasma->species[s].n0 * plasma->species[s].T0 * plasma->B0 * dv * grid->dm[m] * grid->dXYZ;
+     const double d6Z = M_PI * plasma->species[s].n0 * plasma->species[s].T0 * plasma->B0 * dv * grid->dm[m] * grid->dXYZ;
 
-        omp_C2_for(int z=NzLlD; z<= NzLuD; z++) { for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { 
+     omp_C2_for(int z=NzLlD; z <= NzLuD; z++) { for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { 
             
-        const Complex ky=Complex(0.,-fft->ky(y_k));
-        
         for(int x=NxLlD; x<=NxLuD ; x++) { 
 
             // calculate temperature
-            A4_z[s][z][y_k][x] = __sec_reduce_add((pow2(V[NvLlD:NvLD]) + M[m] * plasma->B0) * f[s][m][z][y_k][x][NvLlD:NvLD]) * d6Z;
+            R[s-NsLlD][z-NzLlD][y_k][x-NxLlD] += __sec_reduce_add((pow2(V[NvLlD:NvLD]) + M[m] * plasma->B0) * f[s][m][z][y_k][x][NvLlD:NvLD]) * d6Z;
          
         } 
       
-      } } } // y_k, z, m
+     } } // y_k, z
   
-    } // s
+    } } // m, s
 
 
-    parallel->collect(&A4_z[NsLlD][NzLlD][NkyLlD][NxLlD], Op::SUM, NsLD * NzLD * NkyLD * NxLD, DIR_VM);
+    parallel->reduce((CComplex *) R, Op::SUM, NsLD * NzLD * NkyLD * NxLD, DIR_VM);
 
     return;
 };
 
 
-
-void Analysis::getTemperatureOthogonal() {
-
-/* 
-    const double d6Z = dXYZV * plasma->B0 * M_PI;
-       for(int m=NmLlD; m<= NmLuD;m++)  A4(x,y,z,s) = (M[m] * plasma->B0 - 1.) * F(x, y, z, RvLD, m, s) * d6Z;
- * */
-//    return real(parallel->collect(A4_z, OP_SUM, DIR_VM));
-    
-}
-
-
-//////////////////////// Calculate additional heat fluxes /////////////////////
-
-void Analysis::getHeatFluxParallel() {
-/* 
-       for(int v=NvLlD; v<= NvLuD;v++)  A4(x,y,z,s) = alpha_s * V[v] * (pow2(V[v]) - 3./2.) * abs(F(x, y, z, v, RmLD, s)) * d6Z;
- * */
-  //  return real(parallel->collect(A4_z, OP_SUM, DIR_VM));
-}
-
-void Analysis::getHeatFluxOrthogonal() {
-/* 
-         A4(x,y,z,s) = alpha_s * V[v] * (M[m] * plasma->B0 - 1.) * F(x, y, z, v, RmLD, s) * d6Z;
- * */
-  //  return real(parallel->collect(A4_z, OP_SUM, DIR_VM));
-}
 
 
 
 void Analysis::getParticleHeatFlux(const int m, const int s, 
                                    CComplex ParticleFlux[NkyLD][NxLD], CComplex HeatFlux[NkyLD][NxLD],
-                                   const CComplex   f[NsLB][NmLB][NzLB][NkyLD][NxLB][NvLB],
+                                   const CComplex     f    [NsLB][NmLB][NzLB][NkyLD][NxLB  ][NvLB],
                                    const CComplex Field[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                                    const double V[NvGB], const double M[NmGB])
 {
 
     const double d6Z = M_PI * plasma->species[s].n0 * plasma->species[s].T0 * plasma->B0 * dv * grid->dm[m] * grid->dXYZ;
+
+    ParticleFlux[:][:] = 0.;
+        HeatFlux[:][:] = 0.;
 
     omp_for(int z=NzLlD; z<= NzLuD;z++) { 
   
@@ -300,7 +253,7 @@ void Analysis::getParticleHeatFlux(const int m, const int s,
                Particle[NkyLD][NxLD], 
                  Energy[NkyLD][NxLD],
                       R[NkyLD][NxLD];
-        
+
     omp_for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { 
        
           // Geometry ?!
@@ -336,33 +289,6 @@ void Analysis::getParticleHeatFlux(const int m, const int s,
 };
 
         
-void Analysis::updateSpectrum(unsigned int dir) {
-       /* 
-        firstIndex  i_idx;
-        secondIndex j_idx;
-        thirdIndex  k_idx;
-       if     (dir == SPEC_XZ)  {
-            double avrg_factor = 1.e0 / ((double) (setup->spectrumAvrg[SPEC_XZ][SPEC_END] - setup->spectrumAvrg[SPEC_XZ][SPEC_START]));
-            spectrumXZ = spectrumXZ + avrg_factor/Ny * sum(phi_k, j_idx);
-      }
-       else if(dir == SPEC_YZ)  {
-            double avrg_factor = 1.e0 / ((double) (setup->spectrumAvrg[SPEC_YZ][SPEC_END] - setup->spectrumAvrg[SPEC_YZ][SPEC_START]));
-//spectrumYZ = spectrumYZ + avrg_factor/Nx * sum(phi_k, i_idx);
-            spectrumYZ = spectrumYZ + avrg_factor * phi_k(5, fft->RkyL, fft->RkzL);
-      }
-       else if(dir == SPEC_XY)  {
-            double avrg_factor = 1.e0 / ((double) (setup->spectrumAvrg[SPEC_XY][SPEC_END] - setup->spectrumAvrg[SPEC_XY][SPEC_START]));
-            spectrumXY = spectrumXY + avrg_factor/Nz * sum(phi_k, k_idx);
-      }
-      else check(-1, DMESG("No such direction for spectrum")); 
-  
-
-      // set to zero
-        * */ 
-        return;
-   };
-
-
 ////////////////////////     Calculate x-dependent values     /////////////////////
 
 void Analysis::initData(Setup *setup, FileIO *fileIO) {
@@ -371,38 +297,38 @@ void Analysis::initData(Setup *setup, FileIO *fileIO) {
         
      hsize_t offset0[] = { 0, 0, 0, 0, 0, 0, 0 };
     
-     //###################################### Analysis - Heat fluxes ################################
+     //---------------  Analysis - Heat fluxes ------------
      
      // Heat Flux ky and Particle FluxKy ( per species) 
      hid_t fluxGroup = fileIO->newGroup("Flux", analysisGroup);
      
-     hsize_t FSky_dim[]       = { Nq, Nky, Ns  , 1 }; 
-     hsize_t FSky_maxdim[]    = { Nq, Nky, Ns  , H5S_UNLIMITED} ;
-     hsize_t FSky_chunkdim[]  = { Nq, Nky, NsLD, 1 };
-     hsize_t FSky_chunkBdim[] = { Nq, Nky, NsLD, 1 };
-     hsize_t FSky_offset[]    = { 0, 0  , NsLlD-1, 0  };
+     hsize_t FSky_dsdim[] = { Nq, Ns     , Nky   , Nx     , 1 }; 
+     hsize_t FSky_dmdim[] = { Nq, Ns     , Nky   , Nx     , H5S_UNLIMITED} ;
+     hsize_t FSky_cDdim[] = { Nq, NsLD   , Nky   , NxLD   , 1 };
+     hsize_t FSky_cBdim[] = { Nq, NsLD   , Nky   , NxLD   , 1 };
+     hsize_t FSky_cdoff[] = { 0,  NsLlB-1, NkyLlD, NxLlD-3, 0};
 
-     FA_heatKy      = new FileAttr("Heat"   , fluxGroup, 4, FSky_dim, FSky_maxdim, FSky_chunkdim, offset0,  FSky_chunkBdim, FSky_offset, parallel->Coord[DIR_XYZVM] == 0);
-     FA_particleKy  = new FileAttr("Density", fluxGroup, 4, FSky_dim, FSky_maxdim, FSky_chunkdim, offset0,  FSky_chunkBdim, FSky_offset, parallel->Coord[DIR_XYZVM] == 0);
+     FA_heatKy      = new FileAttr("Heat"    , fluxGroup, 5, FSky_dsdim, FSky_dmdim, FSky_cDdim, offset0,  FSky_cBdim, FSky_cdoff, parallel->Coord[DIR_XYZ] == 0);
+     FA_particleKy  = new FileAttr("Particle", fluxGroup, 5, FSky_dsdim, FSky_dmdim, FSky_cDdim, offset0,  FSky_cBdim, FSky_cdoff, parallel->Coord[DIR_XYZ] == 0);
     
      H5Gclose(fluxGroup);
      
-     //###################################### Moments - Heat fluxes ################################
-     hid_t momentGroup = check(H5Gcreate(fileIO->getFileID(), "/Moments",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
+     //----------------  Moments - Heat fluxes ------------------
+     
+     hid_t momentGroup = check(H5Gcreate(fileIO->getFileID(), "/Moments", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
 
-     hsize_t moment_dim[]       =  { grid->NzGD , NkyLD      , grid->NxGD , NsLD , 1};
-     hsize_t moment_maxdim[]    =  { grid->NzGD , NkyLD      , grid->NxGD , Ns   , H5S_UNLIMITED};
-     hsize_t moment_chunkBdim[] =  { NzLD       , NkyLD      , NxLD       , NsLD , 1          };
-     hsize_t moment_chunkdim[]  =  { NzLD       , NkyLD      , NxLD       , NsLD , 1};
-     hsize_t moment_moffset[]   =  { 0, 0, 0, 0, 0 };
-     hsize_t moment_offset[]    =  { NzLlD-3, 0     , NxLlD-3, 0     ,  0  };
+     hsize_t moment_dsdim[] =  { grid->NzGD , NkyLD      , grid->NxGD , NsLD , 1            };
+     hsize_t moment_dmdim[] =  { grid->NzGD , NkyLD      , grid->NxGD , Ns   , H5S_UNLIMITED};
+     hsize_t moment_cBdim[] =  { NzLD       , NkyLD      , NxLD       , NsLD , 1            };
+     hsize_t moment_cDdim[] =  { NzLD       , NkyLD      , NxLD       , NsLD , 1            };
+     hsize_t moment_cmoff[] =  { 0, 0, 0, 0, 0                                              };
+     hsize_t moment_cdoff[] =  { NzLlD-3    , 0          , NxLlD-3    , 0     ,  0          };
      
      bool momWrite = (parallel->Coord[DIR_VM] == 0);
      
-     
-     FA_Mom_Tp        = new FileAttr("Temperature_v", momentGroup, 5, moment_dim , moment_maxdim   , moment_chunkdim   , moment_moffset    ,  moment_chunkBdim  , moment_offset, momWrite, fileIO->complex_tid);
-     FA_Mom_HeatFlux  = new FileAttr("HeatFlux"     , momentGroup, 5, moment_dim , moment_maxdim   , moment_chunkdim   , moment_moffset    ,  moment_chunkBdim  , moment_offset, momWrite, fileIO->complex_tid);
-     FA_Mom_Density   = new FileAttr("Density"      , momentGroup, 5, moment_dim , moment_maxdim   , moment_chunkdim   , moment_moffset    ,  moment_chunkBdim  , moment_offset, momWrite, fileIO->complex_tid);
+     FA_Mom_Tp        = new FileAttr("Temperature_v", momentGroup, 5, moment_dsdim, moment_dmdim, moment_cDdim, moment_cmoff, moment_cBdim, moment_cdoff, momWrite, fileIO->complex_tid);
+     FA_Mom_HeatFlux  = new FileAttr("HeatFlux"     , momentGroup, 5, moment_dsdim, moment_dmdim, moment_cDdim, moment_cmoff, moment_cBdim, moment_cdoff, momWrite, fileIO->complex_tid);
+     FA_Mom_Density   = new FileAttr("Density"      , momentGroup, 5, moment_dsdim, moment_dmdim, moment_cDdim, moment_cmoff, moment_cBdim, moment_cdoff, momWrite, fileIO->complex_tid);
      FA_Mom_Time  = fileIO->newTiming(momentGroup);
         
      H5Gclose(momentGroup);
@@ -410,23 +336,46 @@ void Analysis::initData(Setup *setup, FileIO *fileIO) {
      dataOutputMoments   = Timing(setup->get("DataOutput.Moments.Step", -1)       , setup->get("DataOutput.Moments.Time", -1.));
 
 
-     //###################################### Power Spectrum  ################################################
-     // X-scalarValue
-      hid_t growGroup = fileIO->newGroup("PowerSpectrum", analysisGroup);
+     ////////////////////////////////////// X-Dependent data /////////////////////
+     
+     hid_t XDepGroup = fileIO->newGroup("XDep", analysisGroup);
 
-     hsize_t grow_x_dim[]       = { Nq, Nx/2+1, 1 }; 
-     hsize_t grow_x_maxdim[]    = { Nq, Nx/2+1, H5S_UNLIMITED} ;
-     hsize_t grow_x_chunkdim[]  = { Nq, Nx/2+1, 1 };
-     hsize_t grow_x_chunkBdim[] = { Nq, Nx/2+1, 1 };
-     FA_grow_x  = new FileAttr("X", growGroup, 3, grow_x_dim, grow_x_maxdim, grow_x_chunkdim, offset0,  grow_x_chunkBdim, offset0, parallel->myRank == 0);
+     hsize_t XDep_dsdim[] =  { Ns     , Nx      , 1            };
+     hsize_t XDep_dmdim[] =  { Ns     , Nx      , H5S_UNLIMITED};
+     hsize_t XDep_cBdim[] =  { NsLD   , NxLD    , 1            };
+     hsize_t XDep_cDdim[] =  { NsLD   , NxLD    , 1            };
+     hsize_t XDep_cmoff[] =  { 0      , 0       , 0            };
+     hsize_t XDep_cdoff[] =  { NsLlB-1, NxLlD-3 , 0            };
+     
+     bool XDepWrite = ( (parallel->Coord[DIR_VMS] == 0) && (parallel->Coord[DIR_Z] == 0));
+     
+     FA_XDep_Tp   = new FileAttr("Temperature", XDepGroup, 3, XDep_dsdim, XDep_dmdim, XDep_cDdim, XDep_cmoff, XDep_cBdim, XDep_cdoff, XDepWrite);
+     FA_XDep_n    = new FileAttr("Density"    , XDepGroup, 3, XDep_dsdim, XDep_dmdim, XDep_cDdim, XDep_cmoff, XDep_cBdim, XDep_cdoff, XDepWrite);
+     FA_XDep_Time = fileIO->newTiming(XDepGroup);
+        
+     H5Gclose(XDepGroup);
+     
+     dataOutputXDep = Timing(setup->get("DataOutput.XDep.Step", -1), setup->get("DataOutput.XDep.Time", -1.));
+
+
+     //---------------------------   Power Spectrum  -------------------------------
+     
+     // X-scalarValue
+     hid_t growGroup = fileIO->newGroup("PowerSpectrum", analysisGroup);
+
+     hsize_t grow_x_dsdim[] = { Nq, Nx/2+1, 1 }; 
+     hsize_t grow_x_dmdim[] = { Nq, Nx/2+1, H5S_UNLIMITED} ;
+     hsize_t grow_x_cDdim[] = { Nq, Nx/2+1, 1 };
+     hsize_t grow_x_cBdim[] = { Nq, Nx/2+1, 1 };
+     FA_grow_x  = new FileAttr("X", growGroup, 3, grow_x_dsdim, grow_x_dmdim, grow_x_cDdim, offset0,  grow_x_cBdim, offset0, parallel->myRank == 0);
 
      // Y-scalarValue
-     hsize_t grow_y_dim[]       = { Nq, Nky, 1 };
-     hsize_t grow_y_maxdim[]    = { Nq, Nky, H5S_UNLIMITED };
-     hsize_t grow_y_chunkdim[]  = { Nq, Nky, 1 };
-     hsize_t grow_y_chunkBdim[] = { Nq, Nky, 1 };
+     hsize_t grow_y_dsdim[] = { Nq, Nky, 1 };
+     hsize_t grow_y_dmdim[] = { Nq, Nky, H5S_UNLIMITED };
+     hsize_t grow_y_cDdim[] = { Nq, Nky, 1 };
+     hsize_t grow_y_cBdim[] = { Nq, Nky, 1 };
    
-     FA_grow_y  = new FileAttr("Y", growGroup, 3, grow_y_dim, grow_y_maxdim, grow_y_chunkdim, offset0,  grow_y_chunkBdim, offset0, parallel->myRank == 0);
+     FA_grow_y  = new FileAttr("Y", growGroup, 3, grow_y_dsdim, grow_y_dmdim, grow_y_cDdim, offset0,  grow_y_cBdim, offset0, parallel->myRank == 0);
 
      FA_grow_t  = fileIO->newTiming(growGroup);
 
@@ -434,35 +383,34 @@ void Analysis::initData(Setup *setup, FileIO *fileIO) {
      
      
      hid_t freqGroup = fileIO->newGroup("PhaseShift", analysisGroup);
-     FA_freq_x  = new FileAttr("X", freqGroup, 3, grow_x_dim, grow_x_maxdim, grow_x_chunkdim, offset0,  grow_x_chunkBdim, offset0, parallel->myRank == 0);
-     FA_freq_y  = new FileAttr("Y", growGroup, 3, grow_y_dim, grow_y_maxdim, grow_y_chunkdim, offset0,  grow_y_chunkBdim, offset0, parallel->myRank == 0);
+     FA_freq_x  = new FileAttr("X", freqGroup, 3, grow_x_dsdim, grow_x_dmdim, grow_x_cDdim, offset0,  grow_x_cBdim, offset0, parallel->myRank == 0);
+     FA_freq_y  = new FileAttr("Y", growGroup, 3, grow_y_dsdim, grow_y_dmdim, grow_y_cDdim, offset0,  grow_y_cBdim, offset0, parallel->myRank == 0);
      FA_freq_t  = fileIO->newTiming(freqGroup);
      H5Gclose(freqGroup);
 
-      //////////////////////////////////////////////////////////////// Setup Table for scalar data ////////////////////////////////////////////////////////
+     //////////////////////////////////////////////////////////////// Setup Table for scalar data ////////////////////////////////////////////////////////
               
-      ScalarValues_t scalarValues;
+     ScalarValues_t scalarValues;
      
-      size_t SV_offset[] = { HOFFSET( ScalarValues_t, timestep       ), HOFFSET( ScalarValues_t, time     ), HOFFSET( ScalarValues_t, phiEnergy       ),
-                             HOFFSET( ScalarValues_t, ApEnergy       ), HOFFSET( ScalarValues_t, BpEnergy ), HOFFSET( ScalarValues_t, particle_number ),
-                             HOFFSET( ScalarValues_t, kinetic_energy ), HOFFSET( ScalarValues_t, entropy  ), HOFFSET( ScalarValues_t, heat_flux       ),
-                             HOFFSET( ScalarValues_t, particle_flux  ) };
+     size_t SV_cdoff[] = { HOFFSET( ScalarValues_t, timestep       ), HOFFSET( ScalarValues_t, time     ), HOFFSET( ScalarValues_t, phiEnergy       ),
+                           HOFFSET( ScalarValues_t, ApEnergy       ), HOFFSET( ScalarValues_t, BpEnergy ), HOFFSET( ScalarValues_t, particle_number ),
+                           HOFFSET( ScalarValues_t, kinetic_energy ), HOFFSET( ScalarValues_t, entropy  ), HOFFSET( ScalarValues_t, heat_flux       ),
+                           HOFFSET( ScalarValues_t, particle_flux  ) };
 
-      size_t SV_sizes[] = { sizeof(scalarValues.timestep), sizeof(scalarValues.time    ), sizeof(scalarValues.phiEnergy), 
-                            sizeof(scalarValues.ApEnergy), sizeof(scalarValues.BpEnergy), Ns * sizeof(scalarValues.particle_number[0]), Ns * sizeof(scalarValues.kinetic_energy[0]), 
+     size_t SV_sizes[] = { sizeof(scalarValues.timestep), sizeof(scalarValues.time    ), sizeof(scalarValues.phiEnergy), 
+                           sizeof(scalarValues.ApEnergy), sizeof(scalarValues.BpEnergy), Ns * sizeof(scalarValues.particle_number[0]), Ns * sizeof(scalarValues.kinetic_energy[0]), 
                            Ns * sizeof(scalarValues.entropy[0]), Ns * sizeof(scalarValues.heat_flux[0]), Ns * sizeof(scalarValues.particle_flux[0])};
 
-      hid_t SV_types[] = { H5T_NATIVE_INT, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, 
-                           fileIO->species_tid, fileIO->species_tid, fileIO->species_tid, fileIO->species_tid, fileIO->species_tid } ;
+     hid_t SV_types[] = { H5T_NATIVE_INT, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, 
+                          fileIO->species_tid, fileIO->species_tid, fileIO->species_tid, fileIO->species_tid, fileIO->species_tid } ;
   
-      const char *SV_names[] = { "Timestep", "Time", "phiEnergy", "ApEnergy", "BpEnergy", "ParticleNumber", "KineticEnergy", "Entropy", "HeatFlux", "ParticleFlux" };
+     const char *SV_names[] = { "Timestep", "Time", "phiEnergy", "ApEnergy", "BpEnergy", "ParticleNumber", "KineticEnergy", "Entropy", "HeatFlux", "ParticleFlux" };
 
-      SVTable = new TableAttr(analysisGroup, "scalarValues", 10, SV_names, SV_offset, SV_types, SV_sizes, &scalarValues); 
+     SVTable = new TableAttr(analysisGroup, "scalarValues", 10, SV_names, SV_cdoff, SV_types, SV_sizes, &scalarValues); 
 
-      dataOutputStatistics  = Timing(setup->get("DataOutput.Statistics.Step", -1), setup->get("DataOutput.Statistics.Time", -1.));
+     dataOutputStatistics  = Timing(setup->get("DataOutput.Statistics.Step", -1), setup->get("DataOutput.Statistics.Time", -1.));
 
 }
- 
 
 
 void Analysis::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEnergy)
@@ -475,23 +423,90 @@ void Analysis::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEne
 void Analysis::writeData(const Timing &timing, const double dt)
 
 {
-
-  // important - include X-dependence values
+  
+  ////////////////// Get Moments /////////////////////
 
   if (timing.check(dataOutputMoments, dt)       )   {
 
-//    getTemperatureParallel((A6zz ) vlasov->f.dataZero(), (A4zz) A4_z.dataZero(), V, M);
-//           FA_Mom_Tp->write(A4_z.data());
-//           FA_Mom_HeatFlux->write(getHeatFlux().data());
-//           FA_Mom_Density->write(getNumberDensity().data());
-//           FA_Mom_Density->write(A4_z.data());
-//           FA_Mom_Time->write(&timing);
+               CComplex 
+               A4_Tp[NsLD][NzLD][NkyLD][NxLD], 
+               A4_n [NsLD][NzLD][NkyLD][NxLD], 
+               A4_Xi[NsLD][NzLD][NkyLD][NxLD], 
+               A4_Q [NsLD][NzLD][NkyLD][NxLD]; 
+
+
+             getTemperature  ((A6zz) vlasov->f, (A4zz) A4_Tp, V, M);
+             getNumberDensity((A6zz) vlasov->f, (A4zz) A4_n , V, M);
+  
+             FA_Mom_Density->write((CComplex *) A4_n);
+             FA_Mom_Tp     ->write((CComplex *) A4_Tp);
+             FA_Mom_Time->write(&timing);
+
     parallel->print("Data I/O : Moments output");
     
   }
 
+
+  ////////////////// Store X-dependent data /////////////
+  if (timing.check(dataOutputXDep, dt)       )   {
+
+    {   
+      CComplex A4_T[NsLD][NzLD][NkyLD][NxLD], 
+               A4_p[NsLD][NzLD][NkyLD][NxLD], 
+               A4_n[NsLD][NzLD][NkyLD][NxLD]; 
+      double   A1_T[NsLD][NxLD], 
+               A1_n[NsLD][NxLD], 
+               A1_p[NsLD][NxLD];
+
+      getNumberDensity( (A6zz) vlasov->f, (A4zz) A4_n, V, M);
+      getTemperature  ( (A6zz) vlasov->f, (A4zz) A4_T, V, M);
+
+      // Reduce over y_k and z
+      for(int s = NsLlD; s <= NsLuD; s++) {  for(int x = NxLlD;  x <= NxLuD; x++) {
+
+         A1_n[s-NsLlD][x-NxLlD] = __sec_reduce_add(cabs(A4_n[s-NsLlD][:][:][x-NxLlD]));
+         A1_T[s-NsLlD][x-NxLlD] = __sec_reduce_add(cabs(A4_T[s-NsLlD][:][:][x-NxLlD]));
+      } } 
+   
+      FA_XDep_Tp  ->write((double *) A1_T); 
+      FA_XDep_n   ->write((double *) A1_n); 
+      FA_XDep_Time->write(&timing);
+
+      parallel->print("Data I/O : X-Dep output");
+    }  
+
+   ///////////////////Get Store /Particle Flux /////////////////////////////
+   {
+       Complex A4_q[Nq][NsLD][NkyLD][NxLD], A2_q[NkyLD][NxLD], // Heat flux      (take care stack variables have no offset)
+               A4_x[Nq][NsLD][NkyLD][NxLD], A2_x[NkyLD][NxLD]; // Particle flux
+
+        A4_q[:][:][:][:] = 0.;
+        A4_x[:][:][:][:] = 0.;
+
+      for(int s = NsLlD; s <= NsLuD; s++) {  for(int m = NmLlD;  m <= NmLuD; m++) {
+
+           // support only phi for now
+           getParticleHeatFlux(m, s, (A2zz) A2_x, (A2zz) A2_q, (A6zz) vlasov->f, (A6zz) fields->Field, V, M);
+           A4_q[0][s-NsLlD][:][:] +=  A2_q[:][:];
+           A4_x[0][s-NsLlD][:][:] +=  A2_x[:][:];
+
+      } };
+
+      parallel->reduce((CComplex *) A4_q, Op::SUM, DIR_M, Nq*NsLD*NkyLD*NxLD);
+      parallel->reduce((CComplex *) A4_x, Op::SUM, DIR_M, Nq*NsLD*NkyLD*NxLD);
+
+      FA_heatKy    ->write((CComplex *) A4_q);
+      FA_particleKy->write((CComplex *) A4_x);
+    }
+  }
+
   if (timing.check(dataOutputStatistics, dt)       )   {
+ 
+
   
+    ////////////// Scalar Variables /////////////////
+
+
     // Stack allocation (size ok ?) and alignement ? (well, speed not critical here...)
     double pSpecX [Nq][Nx/2+1], pSpecY [Nq][Nky],
            pPhaseX[Nq][Nx/2+1], pPhaseY[Nq][Nky];
@@ -501,12 +516,6 @@ void Analysis::writeData(const Timing &timing, const double dt)
     // Seperatly writing ? Hopefully it is buffered ... (passing stack pointer ... OK ?)
     FA_grow_x->write( &pSpecX [0][0]); FA_grow_y->write(&pSpecY [0][0]); FA_grow_t->write(&timing);
     FA_freq_x->write( &pPhaseX[0][0]); FA_freq_y->write(&pPhaseY[0][0]); FA_freq_t->write(&timing);
-    
-    // Heat Flux skip this crap
-    //Array3R heatKy; heatKy.reference(getHeatFluxKy());
-    //FA_heatKy->write(heatKy.data());
-    //Array3R particleKy; particleKy.reference(getParticleFluxKy());
-    //FA_particleKy->write(particleKy.data());
     
     ScalarValues scalarValues;
     
@@ -551,54 +560,17 @@ void Analysis::writeData(const Timing &timing, const double dt)
 }
 
      //###################################### Spectrum  ################################################
-     // YZ-Spectrum
 /*
-     hsize_t spec_yz_dim[]      = { Ny/2+1, Nz/2+1, 1 };
-     hsize_t spec_yz_maxdim[]   = { Ny/2+1, Nz/2+1, H5S_UNLIMITED};
-     hsize_t spec_yz_chunkdim[] = { kNyL, kNzL, 1};
-
-     FA_spec_yz  = new FileAttr("Unnamed",3, spec_yz_dim, spec_yz_maxdim, spec_yz_chunkdim, offset0,  spec_yz_chunkdim, parallel->isFFTGroup);
-     
      // XY-Spectrum
-     hsize_t spec_xy_dim[]      = { Nx/2+1, Ny/2+1, 1};
-     hsize_t spec_xy_maxdim[]   = { Nx/2+1, Ny/2+1, H5S_UNLIMITED};
-     hsize_t spec_xy_chunkdim[] = { kNxL, kNyL, 1};
+     hsize_t spec_xy_dsdim[]      = { Nx/2+1, Ny/2+1, 1};
+     hsize_t spec_xy_dmdim[]   = { Nx/2+1, Ny/2+1, H5S_UNLIMITED};
+     hsize_t spec_xy_cDdim[] = { kNxL, kNyL, 1};
 
-     FA_spec_xy  = new FileAttr("Unnamed",3, spec_xy_dim, spec_xy_maxdim, spec_xy_chunkdim, offset0,  spec_xy_chunkdim, parallel->isFFTGroup);
+     FA_spec_xy  = new FileAttr("Unnamed",3, spec_xy_dsdim, spec_xy_dmdim, spec_xy_cDdim, offset0,  spec_xy_cDdim, parallel->isFFTGroup);
      
-     // XZ-Spectrum
-     hsize_t spec_xz_dim[]      = { Nx/2+1, Nz/2+1, 1 };
-     hsize_t spec_xz_maxdim[]   = { Nx/2+1, Nz/2+1, H5S_UNLIMITED };
-     hsize_t spec_xz_chunkdim[] = { kNyL, kNzL, 1 };
-     
-     FA_spec_xz  = new FileAttr("Unnamed",3, spec_xz_dim, spec_xz_maxdim, spec_xz_chunkdim, offset0,  spec_xz_chunkdim, parallel->isFFTGroup);
 */
 
         
-/* 
-  int FileIO::writeSpectrum(Array3C phi_k, Analysis *analysis, Timing timing)
-  {
-    if((parallel->isFFTGroup) && (setup->spectrumAvrg[SPEC_XZ][SPEC_START] <= timing.step) && (timing.step <= setup->spectrumAvrg[SPEC_XZ][SPEC_END])) 
-      analysis->updateSpectrum(SPEC_XZ);
-    
-    if((parallel->isFFTGroup) && (setup->spectrumAvrg[SPEC_YZ][SPEC_START] <= timing.step) && (timing.step <= setup->spectrumAvrg[SPEC_YZ][SPEC_END])) 
-      analysis->updateSpectrum(SPEC_YZ);
-
-
-    if((parallel->isFFTGroup) && (setup->spectrumAvrg[SPEC_XY][SPEC_START] <= timing.step) && (timing.step <= setup->spectrumAvrg[SPEC_XY][SPEC_END])) 
-      analysis->updateSpectrum(SPEC_XY);
-
-
-//      if(timeStep == setup->spectrumAvrg[SPEC_YZ][SPEC_END]) FA_spec_yz->write(analysis->getSpectrum(SPEC_YZ).data());
-//      if(timeStep == setup->spectrumAvrg[SPEC_XZ][SPEC_END]) FA_spec_xz->write(analysis->getSpectrum(SPEC_XZ).data());
-//      if(timeStep == setup->spectrumAvrg[SPEC_XY][SPEC_END]) FA_spec_xy->write(analysis->getSpectrum(SPEC_XY).data());
-
-        
-
-  }
- */
-
-
 // separately we set MPI struct
 void Analysis::setMPIStruct()
 {
@@ -632,6 +604,8 @@ void Analysis::closeData() {
   delete FA_particleKy;
   delete FA_grow_x; delete FA_grow_y; delete FA_grow_t;     
   delete FA_freq_x; delete FA_freq_y; delete FA_freq_t;    
+     
+  delete FA_XDep_Tp; delete FA_XDep_n; delete FA_XDep_Time;
        
   delete FA_Mom_Tp;
   delete FA_Mom_HeatFlux;
