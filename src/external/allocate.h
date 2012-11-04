@@ -71,7 +71,7 @@ class Range
 
 enum alloc_flags  { 
                MA  =1      ,    ///< do use Memory Aligned (default)
-               ZERO=2      ,    ///< do not set to Zero 
+               SET_ZERO=2  ,    ///< do not set to Zero 
                DEALLOC=4   ,    ///< do not deallocate 
                USE_DEFAULT = 7, ///< use default values 
              };
@@ -125,7 +125,7 @@ class allocate : public ArrayBase
    int getNum() const { return Num; };
    int getOff() const { return Off; };
 
-   allocate()
+   allocate(int _flags = SET_ZERO) : flags(_flags)
    {
       Num = 0;
       Off = 0;
@@ -333,8 +333,13 @@ class allocate : public ArrayBase
          
          //*g = ((T *) malloc(N * sizeof(T)));
          *g = ((T *) _mm_malloc(Num * sizeof(T), 64));
-    
-         
+
+        
+         // set to zero
+         if(flags & SET_ZERO) {
+            for(int n=0; n < Num; n++) (*g)[n] = T(0);
+         }
+
          // Take care, pointer arithmetic is typed, only char* is 1 Byte !!!
          // Substract offset to calculate p[0][0]....
          *g = *g - Off;

@@ -43,6 +43,17 @@ class FileAttr
 
   public: 
 
+  /**
+   *
+   *
+   *    cDdim - Chunk domain dimension
+   *    cBdim - Chunk boundary dimension
+   *    cmoff - Chunk Memory offset
+   *    cdoff - Chunk Data offset
+   *    dsdim - Dataset dimensions
+   *    dmdim - Dataset maximum dimension
+   *   
+   **/
    FileAttr(std::string _name, hid_t group, int n_dim, hsize_t _dim[], hsize_t mdim[], 
             hsize_t cdim[], hsize_t moffset[], hsize_t chunkBdim[], hsize_t _offset[],   
             bool _write, hid_t _typeId_hdf = H5T_NATIVE_DOUBLE, bool createFile=true) 
