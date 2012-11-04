@@ -98,7 +98,6 @@ void Vlasov::setBoundary(CComplex *f)
 
 void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
 {
-
     [=] (
          CComplex g     [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
          CComplex SendXl[NsLD][NmLD][NzLD][NkyLD][GC2 ][NvLD], CComplex SendXu[NsLD][NmLD][NzLD][NkyLD][GC2 ][NvLD], 
@@ -120,7 +119,9 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
    // We do not domain decompose poloidal (y) fourier modes, thus boundaries not required
   
    // Z-Boundary (skip exchange in case we use only 2D (Nz == 1) simulations 
-   if(Nz > 1) omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {  for(int x=NxLlD; x<= NxLuD;x++) { 
+   if(Nz > 1) {
+
+     omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {  for(int x=NxLlD; x<= NxLuD;x++) { 
 
            
             const CComplex a = ((CComplex) 0. + 1.j) *  (2.*M_PI * (2.* M_PI/Ly) * y_k);
@@ -129,8 +130,9 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
             SendZl[:][:][:][:][y_k-NkyLlD][x-NxLlD] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD  :2][y_k][x][NvLlD:NvLD] * cexp( ((NzLlD == NzGlD) ? a : 0.) * geo->nu(x));
             SendZu[:][:][:][:][y_k-NkyLlD][x-NxLlD] = g[NsLlD:NsLD][NmLlD:NmLD][NzLuD-1:2][y_k][x][NvLlD:NvLD] * cexp(-((NzLlD == NzGlD) ? a : 0.) * geo->nu(x));
                
-  } }
-  parallel->updateBoundaryVlasov((CComplex *) SendZu, (CComplex *) SendZl, (CComplex *) RecvZu, (CComplex *) RecvZl, ArrayBoundZ.getNum(),  DIR_Z);
+     } }
+     parallel->updateBoundaryVlasov((CComplex *) SendZu, (CComplex *) SendZl, (CComplex *) RecvZu, (CComplex *) RecvZl, ArrayBoundZ.getNum(),  DIR_Z);
+   }
   
   // We do not need to communicate for M and S as we do not have boundary cells (yet)
   
@@ -152,7 +154,7 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
   if(boundary_type & Boundary::RECV) {
      
     // Wait until boundaries are communicated
-     parallel->updateNeighboursBarrier();
+     parallel->updateBoundaryVlasovBarrier();
    
    // Set boundary in X (take care of Neumann boundary ?!) 
    g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlB  :2][NvLlD:NvLD] = RecvXl[:][:][:][:][:][:]; 
@@ -191,13 +193,13 @@ double Vlasov::getMaxTimeStep(int dir, const double maxCFL)
   
   for(int s=NsGlD; s<=NsGuD; s++) v_scale = max(v_scale, plasma->species[s].scale_v);
    
-  if     (dir == DIR_X  ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_X]/dx, Op::MAX));
-  else if(dir == DIR_Y  ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_Y]/dy, Op::MAX));
-  //if     (dir == DIR_XY ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_X]/dy + Xi_max[DIR_Y]/dx, OP_MAX));
-  if     (dir == DIR_XY ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_X] / dy + Xi_max[DIR_Y]/dx, Op::MAX));
-  else if(dir == DIR_Z  ) dt =  maxCFL / max(1.e-99, parallel->collect(Xi_max[DIR_Z]/dz, Op::MAX));
+  if     (dir == DIR_X  ) dt =  maxCFL / max(1.e-99, parallel->reduce(Xi_max[DIR_X]/dx, Op::MAX));
+  else if(dir == DIR_Y  ) dt =  maxCFL / max(1.e-99, parallel->reduce(Xi_max[DIR_Y]/dy, Op::MAX));
+  //if     (dir == DIR_XY ) dt =  maxCFL / max(1.e-99, parallel->reduce(Xi_max[DIR_X]/dy + Xi_max[DIR_Y]/dx, OP_MAX));
+  if     (dir == DIR_XY ) dt =  maxCFL / max(1.e-99, parallel->reduce(Xi_max[DIR_X] / dy + Xi_max[DIR_Y]/dx, Op::MAX));
+  else if(dir == DIR_Z  ) dt =  maxCFL / max(1.e-99, parallel->reduce(Xi_max[DIR_Z]/dz, Op::MAX));
   else if(dir == DIR_V  ) dt =  maxCFL / (v_scale * Lv/(sqrt(geo->eps_hat) * dz));
-  else if(dir == DIR_ALL) dt =  maxCFL / parallel->collect(Xi_max[DIR_Y]/dx + Xi_max[DIR_X]/dy +  
+  else if(dir == DIR_ALL) dt =  maxCFL / parallel->reduce(Xi_max[DIR_Y]/dx + Xi_max[DIR_X]/dy +  
                                               v_scale*Lv*Xi_max[DIR_Z]/(sqrt(geo->eps_hat)*dz) +  v_scale * Lv/(sqrt(geo->eps_hat)*dz), Op::MAX);
   return dt;
 }
