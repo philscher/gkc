@@ -394,7 +394,7 @@ fftw_plan plan_transpose(char storage_type, int rows, int cols, double *in, doub
 void FFTSolver_fftw3::printOn(std::ostream &output) const {
 
          output   << "FFTSolver  |  using fftw-3 interface for (" << std::string(fftw_version) << ")" << std::endl;
-         output   << "           |  Plan : " << plan << " Wisdom : " << ((wisdom=="") ? "None" : wisdom) << std::endl;
+         output   << "           |  Plan : " << (plan == "" ? "None" : plan) << " Wisdom : " << ((wisdom=="") ? "None" : wisdom) << std::endl;
          
 }
 

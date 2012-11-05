@@ -51,7 +51,7 @@ grid(_grid), parallel(_parallel), geo(_geo), solveEq(0)
    //  brackets should be 1/2 but due to numerical errors, we should calculate it ourselves, see Dannert[2] 
    Yeb = (1./sqrt(M_PI) * __sec_reduce_add(pow2(V[NvLlD:NvLD]) * exp(-pow2(V[NvLlD:NvLD]))) * dv) * geo->eps_hat * plasma->beta; 
 
-   initData(setup, fileIO);
+   initDataOutput(setup, fileIO);
 } 
 
 Fields::~Fields() 
@@ -142,7 +142,9 @@ void Fields::calculateChargeDensity(const CComplex f0         [NsLD][NmLD][NzLB]
  
    // In case of a full-f simulation the Maxwellian is subtracted
 
-   const double pqnB_dvdm = M_PI * plasma->species[s].q * plasma->species[s].n0 * plasma->B0 * dv * grid->dm[m] ;
+   const double pqnB_dvdm = M_PI * plasma->species[s].q * plasma->species[s].n0 * plasma->B0 * dv * 
+                            (plasma->species[s].doGyro ? grid->dm[m] : 1.);
+    
    omp_C2_for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
               Field0[Q::rho][z][y_k][x] = ( __sec_reduce_add(f [s][m][z][y_k][x][NvLlD:NvLD]) 
@@ -261,7 +263,7 @@ void Fields::updateBoundary(
 ///////////////////////////////////////////// Data I/O ///////////////////////////////
 
 
-void Fields::initData(Setup *setup, FileIO *fileIO) {
+void Fields::initDataOutput(Setup *setup, FileIO *fileIO) {
     
    // Set sizes : Note, we use fortran ordering for field variables 
    hsize_t field_dim[]       = { grid->NzGD, grid->NkyGD, grid->NxGD  ,             1};
@@ -298,7 +300,8 @@ void Fields::writeData(const Timing &timing, const double dt)
    }
 } 
       
-void Fields::closeData() {
+void Fields::closeData() 
+{
 
    delete FA_phi;
    delete FA_Ap;
@@ -308,7 +311,8 @@ void Fields::closeData() {
 }
 
 
-void Fields::printOn(std::ostream &output) const {
+void Fields::printOn(std::ostream &output) const 
+{
 
          output   << "Poisson    |  " << "Base class" << std::endl;
          output   << "Ampere     |  " << ((plasma->nfields >= 2) ? "beta :  " + Setup::num2str(plasma->beta) : " --- no electromagnetic effects ---") << std::endl;

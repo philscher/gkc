@@ -45,7 +45,7 @@ class Eigenvalue : public IfaceGKC {
    **/
    struct EigenValue {
     
-     Complex EigenValue   ; ///< the eigenvalue
+     Complex EigenValue  ; ///< the eigenvalue
      double AbsoluteError; ///< the absolute error
 
    };
@@ -54,12 +54,17 @@ class Eigenvalue : public IfaceGKC {
    Parallel *parallel;
    Grid     *grid;
 
+   bool includeZF; ///< set if Zonal Flow component (ky=0) is included in calculations
+
   public:
    /**
    *    Please Document Me !
    *
    **/
-   Eigenvalue(FileIO *fileIO, Setup *setup, Grid *_grid, Parallel *_parallel) : parallel(_parallel), grid(_grid) {};
+   Eigenvalue(FileIO *fileIO, Setup *setup, Grid *_grid, Parallel *_parallel) : parallel(_parallel), grid(_grid) 
+   {
+      includeZF = setup->get("Eigenvalue.IncludeZF", 0);
+   };
 
    /**
    *    Please Document Me !
@@ -79,7 +84,7 @@ class Eigenvalue : public IfaceGKC {
    *         the maximum stable linear timestep
    *
    **/
-   virtual Complex getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields) = 0;
+   virtual double getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields) = 0;
 
   protected :
   

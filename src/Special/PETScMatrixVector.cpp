@@ -18,7 +18,8 @@
 Vlasov *GL_vlasov;
 Fields *GL_fields;
 
-int GL_iter;
+bool GL_includeZF;
+int  GL_iter;
 
 extern int process_rank;
 
@@ -31,12 +32,13 @@ int petc_signal_handler(int sig, void *ctx) {
 
 
 
-PETScMatrixVector::PETScMatrixVector(Vlasov *vlasov, Fields *fields)
+PETScMatrixVector::PETScMatrixVector(Vlasov *vlasov, Fields *fields, bool includeZF)
 {
-
-            GL_vlasov = vlasov;
-            GL_fields = fields;
-            GL_iter   = 0;
+  // Set global variables to use for ::MatrixVectorProduct
+  GL_includeZF = includeZF;
+  GL_vlasov    = vlasov;
+  GL_fields    = fields;
+  GL_iter      = 0;
 };
 
 
@@ -44,8 +46,8 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
 
 {
 
-  [=] (CComplex  fs  [NsLD][NmLD ][NzLB][NkyLD][NxLB][NvLB],  
-       CComplex  fss [NsLD][NmLD ][NzLB][NkyLD][NxLB][NvLB])
+  [=] (CComplex  fs  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],  
+       CComplex  fss [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB])
   {
       
     if(process_rank == 0 ) std::cout << "\r"   << "Iteration  : " << GL_iter++ << std::flush;
@@ -57,8 +59,10 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
 
     // copy whole phase space function (waste but starting point) (important due to bounday conditions
     // we can built wrapper around this and directly pass it
-    for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD-1; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
-    for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD   ; m   <= NmLuD   ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
+    int n = 0;
+    for(int s = NsLlD; s <= NsLuD; s++) { for(int m   = NmLlD   ; m   <= NmLuD   ; m++  ) { for(int z = NzLlD; z <= NzLuD; z++) {
+    for(int y_k = (GL_includeZF ? 0 : 1); y_k <= NkyLuD-1; y_k++) {   // iterate from NkyLlD if Zonal Flow is included
+    for(int x = NxLlD; x <= NxLuD; x++) { for(int v = NvLlD       ; v <= NvLuD; v++) { 
       
            fs[s][m][z][y_k][x][v] = x_F1[n++];
 
@@ -72,8 +76,10 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
    
    // copy whole phase space function (waste but starting point) (important due to bounday conditions
    //#pragma omp parallel for, collapse private(n) 
-   for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int y_k = NkyLlD+1; y_k <= NkyLuD-1; y_k++) { for(int z = NzLlD; z <= NzLuD; z++) {
-   for(int v = NvLlD       ; v <= NvLuD; v++) { for(int m   = NmLlD   ; m   <= NmLuD   ; m++  ) { for(int s = NsLlD; s <= NsLuD; s++) {
+    n = 0;
+    for(int s = NsLlD; s <= NsLuD; s++) { for(int m   = NmLlD   ; m   <= NmLuD   ; m++  ) { for(int z = NzLlD; z <= NzLuD; z++) {
+    for(int y_k = (GL_includeZF ? 0 : 1); y_k <= NkyLuD-1; y_k++) {   // iteratte from NkyLlD if Zonal Flow is included
+    for(int x = NxLlD; x <= NxLuD; x++) { for(int v = NvLlD       ; v <= NvLuD; v++) { 
 
        y_F1[n++] = fss[s][m][z][y_k][x][v];
 

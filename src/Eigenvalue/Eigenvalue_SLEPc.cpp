@@ -33,9 +33,9 @@ Eigenvalue_SLEPc::Eigenvalue_SLEPc(FileIO *fileIO, Setup *setup, Grid *grid, Par
       // create Matrix Operations
       int subDiv=0;
 
-      // Note : We do not include Zonal Flow (ZF) and Nyquist frequency
-      int local_size  = NxLD       * (NkyLD-2) * NzLD       * NvLD       * NmLD       * NsLD;
-      int global_size = grid->NxGD * (NkyLD-2) * grid->NzGD * grid->NvGD * grid->NmGD * grid->NsGD;
+      // Note : We do not include Nyquist frequency , Zonal Flow (ZF) per switch
+      int local_size  = NxLD       * (includeZF ? NkyLD-1 : NkyLD-2) * NzLD       * NvLD       * NmLD       * NsLD;
+      int global_size = grid->NxGD * (includeZF ? NkyLD-1 : NkyLD-2) * grid->NzGD * grid->NvGD * grid->NmGD * grid->NsGD;
 
       MatCreateShell(parallel->Comm[DIR_ALL], local_size, local_size, global_size, global_size, &subDiv, &A_F1);
       MatSetFromOptions(A_F1);
@@ -53,7 +53,7 @@ Eigenvalue_SLEPc::Eigenvalue_SLEPc(FileIO *fileIO, Setup *setup, Grid *grid, Par
       // use e.g. -x "-st_shift 0.2" to set more properties
       EPSSetFromOptions(EigvSolver);
 
-      initData(setup, fileIO);
+      initDataOutput(setup, fileIO);
 }
 
 
@@ -99,8 +99,7 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
 
     //EPSSetWhichEigenpairs(EigvSolver, EPS_LARGEST_REAL);
     
-    //int n_eigv = 2000;//Nx*Nky*Nz*Nv*Nm*Ns;
-    int n_eigv = grid->NxGD * (NkyLD-2) * grid->NzGD * grid->NvGD * grid->NmGD * grid->NsGD;
+    int n_eigv = grid->NxGD * (includeZF ? NkyLD-1 : NkyLD-2) * grid->NzGD * grid->NvGD * grid->NmGD * grid->NsGD;
     EPSSetDimensions(EigvSolver, n_eigv, PETSC_DECIDE, PETSC_DECIDE); 
     // init intial solution vector 
     if(1 == 0) {
@@ -114,7 +113,7 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
              // we can built wrapper around this and directly pass it
              int n = 0;
              for(int s = NsLlD; s <= NsLuD; s++) { for(int m   = NmLlD ; m   <= NmLuD ; m++  ) { for(int z = NzLlD; z <= NzLuD; z++) {
-             for(int y_k = NkyLlD+1; y_k <= NkyLuD-1; y_k++) { for(int x = NxLlD, n = 0; x <= NxLuD; x++) {  for(int v = NvLlD       ; v <= NvLuD; v++) { 
+             for(int y_k = (includeZF ? 0 : 1); y_k <= NkyLuD-1; y_k++) { for(int x = NxLlD, n = 0; x <= NxLuD; x++) {  for(int v = NvLlD       ; v <= NvLuD; v++) { 
 
                  init_x[n++] = 1.e-5 * f[s][m][z][y_k][x][v];
 
@@ -128,7 +127,7 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
     }
 
     //////// Solve ////////
-    PETScMatrixVector pMV(vlasov, fields);
+    PETScMatrixVector pMV(vlasov, fields, includeZF);
 
     control->signalForceExit(true);
     EPSSolve(EigvSolver);
@@ -154,17 +153,17 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
 
 
     //////////////////////////    Read Out Results /////////////////////
-    for(int m = 0; m < nconv; m++) {
+    for(int n = 0; n < nconv; n++) {
           
             Complex eigv, eigv_dummy;
-            EPSGetEigenpair(EigvSolver, m, (PetscScalar *) &eigv, (PetscScalar *) &eigv_dummy, Vec_F1, Vec_F1_dummy);
+            EPSGetEigenpair(EigvSolver, n, (PetscScalar *) &eigv, (PetscScalar *) &eigv_dummy, Vec_F1, Vec_F1_dummy);
 
 
             eigvTable.EigenValue     = eigv;
             //double error = 0.;
             //EPSComputeRelativeError(EigvSolver,m, &error);
             //eigvTable.AbsoluteError  = error;
-            EPSComputeRelativeError(EigvSolver,m, &eigvTable.AbsoluteError);
+            EPSComputeRelativeError(EigvSolver,n, &eigvTable.AbsoluteError);
             
           EVTable->append(&eigvTable);
           
@@ -182,7 +181,7 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
              // we can built wrapper around this and directly pass it
              int n = 0;
              for(int s = NsLlD; s <= NsLuD; s++) { for(int m   = NmLlD ; m   <= NmLuD ; m++  ) { for(int z = NzLlD; z <= NzLuD; z++) {
-             for(int y_k = NkyLlD+1; y_k <= NkyLuD-1; y_k++) { for(int x = NxLlD, n = 0; x <= NxLuD; x++) {  for(int v = NvLlD       ; v <= NvLuD; v++) { 
+             for(int y_k = (includeZF ? 0 : 1); y_k <= NkyLuD-1; y_k++) { for(int x = NxLlD, n = 0; x <= NxLuD; x++) {  for(int v = NvLlD       ; v <= NvLuD; v++) { 
 
                  fs[s][m][z][y_k][x][v] = x_F1[n++];
 
@@ -194,7 +193,8 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
    
            VecRestoreArray    (Vec_F1, (PetscScalar **) &x_F1);
         
-           visual->writeData(Timing(m,0.), 0., true);
+           // Write put Fields Eigenvector, set Imaginary part as Time 
+           visual->writeData(Timing(n, real(eigv)), 0., true);
           }
     }
 
@@ -218,14 +218,16 @@ Eigenvalue_SLEPc::~Eigenvalue_SLEPc() {
 };
 
 void Eigenvalue_SLEPc::printOn(std::ostream &output) const {
+           int global_size = grid->NxGD * (includeZF ? NkyLD-1 : NkyLD-2) * grid->NzGD * grid->NvGD * grid->NmGD * grid->NsGD;
            output << "Eigenvalue |  using SLEPc interface " << std::endl;
+           output << "           | Approx ~ " << global_size << " Iterations " << std::endl;
  }
 
 
  /////////////////////////////////// Data I/O Stuff ////////////////
 
 
-void Eigenvalue_SLEPc::initData(Setup *setup, FileIO *fileIO) 
+void Eigenvalue_SLEPc::initDataOutput(Setup *setup, FileIO *fileIO) 
 {
    eigvGroupID = fileIO->newGroup("Eigenvalue");
 

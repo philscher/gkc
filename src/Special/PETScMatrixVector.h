@@ -35,9 +35,9 @@ int petc_signal_handler(int sig, void *ctx);
 
 
 class PETScMatrixVector
-{
+{ 
   public:
-        PETScMatrixVector(Vlasov *vlasov, Fields *fields);
+        PETScMatrixVector(Vlasov *vlasov, Fields *fields, bool includeZF=false);
         static PetscErrorCode MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_y) ;
         static CComplex* getCreateVector(Grid *grid, Vec &Vec_x);
 };
