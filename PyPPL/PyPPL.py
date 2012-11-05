@@ -87,14 +87,14 @@ def Gamma1(b) : return    mp.besseli(1,b)*mp.exp(-b)
 #def Gamma1(b) : return    #mp.besseli(1,b)*mp.exp(-b)
 
 
-def getZero(Func, init=1.+1.j, solver='muller'):
+def getZero(Func, init=(1.+1.j, 1.1+1.j, 1.+1.1j), solver='muller', ftol=1.e-3, tol=1.e-3, maxsteps=600):
   import mpmath as mp
   w0 = complex(float('nan'), float('nan'))
   try:
-     w0 = mp.findroot(lambda w : Func(complex(w)), (init, init+0.1, init+0.1j), solver=solver, maxsteps=600, ftol=1.e-3)
+     w0 = mp.findroot(lambda w : Func(complex(w)), init, solver=solver, maxsteps=maxsteps, ftol=ftol, tol=tol)
   except:
    try:
-     w0 = mp.findroot(lambda w : Func(complex(w)), init, solver='halley', maxsteps=600, ftol=1.e-3)
+     w0 = mp.findroot(lambda w : Func(complex(w)), init[0], solver='halley', maxsteps=maxsteps, ftol=ftol, tol=tol)
    except:   
      print "Could not find zero"
 

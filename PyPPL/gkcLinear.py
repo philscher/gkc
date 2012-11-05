@@ -27,7 +27,6 @@ def fitDampedOscillationFourier(T, Y):
        #abs_freq =  2.*np.pi*fftfreq[m]
 
 
-       print "freq " , freq, " idx : " , idx, " w0 : ", w0
        #we could caluclated now gamme but this is not accurate enough
        # so we fit the decline
 
@@ -59,7 +58,6 @@ def getGrowthrate(T, D, start, stop):
        
        #p, success = scipy.optimize.leastsq(errfunc, [0.001, min(np.log(abs(Y)))], args=(T, np.log(abs(Y))))
        p, success = scipy.optimize.leastsq(errfunc, [0.05, 0.], args=(T, np.log(abs(Y))))
-       print p, success
        return p[0]
   
   if D.ndim == 1:
@@ -198,7 +196,6 @@ def plotFrequencyGrowthrates(fileh5, which='b', markline="-", **kwargs):
       if which=='r' or which=='b':
         shift = fileh5.root.Analysis.PhaseShift.Y   [n_field, :,:]
         frequency   = getFrequency(T,shift, start,stop)
-        print "ky : ", np.shape(D['ky']), " freq : ", np.shape(frequency)
         pl = pf(D['ky'], frequency, "v" + markline, label='$\\omega_r$')
       #if which !='r' or which != 'i' or which !='b':
       #      raise TypeError("Wrong argument for which (r/i/b) : " + str(dir))

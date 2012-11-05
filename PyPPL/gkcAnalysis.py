@@ -30,6 +30,7 @@ def plotTimeEvolutionModePower(fileh5, **kwargs):
     D = gkcData.getDomain(fileh5)
     
     doCFL    = kwargs.pop('doCFL', True)
+    doLog    = kwargs.pop('doLog', True)
     dir      = kwargs.pop('dir', 'Y')
     modes    = kwargs.pop('modes' , range(D['Nky']))
     field    = kwargs.pop('field', 'phi')  
@@ -37,6 +38,7 @@ def plotTimeEvolutionModePower(fileh5, **kwargs):
     label    = kwargs.pop('label', 'k')  
     leg_loc  = kwargs.pop('loc', 'best')  
     ncol     = kwargs.pop('ncol', 3)  
+    showLegend = kwargs.pop('showLegend', True)  
     
     if doCFL == True : pylab.clf()
     
@@ -61,18 +63,13 @@ def plotTimeEvolutionModePower(fileh5, **kwargs):
       legend_list = []
       
       for m in modes:
-                #try:
-                pl = pylab.semilogy(T[n_offset:], fileh5.root.Analysis.PowerSpectrum.Y[n_field, m,n_offset:].T)
-                if  (label == 'm' ) : legend_list.append("m = %i" % m)
-                elif(label == 'k')  : legend_list.append("ky = %.1f" % (D['ky'][m])) 
-                else                : print "Name Error"
-                #except:
-                #print "Failed to plot m = ", m , " mode "
-    
+        if(doLog) : pylab.semilogy(T[n_offset:], fileh5.root.Analysis.PowerSpectrum.Y[n_field, m,n_offset:].T, label='$k_y^{(%i)} = %.2f$' % (m, D['ky'][m]))
+        else      : pylab.plot(T[n_offset:], fileh5.root.Analysis.PowerSpectrum.Y[n_field, m,n_offset:].T, label='$k_y^{(%i)} = %.2f$' % (m, D['ky'][m]))
  
     else : raise TypeError("Wrong argument for dir : " + str(dir))
      
-    leg = pylab.legend(legend_list, loc=leg_loc, ncol=ncol, mode="expand").draw_frame(0)
+    #if showLegend == True:
+    leg = pylab.legend(loc=leg_loc, ncol=ncol, mode="expand").draw_frame(0)
      
     pylab.xlabel("Time")
     pylab.xlim((0.,max(T)))
@@ -153,8 +150,6 @@ def plotTimeEvolutionModePhase(fileh5, **kwargs):
                 else                            : data_m.append(float('nan'))
             data_m.append(data[-1])
             data_m = np.array(data_m)
-
-            print np.shape(T), np.shape(data_m)
 
             pl = pylab.plot(T, data_m)
             if  (label == 'm' ) : legend_list.append("m = %i" % m)
@@ -248,20 +243,19 @@ def plotInstantGrowthrates(fileh5, **kwargs):
       for i in range(len(fileh5.root.Analysis.PowerSpectrum.X[n_field,:numModes,0])):
         legend_list.append("kx = %i" % i)
       
-      leg = legend(legend_list, loc='best', ncol=4)
+      leg = legend(legend_list, loc='best', ncol=3)
       leg.draw_frame(0)
     
     if(dir == 'Y'):
       for m in modes:
         Var =   fileh5.root.Analysis.PowerSpectrum.Y[n_field,m,off:]
-        Tn, V = cast2Equidistant(T[off:], np.log10(Var))
+        Tn, V = cast2Equidistant(T[off:], np.log(Var))
         # Use NdImage for line-smoothening (convolution with gaussian kernel)
         V   = scipy.ndimage.gaussian_filter(V, sigma=sigma, mode='nearest')
         gamma = np.gradient(V, Tn[1]-Tn[0])
-        pylab.plot(Tn, gamma, "-", label='ky = %.2f' % (D['ky'][m]))#, color=gkcStyle.markers_C[m])
+        pylab.plot(Tn, gamma, "-", label='$k_y^{(%i)} = %.2f$' % (m, D['ky'][m]))#, color=gkcStyle.markers_C[m])
       
-      leg = pylab.legend(loc='best', ncol=4)
-      leg.draw_frame(0)
+    leg = pylab.legend(loc='best', ncol=3).draw_frame(0)
     
     
     pylab.xlabel("Time")
@@ -401,7 +395,6 @@ def plotScalarDataTimeEvolution(fileh5, var = "KinPhi", **kwargs):
     """
     D = gkcData.getDomain(fileh5)
     
-    doCFL    = kwargs.pop('doCFL', True)
     log      = kwargs.pop('log', True)
     
     leg_loc  = kwargs.pop('leg_loc' , 'best')
@@ -539,30 +532,31 @@ def plotTurbulenceSpectra(fileh5, dir='Y', start=1, end=-1, posT=(1,-1), field=0
     
     doCFL    = kwargs.pop('doCFL', True)
     doFit    = kwargs.pop('doFit', False)
-    m        = kwargs.pop('m', 0)
+    doZF     = kwargs.pop('doZF' , True)
+    m        = kwargs.pop('m' , 0)
 
     if(dir == 'X'):
       data = sum(fileh5.root.Analysis.PowerSpectrum.X[field,0:,start:end], axis=1)/abs(end-start)
       loglog(D['kx'], data/sum(data), '.-')
       xlabel("$k_x$")
+    
     elif(dir == 'Y'):
       data = np.mean(fileh5.root.Analysis.PowerSpectrum.Y[field, 0:,start:end], axis=1)
-      mypl = pylab.loglog(D['ky'][1:], data[1:], gkcStyle.markers_D[m] +  '-', color=gkcStyle.markers_C[m], markersize=8.)
+      mypl = pylab.loglog(D['ky'][1:-1], data[1:-1], gkcStyle.markers_D[m] +  '-', color=gkcStyle.markers_C[m])
       
       # Plot Zonal flow seperately
       pylab.loglog(0.9*D['ky'][1], data[0], gkcStyle.markers_D[m], markersize=8., color=gkcStyle.markers_C[m])
 
-      pylab.xlim((0.75 * D['ky'][1], 1.25*D['ky'][-1]))
+      pylab.xlim((0.75 * D['ky'][1], 1.25*D['ky'][-2]))
       pylab.xlabel("$k_y$")
      
-
       # Draw vertical line
-      if m == 0:
+      if doZF == 0:
         min_x = min(data)
         max_x = max(data)
         pylab.loglog(np.linspace(0.9*D['ky'][1], 0.9*D['ky'][1], 201), np.logspace(np.log10(0.8*min_x), np.log10(1.2*max_x), 201), "-", linewidth=1.5, color="#666666")
         #pylab.text(D['ky'][1], 1.05*np.sqrt(max_x), "Zonal Flow", weight='bold', color="#666666", rotation='vertical')
-        pylab.text(0.95*D['ky'][1], 5*min_x, "Zonal Flow", weight='bold', color="#666666", rotation='vertical')
+        #pylab.text(0.95*D['ky'][1], 5*min_x, "Zonal Flow", weight='bold', color="#666666", rotation='vertical')
 
     elif(dir == 'Z'):
       data = sum(fileh5.root.Analysis.PowerSpectrum.Z[field, 0:,start:end], axis=1)/abs(start-end)
@@ -570,8 +564,8 @@ def plotTurbulenceSpectra(fileh5, dir='Y', start=1, end=-1, posT=(1,-1), field=0
       pylab.loglog(D['kp'][0], data[0], 'o')
       xlabel("$k_z$")
       
-    pylab.ylabel("$|\\phi_k(k_y)|^2$")
-        
+    #pylab.ylabel("$|\\phi_k(k_y)|^2$")
+    """ 
     if doFit == True :
         pos_a = posT[0]
         pos_b = posT[1]
@@ -590,7 +584,7 @@ def plotTurbulenceSpectra(fileh5, dir='Y', start=1, end=-1, posT=(1,-1), field=0
         pylab.text(D['ky'][pos_m], data[pos_m/3], "$\\propto k_y^{%.1f}$" % p1[0], ha="center", size=14)
         #pylab.text(np.log(D['ky'][5]), 1., "$\\propto k_y^{%.1f}$" % p1[0], ha="center", size=14)
         #pylab.text(np.log(D['ky'][5]), np.log(data[5]), "$\\propto k_y^{%2.1f}$" % p1[0], ha="center", size=14)
-    
+    """
     return mypl
 
 
@@ -691,7 +685,8 @@ def plotModeStructure(fileh5, mode, part = "b", phaseCorrect=True, **kwargs):
             phase_shift = np.arctan2(np.sum(np.imag(np.sum(data_X))), np.real(np.sum(data_X)))
             print "phaseCorrect = True : Correcting for phase ", phase_shift
             data_X = data_X * np.exp(- 1.j * phase_shift)
-   
+  
+
     # Normalization is to real part
     if part == "a" : 
                      if color=='' : color='g'
@@ -700,11 +695,11 @@ def plotModeStructure(fileh5, mode, part = "b", phaseCorrect=True, **kwargs):
     if part in [ 'r' , 'b' ]:
                      if color=='' : color='r'
                      data_X = np.real(data_X * phase) / Normalize_data(np.real(data_X))
-                     pylab.plot(D['X'], data_X, color=color, label=label)
+                     pylab.plot(D['X'], data_X, 'o-', color=color, label=label, markersize=8., markeredgecolor='None')
     if part in [ 'i', 'b' ] : 
                      if color=='' : color=gkcStyle.color_indigo
                      data_X = np.imag(data_X * phase) / Normalize_data(np.real(data_X)) 
-                     pylab.plot(D['X'], data_X, color=color, label=label)
+                     pylab.plot(D['X'], data_X, 's-', color=color, label=label, markersize=8., markeredgecolor='None')
     #else : raise TypeError("Wrong argument for part : " + str(part))
 
 

@@ -52,9 +52,15 @@ colors_216 = ['000000',  '000033',  '000066',  '000099',  '0000CC',  '0000FF',
 
 ################################## Set Environments for Plots #######################################
 
+
+
 # good for presentation, bad for viewing
 def setPlotOutputLarge():
     # open HDF5 File
+    rcParams['xtick.major.size'] = 12.
+    rcParams['xtick.minor.size'] =  5.
+    rcParams['ytick.major.size'] = 12.
+    rcParams['ytick.minor.size'] =  5.
     rcParams['axes.labelsize'] = 26.
     rcParams['axes.labelsize'] = 26.
     rcParams['xtick.labelsize'] = 'xx-large'
@@ -68,6 +74,10 @@ def setPlotOutputLarge():
 
 def setPlotOutputPublication():
     # open HDF5 File
+    rcParams['xtick.major.size'] = 12.
+    rcParams['xtick.minor.size'] =  5.
+    rcParams['ytick.major.size'] = 12.
+    rcParams['ytick.minor.size'] =  5.
     rcParams['axes.labelsize'] = 35.
     rcParams['xtick.labelsize'] = 'xx-large'
     rcParams['ytick.labelsize'] = 'xx-large'
@@ -84,19 +94,25 @@ def setPlotOutputPublication():
 # good for presentation, bad for viewing
 def setPlotOutputThesis():
     # open HDF5 File
-    rcParams['axes.labelsize'] = 22.
-    rcParams['axes.labelsize'] = 22.
-    rcParams['xtick.labelsize'] = 'xx-large'
-    rcParams['ytick.labelsize'] = 'xx-large'
-    rcParams['lines.markersize']  = 10.   
-    rcParams['font.size'] =           12.0
+    rcParams['xtick.major.size'] = 12.
+    rcParams['xtick.minor.size'] =  5.
+    rcParams['ytick.major.size'] = 12.
+    rcParams['ytick.minor.size'] =  5.
+    rcParams['axes.labelsize']   = 22.
+    rcParams['axes.labelsize']   = 22.
+    rcParams['xtick.labelsize']  = 'xx-large'
+    rcParams['ytick.labelsize']  = 'xx-large'
+    rcParams['lines.markersize'] = 12.   
+    rcParams['lines.markeredgewidth']  = 0.7   
+    rcParams['font.size'] =                  12.0
     rcParams['font.weight'] =           'bold'
-    rcParams['lines.linewidth'] = 4.
-    rcParams['legend.fontsize'] = '26'
+    rcParams['lines.linewidth']   = 6.
+    rcParams['legend.fontsize']   = '26'
     #rcParams['axes.color_cycle'] = markers_C
 
 
-def newFigure(style="Normal", ratio="1.41:1", basesize=7):
+def newFigure(style="Thesis", ratio="1.41:1", basesize=7):
+
   rcdefaults()
 
   if   style == "Normal" : pass
@@ -121,7 +137,10 @@ def newFigure(style="Normal", ratio="1.41:1", basesize=7):
   elif ratio == "5:3"    : figsize = (1.66*basesize,basesize) 
   elif ratio == "1.66:1"    : figsize = (1.66*basesize,basesize) 
   elif ratio == "1.00:1" : figsize = (1.00*basesize,basesize) 
+  elif ratio == "1:1.33": figsize = (1.00*basesize, 1.33*basesize) 
+  elif ratio == "1:1.55": figsize = (1.00*basesize, 1.55*basesize) 
   elif ratio == "1:1" : figsize = (1.00*basesize,basesize) 
+  elif ratio == "1:3" : figsize = (basesize,3*basesize) 
 
   fig = figure(figsize=figsize)
 

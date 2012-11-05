@@ -11,9 +11,15 @@ from gkcNonLinear import *
 
 import tables
 
+
+setPlotOutputThesis()
+
+
 fileh = []
 D     = []
 
+# Open gkc files which where attached as arguments
+# Use ipython !
 for fileh5 in sys.argv[1:]:
      try:
         fileh.append(tables.openFile(fileh5))
