@@ -1,0 +1,46 @@
+{
+   <HDF-5 related >
+   Memcheck:Param
+   writev(vector[...])
+   fun:writev
+   fun:mca_oob_tcp_msg_send_handler
+   fun:mca_oob_tcp_peer_send
+   fun:mca_oob_tcp_send_nb
+   fun:orte_rml_oob_send_buffer
+   fun:omp_get_num_threads
+   fun:allgather
+   fun:modex
+   fun:ompi_mpi_init
+   fun:PMPI_Init
+   fun:_ZN8ParallelC1EP5Setup
+   fun:_ZN6HeliosC1EP5Setup
+   fun:main
+}
+
+{
+   <OpenMP erros>
+   Memcheck:Addr8
+   fun:__intel_sse2_strlen
+   fun:omp_get_num_threads
+}
+
+{
+   <OpenMPI>
+   Memcheck:Addr8
+   fun:PMPI_Init
+}
+
+{
+   <insert_a_suppression_name_here>
+   fun:ompi_mpi_init
+
+}
+
+
+#This issue has been raised many times on the mailing list, e.g., here or here.
+#There are many situations, where Open MPI purposefully does not initialize and subsequently communicates memory, e.g., by calling writev. Furthermore, several cases are known, where memory is not properly freed upon MPI_Finalize.
+#This certainly does not help distinguishing real errors from false positives. Valgrind provides functionality to suppress errors and warnings from certain function contexts.
+#In an attempt to ease debugging using Valgrind, starting with v1.5, Open MPI provides a so-called Valgrind-suppression file, that can be passed on the command line:
+#mpirun -np 2 valgrind --suppressions=$PREFIX/share/openmpi/openmpi-valgrind.supp
+#More information on suppression-files and how to generate them can be found in Valgrind's Documentation.
+

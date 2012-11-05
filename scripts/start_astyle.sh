@@ -1,0 +1,1 @@
+astyle -n -r "../src/*"
