@@ -52,7 +52,6 @@ void FieldsFFT::solveFieldEquations(CComplex Q     [Nq][NzLD][NkyLD][NxLD],
    //if(!(solveEq & Field::Bpp) && (Nq >= 3)) fft->rXOut(RxLD, RkyLD, RzLD, Field::Bp ) = Field0(RxLD, RkyLD, RzLD, Field::Bp );
 
    // transform back to real-space (kx,ky) -> (x,ky)
-   //fft->solve(FFT_X_FIELDS, FFT_Sign::Backward, &Field0[1][NzLlD][NkyLlD][NxLlD]);
    fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, ArrayField0.data((CComplex *) Field0));
    
    return;
@@ -77,9 +76,11 @@ void FieldsFFT::solvePoissonEquation(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::
          
           // BUG (Optimize) : need to vectorize this one 
           const double k2_p = fft->k2_p(x_k,y_k,z);
-          
+         
+          // adiabatic term \adia ( \phi - <\phi>_{yz}), we shift flux averaging term <\phi>_{yz}
+          // to rhs due to FFT normalization
           const double lhs    = plasma->debye2 * k2_p + sum_qqnT_1mG0(k2_p) + adiab;
-          const CComplex rhs  = (kXOut[Q::rho][z][y_k][x_k]+phi_yz[x_k])/fft->Norm_X; 
+          const CComplex rhs  = (kXOut[Q::rho][z][y_k][x_k] + adiab*phi_yz[x_k])/fft->Norm_X; 
           
           kXIn[Field::phi][z][y_k][x_k] = rhs/lhs;
          
@@ -144,32 +145,33 @@ void FieldsFFT::solveBParallelEquation(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver
 }
 
 
-// Note : This is very unpolished and is it also valid in toroidal case ? 
+// Note : is it also valid in toroidal case ? 
 void FieldsFFT::calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
                                  CComplex phi_yz[Nx])
 {
 
-  if(parallel->Coord[DIR_VMS] != 0) check(-1, DMESG("calcFluxAverg should only be called by XYZ-main nodes"));
-   
+  const double _kw_NxNy = 1./((2.*Nky-2.)*Nx*Nz)  ; // Number of poloidal points in real space
+
   // Note : In FFT the ky=0 components carries the offset over y (integrated value), thus
   //        by divinding through the number of points we get the averaged valued
   for(int z=NzLlD; z<=NzLuD;z++) { if(NkyLlD == 0) { for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD; x_k++) {
             
-     if(x_k == 0) { phi_yz[x_k] = (CComplex) 0.e0 ; continue; }
-          
-     const double k2_p = fft->k2_p(x_k,0,z);
+     if(x_k == 0) { phi_yz[x_k] = 0.e0 ; continue; }
+         
+     // k_y < A >_y = 0 (thus no need to include)
+     const double k2_p = fft->k2_p(x_k, 0, z);
      
      const double lhs  = plasma->debye2 * k2_p + sum_qqnT_1mG0(k2_p);
      
      // A(x_k, 0) is the sum over y, thus A(x_k, 0)/Ny is the average 
-     const CComplex rhs  =  kXOut[Field::phi][z][0][x_k]/((double) (grid->NyGD*Nz));
+     const CComplex rhs  =  kXOut[Field::phi][z][0][x_k] * _kw_NxNy;
      
      phi_yz[x_k] = rhs/lhs;
     
   } } }
 
   // average over z-direction 
-  parallel->collect(phi_yz, Op::SUM, DIR_Z, Nx);  
+  parallel->reduce(phi_yz, Op::SUM, DIR_Z, Nx);  
 
   return;
 
@@ -312,31 +314,31 @@ void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEn
            
         } } }
       
-/* 
         // Add Polarization term , see Y.Idomura et al., ...., Kinetic siulations of turnbulence plasmas, Eq. (27)
-         // modify field energy term to add adiabatic contributions
-        CComplex phi_yz[NxLD]; // RxLD
+        // modify field energy term to add adiabatic contributions
+        CComplex phi_yz[Nx]; phi_yz[:] = 0.;
+        if(plasma->species[0].doGyro) calcFluxSurfAvrg(kXOut, phi_yz);
 
-        // short-circuit contribution for ITG mode 
+        // short-circuit contribution for ITG mode and adiabatic response
+        const double _kw_NxNy = 1./((2.*Nky - 2.) * Nx); // Number of poloidal points in real space
         
-        if(plasma->species[0].doGyro) {
-          
-           // muss ich wirklich ueber yz mitteln ? nicht summieren ??
-           for(int x = NxLlD; x <= NxLuD; x++) phi_yz[x] = __sec_reduce_add(Field0[Field::phi][NzLlD:NzLD][NkyLlD:NkyLD][x-NxLlD])/((double) Nky*Nz);
-           //parallel->collect(phi_yz, OP_SUM, DIR_YZ);
-        }
+        for(int z=NzLlD; z<=NzLuD;z++) { 
         
-        // add Adiabatic contributions
-        const double adiab = plasma->species[0].n0 * pow2(plasma->species[0].q)/plasma->species[0].T0;
-        for(int x = NxLlD; x <= NxLuD; x++)  phiEnergy += adiab * cabs(__sec_reduce_add(square(Field0[Field::phi][NzLlD:NzLD][NkyLlD:NkyLD][x])));// - phi_yz[x-NxLlD])));
-     
- * */
+            // add Adiabatic contributions
+            const double adiab = plasma->species[0].n0 * pow2(plasma->species[0].q)/plasma->species[0].T0;
+        
+              simd_for(int x_k=fft->K1xLlD; x_k<= fft->K1xLuD;x_k++) {
+                
+                 phiEnergy += adiab * __sec_reduce_add(pow2(cabs(kXOut[Field::phi][z][NkyLlD:NkyLD][x_k] - phi_yz[x_k])));
+             }
+         }
+        
         // still HDF-5 is a bit buggy and we need to distribute the value over all nodes
-       //phiEnergy =  parallel->collect(4. * M_PI * phiEnergy * scaleXYZ / (8.e0 * M_PI) / (initialEkin(TOTAL) == 0. ? 1. : initialEkin(TOTAL)), OP_SUM, DIR_XYZ);
-       //ApEnergy  =  parallel->collect(4. * M_PI *  ApEnergy * scaleXYZ / (8.e0 * M_PI) / (initialEkin(TOTAL) == 0. ? 1. : initialEkin(TOTAL)), OP_SUM, DIR_XYZ);
+        //phiEnergy =  parallel->reduce(4. * M_PI * phiEnergy * scaleXYZ / (8.e0 * M_PI) / (initialEkin(TOTAL) == 0. ? 1. : initialEkin(TOTAL)), OP_SUM, DIR_XYZ);
+        //ApEnergy  =  parallel->reduce(4. * M_PI *  ApEnergy * scaleXYZ / (8.e0 * M_PI) / (initialEkin(TOTAL) == 0. ? 1. : initialEkin(TOTAL)), OP_SUM, DIR_XYZ);
        
-       phiEnergy =  abs( parallel->collect(4. * M_PI * phiEnergy * grid->dXYZ / (8.e0 * M_PI), Op::SUM, DIR_XYZ) ); 
-       ApEnergy  =  abs( parallel->collect(4. * M_PI *  ApEnergy * grid->dXYZ / (8.e0 * M_PI), Op::SUM, DIR_XYZ) );
+       phiEnergy =  abs( parallel->reduce(4. * M_PI * phiEnergy * grid->dXYZ / (8.e0 * M_PI), Op::SUM, DIR_XYZ) ); 
+       ApEnergy  =  abs( parallel->reduce(4. * M_PI *  ApEnergy * grid->dXYZ / (8.e0 * M_PI), Op::SUM, DIR_XYZ) );
        BpEnergy  = 0.;
       
       } ((A4zz) fft->kXIn, (A4zz) fft->kXOut, (A4zz) Field0); 
