@@ -30,6 +30,12 @@ typedef std::complex<double> Complex;
 typedef _Complex double CComplex;  
 typedef double               Real   ;
 #define _Imaginary ((CComplex) (0.+1.j)); 
+   
+// align to cache-lines
+typedef __declspec(align(64)) double     doubleAA;
+typedef __declspec(align(64)) CComplex CComplexAA;
+//typedef double     doubleAA;
+//typedef CComplex CComplexAA;
 
 ////////////////////////////////////////////////////////
 

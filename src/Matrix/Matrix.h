@@ -50,7 +50,7 @@ class Matrix
   virtual friend Matrix& operator*(Complex a, Matrix &A) ;
   virtual friend Matrix& operator*(double &a, Matrix &A) ;
   virtual friend Matrix& operator*(Matrix &A, double &a) ;
-  virtual friend Matrix& operator*(Matrix &A, Complex a) {
+  virtual friend Matrix& operator=(double a) {};
   inline Complex& Matrix::operator() (int row, int col)
   virtual void addDiagonal(Complex a) {
   virtual void reduce(int dir);

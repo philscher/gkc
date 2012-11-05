@@ -41,11 +41,10 @@ void signal_handler(int sig)
                        control_triggered_signal |= SIGFPE;
                        
                        // we have to unmask the signal otherwie program will slow down
-                       //signal(SIGFPE, SIG_IGN);
+                       signal(SIGFPE, SIG_IGN);
                        // now we raise SIGUSR1 which is propagetaed by mpirun to other processes
                        //raise(SIGUSR2);
-                       
-                       abort();
+                       //abort();
                        break;
 
                        // when SIGINT or SIGTERM appears, e.g. openmpi first propagates SIGTERM too all procecess, waits a couple
@@ -59,6 +58,11 @@ void signal_handler(int sig)
       case(SIGTERM)  : //helios->runningException(GKC_EXIT); 
                        std::cout << "SIGTERM" << std::endl;
                        control_triggered_signal |= SIGTERM;
+                       break;
+      
+      case(SIGSEGV)  : 
+                       gl_parallel->print("SEGV received (Memory violation). Stack large enough ?");
+                       control_triggered_signal |= SIGSEGV;
                        break;
 
       // SIGUSR1 includes redirected low important stuff e.g. 
@@ -92,7 +96,7 @@ Control::Control(Setup *setup, Parallel *_parallel, Analysis *_analysis) : paral
   // distributed unified id (the process id of MPI master process) to all processes
   if (setup->get("Control.useControlFile", 0)) {
         
-        int master_process_id = parallel->collect( (parallel->myRank == 0) ? System::getProcessID() : 0, Op::SUM, DIR_ALL);
+        int master_process_id = parallel->reduce( (parallel->myRank == 0) ? System::getProcessID() : 0, Op::SUM, DIR_ALL);
         cntrl_file_name   = "gkc_" + Setup::num2str(master_process_id) + ".stop";
    } 
    else cntrl_file_name = "";
@@ -170,9 +174,13 @@ bool Control::checkOK(Timing timing, Timing maxTiming) {
 
 
       // Check if stopping signal was triggered on other processes
-      cntrl.check(parallel->collect(cntrl.isOK(), Op::LAND, DIR_ALL) == true, "(4) Interupted by other processor"); 
+      //cntrl.check(parallel->collect(cntrl.isOK(), Op::LAND, DIR_ALL) == true, "(4) Interupted by other processor"); 
 
-      return cntrl.isOK();
+      int isOK = cntrl.isOK(); 
+      cntrl.check(parallel->reduce(isOK, Op::LAND, DIR_ALL) == true, "(4) Interupted by other processor"); 
+
+      //return cntrl.isOK();
+      return isOK;
 
 }
     

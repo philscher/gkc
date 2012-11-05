@@ -155,17 +155,17 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
       
       // Orginal
       
-      double   rY_BD4[NyLD ][NxLB+4]; CComplex kY_BD4[NkyLD][NxLB+4];
+      doubleAA   rY_BD4[NyLD ][NxLB+4]; CComplexAA kY_BD4[NkyLD][NxLB+4];
       plan_YBackward_Field = fftw_plan_many_dft_c2r(1, &NyLD, NxLB+4, (fftw_complex *) kY_BD4, NULL, NxLB+4, 1, (double *) rY_BD4, NULL, NxLB+4, 1, perf_flag);
       
 
       
-      double   rY_BD2[NyLD ][NxLB]; CComplex kY_BD2[NkyLD][NxLB];
+      doubleAA   rY_BD2[NyLD ][NxLB]; CComplexAA kY_BD2[NkyLD][NxLB];
       plan_YBackward_PSF   = fftw_plan_many_dft_c2r(1, &NyLD, NxLB  , (fftw_complex *) kY_BD2, NULL, NxLB  , 1, (double *) rY_BD2, NULL, NxLB  , 1, perf_flag);
       
 
       
-      double   rY_BD0[NyLD ][NxLD]; CComplex kY_BD0[NkyLD][NxLD];
+      doubleAA   rY_BD0[NyLD ][NxLD]; CComplexAA kY_BD0[NkyLD][NxLD];
       plan_YForward_NL     = fftw_plan_many_dft_r2c(1, &NyLD, NxLD, (double *     ) rY_BD0, NULL, NxLD, 1, (fftw_complex *) kY_BD0, NULL, NxLD  , 1, perf_flag);
       plan_YBackward_NL    = fftw_plan_many_dft_c2r(1, &NyLD, NxLD, (fftw_complex*) kY_BD0, NULL, NxLD, 1, (double       *) rY_BD0, NULL, NxLD , 1, perf_flag);
                

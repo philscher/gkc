@@ -22,7 +22,10 @@ void FFTSolver::setNormalizationConstants() {
   /////////////////   Find normalization constants for Y-transformation    //////////
   double   rY[NyLD ][NxLD]; 
   CComplex kY[NkyLD][NxLD]; 
- 
+
+
+
+
   // Real -> Complex (Fourier space) transform
   rY[:][:] = 1.; 
   solve(FFT_Type::Y_NL, FFT_Sign::Forward, rY, kY);
@@ -32,6 +35,34 @@ void FFTSolver::setNormalizationConstants() {
   kY[:][:] = 0. ; kY[0][0] = 1.;
   solve(FFT_Type::Y_NL, FFT_Sign::Backward, kY, rY);
   Norm_Y_Backward = rY[0][0];
+
+  std::cout << "Norm For : " << Norm_Y_Forward << " Back : " << Norm_Y_Backward << std::endl;
+
+  // Real -> Complex (Fourier space) transform
+  rY[:][:] = 1.; 
+  solve(FFT_Type::Y_NL, FFT_Sign::Forward, rY, kY);
+  Norm_Y_Forward = creal(kY[0][0]);
+  
+  // Complex (Fourier sapce) -> Real transform
+  kY[:][:] = 0. ; kY[0][0] = 1.;
+  solve(FFT_Type::Y_NL, FFT_Sign::Backward, kY, rY);
+  Norm_Y_Backward = rY[0][0];
+
+  // Real -> Complex (Fourier space) transform
+  rY[:][:] = 1.; 
+  solve(FFT_Type::Y_NL, FFT_Sign::Forward, rY, kY);
+  Norm_Y_Forward = creal(kY[0][0]);
+  
+  // Complex (Fourier sapce) -> Real transform
+  kY[:][:] = 0. ; kY[0][0] = 1.;
+  solve(FFT_Type::Y_NL, FFT_Sign::Backward, kY, rY);
+  Norm_Y_Backward = rY[0][0];
+
+
+
+
+
+
 
   /////////////////   Find normalization constants for X-transformation    //////////
 

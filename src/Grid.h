@@ -25,6 +25,27 @@
 *    @brief Size of the computational domain for \f$x,k_y,z, v_\parallel, \mu, \sigma \f$
 *    @image html Grid_BoundaryDomain.png
 *
+*    We treat X-direction in real space, while the poloidal direction is expanded into
+*    Fourier harmonics, like i
+*
+*    --- Poloidal direction ---
+*
+*    The poloidal direction (y) is expanded into its Fourier harmonics
+*
+*    \f[
+*       F(y_k) = sum_{n=0}^{N_y-1} f(y) exp(- 2\pi j  \frac{k}{N_y}{y_k} \quad.
+*    \f]
+*
+*    (see http://en.wikipedia.org/wiki/Discrete_Fourier_transform). 
+*    
+*    espcially, we note that the DC comonent F(y_k=0)  = int_ f(y) dy.
+*    The Nyquiest frequency (Nyquist : y_k=Nky/2) is removed as it has
+*    no phase information. Also as the field quantities are real valued
+*    only positive modes (y_k >= 0) are evolved, as the negative modes
+*    are simply the complex conjugates and can easily be calculated.
+*
+*
+*
 **/
 class Grid : public IfaceGKC {
 
@@ -36,7 +57,7 @@ class Grid : public IfaceGKC {
        NzGC, ///< Number of ghost cells in z-direction
        NvGC; ///< Number of ghost cells in v-direction
    ///@}
-   
+
    //Array1R dm; ///< Weights for \f$ \mu(m) \f$
    double *dm;
   

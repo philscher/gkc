@@ -174,7 +174,7 @@ void Init::initBackground(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxL
    check(((f0_parser.Parse(plasma->species[s].f0_str, "x,z,v,m,n,T") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
    
     omp_C3_for(int m   = NmLlB ; m   <= NmLuB ; m++  ) {  for(int z = NzLlB; z <= NzLuB; z++) { 
-           for(int y_k = NkyLlB; y_k <= NkyLuB; y_k++) {  for(int x = NxLlB; x <= NxLuB; x++) { 
+           for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  for(int x = NxLlB; x <= NxLuB; x++) { 
       
       const double n = plasma->species[s].n[x];
       const double T = plasma->species[s].T[x];
@@ -262,14 +262,14 @@ void Init::PerturbationPSFNoise(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB]
 void Init::PerturbationPSFExp(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                     CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB])
 { 
-   const double pert = plasma->global ? 1. : 0.; 
-   const bool  isGlobal = plasma->global;
+   const double isGlobal = plasma->global ? 1. : 0.; 
 
-
-   auto  Perturbation = [=] (int x,int y,int z, const double epsilon_0, const double sigma) -> double {
-            return  epsilon_0*exp(-(  pow2(X[x]/Lx) + pow2(Y[y]/Ly - 0.5) + pow2(Z[z]/Lz - 0.5))/(2.*pow2(sigma))); 
+   auto  Perturbation = [=] (int x, int z, const double epsilon_0, const double sigma) -> double {
+            return  epsilon_0*exp(-(  pow2(X[x]/Lx) + pow2(Z[z]/Lz - 0.5))/(2.*pow2(sigma))); 
    };
 
+   // Note : Ignore species dependence
+ 
 
 
    for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { 
@@ -277,11 +277,12 @@ void Init::PerturbationPSFExp(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][N
    
    // Add shifted phase information for poloidal modes
 
+   const double dky = 2.* M_PI / Ly;
    const CComplex phase  = cexp((CComplex (1.j)) * ((double) y_k) / Nky * 2. * M_PI);
 
    for(int x = NxLlD; x <= NxLuD; x++) {  simd_for(int v = NvLlD; v<=NvLuD; v++) {
       
-      f[s][m][z][y_k][x][v] += f0[s][m][z][y_k][x][v] * (isGlobal + phase * Perturbation(x,y_k,z, epsilon_0, sigma));
+      f[s][m][z][y_k][x][v] += f0[s][m][z][y_k][x][v] * (isGlobal + phase * Perturbation(x, z, epsilon_0, sigma) * exp(-y_k*abs(sigma)*dky));
 
    }} }} }}
 

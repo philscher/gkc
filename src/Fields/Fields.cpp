@@ -71,7 +71,7 @@ void Fields::solve(CComplex *f0, CComplex *f, Timing timing)
       if(solveEq & Field::Bpp) calculatePerpendicularCurrentDensity ((A6zz) f0, (A6zz) f, (A4zz) Field0, M, m, s);
   
       // thus uses AllReduce, Reduce is more effective (with false flag...)
-      parallel->collect(ArrayField0.data(Field0), Op::SUM, DIR_V, ArrayField0.getNum(), true); 
+      parallel->reduce(ArrayField0.data(Field0), Op::SUM, DIR_V, ArrayField0.getNum(), true); 
       
       // OPTIM : Normally we would decompose in m&s, thus no need for Qm                         
       // backward-transformation from gyro-center to drift-center 
@@ -95,13 +95,13 @@ void Fields::solve(CComplex *f0, CComplex *f, Timing timing)
    if(parallel->Coord[DIR_V] == 0) {
 
       // integrate over mu-space and over species
-      parallel->collect(ArrayField0.data(Q), Op::SUM, DIR_MS, ArrayField0.getNum(), true); 
+      parallel->reduce(ArrayField0.data(Q), Op::SUM, DIR_MS, ArrayField0.getNum(), true); 
 
       // Solve field equation in drift coordinates
       // This routine is solved only on rood nodes, thus efficiency is crucial for scalability
       if(parallel->Coord[DIR_MS] == 0) solveFieldEquations((A4zz) Q, (A4zz) Field0);
 
-      parallel->send(ArrayField0.data(Field0), DIR_MS, ArrayField0.getNum()); 
+      parallel->bcast(ArrayField0.data(Field0), DIR_MS, ArrayField0.getNum()); 
 
       // Gyro-averaging procedure for each species and magnetic moment ( drift-coord -> gyro-coord )
       // OPTIM : We can skip foward transform after first call
@@ -127,7 +127,7 @@ void Fields::solve(CComplex *f0, CComplex *f, Timing timing)
    
    }   
   
-   parallel->send(ArrayField.data(Field), DIR_V, ArrayField.getNum());
+   parallel->bcast(ArrayField.data(Field), DIR_V, ArrayField.getNum());
         
    return;
 
@@ -221,7 +221,9 @@ void Fields::updateBoundary(
        
    // Z-Boundary (N z-we need to connect the magnetic field lines)
    // (For 2-d space simulations (x,y) boundaries are not required)
-   if(Nz > 1) omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
+   if(Nz > 1) {
+      
+    omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
 
         const CComplex a = ((CComplex) 0. + 1.j) *  (2.*M_PI * (2.* M_PI/Ly) * y_k);
       
@@ -229,7 +231,8 @@ void Fields::updateBoundary(
         SendZl[:][:][:][:][y_k-NkyLlD][x-NxLlD] = Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD  :2][y_k][x] * cexp( ((NzLuD == NzGuD) ? a : 0.) * geo->nu(x));
         SendZu[:][:][:][:][y_k-NkyLlD][x-NxLlD] = Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLuD-1:2][y_k][x] * cexp(-((NzLlD == NzGlD) ? a : 0.) * geo->nu(x));
 
-   } }
+     } }
+   }
    
    // Exchange ghostcells between processors [ SendXu (CPU 1) ->RecvXl (CPU 2) ]
   parallel->updateBoundaryFields(Fields::SendXl, Fields::SendXu, Fields::RecvXl, Fields::RecvXu, ArrayBoundX.getNum(),

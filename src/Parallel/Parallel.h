@@ -30,25 +30,33 @@ enum class Op {OP_NULL = 0, SUM=1, MAX=2, MIN=3, BOR=4, BAND=5, LAND=6, LOR=7};
 
 
 /**
-*  @brief Interface for MPI and OpenMP
-*  
+*  @brief Parallel Communication Interface
+*
+*  Current implementation supports using MPI-2
+*  http://en.wikipedia.org/wiki/Message_Passing_Interface 
+*  www.open-mpi.org
+*
+*  and OpenMP (3.1) http://www.openmp.org.
+*
+*  @todo move implementations to seperate class
 *
 **/
 class Parallel : public IfaceGKC {
 
 /**
-*  @brief  Class to simplify MPI handling, for every direction we define such a class
+*  @brief  Class to simplify MPI handling, for each direction, such a class
 *  
 *  rank_l correspindes to lower rank in the dimension grid (..., myPosition - 1 , ... )
 *  rank_u correspindes to upper rank in the dimension grid (..., myPosition + 1 , ... )
 *
 **/
 struct NeighbourDir {
-   MPI_Status  msg_status[4];
-   MPI_Request psf_msg_request[4];
-   int         rank_l,
-               rank_u;
-   int         psf_msg_tag[2], phi_msg_tag[2];
+   MPI_Status  msg_status[4];  ///< Message status for 
+   MPI_Request psf_msg_req[4]; ///< Message request id for phase space function
+   int         rank_l,         ///< Lower rank
+               rank_u;         ///< Upper rank
+   int         psf_msg_tag[2], ///< Phase space message tag
+               phi_msg_tag[2]; ///< Fields message tag
    NeighbourDir() {};
 };
 
@@ -56,32 +64,39 @@ struct NeighbourDir {
  
 
    /**
-   *  @brief MPI Decompostion of the code (X,Y,Z,V,M,S)
+   *  @brief Decompostion of the code as 
+   *         \f$ (x,y_k,z,v_\parallel, \mu, \sigma) \f$.
+   *
+   *  Note that $y_k$ decomposition is not supported
+   *  by MPI but by OpenMP implementation
    *
    **/
    int decomposition[6];
    
    /**
-   *   @brief Coordinate of the process in (X,Y,Z,V,M,S)
+   *  @brief Decompoistion coordinate of process as 
+   *         \f$ (x,y_k,z,v_\parallel, \mu, \sigma) \f$.
+   *
+   *  Coord[dir] for dir > DIR_Z coordinate is defined as e.g.
+   *  Coord[DIR_VM] = (Coord[DIR_V] == 0) && (Coord[DIR_M] == 0).
+   *  Warning : dis is not defined for all values of dir
    *
    **/
    int Coord[DIR_SIZE];
    
-   //! hold the (world) rank of the process
-   int myRank; // substitute myRank with mpi_rank
-   int master_rank;
+   int myRank;        ///< rank-id of process
+   int master_rank;   ///< rank-id of master process (usually 0)
    
-   //! the total number of threads 
-   int numThreads, numProcesses;
-   //! switches if OpenMP, MPI is during compule time
-   bool useOpenMP, useMPI;
+   int numThreads,    ///< total number of OpenMP threads
+       numProcesses;  ///< total number of MPI processes
+   
+   bool useOpenMP,    ///< true if compiled with OpenMP support
+        useMPI;       ///< true if compiled with MPI support
 
-   // Some MPI specific stuff
-   NeighbourDir Talk[DIR_S+1];
-   MPI_Status stat; 
+   NeighbourDir Talk[DIR_S+1]; ///< Communication struct for Vlasov & Fields boundary
 
-   MPI_Comm Comm[DIR_SIZE];
-   int dirMaster[DIR_SIZE];
+   MPI_Comm Comm[DIR_SIZE]; ///< MPI Communicator or differet sizes
+   int dirMaster[DIR_SIZE]; ///< Master process in direction dir (usually the one with Coord[dir] == 0)
   
    /**
    *   @brief barrier
@@ -106,35 +121,85 @@ struct NeighbourDir {
    virtual ~Parallel();
    
    /**
-   *    @brief updates boundaries in X,Z direction
+   *    @brief updates field boundaries for X,Z direction
+   * 
+   *    @todo how to make this allowed to be calles only from Fields ?!
    *
+   *
+   *    @params  SendXl  Boundary values to send to Coord(dir +1)
+   *    @params  SendXu  Boundary values to send to Coord(dir +1)
+   *    @params  RecvXl  Boundary values to send to Coord(dir +1)
+   *    @params  RecvXu  Boundary values to send to Coord(dir +1)
+   *    @params  num_X   Number of elements for X-boundary
+   *    @params  SendZl  Boundary values to send to Coord(dir +1)
+   *    @params  SendZu  Boundary values to send to Coord(dir +1)
+   *    @params  RecvZl  Boundary values to send to Coord(dir +1)
+   *    @params  RecvZu  Boundary values to send to Coord(dir +1)
+   *    @params  num_Z   Number of elements for Z-boundary
    *
    **/
-   void  updateBoundaryFields(CComplex *SendXl, CComplex *SendXu, CComplex *RecvXl, CComplex *RecvXu, int numElements_X,
-                              CComplex *SendZl, CComplex *SendZu, CComplex *RecvZl, CComplex *RecvZu, int numElements_Z); 
+   void  updateBoundaryFields(CComplex *SendXl, CComplex *SendXu, CComplex *RecvXl, CComplex *RecvXu, int num_X,
+                              CComplex *SendZl, CComplex *SendZu, CComplex *RecvZl, CComplex *RecvZu, int num_Z); 
 
    
    
-   template<class T> void updateBoundaryVlasov(T *Sendu, T *Sendl, T *Recvu, T  *Recvl, int numElements, int dir) {
+   /**
+   *    @brief updates Vlasov boundaries for direction dir
+   * 
+   *    @todo how to make this allowed to be calles only from Vlasov ?!
+   *
+   *    This function uses non-blocking boundary conditions. As
+   *    to calculate the field values a boundary points of the f
+   *    are not required. However, once boundary values a required,
+   *    we have to call updateBoundaryBarrier to make sure that
+   *    boundary operations completed.
+   *
+   *    @params  Sendu  Boundary values to send to Coord(dir +1)
+   *    @params  Sendl  Boundary values to send to Coord(dir +1)
+   *    @params  Recvu  Boundary values to receive from Coord(dir +1)
+   *    @params  Recvl  Boundary values to receive from Coord(dir +1)
+   *    @params  num    Number of elements for dir-boundary
+   *    @params  dir    Direction to send data
+   *
+   **/
+   template<class T> void updateBoundaryVlasov(T *Sendu, T *Sendl, T *Recvu, T  *Recvl, int num, int dir) {
         
 #ifdef GKC_PARALLEL_MPI
-     MPI_Irecv(Recvl, numElements, getMPIDataType(typeid(T)), Talk[dir].rank_l, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_request[1]);
-     MPI_Isend(Sendu, numElements, getMPIDataType(typeid(T)), Talk[dir].rank_u, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_request[0]);
      
-     if(Talk[dir].rank_u == MPI_PROC_NULL)   Recvl[0:numElements] = 0.e0;
+     auto mpi_type = getMPIDataType(typeid(T)); 
+      
+     MPI_Irecv(Recvl, num, mpi_type, Talk[dir].rank_l, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_req[1]);
+     MPI_Isend(Sendu, num, mpi_type, Talk[dir].rank_u, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_req[0]);
      
-     MPI_Irecv(Recvu, numElements, getMPIDataType(typeid(T)), Talk[dir].rank_u, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_request[3]); 
-     MPI_Isend(Sendl, numElements, getMPIDataType(typeid(T)), Talk[dir].rank_l, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_request[2]);
-     if(Talk[dir].rank_l == MPI_PROC_NULL)   Recvu[0:numElements] = 0.e0;
+     if(Talk[dir].rank_u == MPI_PROC_NULL)   Recvl[0:num] = 0.e0;
+     
+     MPI_Irecv(Recvu, num, mpi_type, Talk[dir].rank_u, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_req[3]); 
+     MPI_Isend(Sendl, num, mpi_type, Talk[dir].rank_l, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_req[2]);
+     if(Talk[dir].rank_l == MPI_PROC_NULL)   Recvu[0:num] = 0.e0;
 #endif // GKC_PARALLEL_MPI
      return;
 
    };
 
-
-   void updateNeighboursBarrier();
-   
-   template<typename T> void send(T *A, int dir, int num) {
+   /**
+   *   
+   *   @brief Barrier to assure that communication barriers completed.
+   *
+   *   @todo this is not intuitive, (use e.g. dir as input parameters)  
+   *
+   **/ 
+   void updateBoundaryVlasovBarrier();
+  
+   /**
+   *
+   *    @brief bcast value to other process in direction dir
+   *
+   *    @param *A  pointer to array to send
+   *    @param dir direction to send data
+   *    @param num Number of data points
+   *
+   **/
+   template<typename T> void bcast(T *A, int dir, int num) {
 #ifdef GKC_PARALLEL_MPI
      if(dir <= DIR_S) if(decomposition[dir] == 1) return;
      // rank differ between communicators, so we should take care of rankFFTMaster
@@ -143,20 +208,18 @@ struct NeighbourDir {
      return;
    };
 
-
-
    /**
    *   @brief sends scalar data to other CPU 
    *
    *   @todo rename to bcast
    *
    **/
-   template<class T> void send(T &x, bool isRoot, int dir=DIR_ALL) 
+   template<class T> void bcast(T &x, bool isRoot, int dir=DIR_ALL) 
    {
 
      // Notify all process who is root (is there a simpler way ?), take care it fails 
      // horribly if there is more than one root, (note 0 is master process also valid)
-     int master_rank = collect(isRoot ? myRank : 0, Op::SUM, dir);
+    // int master_rank = reduce(isRoot ? myRank : 0, Op::SUM, dir);
      master_rank = 0;
 
 #ifdef GKC_PARALLEL_MPI
@@ -172,7 +235,7 @@ struct NeighbourDir {
    *   @brief Allreduce over direction dir
    *
    **/
-   template<class T>  T  collect(T x, Op op, int dir=DIR_ALL, bool allreduce=true)
+   template<class T>  T  reduce(T x, Op op, int dir=DIR_ALL, bool allreduce=true)
    {
 #ifdef GKC_PARALLEL_MPI
      T global_dValue;
@@ -190,7 +253,7 @@ struct NeighbourDir {
    *   @brief Allreduce over direction dir
    *
    **/
-   template<class T>  void  collect(T *A, Op op, int dir, int Num, bool allreduce=true)
+   template<class T>  void  reduce(T *A, Op op, int dir, int Num, bool allreduce=true)
    {
      //if(dir <= DIR_S) if(decomposition[dir] == 1) return A;
      
