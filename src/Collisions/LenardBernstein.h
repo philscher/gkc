@@ -19,7 +19,7 @@
 
 
 /**
-*   @brif Lenard-Bernstein collision term
+*   @brief Lenard-Bernstein collision term
 *
 *   The Lenard-Bernstein operator was descirbed in \cite{LenardBernstein_1958:DiffusionVP}.
 *
@@ -60,7 +60,8 @@ protected:
              *dP, ///< \f$ int f_{1\sigma} v_\parallel dv_\parallel d\mu f\$
              *dE; ///< \f$ int f_{1\sigma} \nu dv_\parallel d\mu \f$
    
-    nct::allocate ArrayPreFactors, ArrayCorrectionTerm;
+    nct::allocate ArrayPreFactors,     ///< Array class for dn, dP, dE
+                  ArrayCorrectionTerm; ///< Array class for nu, a, b, c
 
   public:
 

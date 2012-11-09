@@ -162,24 +162,7 @@ struct NeighbourDir {
    *    @params  dir    Direction to send data
    *
    **/
-   template<class T> void updateBoundaryVlasov(T *Sendu, T *Sendl, T *Recvu, T  *Recvl, int num, int dir) {
-        
-#ifdef GKC_PARALLEL_MPI
-     
-     auto mpi_type = getMPIDataType(typeid(T)); 
-      
-     MPI_Irecv(Recvl, num, mpi_type, Talk[dir].rank_l, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_req[1]);
-     MPI_Isend(Sendu, num, mpi_type, Talk[dir].rank_u, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_req[0]);
-     
-     if(Talk[dir].rank_u == MPI_PROC_NULL)   Recvl[0:num] = 0.e0;
-     
-     MPI_Irecv(Recvu, num, mpi_type, Talk[dir].rank_u, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_req[3]); 
-     MPI_Isend(Sendl, num, mpi_type, Talk[dir].rank_l, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_req[2]);
-     if(Talk[dir].rank_l == MPI_PROC_NULL)   Recvu[0:num] = 0.e0;
-#endif // GKC_PARALLEL_MPI
-     return;
-
-   };
+   void updateBoundaryVlasov(CComplex *Sendu, CComplex *Sendl, CComplex *Recvu, CComplex  *Recvl, int num, int dir);
 
    /**
    *   
@@ -307,7 +290,7 @@ struct NeighbourDir {
   protected:
 
    virtual void printOn(std::ostream &output) const ;
-   virtual void initData(FileIO *fileIO) {};
+   virtual void initData(Setup *setup, FileIO *fileIO);
    virtual void writeData(Timing *timing) {};
    virtual void closeData() {};
 };

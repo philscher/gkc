@@ -34,18 +34,12 @@ grid(_grid), parallel(_parallel), geo(_geo), solveEq(0)
 
 
    // for phi terms
-   ArrayField = nct::allocate(nct::Range(1,Nq), grid->RsLD, grid->RmLD, grid->RzLB, grid->RkyLD, nct::Range(NxLlD-4, NxLD+8));
-   ArrayField(&Field);
-
-   ArrayField0 = nct::allocate(nct::Range(1,Nq), grid->RzLD, grid->RkyLD, grid->RxLD);
-   ArrayField0(&Q, &Qm, &Field0);
+   ArrayField  = nct::allocate(nct::Range(1,Nq), grid->RsLD, grid->RmLD, grid->RzLB, grid->RkyLD, nct::Range(NxLlD-4, NxLD+8))(&Field);
+   ArrayField0 = nct::allocate(nct::Range(1,Nq), grid->RzLD, grid->RkyLD, grid->RxLD)(&Q, &Qm, &Field0);
 
    // Allocate boundary conditions, allocate Send/Recv buffers, note we have 4 ghost cells for X, 0 for Y
-   ArrayBoundX = nct::allocate(nct::Range(0, 4 * NkyLD * NzLD * NmLD * NsLD * Nq));
-   ArrayBoundX(&SendXl, &SendXu, &RecvXl, &RecvXu);
-   
-   ArrayBoundZ = nct::allocate(nct::Range(0, NxLD * NkyLD * 2 * NmLD * NsLD * Nq));
-   ArrayBoundZ(&SendZl, &SendZu, &RecvZl, &RecvZu);
+   ArrayBoundX = nct::allocate(nct::Range(0, 4 * NkyLD * NzLD * NmLD * NsLD * Nq))(&SendXl, &SendXu, &RecvXl, &RecvXu);
+   ArrayBoundZ = nct::allocate(nct::Range(0, NxLD * NkyLD * 2 * NmLD * NsLD * Nq))(&SendZl, &SendZu, &RecvZl, &RecvZu);
        
       
    //  brackets should be 1/2 but due to numerical errors, we should calculate it ourselves, see Dannert[2] 
@@ -57,6 +51,7 @@ grid(_grid), parallel(_parallel), geo(_geo), solveEq(0)
 Fields::~Fields() 
 {
    closeData() ;
+
 }
 
 
@@ -142,9 +137,7 @@ void Fields::calculateChargeDensity(const CComplex f0         [NsLD][NmLD][NzLB]
  
    // In case of a full-f simulation the Maxwellian is subtracted
 
-   const double pqnB_dvdm = M_PI * plasma->species[s].q * plasma->species[s].n0 * plasma->B0 * dv * 
-                            (plasma->species[s].doGyro ? grid->dm[m] : 1.);
-    
+   const double pqnB_dvdm = M_PI * plasma->species[s].q * plasma->species[s].n0 * plasma->B0 * dv * grid->dm[m] ;
    omp_C2_for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
               Field0[Q::rho][z][y_k][x] = ( __sec_reduce_add(f [s][m][z][y_k][x][NvLlD:NvLD]) 
@@ -277,9 +270,9 @@ void Fields::initDataOutput(Setup *setup, FileIO *fileIO) {
      
    hid_t fieldsGroup = check(H5Gcreate(fileIO->getFileID(), "/Fields",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
      
-   FA_phi      = new FileAttr("Phi" , fieldsGroup, 4, field_dim , field_maxdim   , field_chunkdim   , field_moffset    ,  field_chunkBdim  , field_offset, phiWrite && plasma->nfields >= 1, fileIO->complex_tid);
-   FA_Ap       = new FileAttr("Ap"  , fieldsGroup, 4, field_dim , field_maxdim   , field_chunkdim   , field_moffset    ,  field_chunkBdim  , field_offset, phiWrite && plasma->nfields >= 2, fileIO->complex_tid);
-   FA_Bp       = new FileAttr("Bp"  , fieldsGroup, 4, field_dim , field_maxdim   , field_chunkdim   , field_moffset    ,  field_chunkBdim  , field_offset, phiWrite && plasma->nfields >= 3, fileIO->complex_tid);
+   FA_phi      = new FileAttr("Phi" , fieldsGroup, fileIO->file, 4, field_dim , field_maxdim   , field_chunkdim   , field_moffset    ,  field_chunkBdim  , field_offset, phiWrite && plasma->nfields >= 1, fileIO->complex_tid);
+   FA_Ap       = new FileAttr("Ap"  , fieldsGroup, fileIO->file, 4, field_dim , field_maxdim   , field_chunkdim   , field_moffset    ,  field_chunkBdim  , field_offset, phiWrite && plasma->nfields >= 2, fileIO->complex_tid);
+   FA_Bp       = new FileAttr("Bp"  , fieldsGroup, fileIO->file, 4, field_dim , field_maxdim   , field_chunkdim   , field_moffset    ,  field_chunkBdim  , field_offset, phiWrite && plasma->nfields >= 3, fileIO->complex_tid);
    FA_phiTime  = fileIO->newTiming(fieldsGroup);
         
    H5Gclose(fieldsGroup);

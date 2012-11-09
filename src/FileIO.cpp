@@ -79,7 +79,7 @@ FileIO::FileIO(Parallel *_parallel, Setup *setup)  :  parallel(_parallel)
 void FileIO::create(Setup *setup) 
 {
 
-  hid_t file_plist = H5Pcreate(H5P_FILE_ACCESS);
+  hid_t file_apl = H5Pcreate(H5P_FILE_ACCESS);
 #ifdef GKC_PARALLEL_MPI
   // pass some information onto the underlying MPI_File_open call 
   MPI_Info file_info;
@@ -95,13 +95,17 @@ void FileIO::create(Setup *setup)
      MPI_Info_set(file_info, (char *) "cb_buffer_size"      , (char *) "4194304");
    */
 
-  check( H5Pset_fapl_mpio(file_plist, parallel->Comm[DIR_ALL], file_info), DMESG("Set MPI Property"));
+  check( H5Pset_fapl_mpio(file_apl, parallel->Comm[DIR_ALL], file_info), DMESG("Set MPI Property"));
 #endif
+
+  // Note, still close file if some objects are oben
+  // This should not happen thus give a warning
+  H5Pset_fclose_degree(file_apl, H5F_CLOSE_STRONG);
   
   file = check(H5Fcreate(outputFileName.c_str(), (overwriteFile ? H5F_ACC_TRUNC : H5F_ACC_EXCL),
-              H5P_DEFAULT, file_plist ), DMESG("H5FCreate : HDF5 File (File already exists ? use -f to overwrite) : " + outputFileName));
-  
-  check( H5Pclose(file_plist),   DMESG("H5Pclose"));
+              H5P_DEFAULT, file_apl ), DMESG("H5FCreate : HDF5 File (File already exists ? use -f to overwrite) : " + outputFileName));
+     
+  check( H5Pclose(file_apl),   DMESG("H5Pclose"));
 
 #ifdef GKC_PARALLEL_MPI
   MPI_Info_free(&file_info);
@@ -146,6 +150,14 @@ void FileIO::create(Setup *setup)
 }
 
 
+
+void FileIO::initData(Setup *setup)
+{
+  // herr_t H5get_libversion( unsigned *majnum, unsigned *minnum, unsigned *relnum )
+
+};
+
+
 // Destructor
 FileIO::~FileIO()  
 {
@@ -156,7 +168,7 @@ FileIO::~FileIO()
      check( H5Tclose(timing_tid),   DMESG("H5Tclose"));
      check( H5Tclose(species_tid),  DMESG("H5Tclose"));
      check( H5Tclose(s256_tid),     DMESG("H5Tclose"));
-    
+
      
      // close file
      check( H5Fclose(file)    , DMESG("Unable to close file ..."));
@@ -191,7 +203,7 @@ FileAttr* FileIO::newTiming(hid_t group, hsize_t offset, bool write)
     
        hsize_t timing_chunkdim[] = {1}; hsize_t timing_maxdim[] = {H5S_UNLIMITED};
        hsize_t time_dim[1] = { 1 };
-       FileAttr *Attr =  new FileAttr("Time", group, 1, time_dim, timing_maxdim, timing_chunkdim, &offset,  timing_chunkdim, &offset, parallel->myRank == 0, timing_tid);
+       FileAttr *Attr =  new FileAttr("Time", group, file, 1, time_dim, timing_maxdim, timing_chunkdim, &offset,  timing_chunkdim, &offset, parallel->myRank == 0, timing_tid);
     
        return Attr;
 

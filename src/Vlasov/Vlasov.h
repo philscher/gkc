@@ -164,6 +164,9 @@ class Vlasov : public IfaceGKC {
    **/
    CComplex *G, *Xi;
 
+   nct::allocate ArrayG,  ///< Allocation class for G
+                 ArrayXi, ///< Allocation class for Xi
+                 ArrayNL; ///< Allocation class for non-linear term
    /**
    *    Please Document Me !
    *

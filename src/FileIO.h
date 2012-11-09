@@ -81,16 +81,13 @@ public:
    
    virtual ~FileIO();
 
-   // to be written
-   // int load(Vlasov *vlasov, Fields *fields);
-
    hid_t  newGroup(std::string name, hid_t parentNode=-2);
         
    FileAttr *newTiming(hid_t group, hsize_t offset=0, bool write=1);
 
   protected:
    virtual void printOn(std::ostream &output) const;
-   virtual void initData(FileIO *fileIO) {};
+   virtual void initData(Setup *setup);
    virtual void writeData(const Timing &timing, const double dt) {};
    virtual void closeData() {};
 

@@ -43,9 +43,9 @@ Visualization_Data::Visualization_Data(Grid *grid, Parallel *_parallel, Setup *s
      bool phiWrite = (parallel->Coord[DIR_VMS] == 0) && (Z[NzLlD] == 0.);
     
      hid_t visualGroup = check(H5Gcreate(fileIO->getFileID(), "/Visualization",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
-     FA_slphi      = new FileAttr("Phi", visualGroup, 4, Fields_dim, Fields_maxdim, Fields_chunkdim, Fields_moffset,  Fields_chunkBdim, Fields_offset, phiWrite && plasma->nfields >= 1,fileIO->complex_tid );
-     FA_slAp       = new FileAttr("Ap",  visualGroup, 4, Fields_dim, Fields_maxdim, Fields_chunkdim, Fields_moffset,  Fields_chunkBdim, Fields_offset, phiWrite && plasma->nfields >= 2, fileIO->complex_tid);
-     FA_slBp       = new FileAttr("Bp",  visualGroup, 4, Fields_dim, Fields_maxdim, Fields_chunkdim, Fields_moffset,  Fields_chunkBdim, Fields_offset, phiWrite && plasma->nfields >= 3 , fileIO->complex_tid);
+     FA_slphi      = new FileAttr("Phi", visualGroup, fileIO->file, 4, Fields_dim, Fields_maxdim, Fields_chunkdim, Fields_moffset,  Fields_chunkBdim, Fields_offset, phiWrite && plasma->nfields >= 1,fileIO->complex_tid );
+     FA_slAp       = new FileAttr("Ap",  visualGroup, fileIO->file, 4, Fields_dim, Fields_maxdim, Fields_chunkdim, Fields_moffset,  Fields_chunkBdim, Fields_offset, phiWrite && plasma->nfields >= 2, fileIO->complex_tid);
+     FA_slBp       = new FileAttr("Bp",  visualGroup, fileIO->file, 4, Fields_dim, Fields_maxdim, Fields_chunkdim, Fields_moffset,  Fields_chunkBdim, Fields_offset, phiWrite && plasma->nfields >= 3 , fileIO->complex_tid);
      FA_slphiTime  = fileIO->newTiming(visualGroup);
 
 
@@ -85,7 +85,7 @@ Visualization_Data::Visualization_Data(Grid *grid, Parallel *_parallel, Setup *s
         hsize_t XV_chunkdim[] =  { NxLD      , NvLD      , NsLD, 1 };
         hsize_t XV_moffset[]   = { 0, 0, 0, 0, 0, 0 };
      
-        FA_XV  = new FileAttr("XV",  visualGroup,      4, XV_dim, XV_maxdim, XV_chunkdim, XV_moffset,  XV_chunkBdim, offset0, true, fileIO->complex_tid);
+        FA_XV  = new FileAttr("XV",  visualGroup, fileIO->file, 4, XV_dim, XV_maxdim, XV_chunkdim, XV_moffset,  XV_chunkBdim, offset0, true, fileIO->complex_tid);
         //ArrXV.resize(RxLD, RvLD, RsLD);
      
       } 

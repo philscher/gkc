@@ -67,7 +67,7 @@ public:
    * Get Maximum Absolute Eigenvalue 
    *
    **/
-  double getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields);
+  Complex getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields);
 
 protected :
   /**

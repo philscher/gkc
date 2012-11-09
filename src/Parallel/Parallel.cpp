@@ -116,10 +116,6 @@ Parallel::Parallel(Setup *setup)
     MPI_Cart_sub(Comm[DIR_ALL], remain_dims_X, &Comm[DIR_X]);
     MPI_Cart_rank  (Comm[DIR_X], coord_master, &dirMaster[DIR_X]);
     
-    // Communicator for Y
-    int remain_dims_Y[6] = { false, true, false, false, false, false };         
-    MPI_Cart_sub(Comm[DIR_ALL], remain_dims_Y, &Comm[DIR_Y]);
-    MPI_Cart_rank  (Comm[DIR_Y], coord_master, &dirMaster[DIR_Y]);
     
     // Communicator for Z
     int remain_dims_Z[6] = { false, false, true, false, false, false };         
@@ -173,8 +169,8 @@ Parallel::Parallel(Setup *setup)
     MPI_Cart_shift(Comm[DIR_ALL], DIR_X,-1, &rank, &Talk[DIR_X].rank_l);
   
     // setup communcation ranks for Y
-    MPI_Cart_shift(Comm[DIR_ALL], DIR_Y, 1, &rank, &Talk[DIR_Y].rank_u);
-    MPI_Cart_shift(Comm[DIR_ALL], DIR_Y,-1, &rank, &Talk[DIR_Y].rank_l);
+    //MPI_Cart_shift(Comm[DIR_ALL], DIR_Y, 1, &rank, &Talk[DIR_Y].rank_u);
+    //MPI_Cart_shift(Comm[DIR_ALL], DIR_Y,-1, &rank, &Talk[DIR_Y].rank_l);
  
     // setup communcation ranks for Z
     MPI_Cart_shift(Comm[DIR_ALL], DIR_Z, 1, &rank, &Talk[DIR_Z].rank_u);
@@ -211,13 +207,58 @@ Parallel::~Parallel()
      return;
 }
 
+
+
+void Parallel::updateBoundaryVlasov(CComplex *Sendu, CComplex *Sendl, CComplex *Recvu, CComplex  *Recvl, int num, int dir)
+{
+        
+#ifdef GKC_PARALLEL_MPI
+     
+     auto mpi_type = getMPIDataType(typeid(CComplex)); 
+
+     bool nonblocking = false;
+     if(nonblocking) {
+     //MPI_Irecv(Recvl, num, mpi_type, Talk[dir].rank_l, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_req[0]);
+     //MPI_Isend(Sendu, num, mpi_type, Talk[dir].rank_u, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_req[1]);
+     //MPI_Irecv(Recvu, num, mpi_type, Talk[dir].rank_u, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_req[2]); 
+     //MPI_Isend(Sendl, num, mpi_type, Talk[dir].rank_l, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_req[3]);
+      
+     
+    // if(Talk[dir].rank_u == MPI_PROC_NULL)   Recvl[0:num] = 0.e0;
+
+     } else {
+
+     MPI_Status status[2];
+     if(Talk[dir].rank_u == MPI_PROC_NULL)   std::cout << "I am Null ! rank_u" << std::endl << std::flush;
+     if(Talk[dir].rank_l == MPI_PROC_NULL)   std::cout << "I am Null ! rank_l" << std::endl << std::flush;
+
+     int tag[2] = { 123123, 123135 }; 
+     MPI_Sendrecv(Recvl, num, mpi_type, Talk[dir].rank_u, tag[0], Recvl, num, mpi_type, Talk[dir].rank_l, tag[0], Comm[DIR_ALL], &status[0]);
+     MPI_Sendrecv(Recvu, num, mpi_type, Talk[dir].rank_l, tag[1], Recvu, num, mpi_type, Talk[dir].rank_u, tag[1], Comm[DIR_ALL], &status[1]);
+     
+     }
+
+     
+     if(Talk[dir].rank_u == MPI_PROC_NULL)   Recvl[0:num] = 0.e0;
+     if(Talk[dir].rank_l == MPI_PROC_NULL)   Recvu[0:num] = 0.e0;
+     
+     //MPI_Recv(Recvu, num, mpi_type, Talk[dir].rank_u, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &status[1]); 
+     //MPI_Send(Sendl, num, mpi_type, Talk[dir].rank_l, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL]);
+#endif // GKC_PARALLEL_MPI
+     return;
+
+
+}
+
+
+
 void Parallel::updateBoundaryVlasovBarrier() 
 {
 
     // BUG what happen if we never sent a message, what does Waitall
                                  MPI_Waitall(4, Talk[DIR_X].psf_msg_req, Talk[DIR_X].msg_status);
     //if(decomposition[DIR_X] > 1) MPI_Waitall(4, Talk[DIR_X].psf_msg_req, Talk[DIR_X].msg_status);
-    if(decomposition[DIR_Z] > 1) MPI_Waitall(4, Talk[DIR_Z].psf_msg_req, Talk[DIR_Z].msg_status);
+    if(Nz > 1) MPI_Waitall(4, Talk[DIR_Z].psf_msg_req, Talk[DIR_Z].msg_status);
     if(decomposition[DIR_V] > 1) MPI_Waitall(4, Talk[DIR_V].psf_msg_req, Talk[DIR_V].msg_status);
       
     return;
@@ -241,11 +282,11 @@ void  Parallel::updateBoundaryFields(CComplex *SendXl, CComplex *SendXu, CComple
       MPI_Isend(SendXl, num_X, MPI_DOUBLE_COMPLEX, Talk[DIR_X].rank_l, Talk[DIR_X].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[3]);
 
       // For Z-Direction
-      MPI_Irecv(RecvZl, num_Z, MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_l, Talk[DIR_Z].phi_msg_tag[2], Comm[DIR_ALL], &msg_request[4]); 
-      MPI_Isend(SendZu, num_Z, MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_u, Talk[DIR_Z].phi_msg_tag[2], Comm[DIR_ALL], &msg_request[5]);
+      MPI_Irecv(RecvZl, num_Z, MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_l, Talk[DIR_Z].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[4]); 
+      MPI_Isend(SendZu, num_Z, MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_u, Talk[DIR_Z].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[5]);
       
-      MPI_Irecv(RecvZu, num_Z, MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_u, Talk[DIR_Z].phi_msg_tag[3], Comm[DIR_ALL], &msg_request[6]); 
-      MPI_Isend(SendZl, num_Z, MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_l, Talk[DIR_Z].phi_msg_tag[3], Comm[DIR_ALL], &msg_request[7]);
+      MPI_Irecv(RecvZu, num_Z, MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_u, Talk[DIR_Z].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[6]); 
+      MPI_Isend(SendZl, num_Z, MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_l, Talk[DIR_Z].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[7]);
 
       // Ok let's wait here ....
       MPI_Waitall(8, msg_request, msg_status);
@@ -349,6 +390,18 @@ void Parallel::printOn(std::ostream &output) const {
    
        } else output << std::endl;
 } 
+
+
+void Parallel::initData(Setup *setup, FileIO *fileIO) 
+{
+//  char mpi_lib_ver[MPI_MAX_LIBRARY_VERSION_STRING];
+//  MPI_Get_library_version(mpi_lib_ver, &len);
+//
+// write Decomposition
+
+};
+
+
 
 int Parallel::getNumberOfWorkers(int dir) 
 {

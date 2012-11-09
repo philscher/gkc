@@ -101,7 +101,8 @@ class Fields : public IfaceGKC {
    **/
    CComplex  *RecvXu, *RecvZu, *RecvXl, *RecvZl;
    
-   nct::allocate ArrayBoundX, ArrayBoundZ;
+   nct::allocate ArrayBoundX, ///< Array class for Boundary in X
+                 ArrayBoundZ; ///< Array class for Boundary in Z
 
 protected:
 
@@ -224,12 +225,15 @@ public:
    *          decomposition
    **/ 
    void updateBoundary(); 
-   void updateBoundary(
-                       CComplex Field [plasma->nfields][NsLD][NmLD][NzLB][NkyLD][NxLB+4], 
-                       CComplex SendXl[plasma->nfields][NsLD][NmLD][NzLD][NkyLD][GC4     ], CComplex SendXu[plasma->nfields][NsLD][NmLD][NzLD][NkyLD][GC4   ],
-                       CComplex RecvXl[plasma->nfields][NsLD][NmLD][NzLD][NkyLD][GC4     ], CComplex RecvXu[plasma->nfields][NsLD][NmLD][NzLD][NkyLD][GC4   ],
-                       CComplex SendZl[plasma->nfields][NsLD][NmLD][GC2   ][NkyLD][NxLD  ], CComplex SendZu[plasma->nfields][NsLD][NmLD][  GC2][NkyLD][NxLD],
-                       CComplex RecvZl[plasma->nfields][NsLD][NmLD][GC2   ][NkyLD][NxLD  ], CComplex RecvZu[plasma->nfields][NsLD][NmLD][  GC2][NkyLD][NxLD]);
+   void updateBoundary(CComplex Field [plasma->nfields][NsLD][NmLD][NzLB][NkyLD][NxLB+4], 
+                       CComplex SendXl[plasma->nfields][NsLD][NmLD][NzLD][NkyLD][GC4   ],
+                       CComplex SendXu[plasma->nfields][NsLD][NmLD][NzLD][NkyLD][GC4   ],
+                       CComplex RecvXl[plasma->nfields][NsLD][NmLD][NzLD][NkyLD][GC4   ], 
+                       CComplex RecvXu[plasma->nfields][NsLD][NmLD][NzLD][NkyLD][GC4   ],
+                       CComplex SendZl[plasma->nfields][NsLD][NmLD][GC2 ][NkyLD][NxLD  ], 
+                       CComplex SendZu[plasma->nfields][NsLD][NmLD][GC2 ][NkyLD][NxLD  ],
+                       CComplex RecvZl[plasma->nfields][NsLD][NmLD][GC2 ][NkyLD][NxLD  ],
+                       CComplex RecvZu[plasma->nfields][NsLD][NmLD][GC2 ][NkyLD][NxLD  ]);
 
    
    /**
@@ -270,7 +274,6 @@ public:
                             const int m, const int s, const bool forward) = 0;
  
 
-   nct::allocate ArrayField0;
    /**
    *  @brief four-dimensional array hold the source terms in drift-coordinates.
    *
@@ -290,9 +293,11 @@ public:
    /**
    *  @brief gyro-averaged field quantities as \f$ \left( <\phi>, <A_{1\parallel}>, <B_{1\parallel}> \right)\f$
    **/
-   //Array6C  Field;
    CComplex *Field;
+   
    nct::allocate ArrayField;
+   nct::allocate ArrayField0;
+   
    /**
    * 
    *  @brief \f$ \tfrac{1}{2} \hat{e} \hat{B} \f$ normalization constants 

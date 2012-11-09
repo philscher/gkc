@@ -36,6 +36,7 @@
 #include "Geometry/GeometrySlab.h"
 #include "Geometry/GeometryCHEASE.h"
 
+#include "System.h"
 
 #include "Eigenvalue/Eigenvalue_SLEPc.h"
 #include "Visualization/Visualization_Data.h"

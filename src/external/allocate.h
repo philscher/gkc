@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
-
+#include <stack>
 
 namespace nct { /// use better nct for numerical computing toolkit
 
@@ -40,7 +40,6 @@ class Range
 
    int Start,  ///< Starting point
        Length; ///< Length of range
-
 
 
   public:
@@ -99,8 +98,6 @@ enum alloc_flags  {
 *
 *
 **/
-// template<class T>
-//
 #include<typeinfo>
 
 class ArrayBase
@@ -119,24 +116,38 @@ class allocate : public ArrayBase
       Off; ///< Offset from p[0] to p[n] = first element
 
   int flags; // Deallocate all arrays after usage
+  
+  std::stack<void *> ptr_stack;
 
   public:
 
    int getNum() const { return Num; };
    int getOff() const { return Off; };
 
-   allocate(int _flags = SET_ZERO) : flags(_flags)
+   allocate(int _flags = SET_ZERO | DEALLOC) : flags(_flags)
    {
       Num = 0;
       Off = 0;
    };
 
+
+   /**
+   *    @brief returns pointer with offset removed
+   *
+   *    Points to first element
+   *
+   **/
    template<class T> T* data(T *g0)
    {
          T *g = g0 + Off;
          return g; 
    };
    
+   /**
+   *
+   *   @brief returns pointer which included offset
+   *
+   **/ 
    template<class T> T* zero(T *g)
    {
          T *g0 = g - Off;
@@ -156,7 +167,6 @@ class allocate : public ArrayBase
    {
         flags &= user_flags;
 
-       
         // get total array size
         Num = R0.Num() ; 
        
@@ -184,8 +194,6 @@ class allocate : public ArrayBase
         Off = 
               R0.Off() * (R1.Num()) 
             + R1.Off() ;
-        
-   
    };
    
    
@@ -308,16 +316,28 @@ class allocate : public ArrayBase
     /**
     *    @brief deallocate arrays
     *
+    *    All arrays allocated with this class will get release
+    *    once it's instance is destroyed if DEALLOC (default)
+    *    flag is set.
     *
     **/ 
     ~allocate()
     {
          if(flags & alloc_flags::DEALLOC) { 
-
+/* 
             // Deallocate all arrays
-         
-         };
-
+            while (!ptr_stack.empty()) {
+           
+              // release top element
+              void *ptr = ptr_stack.top();
+               
+              //if() free(ptr)
+              _mm_free(ptr);
+              // remove element on top
+              ptr_stack.pop();
+            }
+ * */
+         }
     };
 
     /**
@@ -328,12 +348,13 @@ class allocate : public ArrayBase
     *
     *
     **/
-    template<class T> void operator()(T **g)
+    template<class T> allocate& operator()(T **g)
     {
          
-         //*g = ((T *) malloc(N * sizeof(T)));
+         //*g = ((T *) malloc(Num * sizeof(T)));
          *g = ((T *) _mm_malloc(Num * sizeof(T), 64));
 
+           ptr_stack.push((void *) *g);
         
          // set to zero
          if(flags & SET_ZERO) {
@@ -343,7 +364,8 @@ class allocate : public ArrayBase
          // Take care, pointer arithmetic is typed, only char* is 1 Byte !!!
          // Substract offset to calculate p[0][0]....
          *g = *g - Off;
-         
+    
+         return *this;
     };
  
     /**
@@ -354,10 +376,12 @@ class allocate : public ArrayBase
     *
     *
     **/
-    template<class T> void operator()(T **g0, T **g1)
+    template<class T> allocate& operator()(T **g0, T **g1)
     {
          operator()(g0);
          operator()(g1);
+
+         return *this;
     };
  
     /**
@@ -368,11 +392,13 @@ class allocate : public ArrayBase
     *
     *
     **/
-    template<class T> void operator()(T **g0, T **g1, T **g2)
+    template<class T> allocate& operator()(T **g0, T **g1, T **g2)
     {
          operator()(g0);
          operator()(g1);
          operator()(g2);
+         
+         return *this;
     };
  
     /**
@@ -383,12 +409,14 @@ class allocate : public ArrayBase
     *
     *
     **/
-    template<class T> void operator()(T **g0, T **g1, T **g2, T **g3)
+    template<class T> allocate& operator()(T **g0, T **g1, T **g2, T **g3)
     {
          operator()(g0);
          operator()(g1);
          operator()(g2);
          operator()(g3);
+         
+         return *this;
     }
  
     /**
@@ -399,13 +427,15 @@ class allocate : public ArrayBase
     *
     *
     **/
-    template<class T> void operator()(T **g0, T **g1, T **g2, T **g3, T **g4)
+    template<class T> allocate& operator()(T **g0, T **g1, T **g2, T **g3, T **g4)
     {
          operator()(g0);
          operator()(g1);
          operator()(g2);
          operator()(g3);
          operator()(g4);
+         
+         return *this;
     }
  
     /**
@@ -416,7 +446,7 @@ class allocate : public ArrayBase
     *
     *
     **/
-    template<class T> void operator()(T **g0, T **g1, T **g2, T **g3, T **g4, T **g5)
+    template<class T> allocate& operator()(T **g0, T **g1, T **g2, T **g3, T **g4, T **g5)
     {
          operator()(g0);
          operator()(g1);
@@ -424,9 +454,11 @@ class allocate : public ArrayBase
          operator()(g3);
          operator()(g4);
          operator()(g5);
+         
+         return *this;
     }
 
-    template<class T> void operator()(T **g0, T **g1, T **g2, T **g3, T **g4, T **g5, T**g6)
+    template<class T> allocate& operator()(T **g0, T **g1, T **g2, T **g3, T **g4, T **g5, T**g6)
     {
          operator()(g0);
          operator()(g1);
@@ -435,6 +467,8 @@ class allocate : public ArrayBase
          operator()(g4);
          operator()(g5);
          operator()(g6);
+         
+         return *this;
     }
 
  };

@@ -20,7 +20,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <iostream>
-
+#include <sstream>
 /**
 *    @brief Class which provided some system functions which may be
             not portable.
@@ -89,6 +89,53 @@ class System
            posix_memalign((void **) &p, align, N);
       return p;
    };
+
+   
+   // provided by Larry Gritz from
+   // http://stackoverflow.com/questions/372484/how-do-i-programmatically-check-memory-use-in-a-fairly-portable-way-c-c
+
+   // The amount of memory currently being used by this process, in bytes.
+   /// By default, returns the full virtual arena, but if resident=true,
+   /// it will report just the resident set in RAM (if supported on that OS).
+   static int memoryUsage()
+   {
+    // Ugh, getrusage doesn't work well on Linux.  Try grabbing info
+    // directly from the /proc pseudo-filesystem.  Reading from
+    // /proc/self/statm gives info on your own process, as one line of
+    // numbers that are: virtual mem program size, resident set size,
+    // shared pages, text/code, data/stack, library, dirty pages.  The
+    // mem sizes should all be multiplied by the page size.
+    size_t size = 0;
+    FILE *file = fopen("/proc/self/statm", "r");
+    if (file) {
+        unsigned long m_vsize = 0; // virtual memory
+        unsigned long m_mres  = 0;  // resident memory
+        unsigned long m_share = 0; // shared memory
+        unsigned long m_text  = 0; // text data
+        unsigned long m_lib   = 0; // library 
+        unsigned long m_data  = 0; // data
+
+        fscanf (file, "%ul", &m_vsize);  // Just need the first num: vm size
+        fclose (file);
+       size = (size_t) m_vsize * getpagesize();
+    }
+   
+    return size;
+   
+   }
+
+   static std::string  getProcessStatusString()
+   {
+  
+     std::fstream filestr ("/proc/self/status", std::fstream::in);
+     std::stringstream ss;
+     ss << filestr.rdbuf();
+     return ss.str();
+   
+
+   };
+
+
 };
 
 #endif // __SYSTEM_H
