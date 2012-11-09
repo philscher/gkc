@@ -92,8 +92,8 @@ void TestParticles::initData(Setup *setup, FileIO *fileIO) {
      bool phiWrite = (parallel->Coord[DIR_VMS] == 0);
      
      
-     FA_X      = new FileAttr("Postion" , particleGroup, 2, p_dim , p_mdim   , p_dim   , p_offset    ,  p_dim  , p_offset, true, fileIO->vector3D_tid);
-     FA_V      = new FileAttr("Velocity" , particleGroup, 2, p_dim , p_mdim   , p_dim   , p_offset    ,  p_dim  , p_offset, true, fileIO->vector3D_tid);
+     FA_X      = new FileAttr("Postion"  , particleGroup, fileIO->file, 2, p_dim , p_mdim   , p_dim   , p_offset    ,  p_dim  , p_offset, true, fileIO->vector3D_tid);
+     FA_V      = new FileAttr("Velocity" , particleGroup, fileIO->file, 2, p_dim , p_mdim   , p_dim   , p_offset    ,  p_dim  , p_offset, true, fileIO->vector3D_tid);
      //FA_A      = new FileAttr("Position" , particleGroup, 4, p_dim , p_maxdim   , p_chunkdim   , p_moffset    ,  p_chunkBdim  , p_offset, true, fileIO->vector3D_tid);
      FA_Time  = fileIO->newTiming(particleGroup);
 

@@ -75,6 +75,11 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
     // Sum up with X-values from other processes
     parallel->reduce(&pSpec[0][0], Op::SUM, DIR_XYZ, Nq * Nx);        
     parallel->reduce(&pFreq[0][0], Op::SUM, DIR_XYZ, Nq * Nx);        
+    
+    // Sum up with Y-values from other processes
+    parallel->reduce(&pSpecY [0][0], Op::SUM, DIR_XYZ, Nq * Nky);        
+    parallel->reduce(&pPhaseY[0][0], Op::SUM, DIR_XYZ, Nq * Nky);        
+         
          
     // map back from fftw [k0, k1, k2, ..., k_Ny, -k_(N/y-2), ... -k_1]
     for(int x_k = 1; x_k < Nx/2; x_k++) pFreq [:][x_k] += pFreq[:][Nx-x_k];
@@ -99,7 +104,7 @@ void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][
 
 {
   
-    for(int s = NsGlD; s <= NsGuD; s++) {
+    for(int s = NsLlD; s <= NsLuD; s++) {
       
     double number = 0.e0;
     double kineticEnergy=0.e0;
@@ -112,7 +117,7 @@ void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][
     ////////////////////////////// Calculate Particle Number ////////////////////////
     const double pn_d6Z = M_PI  * dv * grid->dm[m] * grid->dXYZV;
    
-    #pragma omp parallel for reduction(+:number)
+    //#pragma omp parallel for reduction(+:number)
     for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) 
     {
                number +=  __sec_reduce_add(f[s][m][NzLlD:NzLD][y_k][NxLlD:NxLD][NvLlD:NvLD]) * pn_d6Z;
@@ -122,7 +127,7 @@ void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][
     
     const double v2_d6Z = 0.5 * plasma->species[s].m * M_PI * plasma->species[s].n0 * dv * grid->dm[m] * grid->dXYZ * pow2(plasma->species[s].scale_v) ;
               
-    #pragma omp parallel for reduction(+:kineticEnergy) collapse (2)
+    //#pragma omp parallel for reduction(+:kineticEnergy) collapse (2)
     for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x <= NxLuD; x++) {
              
                  kineticEnergy += cabs(__sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD] * (pow2(V[NvLlD:NvLD])+M[m]) ) * v2_d6Z);
@@ -308,30 +313,30 @@ void Analysis::initData(Setup *setup, FileIO *fileIO) {
      hsize_t FSky_cBdim[] = { Nq, NsLD   , Nky   , NxLD   , 1 };
      hsize_t FSky_cdoff[] = { 0,  NsLlB-1, NkyLlD, NxLlD-3, 0};
 
-     FA_heatKy      = new FileAttr("Heat"    , fluxGroup, 5, FSky_dsdim, FSky_dmdim, FSky_cDdim, offset0,  FSky_cBdim, FSky_cdoff, parallel->Coord[DIR_XYZ] == 0);
-     FA_particleKy  = new FileAttr("Particle", fluxGroup, 5, FSky_dsdim, FSky_dmdim, FSky_cDdim, offset0,  FSky_cBdim, FSky_cdoff, parallel->Coord[DIR_XYZ] == 0);
+     FA_heatKy      = new FileAttr("Heat"    , fluxGroup, fileIO->file, 5, FSky_dsdim, FSky_dmdim, FSky_cDdim, offset0,  FSky_cBdim, FSky_cdoff, parallel->Coord[DIR_XYZ] == 0);
+     FA_particleKy  = new FileAttr("Particle", fluxGroup, fileIO->file, 5, FSky_dsdim, FSky_dmdim, FSky_cDdim, offset0,  FSky_cBdim, FSky_cdoff, parallel->Coord[DIR_XYZ] == 0);
     
      H5Gclose(fluxGroup);
      
      //----------------  Moments - Heat fluxes ------------------
      
-     hid_t momentGroup = check(H5Gcreate(fileIO->getFileID(), "/Moments", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
+     hid_t momGroup = check(H5Gcreate(fileIO->getFileID(), "/Moments", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
 
-     hsize_t moment_dsdim[] =  { grid->NzGD , NkyLD      , grid->NxGD , NsLD , 1            };
-     hsize_t moment_dmdim[] =  { grid->NzGD , NkyLD      , grid->NxGD , Ns   , H5S_UNLIMITED};
-     hsize_t moment_cBdim[] =  { NzLD       , NkyLD      , NxLD       , NsLD , 1            };
-     hsize_t moment_cDdim[] =  { NzLD       , NkyLD      , NxLD       , NsLD , 1            };
-     hsize_t moment_cmoff[] =  { 0, 0, 0, 0, 0                                              };
-     hsize_t moment_cdoff[] =  { NzLlD-3    , 0          , NxLlD-3    , 0     ,  0          };
+     hsize_t mom_dsdim[] =  { grid->NzGD , NkyLD      , grid->NxGD , NsLD , 1            };
+     hsize_t mom_dmdim[] =  { grid->NzGD , NkyLD      , grid->NxGD , Ns   , H5S_UNLIMITED};
+     hsize_t mom_cBdim[] =  { NzLD       , NkyLD      , NxLD       , NsLD , 1            };
+     hsize_t mom_cDdim[] =  { NzLD       , NkyLD      , NxLD       , NsLD , 1            };
+     hsize_t mom_cmoff[] =  { 0, 0, 0, 0, 0                                              };
+     hsize_t mom_cdoff[] =  { NzLlD-3    , 0          , NxLlD-3    , 0     ,  0          };
      
      bool momWrite = (parallel->Coord[DIR_VM] == 0);
      
-     FA_Mom_Tp        = new FileAttr("Temperature_v", momentGroup, 5, moment_dsdim, moment_dmdim, moment_cDdim, moment_cmoff, moment_cBdim, moment_cdoff, momWrite, fileIO->complex_tid);
-     FA_Mom_HeatFlux  = new FileAttr("HeatFlux"     , momentGroup, 5, moment_dsdim, moment_dmdim, moment_cDdim, moment_cmoff, moment_cBdim, moment_cdoff, momWrite, fileIO->complex_tid);
-     FA_Mom_Density   = new FileAttr("Density"      , momentGroup, 5, moment_dsdim, moment_dmdim, moment_cDdim, moment_cmoff, moment_cBdim, moment_cdoff, momWrite, fileIO->complex_tid);
-     FA_Mom_Time  = fileIO->newTiming(momentGroup);
+     FA_Mom_Tp        = new FileAttr("Temperature_v", momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
+     FA_Mom_HeatFlux  = new FileAttr("HeatFlux"     , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
+     FA_Mom_Density   = new FileAttr("Density"      , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
+     FA_Mom_Time  = fileIO->newTiming(momGroup);
         
-     H5Gclose(momentGroup);
+     H5Gclose(momGroup);
       
      dataOutputMoments   = Timing(setup->get("DataOutput.Moments.Step", -1)       , setup->get("DataOutput.Moments.Time", -1.));
 
@@ -347,10 +352,10 @@ void Analysis::initData(Setup *setup, FileIO *fileIO) {
      hsize_t XDep_cmoff[] =  { 0      , 0       , 0            };
      hsize_t XDep_cdoff[] =  { NsLlB-1, NxLlD-3 , 0            };
      
-     bool XDepWrite = ( (parallel->Coord[DIR_VMS] == 0) && (parallel->Coord[DIR_Z] == 0));
+     bool XDepWrite = ( (parallel->Coord[DIR_VM] == 0) && (parallel->Coord[DIR_Z] == 0));
      
-     FA_XDep_Tp   = new FileAttr("Temperature", XDepGroup, 3, XDep_dsdim, XDep_dmdim, XDep_cDdim, XDep_cmoff, XDep_cBdim, XDep_cdoff, XDepWrite);
-     FA_XDep_n    = new FileAttr("Density"    , XDepGroup, 3, XDep_dsdim, XDep_dmdim, XDep_cDdim, XDep_cmoff, XDep_cBdim, XDep_cdoff, XDepWrite);
+     FA_XDep_Tp   = new FileAttr("Temperature", XDepGroup, fileIO->file, 3, XDep_dsdim, XDep_dmdim, XDep_cDdim, XDep_cmoff, XDep_cBdim, XDep_cdoff, XDepWrite);
+     FA_XDep_n    = new FileAttr("Density"    , XDepGroup, fileIO->file, 3, XDep_dsdim, XDep_dmdim, XDep_cDdim, XDep_cmoff, XDep_cBdim, XDep_cdoff, XDepWrite);
      FA_XDep_Time = fileIO->newTiming(XDepGroup);
         
      H5Gclose(XDepGroup);
@@ -363,11 +368,11 @@ void Analysis::initData(Setup *setup, FileIO *fileIO) {
      // X-scalarValue
      hid_t growGroup = fileIO->newGroup("PowerSpectrum", analysisGroup);
 
-     hsize_t grow_x_dsdim[] = { Nq, Nx/2+1, 1 }; 
-     hsize_t grow_x_dmdim[] = { Nq, Nx/2+1, H5S_UNLIMITED} ;
-     hsize_t grow_x_cDdim[] = { Nq, Nx/2+1, 1 };
-     hsize_t grow_x_cBdim[] = { Nq, Nx/2+1, 1 };
-     FA_grow_x  = new FileAttr("X", growGroup, 3, grow_x_dsdim, grow_x_dmdim, grow_x_cDdim, offset0,  grow_x_cBdim, offset0, parallel->myRank == 0);
+     hsize_t grow_x_dsdim[] = { Nq, Nx, 1 }; 
+     hsize_t grow_x_dmdim[] = { Nq, Nx, H5S_UNLIMITED} ;
+     hsize_t grow_x_cDdim[] = { Nq, Nx, 1 };
+     hsize_t grow_x_cBdim[] = { Nq, Nx, 1 };
+     FA_grow_x  = new FileAttr("X", growGroup, fileIO->file, 3, grow_x_dsdim, grow_x_dmdim, grow_x_cDdim, offset0,  grow_x_cBdim, offset0, parallel->myRank == 0);
 
      // Y-scalarValue
      hsize_t grow_y_dsdim[] = { Nq, Nky, 1 };
@@ -375,16 +380,16 @@ void Analysis::initData(Setup *setup, FileIO *fileIO) {
      hsize_t grow_y_cDdim[] = { Nq, Nky, 1 };
      hsize_t grow_y_cBdim[] = { Nq, Nky, 1 };
    
-     FA_grow_y  = new FileAttr("Y", growGroup, 3, grow_y_dsdim, grow_y_dmdim, grow_y_cDdim, offset0,  grow_y_cBdim, offset0, parallel->myRank == 0);
+     FA_grow_y  = new FileAttr("Y", growGroup, fileIO->file, 3, grow_y_dsdim, grow_y_dmdim, grow_y_cDdim, offset0,  grow_y_cBdim, offset0, parallel->myRank == 0);
 
      FA_grow_t  = fileIO->newTiming(growGroup);
 
      H5Gclose(growGroup);
-     
-     
+    
+
      hid_t freqGroup = fileIO->newGroup("PhaseShift", analysisGroup);
-     FA_freq_x  = new FileAttr("X", freqGroup, 3, grow_x_dsdim, grow_x_dmdim, grow_x_cDdim, offset0,  grow_x_cBdim, offset0, parallel->myRank == 0);
-     FA_freq_y  = new FileAttr("Y", growGroup, 3, grow_y_dsdim, grow_y_dmdim, grow_y_cDdim, offset0,  grow_y_cBdim, offset0, parallel->myRank == 0);
+     FA_freq_x  = new FileAttr("X", freqGroup, fileIO->file, 3, grow_x_dsdim, grow_x_dmdim, grow_x_cDdim, offset0,  grow_x_cBdim, offset0, parallel->myRank == 0);
+     FA_freq_y  = new FileAttr("Y", growGroup, fileIO->file, 3, grow_y_dsdim, grow_y_dmdim, grow_y_cDdim, offset0,  grow_y_cBdim, offset0, parallel->myRank == 0);
      FA_freq_t  = fileIO->newTiming(freqGroup);
      H5Gclose(freqGroup);
 
@@ -506,14 +511,14 @@ void Analysis::writeData(const Timing &timing, const double dt)
   
     ////////////// Scalar Variables /////////////////
 
-
     // Stack allocation (size ok ?) and alignement ? (well, speed not critical here...)
-    double pSpecX [Nq][Nx/2+1], pSpecY [Nq][Nky],
-           pPhaseX[Nq][Nx/2+1], pPhaseY[Nq][Nky];
+    double pSpecX [Nq][Nx], pSpecY [Nq][Nky],
+           pPhaseX[Nq][Nx], pPhaseY[Nq][Nky];
      
     getPowerSpectrum((A4zz) fft->kXOut, (A4zz) fields->Field0, pSpecX, pSpecY, pPhaseX, pPhaseY);
     
     // Seperatly writing ? Hopefully it is buffered ... (passing stack pointer ... OK ?)
+    // Memory leak !?
     FA_grow_x->write( &pSpecX [0][0]); FA_grow_y->write(&pSpecY [0][0]); FA_grow_t->write(&timing);
     FA_freq_x->write( &pPhaseX[0][0]); FA_freq_y->write(&pPhaseY[0][0]); FA_freq_t->write(&timing);
     
