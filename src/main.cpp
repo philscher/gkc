@@ -49,7 +49,9 @@ void set_stacksize(int size_Mbytes)
 
 int main(int argc, char **argv)
 {
-    // Set stack size (not necesart for jobs) set_stacksize(32);
+    // Set stack size (usually not necessary for queue-jobs as stacksize is unlimited) 
+    // set_stacksize(32);
+    //
     // Some internal variables
     time_t start_sim_time, start_all_time, end_sim_time, end_all_time;
     

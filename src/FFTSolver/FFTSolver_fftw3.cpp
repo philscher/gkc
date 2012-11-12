@@ -180,7 +180,7 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
       int AA_NkyLuD = NkyLlD + AA_NkyLD -1;
                 
           
-      double   rY_AA[AA_NyLD][NxLD]; CComplex kY_AA[AA_NkyLD][NxLD];
+      doubleAA   rY_AA[AA_NyLD][NxLD]; CComplexAA kY_AA[AA_NkyLD][NxLD];
       
 
       
@@ -301,11 +301,10 @@ FFTSolver_fftw3::~FFTSolver_fftw3()
 void FFTSolver_fftw3::multiply(const CComplex A[NkyLD][NxLD], const CComplex B[NkyLD][NxLD],
                                      CComplex R[NkyLD][NxLD])
 {
-   
    // Create antialiased arrays and copy and transform to real space
-   CComplex AA_A[AA_NkyLD][NxLD];
-   double   RS_A[AA_NyLD ][NxLD], 
-            RS_B[AA_NyLD ][NxLD];
+   CComplexAA AA_A[AA_NkyLD][NxLD];
+   doubleAA   RS_A[AA_NyLD ][NxLD], 
+              RS_B[AA_NyLD ][NxLD];
    AA_A[:][:] = 0.;
  
    // Copy to larger Anti-Aliased array and transform to real space

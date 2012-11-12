@@ -153,7 +153,8 @@ class System
     std::cerr << "Porcess obtaind " << size << " stack frames." << std::endl;  
     
     // Output them
-    for (int i = 0; i < size; i++) std::cerr << "    :  " << strings[i] << std::endl;
+    for (int i = 0; i < size; i++) std::cerr << "    :  " << strings[i] << std::endl;  
+    std::cerr << std::flush << std::endl;
     free (strings);
 
    }

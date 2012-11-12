@@ -240,11 +240,16 @@ struct NeighbourDir {
      // No need to reduce if not decomposed (should be handled by MPI library if in-place or ?
      if( (dir <= DIR_S) && (decomposition[dir] == 1)) return;
 
+     // make range check for debugging
+     if( (dir >= DIR_SIZE) ) check(-1, DMESG("Reduce : Invalide direction"));
+
 #ifdef GKC_PARALLEL_MPI
      if(allreduce == true)
         check(MPI_Allreduce(MPI_IN_PLACE, A, Num, getMPIDataType(typeid(T)), getMPIOp(op), Comm[dir]), DMESG("MPI_AllReduce")); 
      else 
-        check(MPI_Reduce((myRank == dirMaster[dir]) ? MPI_IN_PLACE : A, A, Num, getMPIDataType(typeid(T)), getMPIOp(op), dirMaster[dir], Comm[dir]), DMESG("MPI_Reduce"   )); 
+        //check(MPI_Reduce((myRank == dirMaster[dir]) ? MPI_IN_PLACE : A, A, Num, getMPIDataType(typeid(T)), getMPIOp(op), dirMaster[dir], Comm[dir]), DMESG("MPI_Reduce"   )); 
+        check(MPI_Reduce((Coord[dir] == 0) ? MPI_IN_PLACE : A, A, Num, getMPIDataType(typeid(T)), getMPIOp(op), dirMaster[dir], Comm[dir]), DMESG("MPI_Reduce"   )); 
+       // check(MPI_Reduce(MPI_IN_PLACE, A, Num, getMPIDataType(typeid(T)), getMPIOp(op), dirMaster[dir], Comm[dir]), DMESG("MPI_Reduce"   )); 
 #endif
      return;
    }

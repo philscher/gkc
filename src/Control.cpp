@@ -18,6 +18,7 @@
 #include <fenv.h>
 #include <csignal>
 
+
 bool force_exit = false;
 int control_triggered_signal=0;
 
@@ -34,6 +35,9 @@ Parallel *gl_parallel; // need extern variables for signal handler
 void signal_handler(int sig)
 
 {
+    std::cerr << "Signal : " << strsignal( sig ) << " received." << std::endl;
+    System::printStackTrace();
+    
     switch(sig) {
       case(SIGFPE)  :
                        std::cerr << "Floating point exception occured. Exiting" << std::endl;
@@ -78,7 +82,6 @@ void signal_handler(int sig)
                        break;
       default       :  std::cerr << "Unkown signal .... Ignoring\n";
     }
-
 
     if(force_exit == true) check(-1, DMESG("Signal received and \"force exit\" set"));
 }
@@ -133,14 +136,23 @@ void Control::setSignalHandler()
 {
 
 
-     // Set Floating Point Capturing if in Debug mode
-    feenableexcept(FE_DIVBYZERO | FE_INVALID);
+    // Capture all floating point exception
+    // Note : SLEPc/PETSc produced sometimes FPE but obviously
+    // ignores it. Take care that we do not catch these ones 
 //    feenableexcept(FE_ALL_EXCEPT);
+
     // Set the signal handler:
-    signal(SIGFPE,   signal_handler);
-    signal(SIGINT ,  signal_handler);
+    signal(SIGFPE  ,   signal_handler);
+    signal(SIGINT  ,  signal_handler);
     signal(SIGUSR1 , signal_handler);
     signal(SIGUSR2 , signal_handler);
+    signal(SIGSEGV , signal_handler);
+    signal(SIGBUS  , signal_handler);
+// catch all signals
+    for ( int i = 0; i < 32; i++ ) signal( i, signal_handler );
+//    for ( int i = 0; i < 32; i++ ) signal( 0x1111111111111111, signal_handler );
+
+
 //#endif
 
 

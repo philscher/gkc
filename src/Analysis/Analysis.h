@@ -211,7 +211,7 @@ class Analysis : public IfaceGKC {
    **/
    void getParticleHeatFlux(const int m, const int s, 
                             CComplex ParticleFlux[NkyLD][NxLD], CComplex HeatFlux[NkyLD][NxLD],
-                            const CComplex f[NsLB][NmLB][NzLB][NkyLD][NxLB][NvLB],
+                            const CComplex         f[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                             const CComplex Field[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                             const double V[NvGB], const double M[NmGB]);
 

@@ -95,8 +95,9 @@ class FileAttr
           H5Pset_chunk(dcpl, n_dim, chunkdim);
 
           // usually the dataset is access once, tell HDF-5 thus to not to use reduce buffers 
-          hid_t dapl   = H5Pcreate (H5P_DATASET_ACCESS);
-          H5Pset_chunk_cache(dapl, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, 1.);
+          //hid_t dapl   = H5Pcreate (H5P_DATASET_ACCESS);
+          //H5Pset_chunk_cache(dapl, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, 1.);
+          hid_t dapl   = H5P_DEFAULT;
 
           dataset_hdf = check(H5Dcreate2(group, _name.c_str(), typeId_hdf, dspace, H5P_DEFAULT, dcpl, dapl), DMESG(name + "H5Dcreate2"));
           H5Pclose(dcpl); 

@@ -34,13 +34,11 @@ Visualization_Data::Visualization_Data(Grid *grid, Parallel *_parallel, Setup *s
      hsize_t Fields_dim      [] = { numZSlide  , NkyLD, grid->NxGD,             1 };
      hsize_t Fields_maxdim   [] = { numZSlide  , NkyLD, grid->NxGD, H5S_UNLIMITED };
      hsize_t Fields_chunkBdim[] = { numZSlide  , NkyLD, NxLD      ,             1 };
-     //hsize_t Fields_chunkBdim[] = { NzLB,  NkyLD, NxLB+4,        1};
      hsize_t Fields_chunkdim [] = { numZSlide  , NkyLD, NxLD      ,             1 };
      hsize_t Fields_moffset  [] = { 0, 0, 0, 0 };
      hsize_t Fields_offset   [] = {NzLlB-1, NkyLlB , NxLlB-1, 0 }; 
-     // hsize_t Fields_moffset[]   = { 2, 0, 4, 0 };
      
-     bool phiWrite = (parallel->Coord[DIR_VMS] == 0) && (Z[NzLlD] == 0.);
+     bool phiWrite = (parallel->Coord[DIR_VMS] == 0) && (parallel->Coord[DIR_Z] == 0);
     
      hid_t visualGroup = check(H5Gcreate(fileIO->getFileID(), "/Visualization",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
      FA_slphi      = new FileAttr("Phi", visualGroup, fileIO->file, 4, Fields_dim, Fields_maxdim, Fields_chunkdim, Fields_moffset,  Fields_chunkBdim, Fields_offset, phiWrite && plasma->nfields >= 1,fileIO->complex_tid );
@@ -49,33 +47,6 @@ Visualization_Data::Visualization_Data(Grid *grid, Parallel *_parallel, Setup *s
      FA_slphiTime  = fileIO->newTiming(visualGroup);
 
 
-
-      ////////////////////////// Other stuff (please cleanup) /////////////////////////////
-//     FA_sln        = new FileAttr("Density",  visualGroup,     5, A4_dim, A4_maxdim, A4_chunkdim, A4_moffset, A4_chunkBdim, A4_offset, phiWrite);
-//     FA_slT        = new FileAttr("Temperature",visualGroup,   5, A4_dim, A4_maxdim, A4_chunkdim, A4_moffset, A4_chunkBdim, A4_offset, phiWrite);
-     
-//     FA_slphiTime  = new FileAttr("Time", visualGroup,   1, time_dim, timing_maxdim, timing_chunkdim, offset0,  offset0, timing_chunkdim, parallel->myRank == 0, fileIO->timing_tid);
-       
-
-     // Visualization of Velocity space
-     //hsize_t B4_offset[] = {NsLlB-1, 0, NzLlB-1, NyLlB-1, NxLlB-1, NvLlB-1, 0 }; 
-     //FA_slF1       = new FileAttr("F1",  visualGroup,      7, B4_dim, B4_maxdim, B4_chunkdim, B4_moffset,  B4_chunkBdim, B4_offset, true);
-     //hsize_t B4_offset[] = {NsLlB-1, 0, NzLlB-1, NyLlB-1, NxLlB-1, NvLlB-1, 0 }; 
-     //FA_slF1       = new FileAttr("F1",  visualGroup,      4, V3_dim, V3_maxdim, V3_chunkdim, V3_moffset,  V3_chunkBdim, offset0, true, fileIO->complex_tid);
-     //V3.resize(RxLD, RvLD, Range(NkyLlD, NkyLlD+nkyslides));
-
- //hsize_t Fields_offset[] = {NzLlB-1, NyLlB-1, NxLlB-1, 0 }; 
-        
-//     FA_slphiTime->create(visualGroup, "Time", offset0);
-     /*  4D Stuff  XYZ + Species */
-     int nslides=1;
-     hsize_t A4_dim      [] =  { grid->NsGD, nslides, NkyLD, grid->NxGD,             1};
-     hsize_t A4_maxdim   [] =  { grid->NsGD, nslides, NkyLD, grid->NxGD, H5S_UNLIMITED};
-     hsize_t A4_chunkBdim[] = {       NsLD, NzLD   ,       NkyLD,        NxLD,        1};
-     hsize_t A4_chunkdim [] =  { NsLD, nslides, NkyLD, NxLD, 1};
-     hsize_t A4_moffset  [] = { 0, 0, 0, 0, 0 };
-     hsize_t A4_offset[] = {NsLlB-1, NzLlB-1, NkyLlB, NxLlB-1, 0 }; 
-     
      /////////////////////// Velocity space (X(0)-V) ///////////////////////////////////////
       visXV = setup->get("Visualization.XV", 0);
       if(visXV == true) {
@@ -109,7 +80,7 @@ Visualization_Data::~Visualization_Data() {
 
 void Visualization_Data::writeData(const Timing &timing, const double dt, const bool force) 
 {
-        if (timing.check(dataOutputVisual,dt) || (timing.step == 1) || force) {
+        if (timing.check(dataOutputVisual,dt) || force) {
             FA_slphi->write(fields->ArrayField0.data(fields->Field0));
             FA_slphiTime->write(&timing);
 

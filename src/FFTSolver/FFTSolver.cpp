@@ -36,7 +36,7 @@ void FFTSolver::setNormalizationConstants() {
   solve(FFT_Type::Y_NL, FFT_Sign::Backward, kY, rY);
   Norm_Y_Backward = rY[0][0];
 
-  std::cout << "Norm For : " << Norm_Y_Forward << " Back : " << Norm_Y_Backward << std::endl;
+//  std::cout << "Norm For : " << Norm_Y_Forward << " Back : " << Norm_Y_Backward << std::endl;
 
   // Real -> Complex (Fourier space) transform
   rY[:][:] = 1.; 
