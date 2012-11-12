@@ -324,7 +324,7 @@ class allocate : public ArrayBase
     ~allocate()
     {
          if(flags & alloc_flags::DEALLOC) { 
-/* 
+            
             // Deallocate all arrays
             while (!ptr_stack.empty()) {
            
@@ -335,8 +335,8 @@ class allocate : public ArrayBase
               _mm_free(ptr);
               // remove element on top
               ptr_stack.pop();
+            std::cout << "Dealloc" << std::endl;
             }
- * */
          }
     };
 

@@ -128,7 +128,7 @@ class FileAttr
 //       group_hdf = group;
 //       H5Iinc_ref( group );
         
-        H5Dclose(dataset_hdf);
+//        H5Dclose(dataset_hdf);
         // make copy of group
      //}
 
@@ -150,7 +150,7 @@ class FileAttr
   //ndims = H5Sget_simple_extent_dims (space, dims, NULL);
   //
   // We close and release dataset after each write, otherwise temporary buffers may accumulate
-     hid_t dataset_hdf = check(H5Dopen(file_hdf, loc_string.c_str(), H5P_DEFAULT), DMESG("H5Dopen"));
+  //   hid_t dataset_hdf = check(H5Dopen(file_hdf, loc_string.c_str(), H5P_DEFAULT), DMESG("H5Dopen"));
 
           // extend data-dimensions
           dim[n_dim-1]    += increase;
@@ -167,7 +167,7 @@ class FileAttr
           check(  H5Dwrite(dataset_hdf, typeId_hdf, memory_space_hdf, dspace, property_hdf, data)  , DMESG(name + " : H5DWrite Dataset"));
           H5Sclose(dspace);
    
-          H5Dclose(dataset_hdf);
+    //      H5Dclose(dataset_hdf);
 
         
     };
@@ -202,7 +202,7 @@ class FileAttr
    ~FileAttr() 
    {
       // close dataset, -space and -property
- //      check( H5Dclose(dataset_hdf)     ,  DMESG("H5Dclose"));
+       check( H5Dclose(dataset_hdf)     ,  DMESG("H5Dclose"));
        check( H5Pclose(property_hdf)    ,  DMESG("H5Pclose"));
        check( H5Sclose(memory_space_hdf),  DMESG("H5Pclose"));
 //       check( H5Gclose(group_hdf),  DMESG("H5Pclose"));
