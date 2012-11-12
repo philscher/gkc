@@ -133,7 +133,6 @@ void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][
                  kineticEnergy += cabs(__sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD] * (pow2(V[NvLlD:NvLD])+M[m]) ) * v2_d6Z);
     } } }
     // substract initial kinetic energy or not ?
-    // return  (parallel->reduce(kineticEnergy, OP_SUM, DIR_ALL) - initialEkin(sp))/((initialEkin(sp) == 0.) ? 1. : initialEkin(sp));
 
     ////////////////////////////// Calculate Entropy ////////////////////////////////////
     
@@ -205,7 +204,7 @@ void Analysis::getNumberDensity(const  CComplex f[NsLB][NmLB][NzLB][NkyLD][NxLB]
 };
 
 
-void Analysis::getTemperature(const  CComplex f[NsLB][NmLB][NzLB][NkyLD][NxLB][NvLB],
+void Analysis::getTemperature(const  CComplex f[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                      CComplex R[NsLD][NzLD][NkyLD][NxLD], 
                               const double V[NvGB], const double M[NmGB])
 {
@@ -231,7 +230,7 @@ void Analysis::getTemperature(const  CComplex f[NsLB][NmLB][NzLB][NkyLD][NxLB][N
     } } // m, s
 
 
-    parallel->reduce((CComplex *) R, Op::SUM, NsLD * NzLD * NkyLD * NxLD, DIR_VM);
+    parallel->reduce((CComplex *) R, Op::SUM, DIR_VM, NsLD * NzLD * NkyLD * NxLD);
 
     return;
 };
@@ -242,7 +241,7 @@ void Analysis::getTemperature(const  CComplex f[NsLB][NmLB][NzLB][NkyLD][NxLB][N
 
 void Analysis::getParticleHeatFlux(const int m, const int s, 
                                    CComplex ParticleFlux[NkyLD][NxLD], CComplex HeatFlux[NkyLD][NxLD],
-                                   const CComplex     f    [NsLB][NmLB][NzLB][NkyLD][NxLB  ][NvLB],
+                                   const CComplex     f    [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                                    const CComplex Field[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                                    const double V[NvGB], const double M[NmGB])
 {
@@ -345,12 +344,12 @@ void Analysis::initData(Setup *setup, FileIO *fileIO) {
      
      hid_t XDepGroup = fileIO->newGroup("XDep", analysisGroup);
 
-     hsize_t XDep_dsdim[] =  { Ns     , Nx      , 1            };
-     hsize_t XDep_dmdim[] =  { Ns     , Nx      , H5S_UNLIMITED};
-     hsize_t XDep_cBdim[] =  { NsLD   , NxLD    , 1            };
-     hsize_t XDep_cDdim[] =  { NsLD   , NxLD    , 1            };
-     hsize_t XDep_cmoff[] =  { 0      , 0       , 0            };
-     hsize_t XDep_cdoff[] =  { NsLlB-1, NxLlD-3 , 0            };
+     hsize_t XDep_dsdim[] =  { Ns     , Nx      , 1            };  // data slice dimension
+     hsize_t XDep_dmdim[] =  { Ns     , Nx      , H5S_UNLIMITED};  // data total dimension
+     hsize_t XDep_cBdim[] =  { NsLD   , NxLD    , 1            };  // chunk boundary dimension
+     hsize_t XDep_cDdim[] =  { NsLD   , NxLD    , 1            };  // chunk local dimension 
+     hsize_t XDep_cmoff[] =  { 0      , 0       , 0            };  // Memory offset 
+     hsize_t XDep_cdoff[] =  { NsLlD-1, NxLlD-3 , 0            };  // Data offset
      
      bool XDepWrite = ( (parallel->Coord[DIR_VM] == 0) && (parallel->Coord[DIR_Z] == 0));
      
