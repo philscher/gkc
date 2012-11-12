@@ -174,7 +174,7 @@ class Analysis : public IfaceGKC {
    **/
    void calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
                               const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
-                              const double V[NvGB], const double M[NmGB], const int s,
+                              const double V[NvGB], const double M[NmGB], 
                               ScalarValues &SV); 
 
 

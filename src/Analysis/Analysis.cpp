@@ -99,7 +99,7 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
 
 void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
                                      const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
-                                     const double V[NvGB], const double M[NmGB], const int s,
+                                     const double V[NvGB], const double M[NmGB],
                                      ScalarValues &scalarValues) 
 
 {
@@ -327,7 +327,7 @@ void Analysis::initData(Setup *setup, FileIO *fileIO) {
      hsize_t mom_cBdim[] =  { NzLD       , NkyLD      , NxLD       , NsLD , 1            };
      hsize_t mom_cDdim[] =  { NzLD       , NkyLD      , NxLD       , NsLD , 1            };
      hsize_t mom_cmoff[] =  { 0, 0, 0, 0, 0                                              };
-     hsize_t mom_cdoff[] =  { NzLlD-3    , 0          , NxLlD-3    , 0     ,  0          };
+     hsize_t mom_cdoff[] =  { NzLlD-3    , 0          , NxLlD-3    , NsLlD-1,  0          };
      
      bool momWrite = (parallel->Coord[DIR_VM] == 0);
      
@@ -532,7 +532,7 @@ void Analysis::writeData(const Timing &timing, const double dt)
     
     //  Get scalar Values for every species ( this is bad calculate them alltogether)
     // gives bus error ?!
-    calculateScalarValues((A6zz) vlasov->f, (A6zz) vlasov->f0, V, M, 1, scalarValues); 
+    calculateScalarValues((A6zz) vlasov->f, (A6zz) vlasov->f0, V, M, scalarValues); 
 
     
     SVTable->append(&scalarValues);
