@@ -1,20 +1,19 @@
-AC_INIT([GKC],[0.15],[mail@gkc.special-combo.net])
-
-
+AC_INIT([GKC],[0.19],[mail@gkc.special-combo.net])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign]) 
+
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_SRCDIR([src])
 
-AC_CANONICAL_TARGET
+#AC_CANONICAL_TARGET
 AC_CANONICAL_HOST
 
 
 #HERE
 #NO_ENV_CXXFLAGS=true
-AC_PROG_CXX($CXX g++ sunCC icc)
-AC_PROG_CC($CC   gcc sunC  ic)
-AC_PROG_FC($FC gfortran ifort)
+
+AC_PROG_CXX($CXX g++ sunCC mpiicc icc)
+AC_PROG_CC($CC   gcc sunC  mpic++)
 
 ####################################
 # Set code options
@@ -37,16 +36,6 @@ case $host in
 esac
 
 # profiling
-AC_ARG_ENABLE([fem], AC_HELP_STRING([--enable-fem], [gkc is compiled with Finite Element Support support]), [fem=yes], [fem=no])
-if test x$fem = xyes ; then
-   AC_DEFINE([GKC_FEM], [], [enables FEM support])
-fi
-
-AC_ARG_ENABLE([hypre], AC_HELP_STRING([--enable-hypre], [gkc is compiled with Hypre support]), [hypre=yes], [hypre=no])
-if test x$hypre = xyes ; then
-   AC_DEFINE([GKC_HYPRE], [], [enables hypre support])
-fi
-
 AC_ARG_ENABLE([petsc], AC_HELP_STRING([--enable-petsc], [gkc is compiled with PETSc support]), [petsc=yes], [petsc=no])
 if test x$petsc = xyes ; then
    AC_DEFINE([GKC_PETSc], [], [enables PETSc support])
@@ -85,40 +74,6 @@ AC_ARG_WITH(hdf5dir,
 )
 AC_SUBST(DIR_HDF5)
 
-
-
-
-AC_ARG_WITH(p3dfftdir,
-  AC_HELP_STRING(
-    [--with-p3dfftdir=prefix],
-    [use specified prefix install directory of P3Dfft library]
-  ),
-  DIR_P3DFFT="$with_p3dfftdir",
-  DIR_P3DFFT="$DIR_P3DFFT"
-)
-AC_SUBST(DIR_P3DFFT)
-
-AC_ARG_WITH(femdir,
-  AC_HELP_STRING(
-    [--with-femdir=prefix],
-    [use specified prefix install directory of libmesh library]
-  ),
-  DIR_FEM="$with_femdir",
-  DIR_FEM="$DIR_FEMDIR"
-)
-AC_SUBST(DIR_FEM)
-
-
-AC_ARG_WITH(hypredir,
-  AC_HELP_STRING(
-    [--with-hypredir=prefix],
-    [use specified prefix install directory of hypre library]
-  ),
-  DIR_HYPRE="$with_hypredir",
-  DIR_HYPRE="$DIR_HYPRE"
-)
-AC_SUBST(DIR_HYPRE)
-
 AC_ARG_WITH(petscdir,
   AC_HELP_STRING(
     [--with-petscdir=prefix],
@@ -138,8 +93,6 @@ AC_ARG_WITH(slepcdir,
   DIR_SLEPC="$DIR_SLEPC"
 )
 AC_SUBST(DIR_SLEPC)
-
-
 
 
 AC_ARG_WITH(papidir,
@@ -171,17 +124,6 @@ if test x$shared = xyes ; then
 fi
 
 
-#AC_ARG_ENABLE(static, AC_HELP_STRING([--enable-static], [Static linking of HDF5 library.]), [static=yes], [static=no])           
-#if test x$static = xyes ; then
-#   # echo -e "mpi"
-#   AM_CONDITIONAL([HDF5_STATIC], [test x$satic = xyes])
-#    HDF5_STATIC="x$static",
-#
-#fi
-
-#AC_SUBST(HDF5_STATIC)
-
-
 
 
 ##############################################################################
@@ -198,8 +140,6 @@ if test x$mpi = xyes ; then
    AC_DEFINE([GKC_PARALLEL_MPI], [], [Defined when compiled parallel version with MPI])
    AM_CONDITIONAL([MPI], [test x$mpi = xyes])
 fi
-
-
 
 
 AC_ARG_ENABLE(openmp, AC_HELP_STRING([--enable-openmp], [Build with OpenMP support.]), [openmp=yes], [openmp=no]) 
@@ -235,27 +175,6 @@ fi
 ################### p3dfft ####################################################
 AC_ARG_ENABLE(p3dfft, AC_HELP_STRING([--enable-p3dfft], [Build with P3DFFT support.]), [p3dfft=yes], [p3dfft=no]) 
 
-if test x$p3dfft = xyes ; then
-   AC_DEFINE([P3DFFT], [], [Defined when compiled parallel version])
-fi
-# FFT Libarries
-AM_CONDITIONAL([P3DFFT], [test x$p3dfft  = xyes])
-
-################### fftw2 ####################################################
-AC_ARG_ENABLE(fftw2, AC_HELP_STRING([--enable-fftw2], [Build with FFTW2 support.]), [fftw2=yes], [fftw2=no]) 
-AC_ARG_WITH(fftw2dir,
-  AC_HELP_STRING(
-    [--with-fftw2dir=prefix],
-    [use specified prefix install directory of fftw2 library]
-  ),
-  DIR_FFTW2="$with_fftw2dir",
-)
-
-AC_SUBST(DIR_FFTW2)
-AM_CONDITIONAL([FFTW2], [test x$fftw2  = xyes])
-if test x$fftw2 = xyes ; then
-   AC_DEFINE([FFTW2], [], [Defined when compiled parallel version])
-fi
 
 ################### fftw3 ####################################################
 
@@ -287,41 +206,9 @@ AM_CONDITIONAL([OPENCL], [test x$opencl  = xyes])
 
 #
 AM_CONDITIONAL([MPIP],   [test x$mpiP    = xyes])
-AM_CONDITIONAL([LIBMESH],[test x$fem     = xyes])
-AM_CONDITIONAL([HYPRE],  [test x$hypre   = xyes])
 AM_CONDITIONAL([PETSC],  [test x$petsc   = xyes])
 AM_CONDITIONAL([SLEPC],  [test x$slepc   = xyes])
 AM_CONDITIONAL([PAPI],  [test x$papi    = xyes])
-
-
-
-echo " -------serial/parallel----------"
-if test x$p3dfft = xyes ; then 
-  echo " PARALLEL: 2D Decomposition"
-fi
-if [["$mpi" == "yes" -a "$p3dfft" == "no" ]] ; then 
-  echo " PARALLEL: 1D Decomposition"
-fi
-if test x$openmp = xyes ; then 
-  echo " PARALLEL: PARALLEL_OPENMP "
-fi
-if test x$mpi != xyes && test x$openmp != xyes ; then 
-  echo " SERIAL "
-fi
-echo " --------------------------------"
-
-
-
-if test x$mpi = xyes ; then 
-  echo " -------MPI Settings-------------"
-fi
-
-# We should later check this if we really need this ...
-if test x$openmp = xyes ; then 
-    CXXFLAGS+=' -DBZ_THREADSAFE'
-fi
-
-
 
 
 
@@ -458,13 +345,16 @@ fi
 echo " CXX           =  $CXX"
 echo " CXXFLAGS      = $CXXFLAGS "
 echo " CXXFLAGS_USER = $CXXFLAGS_USER "
-echo " LDFLAGS      = $LDFLAGS "
-echo " LDFLAGS_USER = $LDFLAGS_USER "
-echo " LIBS         = $LIBS "
-echo " LIBS_USER    = $LIBS_USER "
+echo " LDFLAGS       = $LDFLAGS "
+echo " LDFLAGS_USER  = $LDFLAGS_USER "
+echo " LIBS          = $LIBS "
+echo " LIBS_USER     = $LIBS_USER "
 echo " --------------------------------"
 
-echo " HDF5   DIR    = $DIR_HDF5 "
+echo " HDF5   DIR    = $DIR_HDF5  "
+echo " PETSC  DIR    = $DIR_PETSC "
+echo " SLEPC  DIR    = $DIR_SLEPC "
+echo " PAPI   DIR    = $DIR_PAPI  "
 
 
 AC_CONFIG_FILES([
@@ -493,10 +383,5 @@ echo -e MPI: $mpi
 if test x$mpi = xyes ; then 
     echo -e "With MPI " 
 fi
-echo -e P3DFFT: $p3dfft
-if test x$p3dfft = xyes ; then 
-    echo -e "With P3DFFT " 
-fi
-
 
 echo -e " Type in \" make \" now ... "
