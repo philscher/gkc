@@ -45,7 +45,7 @@ grid(_grid), parallel(_parallel), geo(_geo), solveEq(0)
    //  brackets should be 1/2 but due to numerical errors, we should calculate it ourselves, see Dannert[2] 
    Yeb = (1./sqrt(M_PI) * __sec_reduce_add(pow2(V[NvLlD:NvLD]) * exp(-pow2(V[NvLlD:NvLD]))) * dv) * geo->eps_hat * plasma->beta; 
 
-   initDataOutput(setup, fileIO);
+   initData(setup, fileIO);
 } 
 
 Fields::~Fields() 
@@ -57,16 +57,15 @@ Fields::~Fields()
 
 void Fields::solve(CComplex *f0, CComplex *f, Timing timing)
 {
-  
   // calculate source terms  Q (Q is overwritten in the first iteration )
   for(int s = NsLlD, loop=0; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++, loop++) {
 
-      if(solveEq & Field::phi) calculateChargeDensity               ((A6zz) f0, (A6zz) f, (A4zz) Field0,               m, s);
+      if(solveEq & Field::phi) calculateChargeDensity               ((A6zz) f0, (A6zz) f, (A4zz) Field0,    m, s);
       if(solveEq & Field::Ap ) calculateParallelCurrentDensity      ((A6zz) f0, (A6zz) f, (A4zz) Field0, V, m, s);
       if(solveEq & Field::Bpp) calculatePerpendicularCurrentDensity ((A6zz) f0, (A6zz) f, (A4zz) Field0, M, m, s);
   
-      // thus uses AllReduce, Reduce is more effective (with false flag...)
-      parallel->reduce(ArrayField0.data(Field0), Op::SUM, DIR_V, ArrayField0.getNum(), true); 
+      // Integrate over velocity space through different CPU's
+      parallel->reduce(ArrayField0.data(Field0), Op::SUM, DIR_V, ArrayField0.getNum(), false); 
       
       // OPTIM : Normally we would decompose in m&s, thus no need for Qm                         
       // backward-transformation from gyro-center to drift-center 
@@ -84,20 +83,19 @@ void Fields::solve(CComplex *f0, CComplex *f, Timing timing)
       }
       
    }  } // for m, s
-
+     
    /////////////////////////////// Solve for the corresponding fields ////////////////////////////////
    // Note :  Fields are only solved by root nodes  (X=0, V=0, S=0), Gyro-averaging is done for (V=0)
    if(parallel->Coord[DIR_V] == 0) {
 
       // integrate over mu-space and over species
-      parallel->reduce(ArrayField0.data(Q), Op::SUM, DIR_MS, ArrayField0.getNum(), true); 
+      parallel->reduce(ArrayField0.data(Q), Op::SUM, DIR_MS, ArrayField0.getNum(), false); 
 
       // Solve field equation in drift coordinates
       // This routine is solved only on rood nodes, thus efficiency is crucial for scalability
       if(parallel->Coord[DIR_MS] == 0) solveFieldEquations((A4zz) Q, (A4zz) Field0);
 
       parallel->bcast(ArrayField0.data(Field0), DIR_MS, ArrayField0.getNum()); 
-
       // Gyro-averaging procedure for each species and magnetic moment ( drift-coord -> gyro-coord )
       // OPTIM : We can skip foward transform after first call
       for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) {
@@ -123,7 +121,7 @@ void Fields::solve(CComplex *f0, CComplex *f, Timing timing)
    }   
   
    parallel->bcast(ArrayField.data(Field), DIR_V, ArrayField.getNum());
-        
+   
    return;
 
 }
@@ -176,7 +174,7 @@ void Fields::calculatePerpendicularCurrentDensity(const CComplex f0     [NsLD][N
                                                   const double M[NmGB], const int m, const int s          ) 
 {
    
-   const double qan_dvdm = - plasma->species[s].q * plasma->species[s].alpha   * plasma->B0 * M_PI * dv * grid->dm[m] ;
+   const double qan_dvdm = - plasma->species[s].q * plasma->species[s].alpha * plasma->B0 * M_PI * dv * grid->dm[m] ;
    
    for(int z=NzLlD; z<= NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++){
 
@@ -256,7 +254,7 @@ void Fields::updateBoundary(
 ///////////////////////////////////////////// Data I/O ///////////////////////////////
 
 
-void Fields::initDataOutput(Setup *setup, FileIO *fileIO) {
+void Fields::initData(Setup *setup, FileIO *fileIO) {
     
    // Set sizes : Note, we use fortran ordering for field variables 
    hsize_t field_dim[]       = { grid->NzGD, grid->NkyGD, grid->NxGD  ,             1};

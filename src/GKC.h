@@ -52,30 +52,30 @@
 class GKC
 {
 private:
-    FileIO        *fileIO;             ///< Used for Data Input/Output
-    Vlasov        *vlasov;             ///< Vlasov equation solver
-    Collisions    *collisions;         ///< Collisional operator
-    Grid          *grid;               ///< Grid initialization and boundaries
-    Setup        *setup;               ///< Reads configuration files
-    Parallel      *parallel;           ///< Parallel communication functions
-    Analysis      *analysis;           ///< Data Analysis
-    Fields        *fields;             ///< Source calculation and field solvers
-    Control       *control;            ///< Program flow control
-    FFTSolver     *fftsolver;          ///< FFTSolver used
-    TestParticles  *particles;         ///< Test particles
-    Eigenvalue     *eigenvalue;        ///< Eigenvalue calculations
-    Geometry *geometry;                ///< Geometry module
-    Event         *event;              ///< Programmable events 
-    Init          *init;               ///< Initialization for plasma
-    Visualization *visual;             ///< Visualization
-    Benchmark     *bench;              ///< Interface for profiling and benchmarking
-    TimeIntegration *timeIntegration;  ///< Numerical time integration
+    FileIO          *fileIO;             ///< Used for Data Input/Output
+    Vlasov          *vlasov;             ///< Vlasov equation solver
+    Collisions      *collisions;         ///< Collisional operator
+    Grid            *grid;               ///< Grid initialization and boundaries
+    Setup           *setup;              ///< Reads configuration files
+    Parallel        *parallel;           ///< Parallel communication functions
+    Analysis        *analysis;           ///< Data Analysis
+    Fields          *fields;             ///< Source calculation and field solvers
+    Control         *control;            ///< Program flow control
+    FFTSolver       *fftsolver;          ///< FFTSolver used
+    TestParticles   *particles;          ///< Test particles
+    Eigenvalue      *eigenvalue;         ///< Eigenvalue calculations
+    Geometry        *geometry;           ///< Geometry module
+    Event           *event;              ///< Programmable events 
+    Init            *init;               ///< Initialization for plasma
+    Visualization   *visual;             ///< Visualization
+    Benchmark       *bench;              ///< Interface for profiling and benchmarking
+    TimeIntegration *timeIntegration;    ///< Numerical time integration
 
     /**
     * @brief Run the code, as "IVP" (initial value code)
              or "Eigenvalue" code.
     */
-    std::string Helios_Type; 
+    std::string gkc_SolType; 
   
 
     void printSettings();

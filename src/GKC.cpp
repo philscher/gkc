@@ -49,11 +49,11 @@ GKC::GKC(Setup *_setup) : setup(_setup)
 {
 
     // Read Setup 
-    std::string fft_solver_name = setup->get("Helios.FFTSolver", "fftw3");
+    std::string fft_solver_name = setup->get("GKC.FFTSolver", "fftw3");
     std::string psolver_type    = setup->get("Fields.Solver", "DFT");
     std::string vlasov_type     = setup->get("Vlasov.Solver", "Aux");
     std::string collision_type  = setup->get("Collisions.Solver", "None");
-    Helios_Type                 = setup->get("GKC.Type", "IVP");
+    gkc_SolType                 = setup->get("GKC.Type", "IVP");
     std::string geometry_Type   = setup->get("GKC.Geometry", "Geometry2D");
 
 
@@ -107,8 +107,6 @@ GKC::GKC(Setup *_setup) : setup(_setup)
     else   check(-1, DMESG("No such Fields Solver"));
 
 
-
-
     analysis = new Analysis(parallel, vlasov, fields, grid, setup, fftsolver, fileIO, geometry); 
     visual   = new Visualization_Data(grid, parallel, setup, fileIO, vlasov, fields);
     event    = new Event(setup, grid, parallel, fileIO, geometry);
@@ -125,8 +123,7 @@ GKC::GKC(Setup *_setup) : setup(_setup)
     particles = new TestParticles(fileIO, setup, parallel);
    
 
-    //timeIntegration = new TimeIntegration_PETSc(setup, grid, parallel, vlasov, fields, eigenvalue);
-    timeIntegration = new TimeIntegration(setup, grid, parallel, vlasov, fields, eigenvalue, bench);
+    timeIntegration = new TimeIntegration(setup, grid, parallel, vlasov, fields, particles, eigenvalue, bench);
   
     // Optimize values to speed up computation
     bench->bench(vlasov, fields);
@@ -142,7 +139,7 @@ int GKC::mainLoop()
 
    parallel->print("Running main loop");
 
-   if (Helios_Type == "IVP") {
+   if (gkc_SolType == "IVP") {
  
             Timing timing(0,0.) ;
             // this is ugly here ...
@@ -162,6 +159,8 @@ int GKC::mainLoop()
                analysis->writeData(timing, dt);
                
                event->checkEvent(timing, vlasov, fields);
+        
+               //if(timing.step %  5000 == 0 && parallel->myRank == 0) std::cout << System::getProcessStatusString();
 
                // Make here scalar operations
            }
@@ -171,10 +170,10 @@ int GKC::mainLoop()
         control->printLoopStopReason();
 
    }  
-   else if(Helios_Type == "Eigenvalue") {
+   else if(gkc_SolType == "Eigenvalue") {
    eigenvalue->solve(vlasov, fields, visual, control);
 
-   } else  check(-1, DMESG("No Such Helios.Type Solver"));
+   } else  check(-1, DMESG("No Such gkc.Type Solver"));
 
    parallel->print("Simulation finished normally ... ");
 

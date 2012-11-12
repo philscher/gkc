@@ -224,8 +224,7 @@ struct NeighbourDir {
      T global_dValue;
 
      // we need allreduce instead of reduce because H5TB need all process to have the same value
-     MPI_Allreduce(&x, &global_dValue, 1, getMPIDataType(typeid(T)), getMPIOp(op), Comm[dir]);//, DMESG("MPI_Reduce"); 
-     //check(MPI_Allreduce(&x, &global_dValue, N, getMPIDataType(typeid(T)), getMPIOp(op), Comm[dir]), DMESG("MPI_Reduce")); 
+     check(MPI_Allreduce(&x, &global_dValue, 1, getMPIDataType(typeid(T)), getMPIOp(op), Comm[dir]), DMESG("MPI_Reduce")); 
      return global_dValue; 
 #endif
      return x; 
@@ -238,12 +237,10 @@ struct NeighbourDir {
    **/
    template<class T>  void  reduce(T *A, Op op, int dir, int Num, bool allreduce=true)
    {
-     //if(dir <= DIR_S) if(decomposition[dir] == 1) return A;
-     
+     // No need to reduce if not decomposed (should be handled by MPI library if in-place or ?
+     if( (dir <= DIR_S) && (decomposition[dir] == 1)) return;
+
 #ifdef GKC_PARALLEL_MPI
-     // note, for MPI_Reduce only root process can specify MPI_IN_PLACE
-     // we need allreduce instead of reduce because H5TB need all process to have the same value
-        //MPI_Allreduce(MPI_IN_PLACE, A.data(), A.numElements(), getMPIDataType(typeid(T)), getMPIOp(op),                Comm[dir]), DMESG("MPI_Allreduce");
      if(allreduce == true)
         check(MPI_Allreduce(MPI_IN_PLACE, A, Num, getMPIDataType(typeid(T)), getMPIOp(op), Comm[dir]), DMESG("MPI_AllReduce")); 
      else 

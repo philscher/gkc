@@ -42,9 +42,9 @@ int NsGlD, NsGuD, NsGlB, NsGuB;
 
 double *X, *Y, *V, *M, *Z;
 
-  double Lx, Ly, Lz, Lv, Lm;
-  int    Nx, Nky, Nz, Nv, Nm, Ns;
-  double dx, dy, dz, dv,dt;
+double Lx, Ly, Lz, Lv, Lm;
+int    Nx, Nky, Nz, Nv, Nm, Ns;
+double dx, dy, dz, dv,dt;
 
 // ************************************************* //
 

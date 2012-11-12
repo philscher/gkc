@@ -25,7 +25,7 @@ void check_mpi(MPI_Comm *comm, int *err_code, ...) {
 
   char string[MPI_MAX_ERROR_STRING]; int len;
   MPI_Error_string(*err_code, string, &len);
-
+  
   if (*err_code != MPI_SUCCESS) check(-1, DMESG(std::string(string)), true);
 
 }
@@ -65,7 +65,6 @@ Parallel::Parallel(Setup *setup)
    }
    
    // MPI-2 standard allows to pass NULL for (&argc, &argv)
-   // valgrind complains about uninitialized MPI_Init     (&setup->argc, &setup->argv);
    MPI_Init     (NULL, NULL);
 
    MPI_Comm_size(MPI_COMM_WORLD, &numProcesses); 
@@ -216,15 +215,16 @@ void Parallel::updateBoundaryVlasov(CComplex *Sendu, CComplex *Sendl, CComplex *
      
      auto mpi_type = getMPIDataType(typeid(CComplex)); 
 
-     bool nonblocking = false;
+     bool nonblocking = true;
      if(nonblocking) {
-     //MPI_Irecv(Recvl, num, mpi_type, Talk[dir].rank_l, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_req[0]);
-     //MPI_Isend(Sendu, num, mpi_type, Talk[dir].rank_u, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_req[1]);
-     //MPI_Irecv(Recvu, num, mpi_type, Talk[dir].rank_u, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_req[2]); 
-     //MPI_Isend(Sendl, num, mpi_type, Talk[dir].rank_l, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_req[3]);
-      
      
-    // if(Talk[dir].rank_u == MPI_PROC_NULL)   Recvl[0:num] = 0.e0;
+       MPI_Irecv(Recvl, num, mpi_type, Talk[dir].rank_l, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_req[0]);
+       MPI_Isend(Sendu, num, mpi_type, Talk[dir].rank_u, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_req[1]);
+       MPI_Irecv(Recvu, num, mpi_type, Talk[dir].rank_u, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_req[2]); 
+       MPI_Isend(Sendl, num, mpi_type, Talk[dir].rank_l, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_req[3]);
+      
+       if(Talk[dir].rank_u == MPI_PROC_NULL)   Recvl[0:num] = 0.e0;
+       if(Talk[dir].rank_l == MPI_PROC_NULL)   Recvu[0:num] = 0.e0;
 
      } else {
 
@@ -238,12 +238,6 @@ void Parallel::updateBoundaryVlasov(CComplex *Sendu, CComplex *Sendl, CComplex *
      
      }
 
-     
-     if(Talk[dir].rank_u == MPI_PROC_NULL)   Recvl[0:num] = 0.e0;
-     if(Talk[dir].rank_l == MPI_PROC_NULL)   Recvu[0:num] = 0.e0;
-     
-     //MPI_Recv(Recvu, num, mpi_type, Talk[dir].rank_u, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &status[1]); 
-     //MPI_Send(Sendl, num, mpi_type, Talk[dir].rank_l, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL]);
 #endif // GKC_PARALLEL_MPI
      return;
 
@@ -251,10 +245,8 @@ void Parallel::updateBoundaryVlasov(CComplex *Sendu, CComplex *Sendl, CComplex *
 }
 
 
-
 void Parallel::updateBoundaryVlasovBarrier() 
 {
-
     // BUG what happen if we never sent a message, what does Waitall
                                  MPI_Waitall(4, Talk[DIR_X].psf_msg_req, Talk[DIR_X].msg_status);
     //if(decomposition[DIR_X] > 1) MPI_Waitall(4, Talk[DIR_X].psf_msg_req, Talk[DIR_X].msg_status);
@@ -288,7 +280,7 @@ void  Parallel::updateBoundaryFields(CComplex *SendXl, CComplex *SendXu, CComple
       MPI_Irecv(RecvZu, num_Z, MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_u, Talk[DIR_Z].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[6]); 
       MPI_Isend(SendZl, num_Z, MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_l, Talk[DIR_Z].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[7]);
 
-      // Ok let's wait here ....
+      // Field boundries required for Vlasov solver, thus wait
       MPI_Waitall(8, msg_request, msg_status);
       
       return;
@@ -400,7 +392,6 @@ void Parallel::initData(Setup *setup, FileIO *fileIO)
 // write Decomposition
 
 };
-
 
 
 int Parallel::getNumberOfWorkers(int dir) 

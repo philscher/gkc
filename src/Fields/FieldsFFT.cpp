@@ -33,7 +33,6 @@ FieldsFFT::~FieldsFFT()
 void FieldsFFT::solveFieldEquations(CComplex Q     [Nq][NzLD][NkyLD][NxLD],
                                     CComplex Field0[Nq][NzLD][NkyLD][NxLD]) 
 {
-
    // Transform to fourier space (x,ky) -> (kx,ky)
    //fft->solve(FFT_X_FIELDS, FFT_Sign::Forward, &Q[1][NzLlD][NkyLlD][NxLlD]);
    fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, ArrayField0.data((CComplex *) Q));
@@ -184,11 +183,10 @@ void FieldsFFT::gyroFull(CComplex In   [Nq][NzLD][NkyLD][NxLD             ],
                          CComplex kXIn [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
                          const int m, const int s)  
 {
-   
    fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, &In[1][NzLlD][NkyLlD][NxLlD]);
    
    // solve for all fields at once
-   for(int n = 1; n <= Nq; n++) {
+   for(int q = 1; q <= Nq; q++) {
       
         // get therma gyro-radius^2 of species and lambda =  2 x b 
         const double rho_t2  = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0); 
@@ -199,14 +197,14 @@ void FieldsFFT::gyroFull(CComplex In   [Nq][NzLD][NkyLD][NxLD             ],
     
          const double k2_p = fft->k2_p(x_k,y_k,z);
           
-          kXIn[n][z][y_k][x_k] = kXOut[n][z][y_k][x_k]/fft->Norm_X * ((n != 3) ? j0(sqrt(lambda2 * k2_p)) 
+          kXIn[q][z][y_k][x_k] = kXOut[q][z][y_k][x_k]/fft->Norm_X * ((q != 3) ? j0(sqrt(lambda2 * k2_p)) 
                                                                                : SFL::i1(sqrt(lambda2 * k2_p)));
 
          // According to GENE code the Nyquiest frequency in x is unphysicall and thus needs to be screened out
          // highest modes explodes in kinetic simulations.
          // We also exclude as in shearless slab it has huge contribution. 
          // Because Nyqust frequency only has imaginary part ? and thus no phase ?
-         if(( (y_k == Nky-1) || (x_k == Nx/2)) && screenNyquist) kXIn[n][z][y_k][x_k]  = 0.;
+         if(( (y_k == Nky-1) || (x_k == Nx/2)) && screenNyquist) kXIn[q][z][y_k][x_k]  = 0.;
       
        } } }
    }
@@ -360,8 +358,8 @@ double FieldsFFT::sum_qqnT_1mG0(const double k2_p)
       const double qqnT   = plasma->species[s].n0 * pow2(plasma->species[s].q)/plasma->species[s].T0;
       const double rho_t2 = plasma->species[s].T0  * plasma->species[s].m / pow2(plasma->species[s].q * plasma->B0);
        
-      //g0 += qqnT * SpecialMath::_1mGamma0_Pade( rho_t2 * k2_p);
-      g0 += qqnT * SpecialMath::_1mGamma0( rho_t2 * k2_p);
+      g0 += qqnT * SpecialMath::_1mGamma0_Pade( rho_t2 * k2_p);
+      //g0 += qqnT * SpecialMath::_1mGamma0( rho_t2 * k2_p);
         
    }
    return g0;

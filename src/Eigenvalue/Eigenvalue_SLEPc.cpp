@@ -53,7 +53,7 @@ Eigenvalue_SLEPc::Eigenvalue_SLEPc(FileIO *fileIO, Setup *setup, Grid *grid, Par
       // use e.g. -x "-st_shift 0.2" to set more properties
       EPSSetFromOptions(EigvSolver);
 
-      initDataOutput(setup, fileIO);
+      initData(setup, fileIO);
 }
 
 
@@ -227,7 +227,7 @@ void Eigenvalue_SLEPc::printOn(std::ostream &output) const {
  /////////////////////////////////// Data I/O Stuff ////////////////
 
 
-void Eigenvalue_SLEPc::initDataOutput(Setup *setup, FileIO *fileIO) 
+void Eigenvalue_SLEPc::initData(Setup *setup, FileIO *fileIO) 
 {
    eigvGroupID = fileIO->newGroup("Eigenvalue");
 

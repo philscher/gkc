@@ -106,10 +106,10 @@ int ipow(int base, int exp)
 // DIR_SIZE has to be the number of elements, excluding DIR_SIZE
 enum Dir : int {DIR_X=0, DIR_Y, DIR_Z, DIR_V, DIR_M, DIR_S, DIR_ALL, DIR_XYZ, DIR_VMS, DIR_MS, DIR_VM, DIR_XY, DIR_XYZVM, DIR_SIZE};
      
-inline int check( int status, std::string file, int line, std::string error_text, bool doAbort=false) {
+inline int check( int status, std::string file, int line, std::string error_text, bool doAbort=false)
+{
         if(status == -1 ) {
             
-       // check rank from MPI!
             std::stringstream ss;
             ss << std::endl; 
             ss << "\033[0;m";
@@ -119,19 +119,11 @@ inline int check( int status, std::string file, int line, std::string error_text
             std::cout << ss.str();
               
             // exit through abort so we can get stack trace
-       if(doAbort==true) abort();
-            abort();
-            exit(0);
+            if(doAbort==true) abort();
+            else              exit(0);
         }
         return status;
-    }
-
-    inline bool check( bool status, std::string file, int line, std::string error_text) {
-        if(status == false) check( -1, file, line, error_text);
-        return status;
 }
-
-
 
 
 // use assert instead !

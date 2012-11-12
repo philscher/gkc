@@ -546,9 +546,11 @@ void Analysis::writeData(const Timing &timing, const double dt)
     
     for(int s = NsGlD; s <= NsGuD; s++) {
     
-      messageStream << "         | " << 
-        plasma->species[s].name << "   N : " << scalarValues.particle_number[s-1]  << "  Kinetic Energy: " << scalarValues.kinetic_energy[s-1] ;
-      messageStream << "   Particle Flux :" << scalarValues.particle_flux[s-1]    << "  Heat Flux : " << scalarValues.heat_flux[s-1] << std::endl;
+      messageStream << "         | " << plasma->species[s].name 
+                     << " N : "             << scalarValues.particle_number[s-1]  
+                     << " Kinetic Energy: " << scalarValues.kinetic_energy[s-1] 
+                     << " Particle Flux :"  << scalarValues.particle_flux[s-1]  
+                     << " Heat Flux : "     << scalarValues.heat_flux[s-1] << std::endl;
         charge += plasma->species[s].q  * scalarValues.particle_number[s-1];
       kinetic_energy += scalarValues.kinetic_energy[s-1];
     }

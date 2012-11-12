@@ -9,12 +9,13 @@
  * =====================================================================================
  */
 
-
-#include "FFTSolver/FFTSolver_fftw3.h"
-#include "Plasma.h"
-
 #include <fftw3-mpi.h>
 
+
+#include "FFTSolver/FFTSolver_fftw3.h"
+
+
+#include "Plasma.h"
 
 // we have to place plans here to avoid namespace errors 
 fftw_plan plan_YForward_Field, plan_YBackward_Field, 
@@ -30,19 +31,18 @@ fftw_plan plan_AA_YForward, plan_AA_YBackward;
 fftw_plan plan_transpose(char storage_type, int rows, int cols, double *in, double *out);
 
 
-
 FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo) 
 
 : FFTSolver(setup, parallel, geo, Nx*(2*Nky-2)*Nz, Nx*(2*Nky-2), Nx,  (2*Nky-2)) 
 
 {
 
-  if(parallel->Coord[DIR_V] == 0) {          // Fourier solver required in velocity space
+  if(parallel->Coord[DIR_V] == 0) {          // Fourier solver not needed in velocity space
 
     // Setup plans
     int perf_flag = FFTW_ESTIMATE;
     
-    plan   = setup->get("FFTW3.Plan", "");
+    plan   = setup->get("FFTW3.Plan", "Measure");
     if      (plan == "Estimate"   ) perf_flag = FFTW_ESTIMATE;
     else if (plan == "Measure"    ) perf_flag = FFTW_MEASURE;
     else if (plan == "Exhaustive" ) perf_flag = FFTW_EXHAUSTIVE;
@@ -88,21 +88,24 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
       K1xLlD = X_NkxLlD;       K1xLuD = X_NkxLlD + X_NkxL - 1;
 
       // used only to calculate offset
-      nct::allocate Array_kX = nct::allocate(nct::Range(1,plasma->nfields), nct::Range(NzLlD, NzLD), nct::Range(NkyLlD,NkyLD), nct::Range(X_NkxLlD, X_NkxL));
+      nct::allocate Array_kX = nct::allocate(nct::Range(1,plasma->nfields), nct::Range(NzLlD,NzLD), nct::Range(NkyLlD, NkyLD), nct::Range(X_NkxLlD, X_NkxL));
       
       // Calculated shifted pointer for CEAN
       kXIn  = Array_kX.zero(data_kXIn );
       kXOut = Array_kX.zero(data_kXOut);
 
-      // Note : We should use transformed out to improve parallelization
       // fftw_plan fftw_mpi_plan_many_dft(int rnk, const ptrdiff_t *n, 
-      //           ptrdiff_t howmany, ptrdiff_t block, ptrdiff_t tblock, fftw_complex *in, fftw_complex *out,
+      //     ptrdiff_t howmany, ptrdiff_t block, ptrdiff_t tblock, fftw_complex *in, fftw_complex *out,
       //           MPI_Comm comm, int sign, unsigned flags);
       
       long numTrans = NkyLD * NzLD * nfields;
       
       plan_XForward_Fields  = fftw_mpi_plan_many_dft(1, &X_Nx, numTrans, NxLD, X_NkxL, (fftw_complex *) data_X_rIn, (fftw_complex *) data_kXOut , parallel->Comm[DIR_X], FFTW_FORWARD , perf_flag);
       plan_XBackward_Fields = fftw_mpi_plan_many_dft(1, &X_Nx, numTrans, NxLD, X_NkxL, (fftw_complex *) data_kXIn , (fftw_complex *) data_X_rOut, parallel->Comm[DIR_X], FFTW_BACKWARD, perf_flag);
+
+       // check plans (maybe null if linked e.g. to MKL)
+       if(plan_XForward_Fields  == NULL) check(-1, DMESG("Plan not supported"));
+       if(plan_XBackward_Fields == NULL) check(-1, DMESG("Plan not supported"));
 
       // Fields have to be continuous in howmanyfields, and thus we have to transpose the array (use in-place) 
       // add factor of 2 because we deal with complex numbers not real numbers
@@ -111,9 +114,6 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
       // plan_FieldTranspose_2 = plan_transpose('C', 2 * NkyLD * NzLD * nfields, 2 * X_NkxL, (double *) data_X_Transp_1, (double *) data_X_Transp_2);
       // check(((plan_FieldTranspose_1 == NULL) || (plan_FieldTranspose_2 == NULL)) ? -1 : 0, DMESG("Transpose planner null"));
 
-       // check plans
-       if(plan_XForward_Fields  == NULL) check(-1, DMESG("Plan not supported"));
-       if(plan_XBackward_Fields == NULL) check(-1, DMESG("Plan not supported"));
             
    
     // Needed to calculate non-linearity in real space
@@ -202,7 +202,6 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
 /// too much crap here ..... :(
 void FFTSolver_fftw3::solve(const FFT_Type type, const FFT_Sign direction, void *in, void *out) 
 {
-
    if(type == FFT_Type::X_FIELDS) {
              
    
