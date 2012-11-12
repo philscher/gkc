@@ -5,18 +5,5 @@
 # ignore compilation error with SLEPc and directly copy linux=archdata
 #./configure --enable-openmp --with-hdf5dir=/LARGE0/gr10140/Packages/hdf5-1.8.8/ --with-blitzdir=/LARGE0/gr10140/Packages/blitz-0.10/ --enable-mpi --enable-fftw3 --with-fftw3dir=/LARGE0/gr10140/Packages/fftw-3.3.2/  --enable-petsc --with-petscdir=/LARGE0/gr10140/Packages/PETSc-3.3/  --enable-slepc --with-slepcdir=/LARGE0/gr10140/Packages/SLEPc-3.3/ CXXFLAGS=-DMPICH_IGNORE_CXX_SEEK LDFLAGS=-L/opt/app/intel/impi/4.0.3.008/lib64/ && make clean && make
 #./configure --enable-openmp --with-hdf5dir=/LARGE0/gr10140/Packages/hdf5-1.8.8/ --enable-mpi --enable-fftw3 --with-fftw3dir=/LARGE0/gr10140/Packages/fftw-3.3.2/  --enable-petsc --with-petscdir=/LARGE0/gr10140/Packages/PETSc-3.3/  --enable-slepc --with-slepcdir=/LARGE0/gr10140/Packages/SLEPc-3.3/ CXXFLAGS=-DMPICH_IGNORE_CXX_SEEK && make clean && make
-#./configure --enable-openmp --with-hdf5dir=/opt/app/hdf5-parallel/1.8.8/intel-12.1/ --enable-mpi --enable-fftw3 --with-fftw3dir=/opt/app/fftw/3.3.1/intel-12.1/  --enable-petsc --with-petscdir=/LARGE0/gr10140/Packages/PETSc-3.3/  --enable-slepc --with-slepcdir=/LARGE0/gr10140/Packages/SLEPc-3.3/ CXXFLAGS=-DMPICH_IGNORE_CXX_SEEK && make clean && make
-
-# Need to load the corresponding modules
 module load intel
-#module load intel/13.0.0
-export CXX=mpiicc
-export CXXFLAGS='-std=c++0x -O3 -xHOST -fno-alias -DMPICH_IGNORE_CXX_SEEK'
-
-#Deactivate openmp as we get TLS errors during linking
-./configure --enable-mpi                                                           \
-            --with-hdf5dir=/opt/app/hdf5-parallel/1.8.8/intel-12.1/                \
-            --enable-fftw3 --with-fftw3dir=/LARGE0/gr10140/Packages/fftw-3.3.2/    \
-            --enable-petsc --with-petscdir=/opt/app/petsc/3.2_complex/intel-12.1/  \
-            --enable-slepc --with-slepcdir=/opt/app/slepc/3.2_complex/intel-12.1/  \
-            && make clean && make 
+./configure --enable-openmp --with-hdf5dir=/opt/app/hdf5-parallel/1.8.8/intel-12.1/ --enable-mpi --enable-fftw3 --with-fftw3dir=/opt/app/fftw/3.3.1/intel-12.1/  --enable-petsc --with-petscdir=/LARGE0/gr10140/Packages/PETSc-3.3/  --enable-slepc --with-slepcdir=/LARGE0/gr10140/Packages/SLEPc-3.3/ CXXFLAGS=-DMPICH_IGNORE_CXX_SEEK && make clean && make
