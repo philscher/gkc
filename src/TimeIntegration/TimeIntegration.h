@@ -61,20 +61,32 @@
 *
 **/
 class TimeIntegration  : public IfaceGKC{
-   std::string linearTimeStep;
  protected:
-   std::string timeIntegrationScheme;
+   
    Parallel *parallel;
+   Fields   *fields;
+   Vlasov   *vlasov;
+   TestParticles *particles;
    Benchmark *bench;
+   
+   int outputRatio;            ///< Frequency (time step) of step output
+   bool useCFL;                ///< Set if CFL number is used for time-step calculations
+   double maxCFLNumber,        ///< Restruct timestep to fullfill CFL number
+          linearSafetyFactor,  ///< Safety factor for time-step got from eigenvalue calculations
+          maxLinearTimeStep ;  ///< Maximum linear time-step
+
+   std::string linearTimeStep;        ///< Type of linear time step
+   std::string timeIntegrationScheme; ///< Type of timeIntegrationScheme
+   
  public:
-   int outputRatio; ///< Frequency (time step) of step output
-   bool useCFL;
-   double maxCFLNumber;
-   double linearSafetyFactor;
-   double dt;
-   time_t start_time;
    Timing maxTiming;
-   double maxLinearTimeStep ;
+
+   /**
+   *   Constructor
+   *
+   **/ 
+   TimeIntegration(Setup *setup, Grid *grid, Parallel *parallel, Vlasov *vlasov, Fields *fields, TestParticles *particles, 
+                   Eigenvalue *eigenvalue, Benchmark *bench);
 
    /** 
    *  @brief calculated the maximum allowed linear timestep from max. absoulte eigenvalue
@@ -88,7 +100,7 @@ class TimeIntegration  : public IfaceGKC{
    *   @param   max_abs_eigv maximum absolute eigenvalue
    *   @return               maximum linear timestep
    **/ 
-   double getMaxTimeStepFromEigenvalue(Complex max_abs_eigv);
+   double getMaxTimeStepFromEigenvalue(Vlasov *vlasov, Fields *fields, Eigenvalue *eigenvalue);
 
    /**
    * 
@@ -97,11 +109,6 @@ class TimeIntegration  : public IfaceGKC{
    **/
    virtual double solveTimeStep(Vlasov *vlasov, Fields *fields, TestParticles *particles, Timing &timing);
    
-   /**
-   *   Constructor
-   *
-   **/ 
-   TimeIntegration(Setup *setup, Grid *grid, Parallel *parallel, Vlasov *vlasov, Fields *fields, Eigenvalue *eigenvalue, Benchmark *bench);
 
    /**
    *
@@ -113,7 +120,7 @@ class TimeIntegration  : public IfaceGKC{
    *    @brief ?
    *
    **/
-   void setMaxLinearTimeStep(Eigenvalue *eigenvalue, Vlasov *vlasov, Fields *fields, const double lin_dt = 0.);
+   void setMaxLinearTimeStep(Eigenvalue *eigenvalue, Vlasov *vlasov, Fields *fields);
    
     
   private:
@@ -146,7 +153,7 @@ class TimeIntegration  : public IfaceGKC{
    *    @image html TimeIntegration_RK4_Stability.png
    *
    **/
-   void solveTimeStepRK4(Fields *fields, Vlasov *vlasov,TestParticles *particles, Timing timing, double  dt);
+   void solveTimeStepRK4(Timing timing, const double dt);
 
    /**
    *    Solve Gyro-kinetic equation using explicit Runge-Kutta fourth order (RK3) Integration 
@@ -165,7 +172,7 @@ class TimeIntegration  : public IfaceGKC{
    *
    *    @image html TimeIntegration_RK3_Stability.png
    **/
-   void solveTimeStepRK3(Fields *fields, Vlasov *vlasov,TestParticles *particles, Timing timing, double  dt);
+   void solveTimeStepRK3(Timing timing, const double dt);
 
    /**
    *    Solve Gyro-kinetic equation using explicit Runge-Kutta second order (RK2) Integration 
@@ -175,19 +182,19 @@ class TimeIntegration  : public IfaceGKC{
    *
    *
    **/
-   void solveTimeStepRK2(Fields *fields, Vlasov *vlasov,TestParticles *particles, Timing timing, double  dt);
+   void solveTimeStepRK2(Timing timing, const double dt);
 
    /**
    *    Solve Gyro-kinetic equation using explicit Heun's method  (second order) Integration 
    *    (unstable scheme)
    **/
-   void solveTimeStepHeun(Fields *fields, Vlasov *vlasov,TestParticles *particles, Timing timing, double  dt);
+   void solveTimeStepHeun(Timing timing, const double dt);
 
    /**
    *    Eigenvalues caluclation do not require an timestep integration
    *
    **/
-   void solveTimeStepEigen(Fields *fields, Vlasov *vlasov,Timing timing, double  dt);
+   void solveTimeStepEigen(Timing timing, const double dt);
         
    /**
    *

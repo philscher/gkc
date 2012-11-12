@@ -18,8 +18,9 @@ static char help[] = "Help for PETSc Interface not available, please look up gkc
 
 extern PetscErrorCode MatrixVectorProduct(Mat A, Vec x, Vec y);
 
-TimeIntegration_PETSc::TimeIntegration_PETSc(Setup *setup, Grid *grid, Parallel *parallel, Vlasov *vlasov, Fields *fields, Eigenvalue *eigenvalue, Benchmark *bench)
-     : TimeIntegration(setup, grid, parallel, vlasov, fields,eigenvalue, bench)
+TimeIntegration_PETSc::TimeIntegration_PETSc(Setup *setup, Grid *grid, Parallel *parallel, Vlasov *vlasov, Fields *fields, 
+                                             TestParticles *particles, Eigenvalue *eigenvalue, Benchmark *bench)
+     : TimeIntegration(setup, grid, parallel, vlasov, fields, particles, eigenvalue, bench)
 {
       PetscInitialize(&setup->argc, &setup->argv, (char *) 0,  help);
       
@@ -74,6 +75,8 @@ TimeIntegration_PETSc::~TimeIntegration_PETSc()
 
 double TimeIntegration_PETSc::solveTimeStep(Vlasov *vlasov, Fields *fields, TestParticles *particles, Timing &timing)
 {
+    
+    double dt = maxLinearTimeStep;
     
     PETScMatrixVector pMV(vlasov, fields);
     TSSetTimeStep(ts, dt);
