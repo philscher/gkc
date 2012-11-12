@@ -160,9 +160,6 @@ int GKC::mainLoop()
                
                event->checkEvent(timing, vlasov, fields);
         
-               //if(timing.step %  5000 == 0 && parallel->myRank == 0) std::cout << System::getProcessStatusString();
-
-               // Make here scalar operations
            }
            bench->stop("MainLoop");
 

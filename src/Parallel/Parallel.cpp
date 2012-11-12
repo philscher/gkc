@@ -17,17 +17,21 @@
 #include "Global.h"
 #include "Parallel.h"
 
+#include "System.h"
+
 // global process rank needed for output
 extern int process_rank;
 
-// MPI_ERror handler so we can use check and backtrace
+// MPI_Error handler so we can use check and backtrace
 void check_mpi(MPI_Comm *comm, int *err_code, ...) {
 
   char string[MPI_MAX_ERROR_STRING]; int len;
   MPI_Error_string(*err_code, string, &len);
+
+  std::cerr << "MPI Error : " << string << std::endl;  
+  System::printStackTrace();
   
   if (*err_code != MPI_SUCCESS) check(-1, DMESG(std::string(string)), true);
-
 }
 
 

@@ -19,14 +19,14 @@ TimeIntegration::TimeIntegration(Setup *setup, Grid *grid, Parallel *_parallel, 
   : parallel(_parallel), bench(_bench), vlasov(_vlasov), fields(_fields), particles(_particles) 
 {
 
-    timeIntegrationScheme = setup->get("TimeIntegration.Scheme", "Explicit_RK4");
+    timeIntegrationScheme = setup->get("TimeIntegration.Scheme"            , "Explicit_RK4");
     linearSafetyFactor    = setup->get("TimeIntegration.LinearSafetyFactor", 0.7);
     linearTimeStep        = setup->get("TimeIntegration.LinearTimeStep"    , "Eigenvalue");
     useCFL                = setup->get("TimeIntegration.useCFL"            , 0);
     maxCFLNumber          = setup->get("TimeIntegration.maxCFLNumber"      , 0.4);
     outputRatio           = setup->get("TimeIntegration.StepOutputRatio"   , 500);
-    maxTiming.time        = setup->get("TimeIntegration.MaxTime" , -1.);
-    maxTiming.step        = setup->get("TimeIntegration.MaxSteps", -1);
+    maxTiming.time        = setup->get("TimeIntegration.MaxTime"           , -1.);
+    maxTiming.step        = setup->get("TimeIntegration.MaxSteps"          , -1);
    
 
 
@@ -61,7 +61,7 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(Vlasov *vlasov, Fields *fie
 double TimeIntegration::solveTimeStep(Vlasov *vlasov, Fields *fields, TestParticles *particles, Timing &timing) 
 {
   
-  // set time-step as minimum between linear timestep and (if enabled) from non-linear dt
+  // set time-step as minimum between (constant) linear timestep and (if enabled) from non-linear dt
   double dt = min(maxLinearTimeStep, useCFL ? vlasov->getMaxTimeStep(DIR_XY, maxCFLNumber) : 1.e99);
 
   if     (timeIntegrationScheme == "Explicit_RK4" ) solveTimeStepRK4 (timing, dt);

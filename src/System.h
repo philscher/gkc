@@ -17,10 +17,12 @@
 
 
 #include <time.h>
+#include <ctime>
 #include <sys/types.h>
 #include <unistd.h>
 #include <iostream>
 #include <sstream>
+#include <execinfo.h> // stack trace
 /**
 *    @brief Class which provided some system functions which may be
             not portable.
@@ -136,6 +138,25 @@ class System
    };
 
 
+   static void printStackTrace() 
+   {
+    // get backtrace
+    void *array[10];
+    size_t size;
+    
+    char **strings;
+    size_t i;
+     
+    size = backtrace (array, 10);
+    strings = backtrace_symbols (array, size);
+    
+    std::cerr << "Porcess obtaind " << size << " stack frames." << std::endl;  
+    
+    // Output them
+    for (int i = 0; i < size; i++) std::cerr << "    :  " << strings[i] << std::endl;
+    free (strings);
+
+   }
 };
 
 #endif // __SYSTEM_H
