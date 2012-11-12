@@ -1,25 +1,67 @@
 bin_PROGRAMS = gkc
 
+## Include source files
+
 gkc_SOURCES = main.cpp GKC.cpp FileIO.cpp Fields/Fields.cpp Fields/FieldsFFT.cpp Setup.cpp Grid.cpp  \
               Parallel/Parallel.cpp Vlasov/Vlasov.cpp Analysis/Event.cpp Vlasov/Vlasov_Island.cpp\
               Vlasov/Vlasov_Cilk.cpp Vlasov/Vlasov_Aux.cpp Vlasov/Vlasov_Optim.cpp \
 				  Analysis/Analysis.cpp  Init.cpp Control.cpp \
-              Plasma.cpp Special/LA.cpp Timing.cpp Analysis/TestParticle.cpp TimeIntegration/TimeIntegration.cpp \
+              Plasma.cpp Special/LA.cpp TimeIntegration/Timing.cpp Analysis/TestParticle.cpp TimeIntegration/TimeIntegration.cpp \
               FFTSolver/FFTSolver.cpp Visualization/Visualization_Data.cpp Analysis/Benchmark.cpp \
 				  Collisions/LenardBernstein.cpp
- 
+
+
+
+## Include corresponding header files
+
+gkc_SOURCES += GKC.h FileIO.h Fields/Fields.h Fields/FieldsFFT.h Setup.h Grid.h  \
+               Parallel/Parallel.h Vlasov/Vlasov.h Analysis/Event.h Vlasov/Vlasov_Island.h\
+               Vlasov/Vlasov_Cilk.h Vlasov/Vlasov_Aux.h Vlasov/Vlasov_Optim.h \
+		       Analysis/Analysis.h  Init.h Control.h \
+               Plasma.h Special/LA.h TimeIntegration/Timing.h Analysis/TestParticle.h TimeIntegration/TimeIntegration.h \
+               FFTSolver/FFTSolver.h \
+			   Visualization/Visualization.h Visualization/Visualization_Data.h \
+			   Analysis/Benchmark.h Global.h \
+			   Collisions/Collisions.h Collisions/LenardBernstein.h \
+			   Geometry/Geometry.h Geometry/Geometry2D.h Geometry/GeometryShear.h \
+               Geometry/GeometrySlab.h Geometry/GeometrySA.h Geometry/GeometryCHEASE.h\
+			   System.h Special/SpecialMath.h Special/HermitePoly.h Tools.h Special/Vector3D.h 
+	
+# Integration sub-module
+gkc_SOURCES += Special/Integrate/GaussChebychevFirstWeights.h Special/Integrate/GaussChebychevSecondWeights.h \
+				   Special/Integrate/GaussHermiteWeights.h        Special/Integrate/GaussLaguerInitializer.h \
+					Special/Integrate/GaussLaguerreWeights.h       Special/Integrate/GaussLegendreWeights.h \
+					Special/Integrate/GaussRadauWeights.h          Special/Integrate/GaussWeights.h \
+					Special/Integrate/GaussWeights.py              Special/Integrate/Integrate.h
+
+
+# Interpolation sub-module
+gkc_SOURCES += Special/HermiteInterpolation.h 
+
+#gkc_SOURCES += external/SHDF5/FileAttr.h external/SHDF5/TableAttr.h
+#gkc_SOURCES += external/allocate.h external/Array.h 
+
+gkc_SOURCES += Matrix/Matrix.h Matrix/MatrixPETSc.h Matrix/MatrixSolver.h \
+					Matrix/SpecialMatrix.h Matrix/MatrixPETSc.cpp
+
+EXTRA_DIST =   gkc.doxygen external
+
+gkc_SOURCES += external/FunctionParser/fparser.cc external/SFL/SFL.cpp 
+
+#gkc_SOURCES += external/FunctionParser/fparser.cc external/FunctionParser/fp_identifier_parser.inc 
+#					external/FunctionParser/fparser.hh external/SFL/SFL.cpp external/SFL/SFL.h 
+#					external/FunctionParser/fpconfig.hh	external/FunctionParser/fptypes.hh
+
+
+
+
 AUTOMAKE_OPTIONS = subdir-objects
 
-gkc_SOURCES += external/FunctionParser/fparser.cc external/SFL/SFL.cpp
 
 AM_CPPFLAGS  = -ggdb -O3 -Wall -Wno-unknown-pragmas -I./external  -I./FFTSolver -I./Geometry -I./Special -I./TimeIntegration -I./Fields
  
-EXTRA_DIST =  GKC.h FileIO.h Vlasov/Vlasov_Cilk.h Vlasov/Vlasov_Aux.h Vlasov/Vlasov_Optim.h Vlasov/Vlasov_Island.h Vlasov.h Fields.h Fields/FieldsFFT.h\
-              Setup.h Grid.h Parallel.h Init.h \
-              Global.h Setup.h Analysis.h  Collisions.h Geometry  FFTSolver.h Fourier.h FunctionParser \
-              gkc.doxygen  Plasma.h FFTSolver/ Timing.h Integration.h Special/GaussWeights.h Control.h Geometry.h Analysis/Benchmark.h \
-              external/SHDF5/FileAttr.h external/SHDF5/TableAttr.h TimeIntegration.h Visualization.h Special/LA.h Special/HermitePoly.h
 
+#Vlasov/Vlasov_Cilk.h Vlasov/Vlasov_Aux.h Vlasov/Vlasov_Optim.h Vlasov/Vlasov_Island.h Vlasov/Vlasov.
 
 # Add for HDF-5 file
 gkc_LDFLAGS  =   -L$(DIR_HDF5)/lib/
@@ -55,9 +97,9 @@ endif
 ##################### FFTW3 setup ################
 if FFTW3
 AM_CPPFLAGS  += -I$(DIR_FFTW3)/include
-gkc_SOURCES  +=  FFTSolver/FFTSolver_fftw3.cpp 
-gkc_LDADD    += -L$(DIR_FFTW3)/lib -lfftw3
-gkc_LDADD    += -lfftw3_omp
+gkc_SOURCES  +=  FFTSolver/FFTSolver_fftw3.h FFTSolver/FFTSolver_fftw3.cpp 
+gkc_LDADD    += -L$(DIR_FFTW3)/lib -lfftw3 -lfftw3_omp
+
 if MPI
 gkc_LDADD    += -L$(DIR_FFTW3MPI)/lib -lfftw3_mpi
 endif
@@ -70,8 +112,8 @@ endif
 ################# SELPc (for Eigenvalue calculations) #######
 
 if SLEPC
-AM_CPPFLAGS    +=  -I$(DIR_SLEPC)/include
-gkc_SOURCES +=  Eigenvalue/Eigenvalue_SLEPc.cpp
+AM_CPPFLAGS +=  -I$(DIR_SLEPC)/include
+gkc_SOURCES +=  Eigenvalue/Eigenvalue_SLEPc.cpp Eigenvalue/Eigenvalue_SLEPc.h Eigenvalue/Eigenvalue.h
 #gkc_LDADD   += -L$(DIR_SLEPC)/lib  -lslepc 
 gkc_LDADD +=/opt/app/slepc/3.2_complex/intel-12.1/lib/libslepc.a
 endif
@@ -82,7 +124,9 @@ endif
 ################################# 3rd party libs #################
 if PETSC                 
 AM_CPPFLAGS +=  -I$(DIR_PETSC)/include
-gkc_SOURCES += TimeIntegration/TimeIntegration_PETSc.cpp Special/PETScMatrixVector.cpp Fields/FieldsHermite.cpp
+gkc_SOURCES += TimeIntegration/TimeIntegration_PETSc.h TimeIntegration/TimeIntegration_PETSc.cpp\
+					Special/PETScMatrixVector.h Special/PETScMatrixVector.cpp \
+					Fields/FieldsHermite.h Fields/FieldsHermite.cpp 
 #gkc_LDADD   += -L$(DIR_PETSC)/lib -lpetsc 
 
 # Use static linkage
