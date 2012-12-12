@@ -192,26 +192,35 @@ class Analysis : public IfaceGKC {
    **/
 
    /**
-   *  calculates and returns the heat flux across magnetic flux surfaces
-   *  for species s by \f[ E \times B_0 \f]
-   *  
-   *  \f[
-   *     Q_s = \left< \int \left(v_\parallel^2 + \mu B  \right) F_sj k_y \phi(x,k_y, z, \mu, s) d^3v \right> 
-   *  \f]
+   *  @brief calculates and returns the heat flux across magnetic flux surfaces
+   *         for species \f$ \sigma \f$
    *
-   *  calculates and returns the heat flux across magnetic flux surfaces
-   *  for species s by
-   *  
+   *  Obtained from Lapillione, PhD Thesis (2010).
+   *
+   *  For the particle flux Eq. (2.118)
+   *
    *  \f[
    *     \Gamma_\sigma = \left< \int F_{\sigma j} v_{Ex} d^3v  \right> 
    *  \f]
+   *
+   *
+   *  and the heat flux Eq.(2.123)
+   *  
+   *  \f[
+   *     Q_\sigma = -\frac{1}{2C} \left< 
+   *                \int \left(m_\sigma v_\parallel^2 + 2 \mu B \right) F_{1\sigma}
+   *                \frac{\partial \bar{\phi}}{\partial y} 
+   *                \right> 
+   *  \f]
+   *
+   *  @todo include FLR correction terms
+   *        include Geometry factors
    * 
-   *  Ref : Dannert PhD Thesis
    *
    **/
    void getParticleHeatFlux(const int m, const int s, 
-                            CComplex ParticleFlux[NkyLD][NxLD], CComplex HeatFlux[NkyLD][NxLD],
-                            const CComplex         f[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                            double ParticleFlux[NkyLD][NxLD], double HeatFlux[NkyLD][NxLD],
+                            const CComplex         f[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                             const CComplex Field[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                             const double V[NvGB], const double M[NmGB]);
 

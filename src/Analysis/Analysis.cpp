@@ -28,10 +28,7 @@ parallel(_parallel),setup(_setup), vlasov(_vlasov), grid(_grid), fields(_fields)
 
 Analysis::~Analysis() 
 {
-
    closeData();
-    
-
 }
 
 
@@ -44,7 +41,7 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
   double   pSpec[Nq][Nx]; pSpec[:][:] = 0.;
   CComplex pFreq[Nq][Nx]; pFreq[:][:] = 0.;
 
-  // Note :  take care that the FFT output is of for e.g. an 8 number sequence [0, 1, 2, 3, 4,-3,-2,-1]
+  // Note : take care that the FFT output is of for e.g. an 8 number sequence [0, 1, 2, 3, 4,-3,-2,-1]
   // Note : atan2 is not a linear function, thus phase has to be calculated at last
   if(parallel->Coord[DIR_VMS] == 0) {
 
@@ -54,7 +51,7 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
     for(int q = 1; q <= Nq; q++) {
                 
       // Mode power & Phase shifts for X (domain decomposed) |\phi(k_x)|
-      omp_for(int x_k=fft->K1xLlD; x_k <= fft->K1xLuD; x_k++) {
+      for(int x_k=fft->K1xLlD; x_k <= fft->K1xLuD; x_k++) {
 
         pSpec[q-1][x_k] = __sec_reduce_add(cabs(kXOut[q][NzLlD:NzLD][NkyLlD:NkyLD][x_k]))/fft->Norm_X; 
         pFreq[q-1][x_k] = __sec_reduce_add(     kXOut[q][NzLlD:NzLD][NkyLlD:NkyLD][x_k] )/fft->Norm_X;
@@ -62,7 +59,7 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
             
       
       // Mode power & Phase shifts for Y (not decomposed) |\phi(k_y)|
-      omp_for(int y_k = NkyLlD; y_k <=  NkyLuD ; y_k++) { 
+      for(int y_k = NkyLlD; y_k <=  NkyLuD ; y_k++) { 
         
         pSpecY [q-1][y_k] =      __sec_reduce_add(cabs(Field0[q][NzLlD:NzLD][y_k][NxLlD:NxLD])); 
         pPhaseY[q-1][y_k] = carg(__sec_reduce_add(     Field0[q][NzLlD:NzLD][y_k][NxLlD:NxLD]));
@@ -118,10 +115,11 @@ void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][
     const double pn_d6Z = M_PI  * dv * grid->dm[m] * grid->dXYZV;
    
     //#pragma omp parallel for reduction(+:number)
-    for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) 
-    {
-               number +=  __sec_reduce_add(f[s][m][NzLlD:NzLD][y_k][NxLlD:NxLD][NvLlD:NvLD]) * pn_d6Z;
-    } 
+    //for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) 
+    //{
+    //           number +=  __sec_reduce_add(f[s][m][NzLlD:NzLD][y_k][NxLlD:NxLD][NvLlD:NvLD]) * pn_d6Z;
+    //} 
+    number +=  __sec_reduce_add(f[s][m][NzLlD:NzLD][0][NxLlD:NxLD][NvLlD:NvLD]) * pn_d6Z;
 
     //////////// Calculate Kinetic Energy  //////////////////////////
     
@@ -144,22 +142,21 @@ void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][
                            __sec_reduce_add(f0[s][m][z][y_k][x][NvLlD:NvLD]);
     } } }
     /////////////////////////// Calculate Total Heat & Particle Flux ////////////////////////
-    CComplex ParticleFlux[NkyLD][NxLD], HeatFlux[NkyLD][NxLD];
-    ParticleFlux[:][:] = 0.;
-    HeatFlux[:][:] = 0.;
+       double ParticleFlux[NkyLD][NxLD], 
+               HeatFlux[NkyLD][NxLD];
 
-    getParticleHeatFlux(m, s, ParticleFlux, HeatFlux, f, (A6zz) fields->Field, V, M);
+       getParticleHeatFlux(m, s, ParticleFlux, HeatFlux, f, (A6zz) fields->Field, V, M);
 
-    particle += __sec_reduce_add(cabs(ParticleFlux[:][:]));
-    heat     += __sec_reduce_add(cabs(    HeatFlux[:][:]));
-    // so bad .... (looks to ugly, to be the right way ...)
+       particle += __sec_reduce_add(ParticleFlux[:][:]);
+       heat     += __sec_reduce_add(    HeatFlux[:][:]);
+
     } // m 
 
     // Communicate with other groups (make reduce whole structre)
-    heat          = parallel->reduce(heat         , Op::SUM, DIR_M);
-    particle      = parallel->reduce(particle     , Op::SUM, DIR_M);
-    kineticEnergy = parallel->reduce(kineticEnergy, Op::SUM, DIR_M);
-    number        = parallel->reduce(number       , Op::SUM, DIR_M);
+    heat          = parallel->reduce(heat         , Op::SUM, DIR_XYZVM);
+    particle      = parallel->reduce(particle     , Op::SUM, DIR_XYZVM);
+    kineticEnergy = parallel->reduce(kineticEnergy, Op::SUM, DIR_XYZVM);
+    number        = parallel->reduce(number       , Op::SUM, DIR_XYZVM);
 
     #pragma omp single
     {
@@ -240,7 +237,7 @@ void Analysis::getTemperature(const  CComplex f[NsLD][NmLD][NzLB][NkyLD][NxLB][N
 
 
 void Analysis::getParticleHeatFlux(const int m, const int s, 
-                                   CComplex ParticleFlux[NkyLD][NxLD], CComplex HeatFlux[NkyLD][NxLD],
+                                   double ParticleFlux[NkyLD][NxLD], double HeatFlux[NkyLD][NxLD],
                                    const CComplex     f    [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                                    const CComplex Field[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
                                    const double V[NvGB], const double M[NmGB])
@@ -248,45 +245,34 @@ void Analysis::getParticleHeatFlux(const int m, const int s,
 
     const double d6Z = M_PI * plasma->species[s].n0 * plasma->species[s].T0 * plasma->B0 * dv * grid->dm[m] * grid->dXYZ;
 
-    ParticleFlux[:][:] = 0.;
-        HeatFlux[:][:] = 0.;
+    ParticleFlux[:][:] = 0.;  HeatFlux[:][:] = 0.;
 
-    omp_for(int z=NzLlD; z<= NzLuD;z++) { 
-  
-      CComplex   ky_phi[NkyLD][NxLD], 
-               Particle[NkyLD][NxLD], 
-                 Energy[NkyLD][NxLD],
-                      R[NkyLD][NxLD];
-
-    omp_for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { 
-       
-          // Geometry ?!
-          const CComplex ky = ((CComplex) (0. + 1.j))  * fft->ky(y_k);
+    for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { 
         
-          for(int x=NxLlD; x <= NxLuD ; x++) { 
-
-                ky_phi[y_k-NkyLlD][x-NxLlD] = ky * Field[Field::phi][s][m][z][y_k][x];
-
-              // integrate over velocity space (calculate particle number and temperature)
-                Energy[y_k-NkyLlD][x-NxLlD] = __sec_reduce_add((pow2(V[NvLlD:NvLD]) +  M[m] * plasma->B0) * f[s][m][z][y_k][x][NvLlD:NvLD]) * d6Z;
-              Particle[y_k-NkyLlD][x-NxLlD] = __sec_reduce_add(                                             f[s][m][z][y_k][x][NvLlD:NvLD]) * d6Z;
-
-      } } // x, y_k
-              
-         // Multiply electric field with temperature in real space 
-         fft->multiply(ky_phi, Particle, R);
+      // Geometry ?!
+      const CComplex iky = ((CComplex) (0. + 1.j))  * fft->ky(y_k);
         
-         // is atomic valid here (how about support, look gcc libatomic)?
-         #pragma omp atomic
-         ParticleFlux[:][:] += R[:][:];
-         
-         // Multiply electric field with temperature in real space 
-         fft->multiply(ky_phi,   Energy, R);
-         #pragma omp atomic
-         HeatFlux[:][:]     += R[:][:];
+      for(int x=NxLlD; x <= NxLuD; x++) { 
       
-    } // add for z,m
-    
+        // Triad condition. Heat/Particles are only transported by the y_k = 0, as the other y_k > 0 
+        // modes cancels out. Thus multiplying y_k = 0 = A(y_k)*B(-y_k) = A(y_k)*[cc : B(y_k)]
+        // where the complex conjugate values is used as physcial value is a real quantity.
+
+        const CComplex iky_phi  = iky * Field[Field::phi][s][m][z][y_k][x];
+
+        const CComplex Particle = __sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD]);
+
+        const CComplex Energy   = 0.5 * __sec_reduce_add((plasma->species[s].m * pow2(V[NvLlD:NvLD]) + 2.*M[m]*plasma->B0) 
+                                                          * f[s][m][z][y_k][x][NvLlD:NvLD]);
+              
+        // take only real part as it gives the radial direction ?!
+        ParticleFlux[y_k][x-NxLlD] = - creal( iky_phi * conj(Particle)) * d6Z;
+            HeatFlux[y_k][x-NxLlD] = - creal( iky_phi * conj(Energy  )) * d6Z;
+
+      } 
+    } } // y_k, z
+
+
     return;
 
 
@@ -344,12 +330,12 @@ void Analysis::initData(Setup *setup, FileIO *fileIO) {
      
      hid_t XDepGroup = fileIO->newGroup("XDep", analysisGroup);
 
-     hsize_t XDep_dsdim[] =  { Ns     , Nx      , 1            };  // data slice dimension
-     hsize_t XDep_dmdim[] =  { Ns     , Nx      , H5S_UNLIMITED};  // data total dimension
-     hsize_t XDep_cBdim[] =  { NsLD   , NxLD    , 1            };  // chunk boundary dimension
-     hsize_t XDep_cDdim[] =  { NsLD   , NxLD    , 1            };  // chunk local dimension 
-     hsize_t XDep_cmoff[] =  { 0      , 0       , 0            };  // Memory offset 
-     hsize_t XDep_cdoff[] =  { NsLlD-1, NxLlD-3 , 0            };  // Data offset
+     hsize_t XDep_dsdim[] =  { Ns     , Nx      , 1            };
+     hsize_t XDep_dmdim[] =  { Ns     , Nx      , H5S_UNLIMITED};
+     hsize_t XDep_cBdim[] =  { NsLD   , NxLD    , 1            };
+     hsize_t XDep_cDdim[] =  { NsLD   , NxLD    , 1            };
+     hsize_t XDep_cmoff[] =  { 0      , 0       , 0            };
+     hsize_t XDep_cdoff[] =  { NsLlB-1, NxLlD-3 , 0            };
      
      bool XDepWrite = ( (parallel->Coord[DIR_VM] == 0) && (parallel->Coord[DIR_Z] == 0));
      
@@ -432,19 +418,17 @@ void Analysis::writeData(const Timing &timing, const double dt)
 
   if (timing.check(dataOutputMoments, dt)       )   {
 
-               CComplex 
-               A4_Tp[NsLD][NzLD][NkyLD][NxLD], 
-               A4_n [NsLD][NzLD][NkyLD][NxLD], 
-               A4_Xi[NsLD][NzLD][NkyLD][NxLD], 
-               A4_Q [NsLD][NzLD][NkyLD][NxLD]; 
+     CComplex A4_Tp[NsLD][NzLD][NkyLD][NxLD], 
+              A4_n [NsLD][NzLD][NkyLD][NxLD], 
+              A4_Xi[NsLD][NzLD][NkyLD][NxLD], 
+              A4_Q [NsLD][NzLD][NkyLD][NxLD]; 
 
-
-             getTemperature  ((A6zz) vlasov->f, (A4zz) A4_Tp, V, M);
-             getNumberDensity((A6zz) vlasov->f, (A4zz) A4_n , V, M);
+     getTemperature  ((A6zz) vlasov->f, (A4zz) A4_Tp, V, M);
+     getNumberDensity((A6zz) vlasov->f, (A4zz) A4_n , V, M);
   
-             FA_Mom_Density->write((CComplex *) A4_n);
-             FA_Mom_Tp     ->write((CComplex *) A4_Tp);
-             FA_Mom_Time->write(&timing);
+     FA_Mom_Density->write((CComplex *) A4_n);
+     FA_Mom_Tp     ->write((CComplex *) A4_Tp);
+     FA_Mom_Time->write(&timing);
 
     parallel->print("Data I/O : Moments output");
     
@@ -468,8 +452,8 @@ void Analysis::writeData(const Timing &timing, const double dt)
       // Reduce over y_k and z
       for(int s = NsLlD; s <= NsLuD; s++) {  for(int x = NxLlD;  x <= NxLuD; x++) {
 
-         A1_n[s-NsLlD][x-NxLlD] = __sec_reduce_add(cabs(A4_n[s-NsLlD][:][:][x-NxLlD]));
-         A1_T[s-NsLlD][x-NxLlD] = __sec_reduce_add(cabs(A4_T[s-NsLlD][:][:][x-NxLlD]));
+         A1_n[s-NsLlD][x-NxLlD] = __sec_reduce_add(creal(A4_n[s-NsLlD][:][0][x-NxLlD]));
+         A1_T[s-NsLlD][x-NxLlD] = __sec_reduce_add(creal(A4_T[s-NsLlD][:][0][x-NxLlD]));
       } } 
    
       FA_XDep_Tp  ->write((double *) A1_T); 
@@ -481,8 +465,11 @@ void Analysis::writeData(const Timing &timing, const double dt)
 
    ///////////////////Get Store /Particle Flux /////////////////////////////
    {
-       Complex A4_q[Nq][NsLD][NkyLD][NxLD], A2_q[NkyLD][NxLD], // Heat flux      (take care stack variables have no offset)
-               A4_x[Nq][NsLD][NkyLD][NxLD], A2_x[NkyLD][NxLD]; // Particle flux
+       double A2_q[NkyLD][NxLD], // Heat flux    
+              A2_x[NkyLD][NxLD]; // Particle flux
+       
+       double A4_q[Nq][NsLD][NkyLD][NxLD],  // Heat flux   
+              A4_x[Nq][NsLD][NkyLD][NxLD];  // Particle flux
 
         A4_q[:][:][:][:] = 0.;
         A4_x[:][:][:][:] = 0.;
@@ -490,14 +477,18 @@ void Analysis::writeData(const Timing &timing, const double dt)
       for(int s = NsLlD; s <= NsLuD; s++) {  for(int m = NmLlD;  m <= NmLuD; m++) {
 
            // support only phi for now
-           getParticleHeatFlux(m, s, (A2zz) A2_x, (A2zz) A2_q, (A6zz) vlasov->f, (A6zz) fields->Field, V, M);
+           getParticleHeatFlux(m, s, (A2rr) A2_x, (A2rr) A2_q, (A6zz) vlasov->f, (A6zz) fields->Field, V, M);
+           // Particel transport included c.c. modes, thus imaginary term vanishes
            A4_q[0][s-NsLlD][:][:] +=  A2_q[:][:];
            A4_x[0][s-NsLlD][:][:] +=  A2_x[:][:];
 
       } };
+      // remove factor 2. from zonal flow component (as no c.c value exists for it)
+      A4_q[:][:][0][:] /= 2.; A4_q[:][:][0][:] /= 2.;
 
-      parallel->reduce((CComplex *) A4_q, Op::SUM, DIR_M, Nq*NsLD*NkyLD*NxLD);
-      parallel->reduce((CComplex *) A4_x, Op::SUM, DIR_M, Nq*NsLD*NkyLD*NxLD);
+
+      parallel->reduce((double *) A4_q, Op::SUM, DIR_M, Nq*NsLD*NkyLD*NxLD);
+      parallel->reduce((double *) A4_x, Op::SUM, DIR_M, Nq*NsLD*NkyLD*NxLD);
 
       FA_heatKy    ->write((CComplex *) A4_q);
       FA_particleKy->write((CComplex *) A4_x);
@@ -539,7 +530,7 @@ void Analysis::writeData(const Timing &timing, const double dt)
     // write out to Terminal/File
     
     std::stringstream messageStream;
-    messageStream << std::endl << std::endl << "Analysis | " << std::setprecision(3);
+    messageStream << std::endl << std::endl << "Analysis | " << std::setprecision(3) << "Time : " << timing.time << " Step : " << timing.step << "   ";
     messageStream << "Field Energy : (phi) " << scalarValues.phiEnergy  << "  (Ap) " << scalarValues.ApEnergy  <<  "  (Bp) " << scalarValues.BpEnergy << std::endl; 
     double charge = 0., kinetic_energy=0.;
     
