@@ -66,7 +66,9 @@ Complex Eigenvalue_SLEPc::getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields)
     parallel->print("Using SLEPc to find maximum abolute eigenvalue ...");
     // Solve Eigenvalues
     PETScMatrixVector pMV(vlasov, fields);
-   
+
+    // For an estimate of time-step accuracy does not have to be large
+    EPSSetTolerances(EigvSolver, 1.e-5, 10000); 
     //control->signalForceExit(true);
     EPSSolve(EigvSolver);
     //control->signalForceExit(false);
