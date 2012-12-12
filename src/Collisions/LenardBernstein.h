@@ -98,7 +98,7 @@ protected:
        /**
        *   Calculate Collisional corrections
        **/
-      int solve(Fields *fields, const CComplex  *f, const CComplex *f0, CComplex *Coll, double dt, int rk_step); 
+      void solve(Fields *fields, const CComplex  *f, const CComplex *f0, CComplex *Coll, double dt, int rk_step); 
 
   protected:
 

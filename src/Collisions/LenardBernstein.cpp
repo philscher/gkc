@@ -70,11 +70,11 @@ void Collisions_LenardBernstein::initData(hid_t fileID)
 }
 
 
-int Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const CComplex *f0, CComplex *Coll, double dt, int rk_step) 
+void Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const CComplex *f0, CComplex *Coll, double dt, int rk_step) 
 {
 
   // Don't calculate collisions if collisionality is set to zero
-  if (beta == 0.) return 0; 
+  if (beta == 0.) return;
 
   [=](const CComplex f   [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],  // Phase-space function for current timestep
       const CComplex f0  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],  // Background Maxwellian
@@ -92,28 +92,32 @@ int Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const 
       
          if(consvMoment) {
          
-           for(int m=NmLlD; m<= NmLuD;m++) { 
+         for(int m=NmLlD; m<= NmLuD;m++) { 
             // (1) Calculate Moments (note : can we recycle Fields  n, P ?)
-         const double pre_dvdm = plasma->species[s].n0 * plasma->B0 * dv * grid->dm[m] ;
-           omp_C3_for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
+            const double pre_dvdm = plasma->species[s].n0 * plasma->B0 * dv * grid->dm[m] ;
+
+            #pragma omp for collapse(2)
+            for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
               dn[z][y_k][x] = __sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD]                       ) * pre_dvdm;
               dP[z][y_k][x] = __sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD] * V       [NvLlD:NvLD]) * pre_dvdm;
               dE[z][y_k][x] = __sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD] * nu[s][m][NvLlD:NvLD]);
 
-           } } } }
+            } } } }
           
-          // need to communicate with other CPU's ? 
+            // need to communicate with other CPU's ? 
 
         }
-           // b-cast dn, dP, dE 
-           const double _kw_12_dv_dv = 1./(12. * pow2(dv)); // use from e.g. Grid ?
-           const double _kw_12_dv    = 1./(12. * dv )     ;
+          
+        // b-cast dn, dP, dE 
+        const double _kw_12_dv_dv = 1./(12. * pow2(dv)); // use from e.g. Grid ?
+        const double _kw_12_dv    = 1./(12. * dv )     ;
 
-           omp_C4_for(int   m = NmLlD ; m   <= NmLuD ; m++  ) { for(int z = NzLlD; z <= NzLuD;z++) {  
-                  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD;x++) {
+        #pragma omp for collapse(3)
+        for(int   m = NmLlD ; m   <= NmLuD ; m++  ) { for(int z = NzLlD; z <= NzLuD;z++) {  
+        for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD;x++) {
            
-           simd_for(int v = NvLlD; v <= NvLuD; v++) {
+        simd_for(int v = NvLlD; v <= NvLuD; v++) {
 
             
             // Velocity derivaties for Lennard-Bernstein Collisional Model (shouln't I use G ?)
@@ -133,10 +137,10 @@ int Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const 
                     c[s][m][v] * dE[z][y_k][x]) * f0[s][m][z][y_k][x][v]  ///< Energy correction
                    : 0.);
 
-             }
+        }
 
            
-           } } } } 
+        } } } } 
          
          
        }
@@ -145,7 +149,7 @@ int Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const 
          (A3zz) dn , (A3zz) dP, (A3zz) dE, 
          (A3rr) a  , (A3rr) b , (A3rr)  c, (A3rr) nu);
    
-            return 0;
+     return;
 };
 
 
