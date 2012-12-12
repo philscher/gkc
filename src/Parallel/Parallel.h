@@ -84,7 +84,9 @@ struct NeighbourDir {
    **/
    int Coord[DIR_SIZE];
    
-   int myRank;        ///< rank-id of process
+   int myRank,        ///< rank-id of process
+       threadID;      ///< Number/Id of (OpenMP) thread     
+
    int master_rank;   ///< rank-id of master process (usually 0)
    
    int numThreads,    ///< total number of OpenMP threads
@@ -223,7 +225,6 @@ struct NeighbourDir {
 #ifdef GKC_PARALLEL_MPI
      T global_dValue;
 
-     // we need allreduce instead of reduce because H5TB need all process to have the same value
      check(MPI_Allreduce(&x, &global_dValue, 1, getMPIDataType(typeid(T)), getMPIOp(op), Comm[dir]), DMESG("MPI_Reduce")); 
      return global_dValue; 
 #endif

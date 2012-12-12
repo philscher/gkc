@@ -20,15 +20,13 @@ TimeIntegration::TimeIntegration(Setup *setup, Grid *grid, Parallel *_parallel, 
 {
 
     timeIntegrationScheme = setup->get("TimeIntegration.Scheme"            , "Explicit_RK4");
-    linearSafetyFactor    = setup->get("TimeIntegration.LinearSafetyFactor", 0.7);
-    linearTimeStep        = setup->get("TimeIntegration.LinearTimeStep"    , "Eigenvalue");
-    useCFL                = setup->get("TimeIntegration.useCFL"            , 0);
-    maxCFLNumber          = setup->get("TimeIntegration.maxCFLNumber"      , 0.4);
-    outputRatio           = setup->get("TimeIntegration.StepOutputRatio"   , 500);
-    maxTiming.time        = setup->get("TimeIntegration.MaxTime"           , -1.);
-    maxTiming.step        = setup->get("TimeIntegration.MaxSteps"          , -1);
-   
-
+    linearSafetyFactor    = setup->get("TimeIntegration.LinearSafetyFactor", 0.7           );
+    linearTimeStep        = setup->get("TimeIntegration.LinearTimeStep"    , "Eigenvalue"  );
+    useCFL                = setup->get("TimeIntegration.useCFL"            , 1             );
+    maxCFLNumber          = setup->get("TimeIntegration.maxCFLNumber"      , 0.4           );
+    outputRatio           = setup->get("TimeIntegration.StepOutputRatio"   , 500           );
+    maxTiming.time        = setup->get("TimeIntegration.MaxTime"           , -1.           );
+    maxTiming.step        = setup->get("TimeIntegration.MaxSteps"          , -1            );
 
 };
 
@@ -36,7 +34,7 @@ TimeIntegration::TimeIntegration(Setup *setup, Grid *grid, Parallel *_parallel, 
 void TimeIntegration::setMaxLinearTimeStep(Eigenvalue *eigenvalue, Vlasov *vlasov, Fields *fields)
 {
 
-  if     (linearTimeStep == "CFL"       ) maxLinearTimeStep = vlasov->getMaxTimeStep(DIR_V, maxCFLNumber);
+  if     (linearTimeStep == "Estimate"  ) maxLinearTimeStep = 1.e-99; // not implemented, use estimate of max(kp)
   else if(linearTimeStep == "Eigenvalue") maxLinearTimeStep = getMaxTimeStepFromEigenvalue(vlasov, fields, eigenvalue);
   else                                    maxLinearTimeStep = Setup::str2num(linearTimeStep);
 
@@ -62,18 +60,20 @@ double TimeIntegration::solveTimeStep(Vlasov *vlasov, Fields *fields, TestPartic
 {
   
   // set time-step as minimum between (constant) linear timestep and (if enabled) from non-linear dt
-  double dt = min(maxLinearTimeStep, useCFL ? vlasov->getMaxTimeStep(DIR_XY, maxCFLNumber) : 1.e99);
+  double dt = min(maxLinearTimeStep, useCFL ? vlasov->getMaxNLTimeStep(maxCFLNumber) : 1.e99);
 
   if     (timeIntegrationScheme == "Explicit_RK4" ) solveTimeStepRK4 (timing, dt);
   else if(timeIntegrationScheme == "Explicit_RK3" ) solveTimeStepRK3 (timing, dt);
   else if(timeIntegrationScheme == "Explicit_Heun") solveTimeStepHeun(timing, dt);
   else   check(-1, DMESG("No such Integration Scheme"));
  
-  timing.time += dt;
-  timing.step++;
-  
-  writeTimeStep(timing, maxTiming, dt);
-    
+  #pragma omp single
+  {
+     timing.time += dt;
+     timing.step++;
+     writeTimeStep(timing, maxTiming, dt);
+  }
+
   return dt;
 
 };
@@ -85,20 +85,20 @@ void TimeIntegration::solveTimeStepRK4(Timing timing, const double dt)
   // Runge-Kutta step 1
   const double rk_1[] = { 0., 1., 0.};
   fields->solve(vlasov->f0,vlasov->f, timing);
-  vlasov ->solve(fields, vlasov->f  , vlasov->fs, 0.5e0*dt , 1, rk_1 );
+  vlasov->solve(fields, vlasov->f  , vlasov->fs, 0.5e0*dt , 1, rk_1 );
   particles->integrate(vlasov, fields, 1);
         
   
   // Runge-Kutta step 2
   const double rk_2[] = { 1., 2., 0.};
   fields->solve(vlasov->f0,vlasov->fs, timing);
-  vlasov ->solve(fields, vlasov->fs , vlasov->fss, 0.5e0*dt, 2, rk_2);
+  vlasov->solve(fields, vlasov->fs , vlasov->fss, 0.5e0*dt, 2, rk_2);
   particles->integrate(vlasov, fields, 2);
 
   // Runge-Kutta step 3
   const double rk_3[] = { 1., 2., 0.};
   fields->solve(vlasov->f0,vlasov->fss, timing);
-  vlasov ->solve(fields, vlasov->fss, vlasov->fs,  dt      , 3, rk_3);
+  vlasov->solve(fields, vlasov->fss, vlasov->fs,  dt      , 3, rk_3);
   particles->integrate(vlasov, fields, 3);
 
   // Runge-Kutta step 4
@@ -174,7 +174,7 @@ void TimeIntegration::solveTimeStepEigen(Timing timing, const double dt)
   // Runge-Kutta step 1
   const double rk_0[] = { 0., 0., 0.};
   fields->solve(vlasov->f0,vlasov->f, timing);
-  vlasov ->solve(fields, vlasov->f  , vlasov->fs, 1. , 0, rk_0);
+  vlasov->solve(fields, vlasov->f  , vlasov->fs, 1. , 0, rk_0);
 
 };
        
@@ -190,8 +190,10 @@ void TimeIntegration::writeTimeStep(Timing timing, Timing maxTiming, double dt)
     std::cout   << "\r" << "Steps  : " << timing.step  << "/" << maxTiming.step 
                 << "  Time : " << timing.time  << "/" << maxTiming.time 
                 << std::setprecision(3) <<   "  dt : " << dt << std::flush; 
-  
+ 
+    std::cout << "  Run. Time : " << Timing::TimeStringFromSeconds(std::time(0) - start_time);
     std::cout << Timing::getRemainingTimeString(timing, maxTiming, start_time);
+
   
   }
 

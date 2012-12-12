@@ -19,6 +19,8 @@
 
 #include "System.h"
 
+#include <array>
+
 // global process rank needed for output
 extern int process_rank;
 
@@ -39,7 +41,7 @@ void check_mpi(MPI_Comm *comm, int *err_code, ...) {
 Parallel::Parallel(Setup *setup) 
 {
   // initialize some basic parameter
-  myRank = 0;  numThreads = 1; numProcesses = 1, master_rank = 0; 
+  myRank = 0;  threadID = 0; numThreads = 1; numProcesses = 1, master_rank = 0; 
   useOpenMP = false; useMPI = true;
   Coord[:] = 0;
 
@@ -48,9 +50,11 @@ Parallel::Parallel(Setup *setup)
 #ifdef GKC_PARALLEL_OPENMP
   useOpenMP = true;
   // if OpenMP is enabled, we decompose over y direction
+  // Number of threads is set through decomposition
   #pragma omp parallel
   {
     numThreads = omp_get_num_threads();
+    threadID   = omp_get_thread_num();
   }
 #endif // GKC_PARALLEL_OPENMP
 
@@ -60,16 +64,14 @@ Parallel::Parallel(Setup *setup)
    int i = 14665; // some random number to not to interfere with other
    // do its in one loop ?
    for(int dir = DIR_X; dir <= DIR_S; dir++) {
-        Talk[dir].psf_msg_tag[0] = ++i;
-        Talk[dir].psf_msg_tag[1] = ++i;
-   }
-   for(int dir = DIR_X; dir <= DIR_S; dir++) {
-        Talk[dir].phi_msg_tag[0] = ++i;
-        Talk[dir].phi_msg_tag[1] = ++i;
+
+        Talk[dir].psf_msg_tag[0] = ++i; Talk[dir].psf_msg_tag[1] = ++i;
+        Talk[dir].phi_msg_tag[0] = ++i; Talk[dir].phi_msg_tag[1] = ++i;
    }
    
    // MPI-2 standard allows to pass NULL for (&argc, &argv)
-   MPI_Init     (NULL, NULL);
+   int provided = 0;
+   MPI_Init_thread(NULL, NULL, numThreads == 1 ? MPI_THREAD_SINGLE : MPI_THREAD_SERIALIZED, &provided);
 
    MPI_Comm_size(MPI_COMM_WORLD, &numProcesses); 
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
@@ -83,9 +85,7 @@ Parallel::Parallel(Setup *setup)
   // Note : if OpenMP is enabled OpenMP, we decompose in Y in OpenMP threads (not clean solution tough)
 #ifdef GKC_PARALLEL_OPENMP
   #pragma omp parallel
-  {
-      omp_set_num_threads(numThreads);
-  } 
+  omp_set_num_threads(numThreads);
 #endif
 
    checkValidDecomposition(setup);
@@ -111,9 +111,34 @@ Parallel::Parallel(Setup *setup)
 
     ///////////////////  Set SubCommunicators for various directions //////////////////////////
     // Note , we do not need to translate ranks, because dirMaster is always used with appropriate Comm
-    
     int coord_master[6] = { 0, 0, 0, 0, 0, 0 };
- 
+    
+    //////////////////////////////////////////////////////////////////////////////
+    //
+    //  We set the subcommunictor in direction dir using remain_dims
+    //
+    //  We prefer MPI_Cart_sub over MPI_Comm_split as the former included
+    //  more information about the topology and may results in more efficient
+    //  communicators. 
+    //  better use intializer list
+    //
+    /*
+    auto setSubCommunicator = [=](int dir, std::array<int,6> remain_dims) 
+    {
+      int coord_master[6] = { 0, 0, 0, 0, 0, 0 };
+      MPI_Cart_sub (Comm[DIR_ALL], remain_dims.data(), &Comm[dir]);
+      MPI_Cart_rank(Comm[dir    ], coord_master, &dirMaster[dir]);
+    };
+    setSubCommunicator(DIR_X  , { true , false, false, false, false, false } );
+    setSubCommunicator(DIR_Z  , { false, false, true , false, false, false } );         
+    setSubCommunicator(DIR_V  , { false, false, false, true , false, false } );
+    setSubCommunicator(DIR_M  , { false, false, false, false, true , false } );
+    setSubCommunicator(DIR_S  , { false, false, false, false, false, true  } );
+    setSubCommunicator(DIR_MS , { false, false, false, false, true , true  } );
+    setSubCommunicator(DIR_VM , { false, false, false, true , true , false } );
+    setSubCommunicator(DIR_VMS, { false, false, false, true , true , true  } );
+    
+    */
     // Communicator for X
     int remain_dims_X[6] = { true, false, false, false, false, false };         
     MPI_Cart_sub(Comm[DIR_ALL], remain_dims_X, &Comm[DIR_X]);
@@ -129,6 +154,7 @@ Parallel::Parallel(Setup *setup)
     int remain_dim_V[6]   = {false, false, false, true, false ,false};
     MPI_Cart_sub(Comm[DIR_ALL], remain_dim_V, &Comm[DIR_V]);
     MPI_Cart_rank  (Comm[DIR_V], coord_master, &dirMaster[DIR_V]);
+    
 
     // Communicator for M
     int remain_dim_M[6] = {false, false, false, false, true ,false};
@@ -164,17 +190,29 @@ Parallel::Parallel(Setup *setup)
     MPI_Cart_sub(Comm[DIR_ALL], remain_dim_XYZVM, &Comm[DIR_XYZVM]);
     MPI_Cart_rank  (Comm[DIR_XYZVM], coord_master, &dirMaster[DIR_XYZVM]);
     
-    ////// Get ranks of neigbouring processes for Vlasov equation boundary exchange //////
+    ///////////////////////////////////////////////////////////////////////
+    //
+    //   Get ranks of neigbouring processes for Vlasov equation boundary 
+    //   exchange, e.g. in X
+    //
+    //   ...|(x=n-2)|(x=n-1) rank_l|(x=n) my_rank|(x=n+1) rank_u|(x=+2)| ...
+    //
+    //   Note that, x,z are periodic, thus (n=-1) corresponds to (n=Nx-1)
+    //
+    auto setNeighbourRank = [=](int dir) 
+    {
+      int rank = myRank; // is this necessary ?!
+      MPI_Cart_shift(Comm[DIR_ALL], dir, 1, &rank, &Talk[dir].rank_u);
+      MPI_Cart_shift(Comm[DIR_ALL], dir,-1, &rank, &Talk[dir].rank_l);
+    };
+    //for(int dir: {DIR_X, DIR_Z, DIR_V, DIR_M, DIR_S}) setNeighbourRank(dir);
+
     int rank = myRank; // is this necessary ?!
     
     // setup communcation ranks for X
     MPI_Cart_shift(Comm[DIR_ALL], DIR_X, 1, &rank, &Talk[DIR_X].rank_u);
     MPI_Cart_shift(Comm[DIR_ALL], DIR_X,-1, &rank, &Talk[DIR_X].rank_l);
   
-    // setup communcation ranks for Y
-    //MPI_Cart_shift(Comm[DIR_ALL], DIR_Y, 1, &rank, &Talk[DIR_Y].rank_u);
-    //MPI_Cart_shift(Comm[DIR_ALL], DIR_Y,-1, &rank, &Talk[DIR_Y].rank_l);
- 
     // setup communcation ranks for Z
     MPI_Cart_shift(Comm[DIR_ALL], DIR_Z, 1, &rank, &Talk[DIR_Z].rank_u);
     MPI_Cart_shift(Comm[DIR_ALL], DIR_Z,-1, &rank, &Talk[DIR_Z].rank_l);
@@ -342,12 +380,13 @@ void Parallel::checkValidDecomposition(Setup *setup)
 
    // Check basic decomposition sizes
    if( decomposition[DIR_X] > setup->get("Grid.Nx", 1)) check(-1, DMESG("Decomposition in x bigger than Nx"));
-// no need to check y-decomposition (OpenMP parallelization)   
-// if( decomposition(DIR_Y) > setup->get("Grid.Ny", 1)) check(-1, DMESG("Decomposition in y bigger than Ny"));
    if( decomposition[DIR_Z] > setup->get("Grid.Nz", 1)) check(-1, DMESG("Decomposition in z bigger than Nz"));
    if( decomposition[DIR_V] > setup->get("Grid.Nv", 1)) check(-1, DMESG("Decomposition in v bigger than Nv"));
    if( decomposition[DIR_M] > setup->get("Grid.Nm", 1)) check(-1, DMESG("Decomposition in m bigger than Nm"));
    if( decomposition[DIR_S] > setup->get("Grid.Ns", 1)) check(-1, DMESG("Decomposition in s bigger than Ns"));
+  
+   // check if OpenMP threads are equal decompositon
+   if( decomposition[DIR_Y] != numThreads             ) check(-1, DMESG("Failed to set threads. Decomposition[Y] != numThreads"));
    
    // Simple Check if reasonable values are provided for decomposition (only MPI proceeses)
    const int pNs = setup->get("Grid.Ns", 1 );
@@ -375,6 +414,7 @@ void Parallel::printOn(std::ostream &output) const {
       if      (useOpenMP) output << " OpenMP (Threads) : " << Setup::num2str(numThreads) ;
       if      (useMPI   ) {
       
+           output <<  " MPI (processes) : " << Setup::num2str(numProcesses) << std::endl;
            if (decomposition[DIR_X] == 0) output <<  "Automatic" << std::endl;
            else  output <<  " MPI (processes) : " << Setup::num2str(numProcesses) << std::endl;
 
