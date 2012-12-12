@@ -60,7 +60,7 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov 
    {
 
    /////////////////////////////////////// Initialize dynamic Fields for Ap (we use Canonical Momentum Method) ////////////////////////////
-   if(plasma->nfields >= 2) {
+   if(Nq >= 2) {
    	FunctionParser Ap_parser = setup->getFParser();
    	FunctionParser phi_parser = setup->getFParser();
    	check(((phi_parser.Parse(setup->get("Init.phi", "0."), "x,y_k,z") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
@@ -87,7 +87,7 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov 
 
 /*
    /////////////////////////////////////// Initialize dynamic Fields for Bp (we use Canonical Momentum Method) ////////////////////////////
-   if(plasma->nfields >= 3) {
+   if(Nq >= 3) {
 
    	FunctionParser Bp_parser = setup->getFParser();
    	check(((Bp_parser.Parse(setup->get("Init.Bp", "0."), "x,y,z") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
@@ -114,8 +114,8 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov 
         
        	fields->gyroAverage(Field0, Q, m, s, true);
 
-         Field[1:plasma->nfields][s][m][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD] 
-          =  Q[1:plasma->nfields]      [NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD];
+         Field[1:Nq][s][m][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD] 
+          =  Q[1:Nq]      [NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD];
    
    
    } }
@@ -126,7 +126,7 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov 
    for(int s = NsLlD; s <= NsLuD; s++) { for(int m   = NmLlD ; m   <= NmLuD ; m++  ) {  for(int v = NvLlD; v <= NvLuD; v++) { 
    for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  for(int x = NxLlD; x <= NxLuD; x++) {
  
-        f[s][m][z][y_k][x][v]  +=  ((plasma->nfields >= 2) ? plasma->species[s].sigma * plasma->species[s].alpha * V[v]*geo->eps_hat 
+        f[s][m][z][y_k][x][v]  +=  ((Nq >= 2) ? plasma->species[s].sigma * plasma->species[s].alpha * V[v]*geo->eps_hat 
                                                     * f0[s][m][z][y_k][x][v] * plasma->beta * Field[Field::Ap][s][m][z][y_k][x] : 0.);
    }}} }}}
 
@@ -137,13 +137,13 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov 
    // set fixed fields if requested,  initialize Fields, Ap
 /* 
    if (setup->get("Init.FixedPhi", "0.").substr(0,4) == "File") setFieldFromDataFile(setup, fields->Field0, Field::phi, setup->get("Init.FixedPhi", "0."));
-   else if (plasma->nfields >= 1) setFieldFromFunction(setup, fields->Field0, Field::phi, setup->get("Init.FixedPhi", "0."));
+   else if (Nq >= 1) setFieldFromFunction(setup, fields->Field0, Field::phi, setup->get("Init.FixedPhi", "0."));
 
    if (setup->get("Init.FixedAp" , "0.").substr(0,4) == "File") setFieldFromDataFile(setup, fields->Field0, Field::Ap, setup->get("Init.FixedAp", "0."));
-   else if (plasma->nfields >= 2) setFieldFromFunction(setup, fields->Field0, Field::Ap, setup->get("Init.FixedAp", "0."));
+   else if (Nq >= 2) setFieldFromFunction(setup, fields->Field0, Field::Ap, setup->get("Init.FixedAp", "0."));
 
    if (setup->get("Init.FixedBp", "0.").substr(0,4) == "File") setFieldFromDataFile(setup, fields->Field0, Field::Bp, setup->get("Init.FixedBp", "0."));
-   else if (plasma->nfields >= 3) setFieldFromFunction(setup, fields->Field0, Field::Bp, setup->get("Init.FixedBp", "0."));
+   else if (Nq >= 3) setFieldFromFunction(setup, fields->Field0, Field::Bp, setup->get("Init.FixedBp", "0."));
 
  * */
    }

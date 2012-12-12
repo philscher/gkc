@@ -59,6 +59,9 @@ public:
    * lost as the HDF-5 file becomes corrupted if not closed properly.
    * Snapshots cannot be saved.
    *
+   * Well , http://www.hdfgroup.org/HDF5/doc/Advanced/HDF5_Metadata/index.html
+   * say's different, but it don't get them ...
+   *
    **/
    void flush(Timing timing, double dt);
    

@@ -212,11 +212,17 @@ class Vlasov : public IfaceGKC {
    //int updateMaxwellian() { return GKC_SUCCESS;};
 
    /**
+   *   @brief get maximum non-linear time step 
+   *
    *   Calculates the timestep according to a defined CFL number. For the Vlasov equation
    *   several terms needs to be calculated for the highest possible timestep. These are
    *
+   *   @param maxCFL maximum CFL value for non-linear terms
+   *
+   *   @return maximum time step value
+   *
    **/
-   double getMaxTimeStep(int dir, const double maxCFL);
+   double getMaxNLTimeStep(const double maxCFL);
 
    
    

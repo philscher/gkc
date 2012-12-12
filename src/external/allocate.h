@@ -323,8 +323,11 @@ class allocate : public ArrayBase
     **/ 
     ~allocate()
     {
+      std::cout << "Do not de-allocating" << std::endl;
+      //System::printStackTrace() ;
+      return;
          if(flags & alloc_flags::DEALLOC) { 
-            
+           std::cout << "De-allocating arrays" << std::endl << std::flush; 
             // Deallocate all arrays
             while (!ptr_stack.empty()) {
            
@@ -335,7 +338,6 @@ class allocate : public ArrayBase
               _mm_free(ptr);
               // remove element on top
               ptr_stack.pop();
-            std::cout << "Dealloc" << std::endl;
             }
          }
     };

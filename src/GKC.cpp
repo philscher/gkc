@@ -49,12 +49,12 @@ GKC::GKC(Setup *_setup) : setup(_setup)
 {
 
     // Read Setup 
-    std::string fft_solver_name = setup->get("GKC.FFTSolver", "fftw3");
-    std::string psolver_type    = setup->get("Fields.Solver", "DFT");
-    std::string vlasov_type     = setup->get("Vlasov.Solver", "Aux");
-    std::string collision_type  = setup->get("Collisions.Solver", "None");
-    gkc_SolType                 = setup->get("GKC.Type", "IVP");
-    std::string geometry_Type   = setup->get("GKC.Geometry", "Geometry2D");
+    std::string fft_solver_name = setup->get("GKC.FFTSolver"    , "fftw3");
+    std::string psolver_type    = setup->get("Fields.Solver"    , "DFT"  );
+    std::string vlasov_type     = setup->get("Vlasov.Solver"    , "Aux"  );
+    std::string collision_type  = setup->get("Collisions.Solver", "None" );
+    gkc_SolType                 = setup->get("GKC.Type"         , "IVP"  );
+    std::string geometry_Type   = setup->get("GKC.Geometry"     , "2D"   );
 
 
    /////////////////// Load subsystems ////////////////
@@ -66,9 +66,9 @@ GKC::GKC(Setup *_setup) : setup(_setup)
     fileIO    = new FileIO(parallel, setup);
     grid      = new Grid(setup, parallel, fileIO);
     
-    if     (geometry_Type == "GeometrySA") geometry  = new GeometrySA(setup, grid, fileIO);
-    else if(geometry_Type == "Geometry2D") geometry  = new Geometry2D(setup, grid, fileIO);
-    else if(geometry_Type == "Slab"      ) geometry  = new Geometry2D(setup, grid, fileIO);
+    if     (geometry_Type == "SA"  ) geometry  = new GeometrySA(setup, grid, fileIO);
+    else if(geometry_Type == "2D"  ) geometry  = new Geometry2D(setup, grid, fileIO);
+    else if(geometry_Type == "Slab") geometry  = new GeometrySlab(setup, grid, fileIO);
     else check(-1, DMESG("No such Geometry"));
 
     plasma    = new Plasma(setup, fileIO, geometry);
@@ -138,6 +138,7 @@ int GKC::mainLoop()
 {
 
    parallel->print("Running main loop");
+   
 
    if (gkc_SolType == "IVP") {
  
@@ -146,21 +147,37 @@ int GKC::mainLoop()
             timeIntegration->setMaxLinearTimeStep(eigenvalue, vlasov, fields);
 
             bench->start("MainLoop");
-            for(; control->checkOK(timing, timeIntegration->maxTiming);){
-       
-              // integrate for one time-step, give current dt as output
-               double dt = timeIntegration->solveTimeStep(vlasov, fields, particles, timing);       
+     
+            bool isOK = true; 
+          
+          #pragma omp parallel
+          { 
+   
+             do {
+               // integrate for one time-step, give current dt as output
+               const double dt = timeIntegration->solveTimeStep(vlasov, fields, particles, timing);     
 
-               // Analysis results and output data if necessary
-               // check if performed in writeData
-               vlasov->writeData(timing, dt);
-               fields->writeData(timing, dt);
-               visual->writeData(timing, dt);
-               analysis->writeData(timing, dt);
                
-               event->checkEvent(timing, vlasov, fields);
-        
-           }
+               // Analysis results and output data if necessary
+               #pragma omp single 
+               {
+                  vlasov->writeData(timing, dt);
+                  fields->writeData(timing, dt);
+                  visual->writeData(timing, dt);
+
+                  analysis->writeData(timing, dt);
+                  event->checkEvent(timing, vlasov, fields);
+                  //isOK =  timing.step < 10 ? 1 : 0;    //control->checkOK(timing, timeIntegration->maxTiming);
+                  isOK =  control->checkOK(timing, timeIntegration->maxTiming);
+                  // fileIO->flush(timing, dt);  
+
+               }
+               #pragma omp flush (isOK)
+    
+                 
+           } while(isOK);
+
+          }
            bench->stop("MainLoop");
 
    

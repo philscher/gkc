@@ -139,7 +139,8 @@ void VlasovIsland::Vlasov_2D_Island(
         //calculate non-linear term (rk_step == 0 for eigenvalue calculations)
         if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
         
-        omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
+        #pragma omp for
+        for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
 
         
         // Note : for negative modes we need to use complex conjugate value

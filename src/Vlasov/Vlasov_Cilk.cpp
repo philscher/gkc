@@ -24,13 +24,13 @@ VlasovCilk::VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *
 }
 
 
-void VlasovCilk::solve(std::string equation_type, Fields *fields, CComplex *_fs, CComplex *_fss, double dt, int rk_step, const double rk[3]) 
+void VlasovCilk::solve(std::string equation_type, Fields *fields, CComplex *f_in, CComplex *f_out, double dt, int rk_step, const double rk[3]) 
 {
   if(0);
-  else if(equation_type == "Vlasov_EM") Vlasov_EM((A6zz) _fs, (A6zz) _fss, (A6zz) f0, (A6zz) f, (A6zz) ft, (A6zz) Coll, 
-                                                  (A6zz) fields->Field, (A4zz) Xi, (A4zz) G, (A3zz) nonLinearTerm,
-                                                  (A2rr) geo->Kx, (A2rr) geo->Ky, (A2rr) geo->dB_dz,
-                                                  X, V, M,  dt, rk_step, rk);
+  else if(equation_type == "EM") Vlasov_EM((A6zz) f_in, (A6zz) f_out, (A6zz) f0, (A6zz) f, (A6zz) ft, (A6zz) Coll, 
+                                           (A6zz) fields->Field, (A4zz) Xi, (A4zz) G, (A3zz) nonLinearTerm,
+                                           (A2rr) geo->Kx, (A2rr) geo->Ky, (A2rr) geo->dB_dz,
+                                           X, V, M,  dt, rk_step, rk);
   else   check(-1, DMESG("No Such Equation"));
 
   return;
@@ -80,23 +80,26 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
 {
    // phase space function & Poisson bracket
    const double _kw_fft_Norm = 1./(fft->Norm_Y_Backward * fft->Norm_Y_Backward * fft->Norm_Y_Forward);
-  
-
-   CComplexAA  xky_Xi [NkyLD][NxLB+4];
-   CComplexAA  xky_f1 [NkyLD][NxLB  ];
-   CComplexAA  xky_ExB[NkyLD][NxLD  ];
-
-   doubleAA    xy_Xi    [NyLD+8][NxLB+4]; // extended BC 
-   doubleAA    xy_dXi_dy[NyLD+4][NxLB  ]; // normal BC
-   doubleAA    xy_dXi_dx[NyLD+4][NxLB  ];
-   doubleAA    xy_f1    [NyLD+4][NxLB  ];
-   doubleAA    xy_ExB   [NyLD  ][NxLD  ];
-
+   
    const doubleAA _kw_12_dx = 1./(12.*dx), _kw_12_dy=1./(12.*dy);
    const doubleAA _kw_24_dx = 1./(24.*dx), _kw_24_dy=1./(24.*dy);
+ 
 
-   // stride is not good
-   for(int v=NvLlD; v<=NvLuD;v++) { 
+    // THERE is also OMP_STACKSIZE !
+      
+    CComplexAA  xky_Xi [NkyLD][NxLB+4];
+    CComplexAA  xky_f1 [NkyLD][NxLB  ];
+    CComplexAA  xky_ExB[NkyLD][NxLD  ];
+
+    doubleAA    xy_Xi    [NyLD+8][NxLB+4]; // extended BC 
+    doubleAA    xy_dXi_dy[NyLD+4][NxLB  ]; // normal BC
+    doubleAA    xy_dXi_dx[NyLD+4][NxLB  ];
+    doubleAA    xy_f1    [NyLD+4][NxLB  ];
+    doubleAA    xy_ExB   [NyLD  ][NxLD  ];
+  
+
+    #pragma omp for
+    for(int v=NvLlD; v<=NvLuD; v++) { 
 
         // Transform Xi to real space  
         
@@ -108,6 +111,9 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
         else                xky_Xi[:][:] = Fields[Field::phi][s][m][z][NkyLlD:NkyLD][NxLlB-2:NxLB+4]   ;
        
         // xy_Xi[shift by +4][], as we also will use extended BC in Y
+       
+        // crashes !
+        //std::cout << "xky_Xi : " << &xky_Xi << "  xy_Xi : " << &xy_Xi[4][0] << std::endl;
         fft->solve(FFT_Type::Y_FIELDS, FFT_Sign::Backward, xky_Xi, &xy_Xi[4][0]);
        
         // Set Periodic-Boundary in Y (in X is not necessary as we transform it too)
@@ -116,7 +122,7 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
         xy_Xi[NyLD+4:4][:] =  xy_Xi[4     :4][:];
 
         // perform CD-4 derivative for dphi_dx , and dphi_dy (Note, we have extendend GC in X&Y)
-        omp_for(int y=2; y < NyLB+2; y++) { simd_for(int x=2; x < NxLB+2; x++)  {
+        for(int y=2; y < NyLB+2; y++) { simd_for(int x=2; x < NxLB+2; x++)  {
 
          xy_dXi_dx[y-2][x-2] = (8.*(xy_Xi[y][x+1] - xy_Xi[y][x-1]) - (xy_Xi[y][x+2] - xy_Xi[y][x-2])) * _kw_12_dx;
          xy_dXi_dy[y-2][x-2] = (8.*(xy_Xi[y+1][x] - xy_Xi[y-1][x]) - (xy_Xi[y+2][x] - xy_Xi[y-2][x])) * _kw_12_dy;
@@ -140,9 +146,8 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
         xy_f1[0     :2][:] =  xy_f1[NyLD  :2][:];
         xy_f1[NyLD+2:2][:] =  xy_f1[2     :2][:];
 
-     /////////////////   calculate cross terms using Morinishi scheme (Arakawa type) [Xi,G] (or [phi,F1])  /////////////////////
-      
-     omp_for(int y=2; y < NyLD+2; y++) { simd_for(int x=2; x < NxLD+2; x++) {
+        /////////////////   calculate cross terms using Morinishi scheme (Arakawa type) [Xi,G] (or [phi,F1])  /////////////////////
+        for(int y=2; y < NyLD+2; y++) { simd_for(int x=2; x < NxLD+2; x++) {
 
             const double dXi_dy__dG_dx =  ( 8. * ( (xy_dXi_dy[y][x] + xy_dXi_dy[y][x+1]) * xy_f1[y][x+1]
                                                  - (xy_dXi_dy[y][x] + xy_dXi_dy[y][x-1]) * xy_f1[y][x-1])
@@ -155,7 +160,8 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
                                                  - (xy_dXi_dx[y][x] + xy_dXi_dx[y-2][x]) * xy_f1[y-2][x]) ) * _kw_24_dy;
             
            // Take care of Fourier normalization : A*sqrt(N) * B*sqrt(N) 
-           xy_ExB[y-2][x-2]  = - (dXi_dy__dG_dx - dXi_dx__dG_dy) * _kw_fft_Norm;
+           //changed 121119-20:30 for checking heat flux xy_ExB[y-2][x-2]  = - (dXi_dy__dG_dx - dXi_dx__dG_dy) * _kw_fft_Norm;
+           xy_ExB[y-2][x-2]  = (dXi_dy__dG_dx - dXi_dx__dG_dy) * _kw_fft_Norm;
       } } // x,y
    
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -211,14 +217,14 @@ void VlasovCilk::setupXiAndG(
   simd_for(int v   = NvLlB ;   v <= NvLuB ;   v++) {
 
      Xi[z][y_k][NxLlB-2:2][v] = Fields[Field::phi][s][m][z][y_k][NxLlB-2:2] - (useAp ? aeb*V[v]*Fields[Field::Ap][s][m][z][y_k][NxLlB-2:2] : 0.)
-                                                                           - (useBp ? aeb*M[m]*Fields[Field::Bp][s][m][z][y_k][NxLlB-2:2] : 0.);
+                                                                            - (useBp ? aeb*M[m]*Fields[Field::Bp][s][m][z][y_k][NxLlB-2:2] : 0.);
 
      Xi[z][y_k][NxLuB+1:2][v] = Fields[Field::phi][s][m][z][y_k][NxLuB+1:2] - (useAp ? aeb*V[v]*Fields[Field::Ap][s][m][z][y_k][NxLuB+1:2] : 0.) 
-                                                                           - (useBp ? aeb*M[m]*Fields[Field::Bp][s][m][z][y_k][NxLuB+1:2] : 0.);
+                                                                            - (useBp ? aeb*M[m]*Fields[Field::Bp][s][m][z][y_k][NxLuB+1:2] : 0.);
   }
   
   
-  }} // y_k, z
+  } } // y_k, z
 
 };
 
@@ -234,12 +240,11 @@ void VlasovCilk::Vlasov_EM(
     const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
     CComplex Xi             [NzLB][NkyLD][NxLB+4][NvLB],
     CComplex G              [NzLB][NkyLD][NxLB  ][NvLB],
-    CComplex NonLinearTerm        [NkyLD][NxLD  ][NvLD],
+    CComplex NonLinearTerm        [NkyLD][NxLD  ][NvLD],        // Non-Linear Term
     const double Kx[NzLD][NxLD], const double Ky[NzLD][NxLD], const double dB_dz[NzLD][NxLD], // Geometry stuff
     const double X[NxGB], const double V[NvGB], const double M[NmGB],
     const double dt, const int rk_step, const double rk[3])
 { 
-
    
    const double B0 = plasma->B0;
 
@@ -256,33 +261,38 @@ void VlasovCilk::Vlasov_EM(
       const double sub = (plasma->species[s].doGyro) ? 3./2. : 1./2.;
       
 
-      for(int m=NmLlD; m<= NmLuD;m++) { 
+   for(int m=NmLlD; m<= NmLuD;m++) { 
 
           // Calculate before z loop as we use dg_dz and dXi_dz derivative
           setupXiAndG(g, f0 , Fields, Xi, G, V, M, m , s);
       
           // Nested Parallelism (PoissonBracket variables are allocated on stack)
           // Cannot collapse as we have no perfetly nested loops
-         omp_for(int z=NzLlD; z<= NzLuD;z++) { 
+          //
+          
+    omp_for(int z=NzLlD; z<= NzLuD;z++) { 
            
            
          // calculate non-linear term (rk_step == 0 for eigenvalue calculatinullptr)
          // CFL condition is calculated inside calculatePoissonBracket
          if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(G, Xi, nullptr, nullptr, z, m, s, NonLinearTerm, Xi_max, true); 
            
-         omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
+    omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
            
        
-            const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];
+         const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];
 
-            const CComplex dphi_dx = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1]) 
-                                       - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2])) * _kw_12_dx  ;  
+         const CComplex dphi_dx = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1]) 
+                                    - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2])) * _kw_12_dx  ;  
+            
+         const CComplex ky = (CComplex (0. + 1.j)) * fft->ky(y_k);
 
-            const CComplex ky = (CComplex (0. + 1.j)) * fft->ky(y_k);
+         const double CoJB = 1.;///geo->get_J(x,z);
+    
+         const CComplex kp = (CComplex (0. + 1.j)) * (0.002828);
 
-        const double CoJB = 1.;///geo->get_J(x,z);
-     
-      simd_for(int v=NvLlD; v<= NvLuD;v++) {
+
+    simd_for(int v=NvLlD; v<= NvLuD;v++) {
         
 
           
@@ -292,12 +302,8 @@ void VlasovCilk::Vlasov_EM(
         const CComplex Xi_  = Xi[z][y_k][x][v];
 
         
-        // Velocity derivaties for Lennard-Bernstein Collisional Model (shouln't I use G ?)
         const CComplex dg_dv   = (8. *(g[s][m][z][y_k][x][v+1] - g[s][m][z][y_k][x][v-1]) 
                                     - (g[s][m][z][y_k][x][v+2] - g[s][m][z][y_k][x][v-2])) * _kw_12_dv;
-        const CComplex ddg_dvv = (16.*(g[s][m][z][y_k][x][v+1] + g[s][m][z][y_k][x][v-1]) 
-                                    - (g[s][m][z][y_k][x][v+2] + g[s][m][z][y_k][x][v-2]) 
-                                 - 30.*g[s][m][z][y_k][x][v]) * _kw_12_dv_dv;
         
         /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
 
@@ -320,16 +326,18 @@ void VlasovCilk::Vlasov_EM(
         
         const CComplex dg_dt = 
             
-           // have to set zero     NonLinearTerm[y_k][x][v]                                                                 // Non-linear ( array is zero for linear simulations) 
-          + Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - sub)) * f0_ * Xi_ * ky         // Driving Term
+           NonLinearTerm[y_k][x][v]                                                                 // Non-linear ( array is zero for linear simulations) 
+         // + Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - sub)) * f0_ * Xi_ * ky         // Driving Term
+          + Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - sub)) * f0_ * phi_ * ky         // Driving Term
 //          - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0) *                                   
 //            (Kx[z][x] * dG_dx - Ky[z][x] * ky * G_)                                    // Magnetic curvature term
           //- alpha * pow2(V[v]) * plasma->beta * plasma->w_p * G_ * ky                        // Plasma pressure gradient
-          -  CoJB *  alpha * V[v]* dG_dz                                                       // Landau damping term
+          -  CoJB *  alpha * V[v]*  kp * (g_ + sigma * phi_ *  f0_)                     // Landau damping term
+//            -  CoJB *  alpha * V[v]* dG_dz                                                       // Landau damping term
 //          + alpha  / 2. * M[m] * dB_dz[z][x] * dg_dv                                       // Magnetic mirror term    
  //         + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * Kx[z][x] * 
  //         ((w_n + w_T * (pow2(V[v]) + M[m] * B0)/Temp - sub) * dG_dx + sigma * dphi_dx * f0_); // ??
-           + Coll[s][m][z][y_k][x][v];                // Collision term
+;//           + Coll[s][m][z][y_k][x][v];                // Collision term
 
           
         //////////////////////////// Vlasov End ////////////////////////////
@@ -341,9 +349,6 @@ void VlasovCilk::Vlasov_EM(
       }}} }}
    }
 }
-
-
-//const double Krook_nu = krook_nu * ( (X[x] > 0.8 * Lx/2.) || (X[x] < -0.8 * Lx/2.))  ?  0.1 * pow2(abs(X[x]) - 0.8 * Lx/2.): 0.;
 
 
 

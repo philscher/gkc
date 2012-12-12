@@ -55,7 +55,8 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
    
    dataOutputF1      = Timing( setup->get("DataOutput.Vlasov.Step", -1),
                                setup->get("DataOutput.Vlasov.Time", -1.));
-    
+
+   Xi_max[:] = 0.;
 }
 
 
@@ -73,16 +74,25 @@ void Vlasov::solve(Fields *fields, CComplex  *_fs, CComplex  *_fss, double dt, i
    useNonBlockingBoundary =  false;
 
    // Need boundary_isclean to avoid deadlock at first iteration
+   #pragma omp single
+   {
    if((f_boundary != nullptr) && useNonBlockingBoundary) setBoundary(f_boundary, Boundary::RECV);
-  
+   }
+
    Xi_max[:] = 0.; // Needed to calculate CFL time step 
    
+   // Calculate the collision operator
    coll->solve(fields, _fs, f0, Coll, dt, rk_step);
-         solve(equation_type, fields, _fs, _fss, dt, rk_step, rk);
+        
+   // Calculate the Vlasov equation
+   solve(equation_type, fields, _fs, _fss, dt, rk_step, rk);
 
 
    // Note : we have non-blocking boundaries as Poisson solver does not require ghosts
+   #pragma omp single
+   {
    (useNonBlockingBoundary) ? setBoundary(_fss, Boundary::SEND) :  setBoundary(_fss, Boundary::SENDRECV); 
+   }
 
    f_boundary = _fss; 
   
@@ -120,7 +130,7 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
    // Z-Boundary (skip exchange in case we use only 2D (Nz == 1) simulations 
    if(Nz > 1) {
 
-     omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {  for(int x=NxLlD; x<= NxLuD;x++) { 
+     for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {  for(int x=NxLlD; x<= NxLuD;x++) { 
 
        const CComplex a = ((CComplex) 0. + 1.j) *  (2.*M_PI * (2.* M_PI/Ly) * y_k);
             
@@ -185,16 +195,25 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
 
 
 
-double Vlasov::getMaxTimeStep(int dir, const double maxCFL) 
+double Vlasov::getMaxNLTimeStep(const double maxCFL) 
 {
-//  double v_scale = 0.;
-//  for(int s=NsGlD; s<=NsGuD; s++) v_scale = max(v_scale, plasma->species[s].scale_v);
+  double dt_NL = 0.;
   
-  // get CFL restriction from non-linear Terms
-  const double NL_ExB_v    = max(Xi_max[DIR_X]/dy , Xi_max[DIR_Y]/dx);
-  const double NL_Landau_v = 0.; // Not included yet
+  #pragma omp single copyprivate(dt_NL)
+  {
+    // from non-linear ExB Term
+    const double NL_ExB_v    = max(Xi_max[DIR_X]/dy , Xi_max[DIR_Y]/dx);
 
-  const double dt_NL = maxCFL / parallel->reduce(max(NL_ExB_v, NL_Landau_v), Op::MAX);
+    // from non-linear Landau damping (particle trapping)
+    const double NL_Landau_v = 0.; // Not included yet
+
+    // if non-linear terms are very small, there is no restriction on
+    // time step, add 1.e-10 to avoid division by 0 
+    double NL = max(NL_ExB_v, NL_Landau_v) + 1.e-10; 
+
+    // get global maximum timestep time step 
+    dt_NL = maxCFL / parallel->reduce(NL, Op::MAX);
+  }
 
   return dt_NL;
 }

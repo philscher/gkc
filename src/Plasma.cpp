@@ -139,10 +139,9 @@ void Plasma::printOn(std::ostream &output) const
              output << " T : " << species[s].T_name << " n0 : " << species[s].n_name  <<  std::endl;
             } else {
              output << " T0 : " << species[s].T0 << " n0 : " << species[s].n0 <<
-             "  w_n : " << species[s].w_n << "  w_T : " << species[s].w_T << " Model : " << species[s].gyroModel << " " << species[s].doGyro << std::endl;
+             "  w_n : " << species[s].w_n << "  w_T : " << species[s].w_T << " Model : " << species[s].gyroModel << " "  << std::endl;
             }
             }
-            output <<  "           |  Debye Length^2 : " << debye2 << "   B0 : " << B0 << "  beta : " << beta << "  w_p : " << w_p << std::endl; 
      
 }
 

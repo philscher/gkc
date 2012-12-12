@@ -141,20 +141,21 @@ class System
    static void printStackTrace() 
    {
     // get backtrace
-    void *array[10];
+    const int numStackTraces = 32;
+
+    void *array[numStackTraces];
     size_t size;
     
     char **strings;
     size_t i;
      
-    size = backtrace (array, 10);
+    size = backtrace (array, numStackTraces);
     strings = backtrace_symbols (array, size);
     
-    std::cerr << "Porcess obtaind " << size << " stack frames." << std::endl;  
+    std::cerr << "Showing " << size << " stack frames : " << std::endl;  
     
     // Output them
-    for (int i = 0; i < size; i++) std::cerr << "    :  " << strings[i] << std::endl;  
-    std::cerr << std::flush << std::endl;
+    for (int i = 0; i < size; i++) std::cerr << "    :  " << strings[i] << std::endl;
     free (strings);
 
    }

@@ -40,7 +40,7 @@ void VlasovAux::solve(std::string equation_type, Fields *fields, CComplex *f_in,
 
   else if(equation_type == "EM")
 
-      Vlasov_EM    ((A6zz) f_in, (A6zz) f_out, (A6zz) f0, (A6zz) f,
+      Vlasov_EM   ((A6zz) f_in, (A6zz) f_out, (A6zz) f0, (A6zz) f,
                    (A6zz) ft, (A6zz) Coll, (A6zz) fields->Field, (A3zz) nonLinearTerm,
                    (A4zz) Xi, (A4zz) G, X, V, M, dt, rk_step, rk);
 
@@ -95,7 +95,8 @@ void VlasovAux::Vlasov_ES(
       if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
        
 
-      omp_for(int y_k=NkyLlD; y_k <= NkyLuD; y_k++) { 
+      #pragma omp for
+      for(int y_k=NkyLlD; y_k <= NkyLuD; y_k++) { 
              
          const CComplex ky = ((CComplex) (0. + 1.j))  * fft->ky(y_k);
              
@@ -192,7 +193,7 @@ void VlasovAux::Vlasov_EM(
       
           omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
        
-          const CComplex phi_ = (__extension__ 1.0i) * Fields[Field::phi][s][m][z][y_k][x];
+          const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];
                
           const CComplex dphi_dx = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1]) 
                                      - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2]))/(12.*dx)  ;  
