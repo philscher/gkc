@@ -37,6 +37,10 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
 
 {
 
+  // @todo include "fftw_flops"
+  // @todo include "fftw_print_plan"
+
+
   if(parallel->Coord[DIR_V] == 0) {          // Fourier solver not needed in velocity space
 
     // Setup plans
@@ -55,12 +59,17 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
     const int nfields = plasma->nfields;
 
 #ifdef PARALLEL_OPENMP
-    fftw_init_threads();
-    fftw_plan_with_nthreads(parallel->numThreads);
+    //this should use our global OpenMPI threads
+//    fftw_init_threads();
+//    fftw_plan_with_nthreads(parallel->numThreads);
 #endif
 
 #ifdef GKC_PARALLEL_MPI
     fftw_mpi_init();
+#endif
+    
+#ifdef PARALLEL_OPENMP
+//    fftw_plan_with_nthreads(parallel->numThreads);
 #endif
     ////////////////////// Set for X-direction (FFT Poisson solver) /////////// 
     
@@ -152,6 +161,9 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
       //
       
       //perf_flag |= FFTW_UNALIGNED;
+#ifdef PARALLEL_OPENMP
+  //  fftw_plan_with_nthreads(1);
+#endif
       
       // Orginal
       
@@ -166,7 +178,7 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
 
       
       doubleAA   rY_BD0[NyLD ][NxLD]; CComplexAA kY_BD0[NkyLD][NxLD];
-      plan_YForward_NL     = fftw_plan_many_dft_r2c(1, &NyLD, NxLD, (double *     ) rY_BD0, NULL, NxLD, 1, (fftw_complex *) kY_BD0, NULL, NxLD  , 1, perf_flag);
+      plan_YForward_NL     = fftw_plan_many_dft_r2c(1, &NyLD, NxLD, (double *     ) rY_BD0, NULL, NxLD, 1, (fftw_complex *) kY_BD0, NULL, NxLD , 1, perf_flag);
       plan_YBackward_NL    = fftw_plan_many_dft_c2r(1, &NyLD, NxLD, (fftw_complex*) kY_BD0, NULL, NxLD, 1, (double       *) rY_BD0, NULL, NxLD , 1, perf_flag);
                
       
@@ -176,16 +188,23 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
       AA_NkyLD  = 3 * (Nky+1)   / 2   ; 
       AA_NyLD  = 2 * AA_NkyLD - 2     ;
       
-      int AA_NkyLlD = NkyLlD              ; 
-      int AA_NkyLuD = NkyLlD + AA_NkyLD -1;
+      //int AA_NkyLlD = NkyLlD              ; 
+      //int AA_NkyLuD = NkyLlD + AA_NkyLD -1;
                 
           
-      doubleAA   rY_AA[AA_NyLD][NxLD]; CComplexAA kY_AA[AA_NkyLD][NxLD];
+      double   rY_AA[AA_NyLD][NxLD]; CComplex kY_AA[AA_NkyLD][NxLD];
       
 
       
-      plan_AA_YForward  = fftw_plan_many_dft_r2c(1, &AA_NyLD, NxLD, (double      *) rY_AA, NULL, 1, AA_NyLD ,  (fftw_complex*) kY_AA, NULL, 1, AA_NkyLD, perf_flag);
-      plan_AA_YBackward = fftw_plan_many_dft_c2r(1, &AA_NyLD, NxLD, (fftw_complex*) kY_AA, NULL, 1, AA_NkyLD,  (double      *) rY_AA, NULL, 1, AA_NyLD , perf_flag);
+      //plan_AA_YForward  = fftw_plan_many_dft_r2c(1, &AA_NyLD, NxLD, (double      *) rY_AA, NULL, 1, AA_NyLD ,  (fftw_complex*) kY_AA, NULL, 1, AA_NkyLD, perf_flag);
+      //plan_AA_YBackward = fftw_plan_many_dft_c2r(1, &AA_NyLD, NxLD, (fftw_complex*) kY_AA, NULL, 1, AA_NkyLD,  (double      *) rY_AA, NULL, 1, AA_NyLD , perf_flag);
+      
+      plan_AA_YForward  = fftw_plan_many_dft_r2c(1, &AA_NyLD, NxLD, (double      *) rY_AA, NULL, NxLD ,  1, (fftw_complex*) kY_AA, NULL, NxLD, 1, perf_flag);
+      plan_AA_YBackward = fftw_plan_many_dft_c2r(1, &AA_NyLD, NxLD, (fftw_complex*) kY_AA, NULL, NxLD ,  1, (double      *) rY_AA, NULL, NxLD, 1, perf_flag);
+
+#ifdef PARALLEL_OPENMP
+//    fftw_plan_with_nthreads(parallel->numThreads);
+#endif
 
 
     setNormalizationConstants();
@@ -202,7 +221,8 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
 /// too much crap here ..... :(
 void FFTSolver_fftw3::solve(const FFT_Type type, const FFT_Sign direction, void *in, void *out) 
 {
-   if(type == FFT_Type::X_FIELDS) {
+   
+    if(type == FFT_Type::X_FIELDS) {
              
    
      if(in == nullptr)  check(-1, DMESG("Need Pointer to array"));
@@ -260,7 +280,7 @@ void FFTSolver_fftw3::solve(const FFT_Type type, const FFT_Sign direction, void 
 
    else  check(-1, DMESG("Unknown FFT type or not supported"));
    
-   return;
+    return;
 }
 
 
@@ -282,18 +302,20 @@ FFTSolver_fftw3::~FFTSolver_fftw3()
         
        fftw_destroy_plan(plan_AA_YForward);
        fftw_destroy_plan(plan_AA_YBackward);
+    
+    //fftw_destroy_plan(plan_FieldTranspose_1);
+    //fftw_destroy_plan(plan_FieldTranspose_2);
 
 #ifdef PARALLEL_OPENMP
     fftw_cleanup_threads();
 #endif
+
     fftw_free(data_X_rOut);
     fftw_free(data_X_rIn );
     fftw_free(data_kXOut );
     fftw_free(data_kXIn  );
     
 
-    fftw_destroy_plan(plan_FieldTranspose_1);
-    fftw_destroy_plan(plan_FieldTranspose_2);
 }
 
 
@@ -301,6 +323,7 @@ FFTSolver_fftw3::~FFTSolver_fftw3()
 void FFTSolver_fftw3::multiply(const CComplex A[NkyLD][NxLD], const CComplex B[NkyLD][NxLD],
                                      CComplex R[NkyLD][NxLD])
 {
+   
    // Create antialiased arrays and copy and transform to real space
    CComplexAA AA_A[AA_NkyLD][NxLD];
    doubleAA   RS_A[AA_NyLD ][NxLD], 
@@ -402,6 +425,7 @@ void FFTSolver_fftw3::printOn(std::ostream &output) const {
 // transpose from C-ordering to Fortran ordering (required by fftw3-mpi) 
 void FFTSolver_fftw3::transpose(int Nx, int Ny, int Nz, int Nq, CComplex In[Nq][Nz][Ny][Nx], CComplex OutT[Nx][Ny][Nz][Nq])
 {
+     //#pragma omp for collapse(2)
      #pragma ivdep
      for(int x=0; x < Nx; x++ ) { for(int y=0; y < Ny; y++ ) {  
      for(int z=0; z < Nz; z++ ) { for(int q=0; q < Nq; q++ ) {  
@@ -415,6 +439,7 @@ void FFTSolver_fftw3::transpose(int Nx, int Ny, int Nz, int Nq, CComplex In[Nq][
 // transpose from Fortran ordering to C-ordering (required by fftw3-mpi) 
 void FFTSolver_fftw3::transpose_rev(int Nx, int Ny, int Nz, int Nq, CComplex In[Nx][Ny][Nz][Nq], CComplex OutT[Nq][Nz][Ny][Nx])
 {
+     //#pragma omp for collapse(2)
      #pragma ivdep
      for(int x=0; x < Nx; x++ ) { for(int y=0; y < Ny; y++ ) {  
      for(int z=0; z < Nz; z++ ) { for(int q=0; q < Nq; q++ ) {  

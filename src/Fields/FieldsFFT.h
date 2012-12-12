@@ -117,8 +117,8 @@ class FieldsFFT : public Fields {
   *   solve Eq. in Fourier space, using periodic boundary conditions in X and Y
   *
   **/
-  void solveFieldEquations(CComplex Q     [plasma->nfields][NxLD][NkyLD][Nz],
-                           CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz]);
+  void solveFieldEquations(const CComplex Q     [Nq][NxLD][NkyLD][Nz],
+                                 CComplex Field0[Nq][NxLD][NkyLD][Nz]);
 
   /**
   *
@@ -223,8 +223,8 @@ class FieldsFFT : public Fields {
   *   @todo link to function.
   *
   */
-   virtual void gyroAverage(CComplex In [Nq][NzLD][NkyLD][NxLD], 
-                            CComplex Out[Nq][NzLD][NkyLD][NxLD],
+   virtual void gyroAverage(const CComplex In [Nq][NzLD][NkyLD][NxLD], 
+                                  CComplex Out[Nq][NzLD][NkyLD][NxLD],
                             const int m, const int s, const bool forward);
     
   /**
@@ -253,10 +253,10 @@ class FieldsFFT : public Fields {
   *  @param gyroField forward- or backward transformation
   *
   */
-  void gyroFirst(CComplex   In [Nq][NzLD][NkyLD][NxLD], 
-                 CComplex   Out[Nq][NzLD][NkyLD][NxLD],
-                 CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
-                 CComplex kXIn [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+  void gyroFirst(const CComplex   In [Nq][NzLD][NkyLD][NxLD], 
+                       CComplex   Out[Nq][NzLD][NkyLD][NxLD],
+                       CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+                       CComplex kXIn [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
                  const int s, const bool gyroField=false) ; 
   
   /**
@@ -280,10 +280,10 @@ class FieldsFFT : public Fields {
   *  @param gyroField forward- or backward transformation
   *
   */
-  void gyroFull(CComplex In [Nq][NzLD][NkyLD][NxLD], 
-                CComplex Out[Nq][NzLD][NkyLD][NxLD],
-                CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
-                CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
+  void gyroFull(const CComplex In [Nq][NzLD][NkyLD][NxLD], 
+                      CComplex Out[Nq][NzLD][NkyLD][NxLD],
+                      CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
+                      CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
                 const int m, const int s);  
   
   /**

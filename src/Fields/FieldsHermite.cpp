@@ -66,9 +66,9 @@ FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileI
 }
 
 
-void FieldsHermite::gyroAverage(CComplex In [Nq][NzLD][NkyLD][NxLD], 
-                   CComplex Out[Nq][NzLD][NkyLD][NxLD],
-                   const int m, const int s, const bool forward)
+void FieldsHermite::gyroAverage(const CComplex In [Nq][NzLD][NkyLD][NxLD], 
+                                      CComplex Out[Nq][NzLD][NkyLD][NxLD],
+                                const int m, const int s, const bool forward)
 {
         CComplex *vec_X, *vec_XAvrg;
 
@@ -147,8 +147,8 @@ FieldsHermite::~FieldsHermite()
 
 
 //Array4C FieldsHermite::solveFieldEquations(Array4C Qn, Timing timing) 
-void FieldsHermite::solveFieldEquations(CComplex Q     [plasma->nfields][NxLD][NkyLD][Nz],
-                                        CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz])
+void FieldsHermite::solveFieldEquations(const CComplex Q     [Nq][NxLD][NkyLD][Nz],
+                                              CComplex Field0[Nq][NxLD][NkyLD][Nz])
 {
    
    // for 3 fields phi and B_perp are coupled and need to be solved differently

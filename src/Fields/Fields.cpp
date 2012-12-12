@@ -55,47 +55,61 @@ Fields::~Fields()
 }
 
 
-void Fields::solve(CComplex *f0, CComplex *f, Timing timing)
+void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
 {
+
   // calculate source terms  Q (Q is overwritten in the first iteration )
   for(int s = NsLlD, loop=0; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++, loop++) {
 
       if(solveEq & Field::phi) calculateChargeDensity               ((A6zz) f0, (A6zz) f, (A4zz) Field0,    m, s);
       if(solveEq & Field::Ap ) calculateParallelCurrentDensity      ((A6zz) f0, (A6zz) f, (A4zz) Field0, V, m, s);
       if(solveEq & Field::Bpp) calculatePerpendicularCurrentDensity ((A6zz) f0, (A6zz) f, (A4zz) Field0, M, m, s);
-  
+      #pragma omp barrier
+
       // Integrate over velocity space through different CPU's
-      parallel->reduce(ArrayField0.data(Field0), Op::SUM, DIR_V, ArrayField0.getNum(), false); 
+//      parallel->reduce(ArrayField0.data(Field0), Op::SUM, DIR_V, ArrayField0.getNum(), false); 
       
       // OPTIM : Normally we would decompose in m&s, thus no need for Qm                         
       // backward-transformation from gyro-center to drift-center 
       if (parallel->Coord[DIR_V] == 0) {
 
+            
             gyroAverage((A4zz) Field0, (A4zz) Qm, m, s, false);           
 
             // Lambda function to integrate over m ( for source terms), If loop=0, we overwrite value of Q
             [=] (CComplex Q[Nq][NzLD][NkyLD][NxLD], CComplex Qm[Nq][NzLD][NkyLD][NxLD])
             {
-               if  (loop == 0) Q[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]   = Qm[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD];
-               else            Q[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]  += Qm[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD];
+               #pragma omp for collapse(2)
+               for(int z=NzLlD; z<= NzLuD;z++) { for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { 
+
+               if  (loop == 0) Q[1:Nq][z][y_k][NxLlD:NxLD]   = Qm[1:Nq][z][y_k][NxLlD:NxLD];
+               else            Q[1:Nq][z][y_k][NxLlD:NxLD]  += Qm[1:Nq][z][y_k][NxLlD:NxLD];
+
+               } }
 
             } ((A4zz) Q, (A4zz) Qm);
       }
       
    }  } // for m, s
-     
+
+
    /////////////////////////////// Solve for the corresponding fields ////////////////////////////////
    // Note :  Fields are only solved by root nodes  (X=0, V=0, S=0), Gyro-averaging is done for (V=0)
    if(parallel->Coord[DIR_V] == 0) {
 
       // integrate over mu-space and over species
+      // problems parallel->reduce(ArrayField0.data(Q), Op::SUM, DIR_MS, ArrayField0.getNum(), false);
+      #pragma omp single
       parallel->reduce(ArrayField0.data(Q), Op::SUM, DIR_MS, ArrayField0.getNum(), false); 
 
       // Solve field equation in drift coordinates
-      // This routine is solved only on rood nodes, thus efficiency is crucial for scalability
+      // This routine is solved only on root nodes, thus efficiency is crucial for scalability
+      // Any chance to make some other usefull work here ?
       if(parallel->Coord[DIR_MS] == 0) solveFieldEquations((A4zz) Q, (A4zz) Field0);
 
-      parallel->bcast(ArrayField0.data(Field0), DIR_MS, ArrayField0.getNum()); 
+      #pragma omp single
+      parallel->bcast(ArrayField0.data(Field0), DIR_MS, ArrayField0.getNum());
+
       // Gyro-averaging procedure for each species and magnetic moment ( drift-coord -> gyro-coord )
       // OPTIM : We can skip foward transform after first call
       for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) {
@@ -109,18 +123,22 @@ void Fields::solve(CComplex *f0, CComplex *f, Timing timing)
            // Copy result in temporary array to field
            [=] (CComplex Qm[Nq][NzLD][NkyLD][NxLD], CComplex Field[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]) 
            { 
-                  Field[1:Nq][s][m][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD] 
-                =    Qm[1:Nq]      [NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]   ;
+               #pragma omp for collapse(2)
+               for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) {
+
+                  Field[1:Nq][s][m][z][y_k][NxLlD:NxLD] = Qm[1:Nq][z][y_k][NxLlD:NxLD]   ;
+
+               } }
 
            } ((A4zz) Qm, (A6zz) Field);
         
       } }
-   
+ 
+      #pragma omp single
       updateBoundary();
-   
+
    }   
-  
-   parallel->bcast(ArrayField.data(Field), DIR_V, ArrayField.getNum());
+//   parallel->bcast(ArrayField.data(Field), DIR_V, ArrayField.getNum());
    
    return;
 
@@ -136,7 +154,9 @@ void Fields::calculateChargeDensity(const CComplex f0         [NsLD][NmLD][NzLB]
    // In case of a full-f simulation the Maxwellian is subtracted
 
    const double pqnB_dvdm = M_PI * plasma->species[s].q * plasma->species[s].n0 * plasma->B0 * dv * grid->dm[m] ;
-   omp_C2_for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
+
+   #pragma omp for collapse(2) nowait
+   for(int z=NzLlD; z<= NzLuD;z++) { for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
               Field0[Q::rho][z][y_k][x] = ( __sec_reduce_add(f [s][m][z][y_k][x][NvLlD:NvLD]) 
                         - (plasma->global ? __sec_reduce_add(f0[s][m][z][y_k][x][NvLlD:NvLD]) : 0)) * pqnB_dvdm;
@@ -156,7 +176,8 @@ void Fields::calculateParallelCurrentDensity(const CComplex f0   [NsLD][NmLD][Nz
   
    const double qa_dvdm = plasma->species[s].q * plasma->species[s].alpha  * plasma->B0 * M_PI * dv * grid->dm[m] ;
    
-   omp_C2_for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
+   #pragma omp for collapse(2) nowait
+   for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
                 Field0[Q::jp][z][y_k][x] = -__sec_reduce_add(V[NvLlD:NvLD] * f[s][m][z][y_k][x][NvLlD:NvLD]) * qa_dvdm;
 
@@ -176,7 +197,8 @@ void Fields::calculatePerpendicularCurrentDensity(const CComplex f0     [NsLD][N
    
    const double qan_dvdm = - plasma->species[s].q * plasma->species[s].alpha * plasma->B0 * M_PI * dv * grid->dm[m] ;
    
-   for(int z=NzLlD; z<= NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++){
+   #pragma omp for collapse(2) nowait
+   for(int z=NzLlD; z<= NzLuD;z++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++){
 
       Field0[Q::jo][z][y_k][x] =  M[m] * __sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD]) * qan_dvdm;
             
@@ -191,8 +213,8 @@ void Fields::calculatePerpendicularCurrentDensity(const CComplex f0     [NsLD][N
 void Fields::updateBoundary()
 {
   updateBoundary((A6zz ) Field, 
-                  (A6zz ) SendXl   , (A6zz) SendXu, (A6zz) RecvXl, (A6zz) RecvXu,
-                  (A6zz ) SendZl   , (A6zz) SendZu, (A6zz) RecvZl, (A6zz) RecvZu);
+                  (A6zz ) SendXl, (A6zz) SendXu, (A6zz) RecvXl, (A6zz) RecvXu,
+                  (A6zz ) SendZl, (A6zz) SendZu, (A6zz) RecvZl, (A6zz) RecvZu);
    return;
 }
 
@@ -216,7 +238,7 @@ void Fields::updateBoundary(
    // (For 2-d space simulations (x,y) boundaries are not required)
    if(Nz > 1) {
       
-    omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
+    for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
 
         const CComplex a = ((CComplex) 0. + 1.j) *  (2.*M_PI * (2.* M_PI/Ly) * y_k);
       
@@ -228,8 +250,8 @@ void Fields::updateBoundary(
    }
    
    // Exchange ghostcells between processors [ SendXu (CPU 1) ->RecvXl (CPU 2) ]
-  parallel->updateBoundaryFields(Fields::SendXl, Fields::SendXu, Fields::RecvXl, Fields::RecvXu, ArrayBoundX.getNum(),
-                                 Fields::SendZl, Fields::SendZu, Fields::RecvZl, Fields::RecvZu, ArrayBoundZ.getNum()); 
+   parallel->updateBoundaryFields(Fields::SendXl, Fields::SendXu, Fields::RecvXl, Fields::RecvXu, ArrayBoundX.getNum(),
+                                  Fields::SendZl, Fields::SendZu, Fields::RecvZl, Fields::RecvZu, ArrayBoundZ.getNum()); 
 
    // Back copy X-Boundary cell data
    Field[1:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlB-2:4] = RecvXl[:][:][:][:][:][:];
@@ -268,9 +290,9 @@ void Fields::initData(Setup *setup, FileIO *fileIO) {
      
    hid_t fieldsGroup = check(H5Gcreate(fileIO->getFileID(), "/Fields",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
      
-   FA_phi      = new FileAttr("Phi" , fieldsGroup, fileIO->file, 4, field_dim , field_maxdim   , field_chunkdim   , field_moffset    ,  field_chunkBdim  , field_offset, phiWrite && plasma->nfields >= 1, fileIO->complex_tid);
-   FA_Ap       = new FileAttr("Ap"  , fieldsGroup, fileIO->file, 4, field_dim , field_maxdim   , field_chunkdim   , field_moffset    ,  field_chunkBdim  , field_offset, phiWrite && plasma->nfields >= 2, fileIO->complex_tid);
-   FA_Bp       = new FileAttr("Bp"  , fieldsGroup, fileIO->file, 4, field_dim , field_maxdim   , field_chunkdim   , field_moffset    ,  field_chunkBdim  , field_offset, phiWrite && plasma->nfields >= 3, fileIO->complex_tid);
+   FA_phi      = new FileAttr("Phi" , fieldsGroup, fileIO->file, 4, field_dim, field_maxdim, field_chunkdim, field_moffset, field_chunkBdim, field_offset, phiWrite && Nq >= 1, fileIO->complex_tid);
+   FA_Ap       = new FileAttr("Ap"  , fieldsGroup, fileIO->file, 4, field_dim, field_maxdim, field_chunkdim, field_moffset, field_chunkBdim, field_offset, phiWrite && Nq >= 2, fileIO->complex_tid);
+   FA_Bp       = new FileAttr("Bp"  , fieldsGroup, fileIO->file, 4, field_dim, field_maxdim, field_chunkdim, field_moffset, field_chunkBdim, field_offset, phiWrite && Nq >= 3, fileIO->complex_tid);
    FA_phiTime  = fileIO->newTiming(fieldsGroup);
         
    H5Gclose(fieldsGroup);
@@ -305,10 +327,9 @@ void Fields::closeData()
 void Fields::printOn(std::ostream &output) const 
 {
 
-         output   << "Poisson    |  " << "Base class" << std::endl;
+         output   << "Poisson    |  " << "Debye length : " << sqrt(plasma->debye2) << std::endl;
          output   << "Ampere     |  " << ((plasma->nfields >= 2) ? "beta :  " + Setup::num2str(plasma->beta) : " --- no electromagnetic effects ---") << std::endl;
          output   << "B_parallel |  " << ((plasma->nfields >= 3) ? "beta :  " + Setup::num2str(plasma->beta) : " --- no electromagnetic effects ---") << std::endl;
-         output   << "           |  Pert. : " << ((!(solveEq & Field::Ap) && (plasma->nfields >= 2))     ? ApPerturbationStr  : " ") << std::endl;
 }
 
 

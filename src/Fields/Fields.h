@@ -205,8 +205,8 @@ public:
    *  @note pure virtual function
    * 
    **/
-   virtual void solveFieldEquations(CComplex Q     [plasma->nfields][NxLD][NkyLD][Nz],
-                                    CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz]) = 0;
+   virtual void solveFieldEquations(const CComplex Q     [Nq][NxLD][NkyLD][Nz],
+                                          CComplex Field0[Nq][NxLD][NkyLD][Nz]) = 0;
 
    /**
    *    @brief calculate Field energy
@@ -269,8 +269,8 @@ public:
    *  @param gyroField true if forward transformation, false if backward transformation
    *
    **/
-   virtual void gyroAverage(CComplex In [Nq][NzLD][NkyLD][NxLD], 
-                            CComplex Out[Nq][NzLD][NkyLD][NxLD],
+   virtual void gyroAverage(const CComplex In [Nq][NzLD][NkyLD][NxLD], 
+                                  CComplex Out[Nq][NzLD][NkyLD][NxLD],
                             const int m, const int s, const bool forward) = 0;
  
 
@@ -333,7 +333,7 @@ public:
    *
    *
    **/
-   void solve(CComplex *f0, CComplex  *f, Timing timing=0);
+   void solve(const CComplex *f0, CComplex  *f, Timing timing=0);
 
    /**
    *  @brief set which equation to solve if one field is assumed to be fixed

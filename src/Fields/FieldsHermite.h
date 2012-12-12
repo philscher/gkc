@@ -96,20 +96,20 @@ protected:
    *    Please Document Me !
    *
    **/
-  void solveFieldEquations(CComplex Q     [plasma->nfields][NxLD][NkyLD][Nz],
-                           CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz]);
+  void solveFieldEquations(const CComplex Q     [Nq][NxLD][NkyLD][Nz],
+                                 CComplex Field0[Nq][NxLD][NkyLD][Nz]);
   /**
    *    Please Document Me !
    *
    **/
-  void solvePoissonEquation(const CComplex Q     [plasma->nfields][NxLD][NkyLD][Nz],
-                                  CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz]);
+  void solvePoissonEquation(const CComplex Q     [Nq][NxLD][NkyLD][Nz],
+                                  CComplex Field0[Nq][NxLD][NkyLD][Nz]);
   /**
    *    Please Document Me !
    *
    **/
-  void gyroAverage(CComplex In [Nq][NzLD][NkyLD][NxLD], 
-                   CComplex Out[Nq][NzLD][NkyLD][NxLD],
+  void gyroAverage(const CComplex In [Nq][NzLD][NkyLD][NxLD], 
+                         CComplex Out[Nq][NzLD][NkyLD][NxLD],
                    const int m, const int s, const bool forward);
  
     
