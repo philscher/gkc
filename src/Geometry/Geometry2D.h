@@ -92,17 +92,17 @@ class Geometry2D : public Geometry
    **/
    ///@{
    ///  \f$ g_{xx} = 1 \f$
-   inline double g_xx(const int x, const int z) { return 1.0;                 };
+   inline double g_xx(const int x, const int z) { return 1.0; };
    ///  \f$ g_{xy} = 0 \f$
-   inline double g_xy(const int x, const int z) { return 0.0;             }; 
+   inline double g_xy(const int x, const int z) { return 0.0; }; 
    ///  \f$ g_{xz} = 0 \f$
-   inline double g_xz(const int x, const int z) { return 0.0;                 };
+   inline double g_xz(const int x, const int z) { return 0.0; };
    ///  \f$ g_{yy} = 1 \f$
    inline double g_yy(const int x, const int z) { return 1.0; };
    ///  \f$ g_{yz} = 0 \f$
-   inline double g_yz(const int x, const int z) { return 0.0;                 };
+   inline double g_yz(const int x, const int z) { return 0.0; };
    ///  \f$ g_{zz} = 0 \f$
-   inline double g_zz(const int x, const int z) { return 0.0;                 };
+   inline double g_zz(const int x, const int z) { return 0.0; };
    ///@}
   
    /**  

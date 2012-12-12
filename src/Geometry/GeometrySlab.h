@@ -3,7 +3,7 @@
  *
  *       Filename: GeometrySlab.h
  *
- *    Description: Definition of shearless slab geomtry
+ *    Description: Definition of three dimensional shearless slab geomtry
  *
  *         Author: Paul P. Hilscher (2010-), 
  *
@@ -20,7 +20,7 @@
 
 
 /** 
-*   @brief Shearless Slab geometry definitions
+*   @brief Three dimensional shearless slab geometry
 *
 *
 * Basic Geometry class for basic shearless slab geometry. In this case
@@ -74,13 +74,13 @@ public:
    **/
    ///@{
    /// \f$  B = 1 \f$
-   inline  double B      (const int x, const int z) { return 1.;};
+   inline  double get_B      (const int x, const int z) { return 1.;};
    /// \f$  \partial_x B = 0 \f$
-   inline  double dB_dx  (const int x, const int z) { return 0.;};
+   inline  double get_dB_dx  (const int x, const int z) { return 0.;};
    /// \f$  \partial_y B = 0 \f$
-   inline  double dB_dy  (const int x, const int z) { return 0.;};
+   inline  double get_dB_dy  (const int x, const int z) { return 0.;};
    /// \f$  \partial_z B = 0 \f$
-   inline  double dB_dz  (const int x, const int z) { return 0.;};
+   inline  double get_dB_dz  (const int x, const int z) { return 0.;};
    ///@}
 
    // how to connect the field lines ?
@@ -95,7 +95,6 @@ public:
    void initData(hid_t geometryGroup) 
    {
           check(H5LTset_attribute_string(geometryGroup, ".", "Type", "Shearless Slab"), DMESG("H5LTset_attribute"));
-          check(H5LTset_attribute_double(geometryGroup, ".", "eps_hat"   ,  &eps_hat, 1), DMESG("H5LTset_attribute"));
    }
 
 
