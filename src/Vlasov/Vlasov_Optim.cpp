@@ -86,7 +86,7 @@ void VlasovOptim::solve(std::string equation_type, Fields *fields, CComplex *_fs
       for(int m=NmLlD; m<= NmLuD;m++) { 
   
        // calculate for estimation of CFL condition
-       for(int z=NzLlD; z<= NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
+       for(int z=NzLlD; z<= NzLuD;z++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
              
           const double ky_im = fft->ky(y_k);
         

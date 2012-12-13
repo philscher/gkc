@@ -191,7 +191,7 @@ void VlasovAux::Vlasov_EM(
       
           if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(G, Xi, nullptr, nullptr, z, m, s, nonLinearTerm, Xi_max, true); 
       
-          omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
+          for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
        
           const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];
                
@@ -262,7 +262,7 @@ void VlasovAux::Landau_Damping(
      const double alpha = plasma->species[s].alpha;
   
          for(int z=NzLlD; z<= NzLuD;z++) {       for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
-     omp_for(int x=NxLlD; x<= NxLuD;x++) {  simd_for(int v=NvLlD; v<= NvLuD;v++)         {
+         for(int x=NxLlD; x<= NxLuD;x++) {  simd_for(int v=NvLlD; v<= NvLuD;v++)         {
        
            const CComplex f0_     = f0 [s][m][z][y_k][x][v];
 
@@ -320,7 +320,7 @@ void    VlasovAux::Vlasov_2D_Fullf(
        //if(doNonLinear)   calculatePoissonBracket(fields->phi(RxLD, RkyLD, RzLD, m, s), _fs,m, s);
        
        // calculate for estimation of CFL condition
-       for(int z=NzLlD; z<= NzLuD;z++) { omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
+       for(int z=NzLlD; z<= NzLuD;z++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
        
              const CComplex dphi_dx  = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1]) - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2]))/(12.*dx)  ;  
 

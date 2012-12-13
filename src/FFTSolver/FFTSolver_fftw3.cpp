@@ -307,7 +307,7 @@ FFTSolver_fftw3::~FFTSolver_fftw3()
     //fftw_destroy_plan(plan_FieldTranspose_2);
 
 #ifdef PARALLEL_OPENMP
-    fftw_cleanup_threads();
+//    fftw_cleanup_threads();
 #endif
 
     fftw_free(data_X_rOut);

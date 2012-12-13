@@ -94,20 +94,10 @@ int ipow(int base, int exp)
  *
  *   HANDLE WITH CARE !
  **/
-/* 
- *
-#define omp_for     _Pragma("omp parallel for") for
-// warning This is an OpenMP 3.0 function, is it possible to check for it ? (_OPENMP)
-#define omp_C2_for  _Pragma("omp parallel for collapse(2)") for
-#define omp_C3_for  _Pragma("omp parallel for collapse(3)") for
-#define omp_C4_for  _Pragma("omp parallel for collapse(4)") for
- * */
+//#define omp_for     _Pragma("omp parallel for") for
 
-#define omp_for    for
+//#define omp_for    for
 // warning This is an OpenMP 3.0 function, is it possible to check for it ? (_OPENMP)
-#define omp_C2_for for
-#define omp_C3_for for
-#define omp_C4_for for
 
 
 

@@ -67,7 +67,8 @@ void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
       #pragma omp barrier
 
       // Integrate over velocity space through different CPU's
-//      parallel->reduce(ArrayField0.data(Field0), Op::SUM, DIR_V, ArrayField0.getNum(), false); 
+      // #pragma omp single
+      // parallel->reduce(ArrayField0.data(Field0), Op::SUM, DIR_V, ArrayField0.getNum(), false); 
       
       // OPTIM : Normally we would decompose in m&s, thus no need for Qm                         
       // backward-transformation from gyro-center to drift-center 
@@ -137,8 +138,10 @@ void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
       #pragma omp single
       updateBoundary();
 
-   }   
-//   parallel->bcast(ArrayField.data(Field), DIR_V, ArrayField.getNum());
+   }  
+
+   // #pragma omp single
+   // parallel->bcast(ArrayField.data(Field), DIR_V, ArrayField.getNum());
    
    return;
 

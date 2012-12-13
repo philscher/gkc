@@ -58,23 +58,24 @@ Parallel::Parallel(Setup *setup)
   }
 #endif // GKC_PARALLEL_OPENMP
 
-   for(int d=DIR_X;d<DIR_SIZE;d++) Comm[d] = MPI_COMM_NULL;
+  for(int d=DIR_X;d<DIR_SIZE;d++) Comm[d] = MPI_COMM_NULL;
 
-   //////////////////////// Set Message tags, enumerate through ////////////////////////
-   int i = 14665; // some random number to not to interfere with other
-   // do its in one loop ?
-   for(int dir = DIR_X; dir <= DIR_S; dir++) {
+  //////////////////////// Set Message tags, enumerate through ////////////////////////
+  int i = 14665; // some random number to not to interfere with other
+  // do its in one loop ?
+  for(int dir = DIR_X; dir <= DIR_S; dir++) {
 
-        Talk[dir].psf_msg_tag[0] = ++i; Talk[dir].psf_msg_tag[1] = ++i;
-        Talk[dir].phi_msg_tag[0] = ++i; Talk[dir].phi_msg_tag[1] = ++i;
-   }
+    Talk[dir].psf_msg_tag[0] = ++i; Talk[dir].psf_msg_tag[1] = ++i;
+    Talk[dir].phi_msg_tag[0] = ++i; Talk[dir].phi_msg_tag[1] = ++i;
+  }
    
-   // MPI-2 standard allows to pass NULL for (&argc, &argv)
-   int provided = 0;
-   MPI_Init_thread(NULL, NULL, numThreads == 1 ? MPI_THREAD_SINGLE : MPI_THREAD_SERIALIZED, &provided);
+  // MPI-2 standard allows to pass NULL for (&argc, &argv)
+  int provided = 0; int required = numThreads == 1 ? MPI_THREAD_SINGLE : MPI_THREAD_SERIALIZED;
+  MPI_Init_thread(NULL, NULL, required, &provided);
+  //check(provided < required ? -1 : 1, DMESG("MPI : Thread level support not available (use only one thread)"));
 
-   MPI_Comm_size(MPI_COMM_WORLD, &numProcesses); 
-   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+  MPI_Comm_size(MPI_COMM_WORLD, &numProcesses); 
+  MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 
   // set automatic decomposition
   std::vector<std::string> decomp = Setup::split(setup->get("Parallel.Decomposition","Auto"), ":");
@@ -117,7 +118,7 @@ Parallel::Parallel(Setup *setup)
     //
     //  We set the subcommunictor in direction dir using remain_dims
     //
-    //  We prefer MPI_Cart_sub over MPI_Comm_split as the former included
+    //  We prefer MPI_Cart_sub over MPI_Comm_split as the former includes
     //  more information about the topology and may results in more efficient
     //  communicators. 
     //  better use intializer list
@@ -386,7 +387,7 @@ void Parallel::checkValidDecomposition(Setup *setup)
    if( decomposition[DIR_S] > setup->get("Grid.Ns", 1)) check(-1, DMESG("Decomposition in s bigger than Ns"));
   
    // check if OpenMP threads are equal decompositon
-   if( decomposition[DIR_Y] != numThreads             ) check(-1, DMESG("Failed to set threads. Decomposition[Y] != numThreads"));
+   if( decomposition[DIR_Y] != numThreads             ) check(-1, DMESG("Failed to set threads. Decomposition[Y] != numThreads. Check OpenMP settings"));
    
    // Simple Check if reasonable values are provided for decomposition (only MPI proceeses)
    const int pNs = setup->get("Grid.Ns", 1 );

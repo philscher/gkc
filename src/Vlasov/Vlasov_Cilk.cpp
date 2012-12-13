@@ -111,9 +111,7 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
         else                xky_Xi[:][:] = Fields[Field::phi][s][m][z][NkyLlD:NkyLD][NxLlB-2:NxLB+4]   ;
        
         // xy_Xi[shift by +4][], as we also will use extended BC in Y
-       
-        // crashes !
-        //std::cout << "xky_Xi : " << &xky_Xi << "  xy_Xi : " << &xy_Xi[4][0] << std::endl;
+        // xy_Xi[NkyLD][:] = 0.; // we do not include Nyquist frequency
         fft->solve(FFT_Type::Y_FIELDS, FFT_Sign::Backward, xky_Xi, &xy_Xi[4][0]);
        
         // Set Periodic-Boundary in Y (in X is not necessary as we transform it too)
@@ -200,8 +198,9 @@ void VlasovCilk::setupXiAndG(
 
 
   // ICC vectorizes useAp/useBp into seperate lopps, check for any speed penelity ? 
-  omp_C3_for(int z = NzLlB; z <= NzLuB; z++) {      for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
-         for(int x = NxLlB; x <= NxLuB; x++) { simd_for(int v   = NvLlB ;   v <= NvLuB ;   v++) { 
+  #pragma omp for collapse(2)
+  for(int z = NzLlB; z <= NzLuB; z++) {      for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
+  for(int x = NxLlB; x <= NxLuB; x++) { simd_for(int v   = NvLlB ;   v <= NvLuB ;   v++) { 
 
      Xi[z][y_k][x][v] = Fields[Field::phi][s][m][z][y_k][x] - (useAp ? aeb*V[v]*Fields[Field::Ap][s][m][z][y_k][x] : 0.) 
                                                             - (useBp ? aeb*M[m]*Fields[Field::Bp][s][m][z][y_k][x] : 0.);
@@ -270,14 +269,14 @@ void VlasovCilk::Vlasov_EM(
           // Cannot collapse as we have no perfetly nested loops
           //
           
-    omp_for(int z=NzLlD; z<= NzLuD;z++) { 
+    for(int z=NzLlD; z<= NzLuD;z++) { 
            
            
          // calculate non-linear term (rk_step == 0 for eigenvalue calculatinullptr)
          // CFL condition is calculated inside calculatePoissonBracket
          if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(G, Xi, nullptr, nullptr, z, m, s, NonLinearTerm, Xi_max, true); 
            
-    omp_for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
+    for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
            
        
          const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];

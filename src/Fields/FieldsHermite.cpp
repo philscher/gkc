@@ -74,9 +74,9 @@ void FieldsHermite::gyroAverage(const CComplex In [Nq][NzLD][NkyLD][NxLD],
 
         // Create Matrix
         // Is it possible to fill array at once ?! otherwise parallelization efficiency will be bad
-        for(int q = 1; q <= plasma->nfields; q++) {
+        for(int q = 1; q <= Nq; q++) {
         
-          for(int  z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
+        for(int  z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
         
     
             VecGetArray    (GyroVector_X, (PetscScalar **) &vec_X);
@@ -218,9 +218,6 @@ double FieldsHermite::Lambda(const double x, const int n)
 
         else check(-1, DMESG("Interpolation order not implemented"));
         
-        // 7th order interpolation
-        
-//      return nan here
         return 0.;      
 }
 
@@ -231,13 +228,11 @@ void FieldsHermite::printOn(std::ostream &output) const
 }
  
 
-void FieldsHermite::solvePoissonEquation(const CComplex Q     [plasma->nfields][NxLD][NkyLD][Nz],
-                                               CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz])
+void FieldsHermite::solvePoissonEquation(const CComplex Q     [Nq][NxLD][NkyLD][Nz],
+                                               CComplex Field0[Nq][NxLD][NkyLD][Nz])
 {
       CComplex *vec_Q, *vec_Field;
      
-      // how to use OpenMP with PETSc ? (have to use seperated vectors, take care PETSc uses global variables)
-      // we can also use PETSc direclty
       for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {
 
             VecGetArray    (GyroVector_X, (PetscScalar **) &vec_Q);
