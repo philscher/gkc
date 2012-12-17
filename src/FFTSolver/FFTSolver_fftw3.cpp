@@ -166,6 +166,14 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
 #endif
       
       // Orginal
+      //
+      // Note from the fftw manual, Sec. 4.3.2
+      //
+      // FFTW_PRESERVE_INPUT specifies that an out-of-place transform must not change its input array.
+      // This is ordinarily the default, except for c2r and hc2r (i.e. complex-to-real) transforms for 
+      // which FFTW_DESTROY_INPUT is the default. In the latter cases, passing FFTW_PRESERVE_INPUT will attempt 
+      // to use algorithms that do not destroy the input, at the expense of worse performance; for multi-dimensional
+      // c2r transforms, however, no input-preserving algorithms are implemented and the planner will return NULL if one is requested.
       
       doubleAA   rY_BD4[NyLD ][NxLB+4]; CComplexAA kY_BD4[NkyLD][NxLB+4];
       plan_YBackward_Field = fftw_plan_many_dft_c2r(1, &NyLD, NxLB+4, (fftw_complex *) kY_BD4, NULL, NxLB+4, 1, (double *) rY_BD4, NULL, NxLB+4, 1, perf_flag);

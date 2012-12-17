@@ -39,6 +39,10 @@
 class Eigenvalue : public IfaceGKC {
 
   protected:
+
+   Parallel *parallel;
+   Grid     *grid;
+
    /**
    *  @brief structure to store the eigenvalue
    *
@@ -50,11 +54,7 @@ class Eigenvalue : public IfaceGKC {
 
    };
 
-
-   Parallel *parallel;
-   Grid     *grid;
-
-   bool includeZF; ///< set if Zonal Flow component (ky=0) is included in calculations
+   bool includeZF; ///< true if Zonal Flow is included
 
   public:
    /**

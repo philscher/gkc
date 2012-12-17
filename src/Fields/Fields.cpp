@@ -61,9 +61,10 @@ void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
   // calculate source terms  Q (Q is overwritten in the first iteration )
   for(int s = NsLlD, loop=0; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++, loop++) {
 
-      if(solveEq & Field::phi) calculateChargeDensity               ((A6zz) f0, (A6zz) f, (A4zz) Field0,    m, s);
-      if(solveEq & Field::Ap ) calculateParallelCurrentDensity      ((A6zz) f0, (A6zz) f, (A4zz) Field0, V, m, s);
-      if(solveEq & Field::Bpp) calculatePerpendicularCurrentDensity ((A6zz) f0, (A6zz) f, (A4zz) Field0, M, m, s);
+      // calculate drift-kinetic terms
+      if(solveEq & Field::phi) calculateChargeDensity               ((A6zz) f0, (A6zz) f, (A4zz) Field0, m, s);
+      if(solveEq & Field::Ap ) calculateParallelCurrentDensity      ((A6zz) f0, (A6zz) f, (A4zz) Field0, m, s);
+      if(solveEq & Field::Bpp) calculatePerpendicularCurrentDensity ((A6zz) f0, (A6zz) f, (A4zz) Field0, m, s);
       #pragma omp barrier
 
       // Integrate over velocity space through different CPU's

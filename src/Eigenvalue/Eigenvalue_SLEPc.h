@@ -35,48 +35,46 @@
 class Eigenvalue_SLEPc : public Eigenvalue {
 
 
-    EPS EigvSolver;  ///< The eigensolver context
-
-    Complex tolerance; ///< Set Tolerence of the solution
-    
-    Mat A_F1;         ///< The Matrix Context
-    
+    EPS EigvSolver;     ///< The eigensolver context
+    Complex tolerance;  ///< Set Tolerence of the solution
+    Mat A_F1;           ///< The Matrix Context
     TableAttr *EVTable; ///< Eigenvalue Table
-   
-    hid_t eigvGroupID; ///< HDF-5 reference to Eigenvalue group
+    hid_t eigvGroupID;  ///< HDF-5 reference to Eigenvalue group
 
 public:
   /**
-   *    Please Document Me !
-   *
-   **/
+  *    Please Document Me !
+  *
+  **/
   Eigenvalue_SLEPc(FileIO *fileIO, Setup *setup, Grid *grid, Parallel *_parallel);
+
   /**
-   *    Please Document Me !
-   *
-   **/
+  *    Please Document Me !
+  *
+  **/
   void solve(Vlasov *vlasov, Fields *fields, Visualization *visual, Control *control);
+
   /**
-   *    Please Document Me !
-   *
-   **/
+  *    Please Document Me !
+  *
+  **/
   virtual ~Eigenvalue_SLEPc();
 
   /**
-   *    Please Document Me !
-   * Get Maximum Absolute Eigenvalue 
-   *
-   **/
+  *    Please Document Me !
+  * Get Maximum Absolute Eigenvalue 
+  *
+  **/
   Complex getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields);
 
 protected :
   /**
-   *    Please Document Me !
-   *
-   **/
+  *    Please Document Me !
+  *
+  **/
   void printOn(std::ostream &output) const;
 
-  /**
+   /**
    *    Please Document Me !
    *
    **/
