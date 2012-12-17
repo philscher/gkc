@@ -51,14 +51,14 @@ protected:
     double beta;         ///< Collisionality 
     bool   consvMoment;  ///< Set if 0-2 Moments are conserved
 
-    double *nu,   ///< \f$ \nu = \left( v_\parallel^2 + 2 \mu \right) / v_{th}^2 \f$
-           *a ,   ///< Pre-factor \f$ a = 1 - \frac{\pi}{2}\left( erf - derf) \nu^{-1/2}  \f$
-           *b ,   ///< Pre-factor \f$ b = v_\parallel x\nu^{-3/2} \erf(x)                 \f$
-           *c ;   ///< Pre-factor  \f$ c = \nu^{-1/2} \left( \erf(\nu) - erf'(\nu) \right) \f$
+    double *nu,   ///<            \f$ \nu = \left( v_\parallel^2 + 2 \mu \right) / v_{th}^2       \f$
+           *a ,   ///< Pre-factor \f$ a   = 1 - \frac{\pi}{2}\left( erf - derf \right) \nu^{-1/2} \f$
+           *b ,   ///< Pre-factor \f$ b   = v_\parallel x\nu^{-3/2} erf(x)                        \f$
+           *c ;   ///< Pre-factor \f$ c   = \nu^{-1/2} \left(  erf(\nu) - erf'(\nu) \right)       \f$
 
-    CComplex *dn, ///< \f$ int f_{1\sigma} dv_\parallel d\mu f\$
-             *dP, ///< \f$ int f_{1\sigma} v_\parallel dv_\parallel d\mu f\$
-             *dE; ///< \f$ int f_{1\sigma} \nu dv_\parallel d\mu \f$
+    CComplex *dn, ///< \f$ \int f_{1\sigma} dv_\parallel d\mu             \f$
+             *dP, ///< \f$ \int f_{1\sigma} v_\parallel dv_\parallel d\mu \f$
+             *dE; ///< \f$ \int f_{1\sigma} \nu dv_\parallel d\mu         \f$
    
     nct::allocate ArrayPreFactors,     ///< Array class for dn, dP, dE
                   ArrayCorrectionTerm; ///< Array class for nu, a, b, c
@@ -79,11 +79,11 @@ protected:
        /**
        *   @brief calculates the pre-terms
        *
-       *   \f[
-       *         a &= 1 - 3 \sqrt{\pi}{2} \left( \erf(x) - erf'(nu)  \right) * v^{-1/2} \\
-       *         b &= v_\parallel x^{-3/2} \erf(x)
-       *         c &= x^{-1/2} \left( \erf(x) - erf'(x) \right)
-       *   \f]
+       *   \f{align}{
+       *         a &= 1 - 3 \sqrt{\pi}{2} \left( erf(x) - erf'(nu)  \right) * v^{-1/2} \\
+       *         b &= v_\parallel x^{-3/2} erf(x)                                      \\
+       *         c &= x^{-1/2} \left( erf(x) - erf'(x) \right)
+       *   \f}
        *   
        *
        **/
