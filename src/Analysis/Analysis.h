@@ -24,6 +24,7 @@
 #include "Geometry/Geometry.h"
 #include "Timing.h"
 #include "Plasma.h"
+#include "Analysis/Moments.h"
 
 /**
 *    @brief Data analysis and output
@@ -44,6 +45,8 @@
 class Analysis : public IfaceGKC {
 
   hid_t analysisGroup; ///< HDF-5 id for group label
+
+  Moments *moments;    ///< Calculated moments of phase-space function
 
   /**
   *    @brief Structure for storing scalar values diagnostics
@@ -212,17 +215,28 @@ class Analysis : public IfaceGKC {
   * 
   *
   **/
-  void getParticleHeatFlux(const int m, const int s, 
+  void getParticleHeatFlux(const int s, 
                            double ParticleFlux[NkyLD][NxLD], double HeatFlux[NkyLD][NxLD],
                            const CComplex         f[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex Field[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           const double V[NvGB], const double M[NmGB]);
+                           const CComplex Field0[Nq][NzLB][NkyLD][NxLD],
+                           const CComplex Field[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]);
 
-
+  /**
+  *   @brief get the total field energy in domain
+  *
+  *   @note this is merely a wrapper to called Field::getFieldEnergy
+  *
+  *   @param phiEnergy electric field energy \f$ \phi \f$
+  *   @param  ApEnergy magnetic field energy \f$ A_\parallel \f$
+  *   @param  BpEnergy magnetic field energy \f$ B_\parallel  \f$
+  *
+  **/
+  void getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEnergy);
 
 
   //////////////// Calculate Moments (4-dimensional s,x,y_k,z) ////////////////////////
-  
+  ///@{
+
   /** 
   *
   *  @brief Calculates the temperature, note the 

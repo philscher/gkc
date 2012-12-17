@@ -62,12 +62,12 @@ void Benchmark::bench(Vlasov *vlasov, Fields *fields)
 
      auto vlasov_plain = [=] (void) { 
              const double rk[] = { 1., 2., 0.};
-      vlasov->solve(vlasov->getEquationType(), fields, vlasov->fss , vlasov->f ,  1.e-3 , 2, rk); 
+      vlasov->solve(vlasov->getEquationType(), fields, vlasov->fss , vlasov->f, 1.e-3 , 2, rk); 
      };
      
           auto vlasov_full = [=] (void) { 
              const double rk[] = { 1., 2., 0.};
-      vlasov->solve(fields, vlasov->fss , vlasov->f ,  1.e-3 , 2, rk); 
+      vlasov->solve(fields, vlasov->fss , vlasov->f , 1.e-3 , 2, rk); 
      };
           
      auto poisson = [=] (void) { 
