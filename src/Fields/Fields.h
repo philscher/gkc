@@ -146,7 +146,7 @@ public:
    **/
    void calculateChargeDensity(const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                const CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                               CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz]   ,
+                               CComplex Field0[Nq][NxLD][NkyLD][Nz]   ,
                                const int m, const int s) ;
 
    /**
@@ -169,8 +169,8 @@ public:
    **/
    void calculateParallelCurrentDensity(const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                         const CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                        CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz],
-                                        const double   V  [NvGB], const int m, const int s) ;
+                                        CComplex Field0[Nq][NxLD][NkyLD][Nz],
+                                        const int m, const int s) ;
 
    /**
    *  Calculates the perpendicular current density \f$ j_\perp(x,y_k,z;\mu,\sigma) \f$
@@ -187,14 +187,15 @@ public:
    *
    *  @param f0 The Maxwellian phase-space background distribution
    *  @param f  Current phase-space distribution
+   *  @param Q  Current phase-space distribution
    *  @param m  index for perpendicular velocity \f$ \mu = M[m]\f$
    *  @param s  index for species
    *
    **/
    virtual void  calculatePerpendicularCurrentDensity(const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                                       const CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                                      CComplex Field0[plasma->nfields][NxLD][NkyLD][Nz],
-                                                      const double M[NmGB],  const int m, const int s); 
+                                                      CComplex  Q[Nq][NxLD][NkyLD][Nz],
+                                                      const int m, const int s); 
 
 
    /**
@@ -225,15 +226,15 @@ public:
    *          decomposition
    **/ 
    void updateBoundary(); 
-   void updateBoundary(CComplex Field [plasma->nfields][NsLD][NmLD][NzLB][NkyLD][NxLB+4], 
-                       CComplex SendXl[plasma->nfields][NsLD][NmLD][NzLD][NkyLD][GC4   ],
-                       CComplex SendXu[plasma->nfields][NsLD][NmLD][NzLD][NkyLD][GC4   ],
-                       CComplex RecvXl[plasma->nfields][NsLD][NmLD][NzLD][NkyLD][GC4   ], 
-                       CComplex RecvXu[plasma->nfields][NsLD][NmLD][NzLD][NkyLD][GC4   ],
-                       CComplex SendZl[plasma->nfields][NsLD][NmLD][GC2 ][NkyLD][NxLD  ], 
-                       CComplex SendZu[plasma->nfields][NsLD][NmLD][GC2 ][NkyLD][NxLD  ],
-                       CComplex RecvZl[plasma->nfields][NsLD][NmLD][GC2 ][NkyLD][NxLD  ],
-                       CComplex RecvZu[plasma->nfields][NsLD][NmLD][GC2 ][NkyLD][NxLD  ]);
+   void updateBoundary(CComplex Field [Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4], 
+                       CComplex SendXl[Nq][NsLD][NmLD][NzLD][NkyLD][GC4   ],
+                       CComplex SendXu[Nq][NsLD][NmLD][NzLD][NkyLD][GC4   ],
+                       CComplex RecvXl[Nq][NsLD][NmLD][NzLD][NkyLD][GC4   ], 
+                       CComplex RecvXu[Nq][NsLD][NmLD][NzLD][NkyLD][GC4   ],
+                       CComplex SendZl[Nq][NsLD][NmLD][GC2 ][NkyLD][NxLD  ], 
+                       CComplex SendZu[Nq][NsLD][NmLD][GC2 ][NkyLD][NxLD  ],
+                       CComplex RecvZl[Nq][NsLD][NmLD][GC2 ][NkyLD][NxLD  ],
+                       CComplex RecvZu[Nq][NsLD][NmLD][GC2 ][NkyLD][NxLD  ]);
 
    
    /**
@@ -271,7 +272,24 @@ public:
    **/
    virtual void gyroAverage(const CComplex In [Nq][NzLD][NkyLD][NxLD], 
                                   CComplex Out[Nq][NzLD][NkyLD][NxLD],
-                            const int m, const int s, const bool forward) = 0;
+                            const int m, const int s, const bool forward, const bool stack=false) = 0;
+  
+   
+   /**
+   *    @brief performed double-gyroaverage over Maxwellian background
+   *
+   *    \f[
+   *        \int_0^\infty <<\phi>> e^{-\mu} d\mu
+   *    \f]
+   *
+   *    @params In  Input array
+   *    @params Out Output array
+   *    @params m   Integration m
+   *    @params s   Species index
+   *
+   **/
+   virtual void doubleGyroExp(const CComplex In [NzLD][NkyLD][NxLD], 
+                           CComplex Out[NzLD][NkyLD][NxLD], const int m, const int s) = 0;
  
 
    /**

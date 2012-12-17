@@ -68,7 +68,7 @@ FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileI
 
 void FieldsHermite::gyroAverage(const CComplex In [Nq][NzLD][NkyLD][NxLD], 
                                       CComplex Out[Nq][NzLD][NkyLD][NxLD],
-                                const int m, const int s, const bool forward)
+                                const int m, const int s, const bool forward, const bool stack)
 {
         CComplex *vec_X, *vec_XAvrg;
 

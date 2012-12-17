@@ -175,7 +175,7 @@ void Fields::calculateChargeDensity(const CComplex f0         [NsLD][NmLD][NzLB]
 void Fields::calculateParallelCurrentDensity(const CComplex f0   [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                              const CComplex f    [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                              CComplex       Field0       [Nq][NzLD][NkyLD][NxLD]      ,
-                                             const double V[NvGB], const int m, const int s          ) 
+                                             const int m, const int s                                  ) 
 {
   
    const double qa_dvdm = plasma->species[s].q * plasma->species[s].alpha  * plasma->B0 * M_PI * dv * grid->dm[m] ;
@@ -196,7 +196,7 @@ void Fields::calculateParallelCurrentDensity(const CComplex f0   [NsLD][NmLD][Nz
 void Fields::calculatePerpendicularCurrentDensity(const CComplex f0     [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                                   const CComplex f      [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                                   CComplex       Field0         [Nq][NzLD][NkyLD][NxLD]      ,
-                                                  const double M[NmGB], const int m, const int s          ) 
+                                                  const int m, const int s                                    ) 
 {
    
    const double qan_dvdm = - plasma->species[s].q * plasma->species[s].alpha * plasma->B0 * M_PI * dv * grid->dm[m] ;

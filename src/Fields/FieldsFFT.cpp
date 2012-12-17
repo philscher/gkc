@@ -185,15 +185,54 @@ void FieldsFFT::calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_Nk
 
 }
 
+void FieldsFFT::doubleGyroExp(const CComplex In [NzLD][NkyLD][NxLD], 
+                                    CComplex Out[NzLD][NkyLD][NxLD], const int m, const int s)
+{
+       
+   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, (void *) &In[0][0][0]);
+
+   [=](CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+       CComplex kXIn [Nq][NzLD][NkyLD][FFTSolver::X_NkxL])
+   {
+       //#pragma omp single
+      
+       const double qqnT   = plasma->species[s].n0 * pow2(plasma->species[s].q)/plasma->species[s].T0;
+       const double rho_t2 = plasma->species[s].T0  * plasma->species[s].m / pow2(plasma->species[s].q * plasma->B0);
+   
+      
+       for(int q = 1; q <= Nq; q++) {
+      
+
+       //#pragma omp for collapse(2)
+       for(int z=NzLlD; z<=NzLuD;z++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x_k=fft->K1xLlD; x_k<=fft->K1xLuD;x_k++) {
+    
+       const double k2_p = fft->k2_p(x_k,y_k,z);
+          
+       kXIn[q][z][y_k][x_k] = kXOut[q][z][y_k][x_k]/fft->Norm_X * ((m == 0) ? SFL::i0e(sqrt(rho_t2 * k2_p)) 
+                                                                            : SpecialMath::Delta_1(sqrt(rho_t2 * k2_p)));
+
+       } } } // z, y_k, x
+   
+       } // q
+
+       //#pragma omp single
+   
+   } ((A4zz) fft->kXOut, (A4zz) fft->kXIn);
+       
+   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, &Out[0][0][0]);
+
+   return;
+
+}
 
 void FieldsFFT::gyroFull(const CComplex In   [Nq][NzLD][NkyLD][NxLD             ], 
                                CComplex Out  [Nq][NzLD][NkyLD][NxLD             ],
                                CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
                                CComplex kXIn [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
-                         const int m, const int s)  
+                         const int m, const int s, bool stack)  
 {
    #pragma omp single
-   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, (void *) &In[1][NzLlD][NkyLlD][NxLlD]);
+   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, stack ? (void *) &In[0][0][0][0] : (void *) &In[1][NzLlD][NkyLlD][NxLlD]);
    
       
    // get therma gyro-radius^2 of species and lambda =  2 x b 
@@ -225,7 +264,7 @@ void FieldsFFT::gyroFull(const CComplex In   [Nq][NzLD][NkyLD][NxLD             
    }
    
    #pragma omp single
-   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, &Out[1][NzLlD][NkyLlD][NxLlD]);
+   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, stack ? &Out[0][0][0][0] : &Out[1][NzLlD][NkyLlD][NxLlD]);
        
    return;
 }
@@ -276,14 +315,14 @@ void FieldsFFT::gyroFirst(const CComplex In   [Nq][NzLD][NkyLD][NxLD],
 
 // note : back gyro-average goes over only one field not all !
 void FieldsFFT::gyroAverage(const CComplex In [Nq][NzLD][NkyLD][NxLD], CComplex Out[Nq][NzLD][NkyLD][NxLD],
-                            const int m, const int s, const bool gyroFields)
+                            const int m, const int s, const bool gyroFields, const bool stack)
 {
   if     (plasma->species[s].gyroModel == "Drift" ) {
        
       Out[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]
    =  In[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD];
   }
-  else if(plasma->species[s].gyroModel == "Gyro"  ) gyroFull (In, Out, (A4zz) fft->kXOut, (A4zz) fft->kXIn, m, s);  
+  else if(plasma->species[s].gyroModel == "Gyro"  ) gyroFull (In, Out, (A4zz) fft->kXOut, (A4zz) fft->kXIn, m, s, stack);  
   else if(plasma->species[s].gyroModel == "Gyro-1") gyroFirst(In, Out, (A4zz) fft->kXOut, (A4zz) fft->kXIn,    s, gyroFields);  
   else   check(-1, DMESG("No such gyro-average Model"));
   

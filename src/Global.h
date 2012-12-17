@@ -15,34 +15,30 @@
 #define __GLOBAL_H
 
 
-
-
 #include <cilk/cilk.h>
 
 
 #include<string>
-#include <complex>
-#include <iostream>
+#include<complex>
+#include<iostream>
+#include<typeinfo>
+#include<iomanip>
+
+#include "external/allocate.h"
+#include "config.h"
 
 ///////////////////// Define data types ////////////////
 typedef std::complex<double> Complex;  
 
 typedef _Complex double CComplex;  
 typedef double               Real   ;
-#define _Imaginary ((CComplex) (0.+1.j)); 
+//#define _Imaginary ((CComplex) (0.+1.j)); 
    
 // align to cache-lines
 typedef __declspec(align(64)) double     doubleAA;
 typedef __declspec(align(64)) CComplex CComplexAA;
-//typedef double     doubleAA;
-//typedef CComplex CComplexAA;
 
 ////////////////////////////////////////////////////////
-
-#include<typeinfo>
-#include <iomanip>
-#include "external/allocate.h"
-
 
 extern "C" double cabs  (CComplex z);
 extern "C" double creal (CComplex z);
@@ -51,6 +47,8 @@ extern "C" double carg  (CComplex z);
 extern "C" CComplex conj(CComplex z);
 extern "C" CComplex cexp (CComplex z);
 
+
+#define _imag ((CComplex) (0.+1.j)) 
 
 using namespace std;
 
@@ -63,44 +61,6 @@ template<class T> inline T pow8(T x) { const T x2 = x * x; x2 *= x2; return x2*x
 //__declspec(vector) inline CComplex square(CComplex x) { return x*x; };
 inline CComplex square(CComplex x) { return x*x; };
 
-
-
-/* 
-int ipow(int base, int exp)
-{
-   int result = 1;
-   while (exp)
-   {
-      
-     if (exp & 1)
-     
-       result *= base;
-       
-     exp >>= 1;
-     
-     
-     base *= base;
-     
-   }
-
-              return result;
-}
- * */
-
-
-/**
- *   Implicit OpenMP parallelization. Take care, it does not 
- *   handle any private or shared variables , or reduces or ...!!
- *
- *   HANDLE WITH CARE !
- **/
-//#define omp_for     _Pragma("omp parallel for") for
-
-//#define omp_for    for
-// warning This is an OpenMP 3.0 function, is it possible to check for it ? (_OPENMP)
-
-
-
 // for vectorization support, see 
 #define simd_for _Pragma("simd") for
 
@@ -110,21 +70,25 @@ enum Dir : int {DIR_X=0, DIR_Y, DIR_Z, DIR_V, DIR_M, DIR_S, DIR_ALL, DIR_XYZ, DI
      
 inline int check( int status, std::string file, int line, std::string error_text, bool doAbort=false)
 {
-        if(status == -1 ) {
+  if(status == -1 ) {
             
-            std::stringstream ss;
-            ss << std::endl; 
-            ss << "\033[0;m";
-            ss << "\033[1;m"  <<"!.... " << file << "(" << line << ") " << error_text; 
-            ss << "\033[0m" << std::endl << std::flush;
+    std::stringstream ss;
+    
+    ss << std::endl; 
+    ss << "\033[0;m";
+    ss << "\033[1;m"  <<"!.... " << file << "(" << line << ") " << error_text; 
+    ss << "\033[0m" << std::endl << std::flush;
 
-            std::cout << ss.str();
+    std::cout << ss.str();
               
-            // exit through abort so we can get stack trace
-            if(doAbort==true) abort();
-            else              exit(0);
-        }
-        return status;
+    // exit through abort so we can get stack trace
+    if(doAbort==true) abort();
+    else              exit(0);
+    
+  }
+  
+  return status;
+
 }
 
 
@@ -132,8 +96,6 @@ inline int check( int status, std::string file, int line, std::string error_text
 #define DMESG(mesg)  std::string(__FILE__), __LINE__, std::string(mesg)
 #define _D(mesg, value) std::cout << mesg << " " << value << std::endl << std::flush
 
-
-#include "config.h"
 
 
 /*************************  Global Variables   ********************************/
@@ -175,12 +137,6 @@ extern double *X, *Y, *Z, *V, *M, *Z;
 
 /****************************************************************************/
 
-
-
-
-
-#include "hdf5.h"
-#include "hdf5_hl.h"
 
 
 class FileIO;

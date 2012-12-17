@@ -116,7 +116,8 @@ class Vlasov : public IfaceGKC {
    *
    *  set fs to const f_in 
    **/
-   virtual void solve(std::string equation_type, Fields *fields, CComplex *fs, CComplex *fss, double dt, int rk_step, const double rk[3]) = 0;
+   virtual void solve(std::string equation_type, Fields *fields, CComplex *fs, CComplex *fss, 
+                      double dt, int rk_step, const double rk[3]) = 0;
  public:
   
   /**
@@ -184,7 +185,8 @@ class Vlasov : public IfaceGKC {
    *  Handles boundary conditions
    *
    **/
-   void solve(Fields *fields, CComplex *fs, CComplex *fss, double dt, int rk_step, const double rk[3],  bool useNonBlockingBoundary=true);
+   void solve(Fields *fields, CComplex *fs, CComplex *fss, double dt, 
+              int rk_step, const double rk[3],  bool useNonBlockingBoundary=true);
 
    /**
    *    Please Document Me !

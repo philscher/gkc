@@ -34,9 +34,10 @@
 class VlasovIsland : public VlasovAux {
 
    double width, ///< Magnetic Island width
-          shear; ///< Shearing rate
+          shear, ///< Shearing rate
+          omega; ///< Island frequeny
 
-   double *MagIs, *dMagIs_dx;
+   double *MagIs, *dMagIs_dx, *ky_filter;
 
    double p[3]; ///<  Coefficients for the island structure
  
@@ -55,8 +56,47 @@ class VlasovIsland : public VlasovAux {
                            const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
                            CComplex nonLinear                  [NkyLD][NxLD  ][NvLD],
                            const double MagIs[NxGB], const double dMagIs[NxGB], 
-                           const double X[NxGB], const double V[NvGB], const double M[NmGB],
+                           const double X[NxGB+4], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3]);
+   
+   void  Vlasov_2D_Island_Rotation(
+                           CComplex fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Coll      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
+                           CComplex nonLinear                  [NkyLD][NxLD  ][NvLD],
+                           const double MagIs[NxGB], const double dMagIs[NxGB], 
+                           const double X[NxGB+4], const double V[NvGB], const double M[NmGB],
+                           const double dt, const int rk_step, const double rk[3]);
+   
+   void  Vlasov_2D_Island_Equi(
+                           CComplex fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Coll      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
+                           CComplex nonLinear                  [NkyLD][NxLD  ][NvLD],
+                           const double X[NxGB+4], const double V[NvGB], const double M[NmGB],
+                           const double dt, const int rk_step, const double rk[3]);
+   
+   void  Vlasov_2D_Island_filter(
+                           CComplex fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Coll      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
+                           CComplex nonLinear                  [NkyLD][NxLD  ][NvLD],
+                           const double MagIs[NxGB], const double dMagIs[NxGB], 
+                           const double X[NxGB+4], const double V[NvGB], const double M[NmGB],
+                           const double dt, const int rk_step, const double rk[3]);
+
 
   public:
 

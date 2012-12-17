@@ -33,10 +33,8 @@
 class Geometry : public IfaceGKC
 {
 
-protected:
+ public:
 
-
-public:
   double *Kx,     ///< Curvature term
          *Ky,     ///< Curvature term 
          *B,      ///< Equilibrium magnetic field strength
@@ -62,7 +60,8 @@ public:
 
   virtual ~Geometry() {};
 
-protected:
+ protected:
+
   /**
   *    @brief setup the geometry arrays, called from derived class
   *
@@ -75,7 +74,6 @@ protected:
   *
   **/ 
   virtual void setupArrays() {
-
 
     // Setup Arrays
     [=](double Kx   [NzLD][NxLD], double Ky   [NzLD][NxLD], double B[NzLD][NxLD], double dB_dx[NzLD][NxLD], 
@@ -97,7 +95,7 @@ protected:
 
   }
 
-public:
+ public:
 
   // Jacobian
   virtual double get_J(const int x, const int z)  = 0;
@@ -172,7 +170,6 @@ public:
   inline  double g_3(const int x, const int z) { return g_xy(x,z) * g_yz(x,z) - g_yy(x,z) * g_xz(x,z)  ; };
   ///@}
   
-
   /**
   *   @name Metric elements
   *
@@ -222,19 +219,20 @@ public:
   virtual  double nu (const int x) = 0;
 
   
-   /**
-   *    @brief creates Geometry groupd and delegates to child
-   *
-   *
-   **/ 
-   void initData(FileIO *fileIO) {
+  /**
+  *    @brief creates Geometry groupd and delegates to child
+  *
+  *
+  **/ 
+  void initData(FileIO *fileIO) {
+
         hid_t geometryGroup = check(H5Gcreate(fileIO->getFileID(), "/Geometry",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group for Geometry : H5Gcreate"));
         initData(geometryGroup); 
         H5Gclose(geometryGroup);
    } ;
         
    
-     virtual void initData(hid_t geometryGroup) = 0;
+  virtual void initData(hid_t geometryGroup) = 0;
 
      // is it necessary for later timesteps to 
      virtual void writeData(Timing *timing) {};
@@ -242,7 +240,6 @@ public:
 
 
 };
-
 
 
 #endif // GEOMETRY_H

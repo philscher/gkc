@@ -225,7 +225,7 @@ class FieldsFFT : public Fields {
   */
    virtual void gyroAverage(const CComplex In [Nq][NzLD][NkyLD][NxLD], 
                                   CComplex Out[Nq][NzLD][NkyLD][NxLD],
-                            const int m, const int s, const bool forward);
+                            const int m, const int s, const bool forward, const bool stack=false);
     
   /**
   * 
@@ -271,6 +271,7 @@ class FieldsFFT : public Fields {
   *  \f$ J_0 \f$ is the Bessel function of first kind and \f$ I_1 \f$ is the second order modified 
   *  Bessel function zeroth kind
   *
+  *
   *  @todo rename gyro-field to something better, e.g isForwardAverage
   *
   *  @param fields    the field or source terms
@@ -284,7 +285,29 @@ class FieldsFFT : public Fields {
                       CComplex Out[Nq][NzLD][NkyLD][NxLD],
                       CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
                       CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
-                const int m, const int s);  
+                const int m, const int s, bool stack=false);  
+
+  /**
+  *   @brief performs the double gyro-averaging over Maxwellian in Fourier space
+  * 
+  *   Note, that in the local, periodic case, following indentities hold
+  *
+  *  \f{align}{
+  *         
+  *    \int_0^\infty J_0^2(\sqrt{(lambda mu)}) e^{-\mu}    
+  *                &= I_0(b) e^{-b} \\
+  *    \int_0^\infty J_0^2(\sqrt{(lambda mu)}) e^{-\mu}\mu 
+  *                &= \Gamma_0-b\left(\Gamma_0-\Gamma_1\right) \\
+  *    \int_0^\infty J_0^2(\sqrt{(lambda mu)}) e^{-\mu}\mu^{1/2} 
+  *                &= ? \\
+  *    \int_0^\infty J_0^2(\sqrt{(lambda mu)}) e^{-\mu}\mu^2 
+  *                &= ? 
+  *
+  *  \f}
+  *
+  **/  
+  void doubleGyroExp(const CComplex In [NzLD][NkyLD][NxLD], 
+                           CComplex Out[NzLD][NkyLD][NxLD], const int m, const int s);
   
   /**
   *   Constructor

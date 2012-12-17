@@ -85,14 +85,14 @@ void TimeIntegration::solveTimeStepRK4(Timing timing, const double dt)
   // Runge-Kutta step 1
   const double rk_1[] = { 0., 1., 0.};
   fields->solve(vlasov->f0,vlasov->f, timing);
-  vlasov->solve(fields, vlasov->f  , vlasov->fs, 0.5e0*dt , 1, rk_1 );
+  vlasov->solve(fields, vlasov->f  , vlasov->fs ,  0.5*dt , 1, rk_1 );
   particles->integrate(vlasov, fields, 1);
         
   
   // Runge-Kutta step 2
   const double rk_2[] = { 1., 2., 0.};
   fields->solve(vlasov->f0,vlasov->fs, timing);
-  vlasov->solve(fields, vlasov->fs , vlasov->fss, 0.5e0*dt, 2, rk_2);
+  vlasov->solve(fields, vlasov->fs , vlasov->fss,  0.5*dt, 2, rk_2);
   particles->integrate(vlasov, fields, 2);
 
   // Runge-Kutta step 3
@@ -104,7 +104,7 @@ void TimeIntegration::solveTimeStepRK4(Timing timing, const double dt)
   // Runge-Kutta step 4
   const double rk_4[] = { 1., 0., 1.};
   fields->solve(vlasov->f0,vlasov->fs, timing);
-  vlasov ->solve(fields, vlasov->fs , vlasov->f ,  dt/6.e0 , 4, rk_4);
+  vlasov ->solve(fields, vlasov->fs , vlasov->f ,  dt/6., 4, rk_4);
   particles->integrate(vlasov, fields, 4);
 
 };
@@ -116,17 +116,17 @@ void TimeIntegration::solveTimeStepRK3(Timing timing, const double dt)
   // Runge-Kutta step 1
   const double rk_1[] = { 0., 1., 0.};
   fields->solve(vlasov->f0,vlasov->f, timing);
-  vlasov ->solve(fields, vlasov->f  , vlasov->fs, 1./3. * dt , 1, rk_1);
+  vlasov->solve(fields, vlasov->f  , vlasov->fs,  1./3. * dt , 1, rk_1);
 
   // Runge-Kutta step 2
   const double rk_2[] = { 1./3., 0., 0.};
   fields->solve(vlasov->f0,vlasov->fs, timing);
-  vlasov ->solve(fields, vlasov->fs , vlasov->fss, 2./3. *dt, 2, rk_2);
+  vlasov->solve(fields, vlasov->fs , vlasov->fss,  2./3. *dt, 2, rk_2);
 
   // Runge-Kutta step 3
   const double rk_3[] = { 1., 0., 1.};
   fields->solve(vlasov->f0,vlasov->fss, timing);
-  vlasov ->solve(fields, vlasov->fss, vlasov->f,  3./4. * dt , 3, rk_3);
+  vlasov->solve(fields, vlasov->fss, vlasov->f, 3./4. * dt , 3, rk_3);
         
 
 };
@@ -174,7 +174,7 @@ void TimeIntegration::solveTimeStepEigen(Timing timing, const double dt)
   // Runge-Kutta step 1
   const double rk_0[] = { 0., 0., 0.};
   fields->solve(vlasov->f0,vlasov->f, timing);
-  vlasov->solve(fields, vlasov->f  , vlasov->fs, 1. , 0, rk_0);
+  vlasov->solve(fields, vlasov->f  , vlasov->fs,  1. , 0, rk_0);
 
 };
        

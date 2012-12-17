@@ -28,7 +28,8 @@ VlasovOptim::VlasovOptim(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO
    // no need to call : Is done is base constructor -- or ?    Vlasov::initData(fileIO);    
 }
 
-void VlasovOptim::solve(std::string equation_type, Fields *fields, CComplex *_fs, CComplex *_fss, double dt, int rk_step, const double rk[3]) 
+void VlasovOptim::solve(std::string equation_type, Fields *fields, CComplex *_fs, CComplex *_fss,
+                        double dt, int rk_step, const double rk[3]) 
 {
  
   if((equation_type == "VlasovAux_ES")) {

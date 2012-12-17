@@ -40,7 +40,6 @@
 **/
 class Geometry2D : public Geometry
 {
-  //Array1R By;
   double *By;
   std::string By_str;
 

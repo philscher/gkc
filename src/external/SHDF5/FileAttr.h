@@ -14,6 +14,8 @@
 #ifndef FILE_ATTR_H_
 #define FILE_ATTR_H_
 
+#include "hdf5.h"
+#include "hdf5_hl.h"
 
 class FileAttr
 {

@@ -31,7 +31,7 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov 
    // Only perturbed if not continued
    if(fileIO->resumeFile == false) {
 
-   initBackground(setup, (A6zz) vlasov->f0, (A6zz) vlasov->f, V, M, grid);
+   initBackground(setup, grid, (A6zz) vlasov->f0, (A6zz) vlasov->f);
   
 
    if(PerturbationMethod == "NoPerturbation") ;
@@ -159,9 +159,9 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov 
 
 
 
-void Init::initBackground(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                        CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                          const double V[NvGB], const double M[NmGB], Grid *grid)
+void Init::initBackground(Setup *setup, Grid *grid, 
+                          CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                          CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB])
 {
   ////////////////////////////////////////////////////  Initial Condition Maxwellian f0 = (...) ///////////////
   
@@ -219,7 +219,7 @@ void Init::initBackground(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxL
 
 
 void Init::PerturbationHermitePolynomial(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                              CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB])
+                                               CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB])
 {
 
      int l = 0; // simple exponential function

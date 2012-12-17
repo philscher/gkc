@@ -35,10 +35,9 @@ class Init   : public IfaceGKC
 {
 
    Geometry *geo;
-   /**
-   *   @brief document me please
-   **/
-   double epsilon_0, sigma; 
+   
+   double epsilon_0, ///< Strengh of perturbation
+          sigma;     ///< Additional value e.g. FWHM of exp
 
    /**
    *
@@ -56,9 +55,9 @@ class Init   : public IfaceGKC
    /**
    *   @brief inits the Maxwellian 
    **/
-   void initBackground(Setup *setup, CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                     CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                    const double V[NvGB], const double M[NmGB], Grid *grid);
+   void initBackground(Setup *setup, Grid *grid, 
+                       CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                       CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB]);
 
   public :
 
@@ -121,7 +120,7 @@ class Init   : public IfaceGKC
    *   @brief document me please
    **/
    void PerturbationHermitePolynomial(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                           CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB]);
+                                            CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB]);
 
   protected:
 

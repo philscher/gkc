@@ -45,19 +45,19 @@
 GKC::GKC(Setup *_setup) : setup(_setup)  
 {
 
-   // Read Setup 
-   std::string fft_solver_name = setup->get("GKC.FFTSolver"    , "fftw3");
-   std::string psolver_type    = setup->get("Fields.Solver"    , "DFT"  );
-   std::string vlasov_type     = setup->get("Vlasov.Solver"    , "Aux"  );
-   std::string collision_type  = setup->get("Collisions.Solver", "None" );
-   gkc_SolType                 = setup->get("GKC.Type"         , "IVP"  );
-   std::string geometry_Type   = setup->get("GKC.Geometry"     , "2D"   );
+  // Read Setup 
+  std::string fft_solver_name = setup->get("GKC.FFTSolver"    , "fftw3");
+  std::string psolver_type    = setup->get("Fields.Solver"    , "DFT"  );
+  std::string vlasov_type     = setup->get("Vlasov.Solver"    , "Aux"  );
+  std::string collision_type  = setup->get("Collisions.Solver", "None" );
+  gkc_SolType                 = setup->get("GKC.Type"         , "IVP"  );
+  std::string geometry_Type   = setup->get("GKC.Geometry"     , "2D"   );
 
 
-   ///////////////////////////////   Load subsystems   /////////////////////////////
+  ///////////////////////////////   Load subsystems   /////////////////////////////
     
-   parallel  = new Parallel(setup);
-   bench     = new Benchmark(setup, parallel); 
+  parallel  = new Parallel(setup);
+  bench     = new Benchmark(setup, parallel); 
 
    parallel->print("Initializing GKC++\n");
 

@@ -71,7 +71,7 @@ class SpecialMath
    *  @image html Bessel_I1.png
    *
    **/
-   static inline  double _1mGamma0(const double b, bool gyro=true) {
+   static inline double _1mGamma0(const double b, bool gyro=true) {
 
     return gyro ? 1. - SFL::i0e(b) : b;
 
@@ -93,7 +93,7 @@ class SpecialMath
    *  $ 1 - \Gamma_{0,DK} = b $.
    *
    **/
-   __attribute__((vector)) static inline  double _1mGamma0_Pade(const double b) 
+   __attribute__((vector)) static inline double _1mGamma0_Pade(const double b) 
    {
 
     return  b / ( 1.e0 + b);
@@ -110,7 +110,7 @@ class SpecialMath
    *  for exp(-b).
    *
    **/
-   static inline  double Gamma0(const double b, bool gyro=true) 
+   static inline double Gamma0(const double b, bool gyro=true) 
    {
      return gyro ? SFL::i0e(b) : b;
    };
@@ -120,7 +120,7 @@ class SpecialMath
    *  @image html GK_Gamma1.png
    *
    */
-   static inline  double Gamma1(const double b, bool gyro=true) 
+   static inline double Gamma1(const double b, bool gyro=true) 
    {
       return gyro ? SFL::i1e(b) : b;
    };
@@ -130,7 +130,7 @@ class SpecialMath
    *  @image html G0mG1.png
    *
    */
-   static inline  double G0mG1(const double b, bool gyro=true) 
+   static inline double G0mG1(const double b, bool gyro=true) 
    {
       return gyro ? Gamma0(b) - Gamma1(b) : b;
    };
@@ -141,7 +141,7 @@ class SpecialMath
    *  
    *  @note wtf ? 
    **/
-   static inline  double I1sp(const double b) 
+   static inline double I1sp(const double b) 
    {
       //const double i = 1.;
       //return  -2. * i *  BesselI1(i * b)/b ;
@@ -156,11 +156,26 @@ class SpecialMath
    *  @image html GK_Delta.png
    *
    **/
-   static inline  double Delta(const double x) 
+   static inline double Delta(const double x) 
    {
      return SFL::i0e(x) - SFL::i1e(x);
 
    }
+
+   /**
+   *  @brief Modified bessel function of first order
+   *   \f[     \Delta =  I_0(b) e^{-b} + b \left( I_1(b) - I_0(b) \right) e^{-b} \f]
+   *  @image html GK_Delta.png
+   *
+   **/
+   static inline double Delta_1(const double b) 
+   {
+     return b * SFL::i1e(b) + (1.-b) * SFL::i0e(b);
+
+   }
+
+
+
 
 
 

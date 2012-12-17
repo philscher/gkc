@@ -58,12 +58,10 @@ class Grid : public IfaceGKC {
        NvGC; ///< Number of ghost cells in v-direction
    ///@}
 
-   //Array1R dm; ///< Weights for \f$ \mu(m) \f$
-   double *dm;
+   double *dm; ///< Weights for \f$ \mu(m) \f$
   
    /// @name Ranges for computational domain
    ///@{
-   //nct::Range RxGB, RyGB, RzGB, RvGB, RmGB, RsGB; ///< The boundary domain
    nct::Range RzLD, RxLD, RvLD, RmLD, RsLD, RkyLD; 
    nct::Range RxLB, RzLB, RvLB, RmLB, RsLB;
    

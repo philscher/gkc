@@ -20,6 +20,9 @@
 #ifndef TABLE_ATTR_H_
 #define TABLE_ATTR_H_
 
+#include "hdf5.h"
+#include "hdf5_hl.h"
+
 
 class TableAttr
 {
