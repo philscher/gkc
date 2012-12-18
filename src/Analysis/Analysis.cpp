@@ -24,7 +24,7 @@ parallel(_parallel),setup(_setup), vlasov(_vlasov), grid(_grid), fields(_fields)
 
      initData(setup, fileIO);
 
-     moments = new Moments(setup, vlasov, fields, grid);
+     moments = new Moments(setup, vlasov, fields, grid, parallel);
 }
 
 
@@ -49,23 +49,25 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
   if(parallel->Coord[DIR_VMS] == 0) {
 
     // Note : We have domain decomposition in X but not in Y
-    fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, &Field0[1][NzLlD][NkyLlD][NxLlD]);
+    fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, &Field0[0][NzLlD][NkyLlD][NxLlD]);
          
-    for(int q = 1; q <= Nq; q++) {
+    for(int q = 0; q < Nq; q++) {
                 
       // Mode power & Phase shifts for X (domain decomposed) |\phi(k_x)|
       for(int x_k=fft->K1xLlD; x_k <= fft->K1xLuD; x_k++) {
 
-        pSpec[q-1][x_k] = __sec_reduce_add(cabs(kXOut[q][NzLlD:NzLD][NkyLlD:NkyLD][x_k]))/fft->Norm_X; 
-        pFreq[q-1][x_k] = __sec_reduce_add(     kXOut[q][NzLlD:NzLD][NkyLlD:NkyLD][x_k] )/fft->Norm_X;
+        pSpec[q][x_k] = __sec_reduce_add(cabs(kXOut[q][NzLlD:NzLD][NkyLlD:NkyLD][x_k]))/fft->Norm_X; 
+        pFreq[q][x_k] = __sec_reduce_add(     kXOut[q][NzLlD:NzLD][NkyLlD:NkyLD][x_k] )/fft->Norm_X;
+
       }
             
       
       // Mode power & Phase shifts for Y (not decomposed) |\phi(k_y)|
       for(int y_k = NkyLlD; y_k <=  NkyLuD ; y_k++) { 
         
-        pSpecY [q-1][y_k] =      __sec_reduce_add(cabs(Field0[q][NzLlD:NzLD][y_k][NxLlD:NxLD])); 
-        pPhaseY[q-1][y_k] = carg(__sec_reduce_add(     Field0[q][NzLlD:NzLD][y_k][NxLlD:NxLD]));
+        pSpecY [q][y_k] =      __sec_reduce_add(cabs(Field0[q][NzLlD:NzLD][y_k][NxLlD:NxLD])); 
+        pPhaseY[q][y_k] = carg(__sec_reduce_add(     Field0[q][NzLlD:NzLD][y_k][NxLlD:NxLD]));
+
       }
       
     }
@@ -73,12 +75,12 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
     // Finalized calculations for x-domain (decomposed and negative frequency modes)
 
     // Sum up with X-values from other processes
-    parallel->reduce(&pSpec[0][0], Op::SUM, DIR_XYZ, Nq * Nx);        
-    parallel->reduce(&pFreq[0][0], Op::SUM, DIR_XYZ, Nq * Nx);        
+    parallel->reduce(&pSpec[0][0], Op::sum, DIR_XYZ, Nq * Nx);        
+    parallel->reduce(&pFreq[0][0], Op::sum, DIR_XYZ, Nq * Nx);        
     
     // Sum up with Y-values from other processes
-    parallel->reduce(&pSpecY [0][0], Op::SUM, DIR_XYZ, Nq * Nky);        
-    parallel->reduce(&pPhaseY[0][0], Op::SUM, DIR_XYZ, Nq * Nky);        
+    parallel->reduce(&pSpecY [0][0], Op::sum, DIR_XYZ, Nq * Nky);        
+    parallel->reduce(&pPhaseY[0][0], Op::sum, DIR_XYZ, Nq * Nky);        
          
          
     // map back from fftw [k0, k1, k2, ..., k_Ny, -k_(N/y-2), ... -k_1]
@@ -98,8 +100,12 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
 
 
 void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
-                                     const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
-                                     const double V[NvGB], const double M[NmGB],
+                                     const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                     const CComplex Mom00[NsLD][NzLD][NkyLD][NxLD], 
+                                     const CComplex Mom20[NsLD][NzLD][NkyLD][NxLD], 
+                                     const CComplex Mom02[NsLD][NzLD][NkyLD][NxLD], 
+                                     double ParticleFlux[Nq][NsLD][NkyLD][NxLD], 
+                                     double HeatFlux[Nq][NsLD][NkyLD][NxLD],
                                      ScalarValues &scalarValues) 
 
 {
@@ -113,36 +119,23 @@ void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][
     double particle = 0.; 
     double heat = 0.;
     
-    if(s >= NsLlD && s <= NsLuD) {
+    if((s >= NsLlD && s <= NsLuD) && parallel->Coord[DIR_XYZ] == 0)  {
     
-    for(int m=NmLlD; m<= NmLuD;m++) {
       
     ////////////////////////////// Calculate Particle Number ////////////////////////
-    const double pn_d6Z = M_PI  * dv * grid->dm[m] * grid->dXYZV;
-   
-    //#pragma omp parallel for reduction(+:number)
-    //for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) 
-    //{
-    //           number +=  __sec_reduce_add(f[s][m][NzLlD:NzLD][y_k][NxLlD:NxLD][NvLlD:NvLD]) * pn_d6Z;
-    //} 
-    number +=  creal(__sec_reduce_add(f[s][m][NzLlD:NzLD][0][NxLlD:NxLD][NvLlD:NvLD])) * pn_d6Z;
+    number =  creal(__sec_reduce_add(Mom00[s-NsLlD][0:NzLD][0][0:NxLD]));
     
     //////////// Calculate Kinetic Energy  //////////////////////////
     
-    const double v2_d6Z = 0.5 * plasma->species[s].m * M_PI * plasma->species[s].n0 * dv * grid->dm[m] * grid->dXYZ * pow2(plasma->species[s].scale_v) ;
-              
-    //#pragma omp parallel for reduction(+:kineticEnergy) collapse (2)
-    for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x <= NxLuD; x++) {
-             
-                 kineticEnergy += creal(__sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD] * (pow2(V[NvLlD:NvLD])+M[m]) ) * v2_d6Z);
-    } } }
-    // substract initial kinetic energy or not ?
+    kineticEnergy = creal(__sec_reduce_add(Mom20[s-NsLlD][0:NzLD][0][0:NxLD])) +
+                    creal(__sec_reduce_add(Mom02[s-NsLlD][0:NzLD][0][0:NxLD]));
 
     ////////////////////////////// Calculate Entropy ////////////////////////////////////
     
     //#pragma omp parallel for reduction(+:kineticEnergy) collapse (2)
-    for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
-    for(int x=NxLlD; x<= NxLuD;x++) { 
+    for(int m = NmLlD; m <= NmLuD; m++) {
+    for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) {
+    for(int x = NxLlD; x <= NxLuD; x++) { 
 
       entropy += creal(pow2(__sec_reduce_add(f [s][m][z][0][x][NvLlD:NvLD])))/
                             __sec_reduce_add(f0[s][m][z][0][x][NvLlD:NvLD]);
@@ -152,21 +145,17 @@ void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][
     
     /////////////////////////// Calculate Total Heat & Particle Flux ////////////////////////
        
-       double ParticleFlux[NkyLD][NxLD], HeatFlux[NkyLD][NxLD];
-
-       getParticleHeatFlux(s, ParticleFlux, HeatFlux, f, (A4zz) fields->Field0, (A6zz) fields->Field);
-
-       particle += __sec_reduce_add(ParticleFlux[:][:]);
-       heat     += __sec_reduce_add(    HeatFlux[:][:]);
+    particle = __sec_reduce_add(ParticleFlux[Field::phi][s-NsLlD][:][:]);
+    heat     = __sec_reduce_add(    HeatFlux[Field::phi][s-NsLlD][:][:]);
     
     
     } // if(local s) 
 
     // Communicate with other groups (make reduce whole structre)
-    heat          = parallel->reduce(heat         , Op::SUM);
-    particle      = parallel->reduce(particle     , Op::SUM);
-    kineticEnergy = parallel->reduce(kineticEnergy, Op::SUM);
-    number        = parallel->reduce(number       , Op::SUM);
+    heat          = parallel->reduce(heat         , Op::sum);
+    particle      = parallel->reduce(particle     , Op::sum);
+    kineticEnergy = parallel->reduce(kineticEnergy, Op::sum);
+    number        = parallel->reduce(number       , Op::sum);
 
     {
        scalarValues.particle_number[s-1]  = number        ;
@@ -182,104 +171,41 @@ void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][
 }
 
 
-///////////////////////////////// Calculate Moments  /////////////////////////////////////////////////
-
-void Analysis::getNumberDensity(const  CComplex f[NsLB][NmLB][NzLB][NkyLD][NxLB][NvLB],
-                                       CComplex R[NsLD][NzLD][NkyLD][NxLD]) 
+void Analysis::getParticleHeatFlux( 
+                                   double ParticleFlux[Nq][NsLD][NkyLD][NxLD], 
+                                   double HeatFlux[Nq][NsLD][NkyLD][NxLD],
+                                   const CComplex  Field0[Nq][NzLD][NkyLD][NxLD],
+                                   const CComplex Mom00[NsLD][NzLD][NkyLD][NxLD], 
+                                   const CComplex Mom20[NsLD][NzLD][NkyLD][NxLD], 
+                                   const CComplex Mom02[NsLD][NzLD][NkyLD][NxLD] 
+                                  )
 {
-  R[:][:][:][:] = 0.;
-
-  for(int s=NsLlD; s<= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { 
-
-  const double pn_d6Z = M_PI  * dv * grid->dm[m] * grid->dXYZV;
-
-  for(int z=NzLlD; z<= NzLuD;z++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
-  for(int x=NxLlD; x<= NxLuD;x++) { 
-
-          R[s-NsLlD][z-NzLlD][y_k][x-NxLlD] +=  __sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD]) * pn_d6Z;
-
-  } } }
-  
-  } } 
-
-  parallel->reduce( (CComplex *) R, Op::SUM, DIR_VM, NsLD * NzLD * NkyLD * NxLD);
-
-  return;
-
-}
-
-
-void Analysis::getTemperature(const  CComplex f[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                     CComplex R[NsLD][NzLD][NkyLD][NxLD]) 
-{
-  // We cannot rely that R is set to zero (and we use += later)
-  R[:][:][:][:] = 0.;
-
-
-  for(int s = NsLlD; s <= NsLuD; s++) { for(int m=NmLlD; m<=NmLuD; m++) { 
-
-     const double d6Z = M_PI * plasma->species[s].n0 * plasma->species[s].T0 * plasma->B0 * dv * grid->dm[m] * grid->dXYZ;
-
-     for(int z=NzLlD; z <= NzLuD; z++) { for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { 
-            
-        for(int x=NxLlD; x<=NxLuD ; x++) { 
-
-            // calculate temperature
-            R[s-NsLlD][z-NzLlD][y_k][x-NxLlD] += __sec_reduce_add((pow2(V[NvLlD:NvLD]) + M[m] * plasma->B0) * f[s][m][z][y_k][x][NvLlD:NvLD]) * d6Z;
-         
-        } 
-      
-     } } // y_k, z
-  
-    } } // m, s
-
-
-    parallel->reduce((CComplex *) R, Op::SUM, DIR_VM, NsLD * NzLD * NkyLD * NxLD);
-
-    return;
-}
-
-
-
-
-
-void Analysis::getParticleHeatFlux(const int s, 
-                                   double ParticleFlux[NkyLD][NxLD], double HeatFlux[NkyLD][NxLD],
-                                   const CComplex     f    [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                                   const CComplex Field0[Nq][NzLD][NkyLD][NxLD],
-                                   const CComplex Field [Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4])
-{
-
-
-  ParticleFlux[:][:] = 0.;  HeatFlux[:][:] = 0.;
-
-  CComplex Mom20[NzLD][NkyLD][NxLD],  Mom02[NzLD][NkyLD][NxLD],
-           Mom00[NzLD][NkyLD][NxLD];
-
-
-  moments->getMoments(f, Field0, Mom00, Mom20, Mom02, s);
-
   // Triad condition. Heat/Particles are only transported by the y_k = 0, as the other y_k > 0 
   // modes cancels out. Thus multiplying y_k = 0 = A(y_k)*B(-y_k) = A(y_k)*[cc : B(y_k)]
   // where the complex conjugate values is used as physcial value is a real quantity.
   
-  // We average over z here 
-  for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
+  // We average over z here
+  
+  // Get electro-static heat/particle flux
+  for(int s = NsLlD; s <= NsLuD; s++) { 
+  for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
   for(int x = NxLlD; x <= NxLuD; x++) { 
       
-    // Geometry dependent terms ?!
+    // Do I have to include geometry terms ?!
     const CComplex iky_phi  = _imag * fft->ky(y_k) * Field0[Field::phi][z][y_k][x];
 
     // take only real part as it gives the radial direction ?!
-    ParticleFlux[y_k][x-NxLlD] = - creal( iky_phi * conj(Mom00[z-NzLlD][y_k][x-NxLlD]));
-        HeatFlux[y_k][x-NxLlD] = - creal( iky_phi * conj(Mom20[z-NzLlD][y_k][x-NxLlD]
-                                                        +Mom02[z-NzLlD][y_k][x-NxLlD]));
+    ParticleFlux[Field::phi][s-NsLlD][y_k][x-NxLlD] = - creal( iky_phi * conj(Mom00[s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
+        HeatFlux[Field::phi][s-NsLlD][y_k][x-NxLlD] = - creal( iky_phi * conj(Mom20[s-NsLlD][z-NzLlD][y_k][x-NxLlD]
+                                                                             +Mom02[s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
 
     } // x 
   } } // y_k, z
-  
-  return;
+  }   // s
 
+  // Get heat/particle flux from magnetic flutter
+
+  return;
 }
 
         
@@ -290,22 +216,6 @@ void Analysis::initData(Setup *setup, FileIO *fileIO)
         
   hsize_t offset0[] = { 0, 0, 0, 0, 0, 0, 0 };
     
-  //---------------  Analysis - Heat fluxes ------------
-     
-  // Heat Flux ky and Particle FluxKy ( per species) 
-  hid_t fluxGroup = fileIO->newGroup("Flux", analysisGroup);
-     
-  hsize_t FSky_dsdim[] = { Nq, Ns     , Nky   , Nx     , 1 }; 
-  hsize_t FSky_dmdim[] = { Nq, Ns     , Nky   , Nx     , H5S_UNLIMITED} ;
-  hsize_t FSky_cDdim[] = { Nq, NsLD   , Nky   , NxLD   , 1 };
-  hsize_t FSky_cBdim[] = { Nq, NsLD   , Nky   , NxLD   , 1 };
-  hsize_t FSky_cdoff[] = { 0,  NsLlB-1, NkyLlD, NxLlD-3, 0};
-
-  FA_heatKy      = new FileAttr("Heat"    , fluxGroup, fileIO->file, 5, FSky_dsdim, FSky_dmdim, FSky_cDdim, offset0,  FSky_cBdim, FSky_cdoff, parallel->Coord[DIR_XYZ] == 0);
-  FA_particleKy  = new FileAttr("Particle", fluxGroup, fileIO->file, 5, FSky_dsdim, FSky_dmdim, FSky_cDdim, offset0,  FSky_cBdim, FSky_cdoff, parallel->Coord[DIR_XYZ] == 0);
-    
-  H5Gclose(fluxGroup);
-     
   //----------------  Moments - Heat fluxes ------------------
      
   hid_t momGroup = check(H5Gcreate(fileIO->getFileID(), "/Moments", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
@@ -320,6 +230,7 @@ void Analysis::initData(Setup *setup, FileIO *fileIO)
   bool momWrite = (parallel->Coord[DIR_VM] == 0);
      
   FA_Mom_Tp        = new FileAttr("Temperature_v", momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
+  FA_Mom_To        = new FileAttr("Temperature_o", momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
   FA_Mom_HeatFlux  = new FileAttr("HeatFlux"     , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
   FA_Mom_Density   = new FileAttr("Density"      , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
   FA_Mom_Time  = fileIO->newTiming(momGroup);
@@ -342,16 +253,37 @@ void Analysis::initData(Setup *setup, FileIO *fileIO)
      
   bool XDepWrite = ( (parallel->Coord[DIR_VM] == 0) && (parallel->Coord[DIR_Z] == 0));
      
-  FA_XDep_Tp   = new FileAttr("Temperature", XDepGroup, fileIO->file, 3, XDep_dsdim, XDep_dmdim, XDep_cDdim, XDep_cmoff, XDep_cBdim, XDep_cdoff, XDepWrite);
-  FA_XDep_n    = new FileAttr("Density"    , XDepGroup, fileIO->file, 3, XDep_dsdim, XDep_dmdim, XDep_cDdim, XDep_cmoff, XDep_cBdim, XDep_cdoff, XDepWrite);
+  FA_XDep_Tp   = new FileAttr("Tp", XDepGroup, fileIO->file, 3, XDep_dsdim, XDep_dmdim, XDep_cDdim, XDep_cmoff, XDep_cBdim, XDep_cdoff, XDepWrite);
+  FA_XDep_To   = new FileAttr("To", XDepGroup, fileIO->file, 3, XDep_dsdim, XDep_dmdim, XDep_cDdim, XDep_cmoff, XDep_cBdim, XDep_cdoff, XDepWrite);
+  FA_XDep_n    = new FileAttr("n" , XDepGroup, fileIO->file, 3, XDep_dsdim, XDep_dmdim, XDep_cDdim, XDep_cmoff, XDep_cBdim, XDep_cdoff, XDepWrite);
   FA_XDep_Time = fileIO->newTiming(XDepGroup);
         
   H5Gclose(XDepGroup);
      
   dataOutputXDep = Timing(setup->get("DataOutput.XDep.Step", -1), setup->get("DataOutput.XDep.Time", -1.));
+  
+  //---------------  Analysis - Heat fluxes ------------
+     
+  // Heat Flux ky and Particle FluxKy ( per species) 
+  hid_t fluxGroup = fileIO->newGroup("Flux", analysisGroup);
+     
+  hsize_t FSky_dsdim[] = { Nq, Ns     , Nky   , Nx     , 1 }; 
+  hsize_t FSky_dmdim[] = { Nq, Ns     , Nky   , Nx     , H5S_UNLIMITED} ;
+  hsize_t FSky_cDdim[] = { Nq, NsLD   , Nky   , NxLD   , 1 };
+  hsize_t FSky_cBdim[] = { Nq, NsLD   , Nky   , NxLD   , 1 };
+  hsize_t FSky_cdoff[] = { 0,  NsLlB-1, NkyLlD, NxLlD-3, 0};
+
+  bool isXYZ = parallel->Coord[DIR_XYZ] == 0;
+
+  FA_heatKy      = new FileAttr("Heat"    , fluxGroup, fileIO->file, 5, FSky_dsdim, FSky_dmdim, FSky_cDdim, offset0,  FSky_cBdim, FSky_cdoff, isXYZ);
+  FA_particleKy  = new FileAttr("Particle", fluxGroup, fileIO->file, 5, FSky_dsdim, FSky_dmdim, FSky_cDdim, offset0,  FSky_cBdim, FSky_cdoff, isXYZ);
+    
+  H5Gclose(fluxGroup);
+     
 
   //---------------------------   Power Spectrum  -------------------------------
-     
+   
+  bool isMaster = parallel->myRank == 0;
   // X-scalarValue
   hid_t growGroup = fileIO->newGroup("PowerSpectrum", analysisGroup);
 
@@ -359,7 +291,7 @@ void Analysis::initData(Setup *setup, FileIO *fileIO)
   hsize_t grow_x_dmdim[] = { Nq, Nx, H5S_UNLIMITED} ;
   hsize_t grow_x_cDdim[] = { Nq, Nx, 1 };
   hsize_t grow_x_cBdim[] = { Nq, Nx, 1 };
-  FA_grow_x  = new FileAttr("X", growGroup, fileIO->file, 3, grow_x_dsdim, grow_x_dmdim, grow_x_cDdim, offset0,  grow_x_cBdim, offset0, parallel->myRank == 0);
+  FA_grow_x  = new FileAttr("X", growGroup, fileIO->file, 3, grow_x_dsdim, grow_x_dmdim, grow_x_cDdim, offset0,  grow_x_cBdim, offset0, isMaster);
 
   // Y-scalarValue
   hsize_t grow_y_dsdim[] = { Nq, Nky, 1 };
@@ -367,15 +299,15 @@ void Analysis::initData(Setup *setup, FileIO *fileIO)
   hsize_t grow_y_cDdim[] = { Nq, Nky, 1 };
   hsize_t grow_y_cBdim[] = { Nq, Nky, 1 };
    
-  FA_grow_y  = new FileAttr("Y", growGroup, fileIO->file, 3, grow_y_dsdim, grow_y_dmdim, grow_y_cDdim, offset0,  grow_y_cBdim, offset0, parallel->myRank == 0);
+  FA_grow_y  = new FileAttr("Y", growGroup, fileIO->file, 3, grow_y_dsdim, grow_y_dmdim, grow_y_cDdim, offset0,  grow_y_cBdim, offset0, isMaster);
 
   FA_grow_t  = fileIO->newTiming(growGroup);
   
   H5Gclose(growGroup);
     
   hid_t freqGroup = fileIO->newGroup("PhaseShift", analysisGroup);
-  FA_freq_x  = new FileAttr("X", freqGroup, fileIO->file, 3, grow_x_dsdim, grow_x_dmdim, grow_x_cDdim, offset0,  grow_x_cBdim, offset0, parallel->myRank == 0);
-  FA_freq_y  = new FileAttr("Y", growGroup, fileIO->file, 3, grow_y_dsdim, grow_y_dmdim, grow_y_cDdim, offset0,  grow_y_cBdim, offset0, parallel->myRank == 0);
+  FA_freq_x  = new FileAttr("X", freqGroup, fileIO->file, 3, grow_x_dsdim, grow_x_dmdim, grow_x_cDdim, offset0,  grow_x_cBdim, offset0, isMaster);
+  FA_freq_y  = new FileAttr("Y", growGroup, fileIO->file, 3, grow_y_dsdim, grow_y_dmdim, grow_y_cDdim, offset0,  grow_y_cBdim, offset0, isMaster);
   FA_freq_t  = fileIO->newTiming(freqGroup);
   H5Gclose(freqGroup);
 
@@ -417,139 +349,124 @@ void Analysis::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEne
 void Analysis::writeData(const Timing &timing, const double dt)
 
 {
-  
-  ////////////////// Get Moments /////////////////////
-
-  if (timing.check(dataOutputMoments, dt)       )   {
-
-    CComplex A4_Tp[NsLD][NzLD][NkyLD][NxLD], 
-             A4_n [NsLD][NzLD][NkyLD][NxLD], 
-             A4_Xi[NsLD][NzLD][NkyLD][NxLD], 
-             A4_Q [NsLD][NzLD][NkyLD][NxLD]; 
-
-    getTemperature  ((A6zz) vlasov->f, (A4zz) A4_Tp);
-    getNumberDensity((A6zz) vlasov->f, (A4zz) A4_n );
-  
-    FA_Mom_Density->write((CComplex *) A4_n);
-    FA_Mom_Tp     ->write((CComplex *) A4_Tp);
-    FA_Mom_Time->write(&timing);
-
-    parallel->print("Data I/O : Moments output");
-    
-  }
 
 
-  ////////////////// Store X-dependent data /////////////
-  if (timing.check(dataOutputXDep, dt)       )   {
+  if (timing.check(dataOutputMoments   , dt) || timing.check(dataOutputXDep, dt) ||
+      timing.check(dataOutputStatistics, dt)) 
+  {
 
-    {   
-      CComplex A4_T[NsLD][NzLD][NkyLD][NxLD], 
-               A4_p[NsLD][NzLD][NkyLD][NxLD], 
-               A4_n[NsLD][NzLD][NkyLD][NxLD]; 
-      double   A1_T[NsLD][NxLD], 
-               A1_n[NsLD][NxLD], 
-               A1_p[NsLD][NxLD];
+      CComplex  Mom_Tp[NsLD][NzLD][NkyLD][NxLD], 
+                Mom_To[NsLD][NzLD][NkyLD][NxLD], 
+                Mom_n [NsLD][NzLD][NkyLD][NxLD]; 
+        
+      double     HeatFlux[Nq][NsLD][NkyLD][NxLD],  // Heat flux   
+             ParticleFlux[Nq][NsLD][NkyLD][NxLD];  // Particle flux
 
-      getNumberDensity( (A6zz) vlasov->f, (A4zz) A4_n);
-      getTemperature  ( (A6zz) vlasov->f, (A4zz) A4_T);
 
-      // Reduce over y_k and z
-      for(int s = NsLlD; s <= NsLuD; s++) {  for(int x = NxLlD;  x <= NxLuD; x++) {
+      // Get Moments of Vlasov equation
+      moments->getMoments((A6zz) vlasov->f, (A4zz) fields->Field0, Mom_n, Mom_Tp, Mom_To);
+        
+      // only electro-static flux is calculated
+      getParticleHeatFlux(ParticleFlux, HeatFlux, (A4zz) fields->Field0, Mom_n, Mom_Tp, Mom_To);
 
-         A1_n[s-NsLlD][x-NxLlD] = __sec_reduce_add(creal(A4_n[s-NsLlD][:][0][x-NxLlD]));
-         A1_T[s-NsLlD][x-NxLlD] = __sec_reduce_add(creal(A4_T[s-NsLlD][:][0][x-NxLlD]));
+      ////////////////// Output Moments /////////////////////
 
-      } } 
-   
-      FA_XDep_Tp  ->write((double *) A1_T); 
-      FA_XDep_n   ->write((double *) A1_n); 
-      FA_XDep_Time->write(&timing);
+      if (timing.check(dataOutputMoments, dt)       )   {
 
-      parallel->print("Data I/O : X-Dep output");
+        FA_Mom_Density->write((CComplex *) Mom_n );
+        FA_Mom_Tp     ->write((CComplex *) Mom_Tp);
+        FA_Mom_To     ->write((CComplex *) Mom_To);
+        FA_Mom_Time->write(&timing);
 
-    }  
-
-    ///////////////////Get Store /Particle Flux /////////////////////////////
-    {
-      double A2_q[NkyLD][NxLD], // Heat flux    
-             A2_x[NkyLD][NxLD]; // Particle flux
-       
-      double A4_q[Nq][NsLD][NkyLD][NxLD],  // Heat flux   
-             A4_x[Nq][NsLD][NkyLD][NxLD];  // Particle flux
-
-      A4_q[:][:][:][:] = 0.;
-      A4_x[:][:][:][:] = 0.;
-
-      for(int s = NsLlD; s <= NsLuD; s++) { 
-
-        // support only phi for now
-        getParticleHeatFlux(s, (A2rr) A2_x, (A2rr) A2_q, (A6zz) vlasov->f, (A6zz) fields->Field);
-        // Particel transport included c.c. modes, thus imaginary term vanishes
-        A4_q[0][s-NsLlD][:][:] +=  A2_q[:][:];
-        A4_x[0][s-NsLlD][:][:] +=  A2_x[:][:];
-
+        parallel->print("Data I/O : Moments output");
       }
 
-      parallel->reduce((double *) A4_q, Op::SUM, DIR_M, Nq*NsLD*NkyLD*NxLD);
-      parallel->reduce((double *) A4_x, Op::SUM, DIR_M, Nq*NsLD*NkyLD*NxLD);
+      ////////////////// Store X-dependent data /////////////
+      if (timing.check(dataOutputXDep, dt)       )   {
+      
+        double   A1_Tp[NsLD][NxLD], A1_To[NsLD][NxLD], 
+                 A1_n [NsLD][NxLD],  A1_p[NsLD][NxLD];
 
-      FA_heatKy    ->write((CComplex *) A4_q);
-      FA_particleKy->write((CComplex *) A4_x);
-    }
-  }
+        // Reduce over y_k and z
+        for(int s = NsLlD; s <= NsLuD; s++) {  for(int x = NxLlD;  x <= NxLuD; x++) {
 
-  if (timing.check(dataOutputStatistics, dt)       )   {
+         A1_n [s-NsLlD][x-NxLlD] = __sec_reduce_add(creal(Mom_n [s-NsLlD][:][0][x-NxLlD]));
+         A1_Tp[s-NsLlD][x-NxLlD] = __sec_reduce_add(creal(Mom_Tp[s-NsLlD][:][0][x-NxLlD]));
+         A1_To[s-NsLlD][x-NxLlD] = __sec_reduce_add(creal(Mom_To[s-NsLlD][:][0][x-NxLlD]));
+
+        } } 
+   
+        FA_XDep_Tp  ->write((double *) A1_Tp); 
+        FA_XDep_To  ->write((double *) A1_To); 
+        FA_XDep_n   ->write((double *) A1_n ); 
+        FA_XDep_Time->write(&timing);
+
+        parallel->print("Data I/O : X-Dep output");
+
+
+        FA_particleKy->write((double *) ParticleFlux);
+        FA_heatKy    ->write((double *)     HeatFlux);
+      }  
+
+    if (timing.check(dataOutputStatistics, dt)       )   {
  
-    ////////////// Scalar Variables /////////////////
+      ////////////// Scalar Variables /////////////////
 
-    // Stack allocation (size ok ?) and alignement ? (well, speed not critical here...)
-    double pSpecX [Nq][Nx], pSpecY [Nq][Nky],
-           pPhaseX[Nq][Nx], pPhaseY[Nq][Nky];
+      { // calculate mode spectrum of fields (phi, Ap, Bp)
+
+        double pSpecX [Nq][Nx], pSpecY [Nq][Nky],
+               pPhaseX[Nq][Nx], pPhaseY[Nq][Nky];
      
-    getPowerSpectrum((A4zz) fft->kXOut, (A4zz) fields->Field0, pSpecX, pSpecY, pPhaseX, pPhaseY);
+        getPowerSpectrum((A4zz) fft->kXOut, (A4zz) fields->Field0, pSpecX, pSpecY, pPhaseX, pPhaseY);
     
-    // Seperatly writing ? Hopefully it is buffered ... (passing stack pointer ... OK ?)
-    FA_grow_x->write( &pSpecX [0][0]); FA_grow_y->write(&pSpecY [0][0]); FA_grow_t->write(&timing);
-    FA_freq_x->write( &pPhaseX[0][0]); FA_freq_y->write(&pPhaseY[0][0]); FA_freq_t->write(&timing);
-    
-    ScalarValues scalarValues;
-    
-    // calculate kinetic Energy first, need for initial_e ! sum over domain
-    scalarValues.timestep = timing.step;
-    scalarValues.time     = timing.time;
-    
-    fields->getFieldEnergy(scalarValues.phiEnergy, scalarValues.ApEnergy, scalarValues.BpEnergy);
-    
-    //  Get scalar Values for every species ( this is bad calculate them alltogether)
-    calculateScalarValues((A6zz) vlasov->f, (A6zz) vlasov->f0, V, M, scalarValues); 
+        // Seperatly writing ? Hopefully it is buffered ... (passing stack pointer ... OK ?)
+        FA_grow_x->write( &pSpecX [0][0]); FA_grow_y->write(&pSpecY [0][0]); FA_grow_t->write(&timing);
+        FA_freq_x->write( &pPhaseX[0][0]); FA_freq_y->write(&pPhaseY[0][0]); FA_freq_t->write(&timing);
+      }
 
-    SVTable->append(&scalarValues);
+      ScalarValues scalarValues;
     
-    // write out to Terminal/File
+      // calculate kinetic Energy first, need for initial_e ! sum over domain
+      scalarValues.timestep = timing.step;
+      scalarValues.time     = timing.time;
     
-    std::stringstream messageStream;
-    messageStream << std::endl << std::endl << "Analysis | " << std::setprecision(3) << "Time : " << timing.time << " Step : " << timing.step << "   ";
-    messageStream << "Field Energy : (phi) " << scalarValues.phiEnergy  << "  (Ap) " << scalarValues.ApEnergy  <<  "  (Bp) " << scalarValues.BpEnergy << std::endl; 
-    double charge = 0., kinetic_energy=0.;
+      fields->getFieldEnergy(scalarValues.phiEnergy, scalarValues.ApEnergy, scalarValues.BpEnergy);
     
-    for(int s = NsGlD; s <= NsGuD; s++) {
+      //  Get scalar Values for every species ( this is bad calculate them alltogether)
+      calculateScalarValues((A6zz) vlasov->f, (A6zz) vlasov->f0,
+                             Mom_n, Mom_Tp, Mom_To, ParticleFlux, HeatFlux,
+                             scalarValues); 
+
+      SVTable->append(&scalarValues);
     
-      messageStream << "         | "   << std::setw(10) << plasma->species[s].name << " "  
-                     << " N : "             << scalarValues.particle_number[s-1]  
-                     << " Kinetic Energy: " << scalarValues.kinetic_energy[s-1] 
-                     << " Particle Flux :"  << scalarValues.particle_flux[s-1]  
-                     << " Heat Flux : "     << scalarValues.heat_flux[s-1] << std::endl;
+      ////////////////// print out some statistics /////////////////////////////
+    
+      std::stringstream messageStream;
+      messageStream << std::endl << std::endl << "Analysis | " << std::setprecision(3) << "Time : " << timing.time << " Step : " << timing.step << "   ";
+      messageStream << "Field Energy : (phi) " << scalarValues.phiEnergy  << "  (Ap) " << scalarValues.ApEnergy  <<  "  (Bp) " << scalarValues.BpEnergy << std::endl; 
+      double charge = 0., kinetic_energy=0.;
+    
+      for(int s = NsGlD; s <= NsGuD; s++) {
+    
+        messageStream << "         | "   << std::setw(10) << plasma->species[s].name << " "  
+                      << " N : "             << scalarValues.particle_number[s-1]  
+                      << " Kinetic Energy: " << scalarValues.kinetic_energy[s-1] 
+                      << " Particle Flux :"  << scalarValues.particle_flux[s-1]  
+                      << " Heat Flux : "     << scalarValues.heat_flux[s-1] << std::endl;
         charge += plasma->species[s].q  * scalarValues.particle_number[s-1];
-      kinetic_energy += scalarValues.kinetic_energy[s-1];
-    }
+       kinetic_energy += scalarValues.kinetic_energy[s-1];
+
+      }
     
-    messageStream << //"------------------------------------------------------------------" <<
-      "         | Total Energy " << kinetic_energy+scalarValues.phiEnergy + scalarValues.ApEnergy + scalarValues.BpEnergy << "    Total Charge = " << ((plasma->species[0].n0 != 0.) ? 0. : charge) 
-      << std::endl;  
-    parallel->print(messageStream.str());
+      messageStream <<
+        "         | Total Energy " << kinetic_energy+scalarValues.phiEnergy + scalarValues.ApEnergy + scalarValues.BpEnergy << 
+              "    Total Charge = " << ((plasma->species[0].n0 != 0.) ? 0. : charge) << std::endl;  
+      parallel->print(messageStream.str());
     
-  }
+     }
   
+  }
+
   return;
   
 }
@@ -602,9 +519,11 @@ void Analysis::closeData()
   delete FA_grow_x; delete FA_grow_y; delete FA_grow_t;     
   delete FA_freq_x; delete FA_freq_y; delete FA_freq_t;    
      
-  delete FA_XDep_Tp; delete FA_XDep_n; delete FA_XDep_Time;
+  delete FA_XDep_Tp; delete FA_XDep_To; 
+  delete FA_XDep_n ; delete FA_XDep_Time;
        
   delete FA_Mom_Tp;
+  delete FA_Mom_To;
   delete FA_Mom_HeatFlux;
   delete FA_Mom_Density;
   delete FA_Mom_Time;

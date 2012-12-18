@@ -335,13 +335,13 @@ MPI_Op Parallel::getMPIOp(Op op)
     MPI_Op mOp = MPI_OP_NULL;
 
     switch(op) {
-      case(Op::SUM)  : mOp = MPI_SUM ; break;
-      case(Op::MAX)  : mOp = MPI_MAX ; break;
-      case(Op::MIN)  : mOp = MPI_MIN ; break;
-      case(Op::BOR ) : mOp = MPI_BOR ; break;
-      case(Op::BAND) : mOp = MPI_BAND; break;
-      case(Op::LOR ) : mOp = MPI_LOR ; break;
-      case(Op::LAND) : mOp = MPI_LAND; break;
+      case(Op::sum ) : mOp = MPI_SUM ; break;
+      case(Op::max ) : mOp = MPI_MAX ; break;
+      case(Op::min ) : mOp = MPI_MIN ; break;
+      case(Op::bor ) : mOp = MPI_BOR ; break;
+      case(Op::band) : mOp = MPI_BAND; break;
+      case(Op::lor ) : mOp = MPI_LOR ; break;
+      case(Op::land) : mOp = MPI_LAND; break;
 
         default       : check(-1, DMESG("No such MPI operation defined"));
     }

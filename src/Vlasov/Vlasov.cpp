@@ -213,7 +213,7 @@ double Vlasov::getMaxNLTimeStep(const double maxCFL)
     double NL = max(NL_ExB_v, NL_Landau_v) + 1.e-10; 
 
     // get global maximum timestep time step 
-    dt_NL = maxCFL / parallel->reduce(NL, Op::MAX);
+    dt_NL = maxCFL / parallel->reduce(NL, Op::max);
   }
 
   return dt_NL;

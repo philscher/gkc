@@ -38,9 +38,9 @@ void FieldsFFT::solveFieldEquations(const CComplex Q     [Nq][NzLD][NkyLD][NxLD]
    fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, ArrayField0.data((CComplex *) Q));
 
    // if (phi,Ap,Bp) is solved together, (phi,Bp) are coupled and have to be solved together
-   if     ( solveEq & Field::phi & Field::Bpp ) solveBParallelEquation((A4zz) fft->kXOut, (A4zz) fft->kXIn);
-   else if( solveEq & Field::phi              ) solvePoissonEquation  ((A4zz) fft->kXOut, (A4zz) fft->kXIn);
-   if     ( solveEq & Field::Ap               ) solveAmpereEquation   ((A4zz) fft->kXOut, (A4zz) fft->kXIn);
+   if     ( solveEq & Field::Iphi & Field::IBp ) solveBParallelEquation((A4zz) fft->kXOut, (A4zz) fft->kXIn);
+   else if( solveEq & Field::Iphi              ) solvePoissonEquation  ((A4zz) fft->kXOut, (A4zz) fft->kXIn);
+   if     ( solveEq & Field::IAp               ) solveAmpereEquation   ((A4zz) fft->kXOut, (A4zz) fft->kXIn);
    #pragma omp barrier
 
    // suppresses modes in all fields (needs work)
@@ -86,7 +86,7 @@ void FieldsFFT::solvePoissonEquation(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::
           // adiabatic term \adia ( \phi - <\phi>_{yz}), we shift flux averaging term <\phi>_{yz}
           // to rhs due to FFT normalization
           const double lhs    = plasma->debye2 * k2_p + sum_qqnT_1mG0(k2_p) + adiab;
-          const CComplex rhs  = (kXOut[Q::rho][z][y_k][x_k] + adiab*phi_yz[x_k])/fft->Norm_X; 
+          const CComplex rhs  = (kXOut[Field::phi][z][y_k][x_k] + adiab*phi_yz[x_k])/fft->Norm_X; 
           
           kXIn[Field::phi][z][y_k][x_k] = rhs/lhs;
          
@@ -114,7 +114,7 @@ void FieldsFFT::solveAmpereEquation(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X
      const double k2_p = fft->k2_p(x_k,y_k,z);
            
      const double lhs   =  - k2_p - Yeb * sum_sa2qG0(k2_p);
-     const CComplex rhs =  kXOut[Q::jp][z][y_k][x_k]/fft->Norm_X; 
+     const CComplex rhs =  kXOut[Field::Ap][z][y_k][x_k]/fft->Norm_X; 
      
      kXIn[Field::Ap][z][y_k][x_k] = rhs/lhs;
 
@@ -141,8 +141,8 @@ void FieldsFFT::solveBParallelEquation(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver
      const double C_2 = - sum_qnB_Delta(k2_p);
      const double C_3 = 2./plasma->beta - sum_2TnBB_Delta(k2_p);
           
-     const CComplex M_00 = kXOut[Q::rho][z][y_k][x_k];
-     const CComplex M_01 = kXOut[Q::jo ][z][y_k][x_k];
+     const CComplex M_00 = kXOut[Field::phi][z][y_k][x_k];
+     const CComplex M_01 = kXOut[Field::Bp ][z][y_k][x_k];
 
      kXIn[Field::phi][z][y_k][x_k] = (C_3 * M_00 - C_2 * M_01) / (C_1 * C_3 - pow2(C_2)) / fft->Norm_X;
      kXIn[Field::Bp ][z][y_k][x_k] = (C_1 * M_01 - C_2 * M_00) / (C_1 * C_3 - pow2(C_2)) / fft->Norm_X;
@@ -179,7 +179,7 @@ void FieldsFFT::calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_Nk
   } } }
 
   // average over z-direction
-  parallel->reduce(phi_yz, Op::SUM, DIR_Z, Nx);  
+  parallel->reduce(phi_yz, Op::sum, DIR_Z, Nx);  
 
   return;
 
@@ -200,7 +200,7 @@ void FieldsFFT::doubleGyroExp(const CComplex In [NzLD][NkyLD][NxLD],
        const double rho_t2 = plasma->species[s].T0  * plasma->species[s].m / pow2(plasma->species[s].q * plasma->B0);
    
       
-       for(int q = 1; q <= Nq; q++) {
+       for(int q = 0; q < Nq; q++) {
       
 
        //#pragma omp for collapse(2)
@@ -232,7 +232,7 @@ void FieldsFFT::gyroFull(const CComplex In   [Nq][NzLD][NkyLD][NxLD             
                          const int m, const int s, bool stack)  
 {
    #pragma omp single
-   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, stack ? (void *) &In[0][0][0][0] : (void *) &In[1][NzLlD][NkyLlD][NxLlD]);
+   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, stack ? (void *) &In[0][0][0][0] : (void *) &In[0][NzLlD][NkyLlD][NxLlD]);
    
       
    // get therma gyro-radius^2 of species and lambda =  2 x b 
@@ -240,7 +240,7 @@ void FieldsFFT::gyroFull(const CComplex In   [Nq][NzLD][NkyLD][NxLD             
    const double lambda2 = 2. * M[m] * rho_t2;
 
    // solve for all fields at once
-   for(int q = 1; q <= Nq; q++) {
+   for(int q = 0; q < Nq; q++) {
       
         // get therma gyro-radius^2 of species and lambda =  2 x b 
         const double rho_t2  = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0); 
@@ -264,7 +264,7 @@ void FieldsFFT::gyroFull(const CComplex In   [Nq][NzLD][NkyLD][NxLD             
    }
    
    #pragma omp single
-   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, stack ? &Out[0][0][0][0] : &Out[1][NzLlD][NkyLlD][NxLlD]);
+   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, stack ? &Out[0][0][0][0] : &Out[0][NzLlD][NkyLlD][NxLlD]);
        
    return;
 }
@@ -278,15 +278,15 @@ void FieldsFFT::gyroFirst(const CComplex In   [Nq][NzLD][NkyLD][NxLD],
 {
 
   if(gyroFields==false) {  
-                             Out[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]
-                          =   In[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD];
+                             Out[0:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]
+                          =   In[0:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD];
                              return; 
                         };
    
-  fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, (void *) &In[1][NzLlD][NkyLlD][NxLlD]);
+  fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, (void *) &In[0][NzLlD][NkyLlD][NxLlD]);
            
    // solve for all fields at once
-   for(int n = 1; n <= Nq; n++) {
+   for(int q = 0; q < Nq; q++) {
 
     // get therma gyro-radius^2 of species and lambda =  2 x b 
     const double rho_t2 = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0); 
@@ -297,16 +297,16 @@ void FieldsFFT::gyroFirst(const CComplex In   [Nq][NzLD][NkyLD][NxLD],
       // perform gyro-average in Fourier space for rho/phi field
       const double k2p_rhoth2 = fft->k2_p(x_k, y_k, z) * rho_t2;
           
-      kXIn[n][z][y_k][x_k] = kXOut[n][z][y_k][x_k]/fft->Norm_X * exp(-k2p_rhoth2); 
+      kXIn[q][z][y_k][x_k] = kXOut[q][z][y_k][x_k]/fft->Norm_X * exp(-k2p_rhoth2); 
 
-      if(((y_k == Nky-1) || (x_k == Nx/2)) && screenNyquist) kXIn[n][z][y_k][x_k]  = 0.;
+      if(((y_k == Nky-1) || (x_k == Nx/2)) && screenNyquist) kXIn[q][z][y_k][x_k]  = 0.;
             
     } } }
    
    }
 
 
-   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, &Out[1][NzLlD][NkyLlD][NxLlD]);
+   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, &Out[0][NzLlD][NkyLlD][NxLlD]);
   
   return;
 
@@ -319,8 +319,8 @@ void FieldsFFT::gyroAverage(const CComplex In [Nq][NzLD][NkyLD][NxLD], CComplex 
 {
   if     (plasma->species[s].gyroModel == "Drift" ) {
        
-      Out[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]
-   =  In[1:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD];
+      Out[0:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]
+   =  In[0:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD];
   }
   else if(plasma->species[s].gyroModel == "Gyro"  ) gyroFull (In, Out, (A4zz) fft->kXOut, (A4zz) fft->kXIn, m, s, stack);  
   else if(plasma->species[s].gyroModel == "Gyro-1") gyroFirst(In, Out, (A4zz) fft->kXOut, (A4zz) fft->kXIn,    s, gyroFields);  
@@ -351,7 +351,7 @@ void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEn
             CComplex Field0[Nq][NzLD][NkyLD][NxLD])
         {
         
-          fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, &Field0[1][NzLlD][NkyLlD][NxLlD]);
+          fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, &Field0[0][NzLlD][NkyLlD][NxLlD]);
 
           // Add only kinetic contributions (check if FFT Norm is correct)
           //#pragma omp parallel for, collapse(2), reduce(+,phiEnergy,ApEnergy,BpEnergy)
@@ -388,8 +388,8 @@ void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEn
         //phiEnergy =  parallel->reduce(4. * M_PI * phiEnergy * scaleXYZ / (8.e0 * M_PI) / (initialEkin(TOTAL) == 0. ? 1. : initialEkin(TOTAL)), OP_SUM, DIR_XYZ);
         //ApEnergy  =  parallel->reduce(4. * M_PI *  ApEnergy * scaleXYZ / (8.e0 * M_PI) / (initialEkin(TOTAL) == 0. ? 1. : initialEkin(TOTAL)), OP_SUM, DIR_XYZ);
       
-       phiEnergy =  abs( parallel->reduce(4. * M_PI * phiEnergy * grid->dXYZ / (8.e0 * M_PI), Op::SUM, DIR_XYZ) ); 
-       ApEnergy  =  abs( parallel->reduce(4. * M_PI *  ApEnergy * grid->dXYZ / (8.e0 * M_PI), Op::SUM, DIR_XYZ) );
+       phiEnergy =  abs( parallel->reduce(4. * M_PI * phiEnergy * grid->dXYZ / (8.e0 * M_PI), Op::sum, DIR_XYZ) ); 
+       ApEnergy  =  abs( parallel->reduce(4. * M_PI *  ApEnergy * grid->dXYZ / (8.e0 * M_PI), Op::sum, DIR_XYZ) );
        BpEnergy  = 0.;
       
       } ((A4zz) fft->kXIn, (A4zz) fft->kXOut, (A4zz) Field0); 

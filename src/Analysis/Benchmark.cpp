@@ -112,7 +112,7 @@ void Benchmark::closeData()
 void Benchmark::printOn(std::ostream &output) const
  {
 
-  double totalFLOPS = parallel->reduce(simMaxGFLOPS, Op::SUM) * parallel->numThreads;
+  double totalFLOPS = parallel->reduce(simMaxGFLOPS, Op::sum) * parallel->numThreads;
   //output << "Benchmark  | using PAPI  " << PAPI_VERSION_MAJOR << "." << PAPI_VERSION_MINOR <<  "   Available Counters : " << num_hwcntrs << std::endl;
   output << "           | Total GFLOPS : " << std::setprecision(3) << totalFLOPS    << "   " <<
                         " Average GFLOPS/CPU : "  << totalFLOPS/(parallel->numProcesses * parallel->numThreads) << std::endl;

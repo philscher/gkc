@@ -79,7 +79,8 @@ class Analysis : public IfaceGKC {
   ///@{
   ///@inb group HDF-5 Attributes 
   FileAttr *FA_Mom_Density ,  ///< Density  
-           *FA_Mom_Tp      ,  ///< Temperature 
+           *FA_Mom_Tp      ,  ///< Temperature (parallel) 
+           *FA_Mom_To      ,  ///< Temperature (orthogonal)
            *FA_Mom_HeatFlux,  ///< Heat flux
            *FA_Mom_Time    ;  ///< Time 
 
@@ -95,7 +96,8 @@ class Analysis : public IfaceGKC {
             *FA_freq_t;     ///< Time
 
      
-  FileAttr *FA_XDep_Tp,     ///< X-Dependence (Temperature)
+  FileAttr *FA_XDep_Tp,     ///< X-Dependence (Temperature parallel)
+           *FA_XDep_To,     ///< X-Dependence (Temperature orthogonal)
            *FA_XDep_n,      ///< X-Dependence (Density)
            *FA_XDep_Time;   ///< X-Depdndence (Time)
 
@@ -183,10 +185,13 @@ class Analysis : public IfaceGKC {
   *
   **/
   void calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
-                              const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
-                              const double V[NvGB], const double M[NmGB], 
-                              ScalarValues &SV); 
-
+                                     const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                     const CComplex Mom00[NsLD][NzLD][NkyLD][NxLD], 
+                                     const CComplex Mom20[NsLD][NzLD][NkyLD][NxLD], 
+                                     const CComplex Mom02[NsLD][NzLD][NkyLD][NxLD], 
+                                     double ParticleFlux[Nq][NsLD][NkyLD][NxLD], 
+                                     double HeatFlux[Nq][NsLD][NkyLD][NxLD],
+                                     ScalarValues &scalarValues) ;
 
   /**
   *  @brief calculates and returns the heat flux across magnetic flux surfaces
@@ -215,11 +220,14 @@ class Analysis : public IfaceGKC {
   * 
   *
   **/
-  void getParticleHeatFlux(const int s, 
-                           double ParticleFlux[NkyLD][NxLD], double HeatFlux[NkyLD][NxLD],
-                           const CComplex         f[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex Field0[Nq][NzLB][NkyLD][NxLD],
-                           const CComplex Field[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]);
+  void getParticleHeatFlux( 
+                           double ParticleFlux[Nq][NsLD][NkyLD][NxLD], 
+                           double HeatFlux[Nq][NsLD][NkyLD][NxLD],
+                           const CComplex Field0[Nq][NzLD][NkyLD][NxLD],
+                           const CComplex Mom00[NsLD][NzLD][NkyLD][NxLD], 
+                           const CComplex Mom20[NsLD][NzLD][NkyLD][NxLD], 
+                           const CComplex Mom02[NsLD][NzLD][NkyLD][NxLD] 
+                          );
 
   /**
   *   @brief get the total field energy in domain
@@ -232,33 +240,6 @@ class Analysis : public IfaceGKC {
   *
   **/
   void getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEnergy);
-
-
-  //////////////// Calculate Moments (4-dimensional s,x,y_k,z) ////////////////////////
-  ///@{
-
-  /** 
-  *
-  *  @brief Calculates the temperature, note the 
-  * 
-  *  Calculates the temperature by
-  *
-  *  \f[ T_\sigma = \frac{ \int_{-infty}{infty} 2 v^2 f}{n_\sigma} \f]
-  *
-  *
-  *  \f[ \int_{-\infty}{\infty} v^2 \exp^{-\frac{v^2}{T}} = \frac{1}{2} \sqrt{\pi}T^{3/2} \f]
-  *  so we need to multiply with factor 1./2. Also divide by n.
-  *
-  *  @param f    the perturbed phase space function \f$ f(s,m,z,y_k, x,v) \f$
-  *  @param A4_z the number density in \f$ n4(\sigma,z,k_y,x) \f$
-  *
-  **/
-  void getTemperature(const CComplex f[NsLB][NmLB][NzLB][NkyLD][NxLB][NvLB],
-                            CComplex T[NsLD][NzLD][NkyLD][NxLD]); 
-
-
-  void getNumberDensity(const CComplex f[NsLB][NmLB][NzLB][NkyLD][NxLB][NvLB],
-                              CComplex n[NsLD][NzLD][NkyLD][NxLD]) ;
 
 
   //////////////////////////////////  Data-I/0 stuff ////////////////////////////////////////

@@ -22,12 +22,25 @@ VlasovIsland::VlasovIsland(Grid *_grid, Parallel *_parallel, Setup *_setup, File
     /// Set Magnetic Island structure
     width = setup->get("Island.Width"  , 0.); 
     i     = setup->get("Island.Mode"   , 1 ); 
-    shear = setup->get("Geometry.Shear", 0.4); 
+    omega = setup->get("Island.Omega"  , 0.0); 
+    shear = setup->get("Geometry.Shear", 0.2); 
+    
 
     
 
     //// Setup Magnetic Island structure
     nct::allocate(nct::Range(NxGlD, Nx))(&MagIs, &dMagIs_dx);
+    nct::allocate(nct::Range(NkyLlD, Nky))(&ky_filter);
+    
+    const double ky0   = setup->get("Island.Filter.ky0", 1.2); 
+    const double filter_gradient = setup->get("Island.Filter.Gradient  ", 10.); 
+    const double signf = setup->get("Island.Filter.Sign", 0.5); 
+    
+    for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {  
+      
+         ky_filter[y_k] = 0.5 + signf*tanh(filter_gradient*(fft->ky(y_k)-ky0));
+
+    }  
 
     for(int x=NxGlD; x<= NxGuD;x++) {  
 

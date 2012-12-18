@@ -52,7 +52,7 @@ extern "C" CComplex cexp (CComplex z);
 
 using namespace std;
 
-template<class T> inline T pow2(T x) { return x*x; };
+template<class T> __attribute__((vector)) inline T pow2(T x) { return x*x; };
 template<class T> inline T pow3(T x) { return x*x*x; };
 template<class T> inline T pow4(T x) { const T x2 =  (x*x); return x2*x2; };
 template<class T> inline T pow5(T x) { const T x2 = x * x; return x2*x2*x; };

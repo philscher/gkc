@@ -36,18 +36,8 @@ extern int GC2, GC4, Nq;
 *         \f$ A_{1\parallel}\f$ parallel magnetic vector potential 
 *         \f$ B_{1\parallel}\f$ parallel magnetic field
 **/
-namespace Field { const int phi=1, Ap=2, Bp=3, Bpp=4; }
+namespace Field { const int phi=0, Ap=1, Bp=2, Iphi=4, IAp=8, IBp=16; };
 //namespace Field { constexpr const int phi=1, Ap=2, Bp=3, Bpp=4; }
-
-/**
-*  @brief defined offset to access source term variables S
-*         \f$ \rho, j_\parallel, j_\perp \f$
-*         with 
-*         \f$ \rho        \f$ charge density
-*         \f$ j_\parallel \f$ parallel current density
-*         \f$ j_\perp     \f$ perpendicular current density
-**/
-namespace Q     { const int rho=1, jp=2, jo=3; }
 
 /**
 *

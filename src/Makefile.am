@@ -5,7 +5,7 @@ bin_PROGRAMS = gkc
 gkc_SOURCES = main.cpp GKC.cpp FileIO.cpp Fields/Fields.cpp Fields/FieldsFFT.cpp Setup.cpp Grid.cpp  \
               Parallel/Parallel.cpp Vlasov/Vlasov.cpp Analysis/Event.cpp Vlasov/Vlasov_Island.cpp\
               Vlasov/Vlasov_Cilk.cpp Vlasov/Vlasov_Aux.cpp Vlasov/Vlasov_Optim.cpp \
-				  Analysis/Analysis.cpp  Init.cpp Control.cpp \
+				  Analysis/Analysis.cpp  Init.cpp Control.cpp Analysis/Moments.cpp \
               Plasma.cpp Special/LA.cpp TimeIntegration/Timing.cpp Analysis/TestParticle.cpp TimeIntegration/TimeIntegration.cpp \
               FFTSolver/FFTSolver.cpp Visualization/Visualization_Data.cpp Analysis/Benchmark.cpp \
 				  Collisions/LenardBernstein.cpp
@@ -17,15 +17,15 @@ gkc_SOURCES = main.cpp GKC.cpp FileIO.cpp Fields/Fields.cpp Fields/FieldsFFT.cpp
 gkc_SOURCES += GKC.h FileIO.h Fields/Fields.h Fields/FieldsFFT.h Setup.h Grid.h  \
                Parallel/Parallel.h Vlasov/Vlasov.h Analysis/Event.h Vlasov/Vlasov_Island.h\
                Vlasov/Vlasov_Cilk.h Vlasov/Vlasov_Aux.h Vlasov/Vlasov_Optim.h \
-		       Analysis/Analysis.h  Init.h Control.h \
+    		      Analysis/Analysis.h Analysis/Moments.h Init.h Control.h \
                Plasma.h Special/LA.h TimeIntegration/Timing.h Analysis/TestParticle.h TimeIntegration/TimeIntegration.h \
                FFTSolver/FFTSolver.h \
-			   Visualization/Visualization.h Visualization/Visualization_Data.h \
-			   Analysis/Benchmark.h Global.h \
-			   Collisions/Collisions.h Collisions/LenardBernstein.h \
-			   Geometry/Geometry.h Geometry/Geometry2D.h Geometry/GeometryShear.h \
+			      Visualization/Visualization.h Visualization/Visualization_Data.h \
+			      Analysis/Benchmark.h Global.h \
+			      Collisions/Collisions.h Collisions/LenardBernstein.h \
+			      Geometry/Geometry.h Geometry/Geometry2D.h Geometry/GeometryShear.h \
                Geometry/GeometrySlab.h Geometry/GeometrySA.h Geometry/GeometryCHEASE.h\
-			   System.h Special/SpecialMath.h Special/HermitePoly.h Tools.h Special/Vector3D.h 
+			      System.h Special/SpecialMath.h Special/HermitePoly.h Tools.h Special/Vector3D.h 
 	
 # Integration sub-module
 gkc_SOURCES += Special/Integrate/GaussChebychevFirstWeights.h Special/Integrate/GaussChebychevSecondWeights.h \

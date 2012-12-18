@@ -97,7 +97,7 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
       K1xLlD = X_NkxLlD;       K1xLuD = X_NkxLlD + X_NkxL - 1;
 
       // used only to calculate offset
-      nct::allocate Array_kX = nct::allocate(nct::Range(1,plasma->nfields), nct::Range(NzLlD,NzLD), nct::Range(NkyLlD, NkyLD), nct::Range(X_NkxLlD, X_NkxL));
+      nct::allocate Array_kX = nct::allocate(nct::Range(0,plasma->nfields), nct::Range(NzLlD,NzLD), nct::Range(NkyLlD, NkyLD), nct::Range(X_NkxLlD, X_NkxL));
       
       // Calculated shifted pointer for CEAN
       kXIn  = Array_kX.zero(data_kXIn );

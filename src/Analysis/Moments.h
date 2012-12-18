@@ -51,6 +51,17 @@
 *           \right\}
 *    \f}
 *
+*    From Go\"rler, PhD, Eq.(2.72).
+*   
+*    \f[
+*         \Upsilon(a) = \frac{1}{\sqrt{\pi}} \int_\infty^\infty x^a e^{-x^2} dx
+*
+*         = \left\{ \begin{array}{lll} 0, & & a \textrm{odd}  \\
+*                                     1,  & & a \textrm{even} \\
+*                                     \frac{1 \cdot 3 \dots (a-1)}{\sqrt{2}^a}
+*                  \end{array}  \right.
+*    \f]
+*
 *    where for \f$ k_\perp^2 > 1 \f$, additional correction terms are included.
 *
 *
@@ -59,10 +70,10 @@
 class Moments 
 {
 
- Vlasov *vlasov;
- Fields *fields;
- Grid   *grid  ;
-
+ Vlasov   *vlasov  ;
+ Fields   *fields  ;
+ Grid     *grid    ;
+ Parallel *parallel;
    
  bool doFieldCorrections; ///< Include gyro-kinetic field corrections
 
@@ -76,7 +87,7 @@ class Moments
   *
   *
   **/
-  Moments(Setup *setup, Vlasov *_vlasov, Fields *_fields, Grid *_grid); 
+  Moments(Setup *setup, Vlasov *vlasov, Fields *fields, Grid *grid, Parallel *parallel); 
 
 
   /**
@@ -87,8 +98,8 @@ class Moments
   **/
   void getMoments(const CComplex     f    [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                   const CComplex Field0[Nq][NzLD][NkyLD][NxLD],
-                        CComplex Mom00[NzLD][NkyLD][NxLD], CComplex Mom20[NzLD][NkyLD][NxLD],
-                        CComplex Mom02[NzLD][NkyLD][NxLD], const int s);
+                        CComplex Mom00[NsLD][NzLD][NkyLD][NxLD], CComplex Mom20[NsLD][NzLD][NkyLD][NxLD],
+                        CComplex Mom02[NsLD][NzLD][NkyLD][NxLD]);
 
 
   /**
@@ -127,7 +138,7 @@ class Moments
   *      M_{20,\sigma} = n_{ref} \hat{n}_{0\sigma} c_{ref}^2 v_{th,\sigma}^2 \frac{\rho_{ref}}{L_{ref}}
   *      
   *      \left\{
-  *          \pi \int \int B_{0\parallel}^\star \left< f_{1\sigma} \right> v_parallel^2 dv_\parallel d\mu
+  *          \pi \int \int B_{0\parallel}^\star \left< f_{1\sigma} \right> v_\parallel^2 dv_\parallel d\mu
   *           - \frac{\hat{n}_{0\sigma}}{T_{0\sigma}} T_{p\sigma} \frac{1}{2}\
   *             \left(
   *                 q_\sigma \phi(x) - \int q_\sigma \left< \left< \phi \right> \right>
@@ -155,7 +166,7 @@ class Moments
   *          \pi B_0 \int \int B_{0\parallel}^\star \left< f_{1\sigma} \right> \mu dv_\parallel d\mu
   *           - \frac{\hat{n}_{0\sigma}}{T_{0\sigma}} T_{p\sigma}
   *             \left(
-  *                 q_\sigma \phi(x) - \left( frac{B_0}{T_{p\sigma}} \right)^2  
+  *                 q_\sigma \phi(x) - \left( \frac{B_0}{T_{p\sigma}} \right)^2  
   *                               \int q_\sigma \left< \left< \phi \right> \right>
   *                              + T_{0\sigma}(x_0) \mu \left< \left< B_{1\parallel} \right> \right> 
   *             \right)  \mu e^\frac{-\mu B_0}{T_{p\sigma}} d\mu 
@@ -166,33 +177,6 @@ class Moments
   **/
   void calculateMoment02() {};
 
-  /**
-  *    @brief
-  *  
-  *    From Go\"rler, PhD, Eq.(2.72).
-  *   
-  *    \f[
-  *         \Upsilon(a) = \frac{1}{\sqrt{\pi}} \int_\infty^\infty x^a e^{-x^2} dx
-  *
-  *         = \left\{ \begin{array}{lll} 0, & & a \textrm{odd}  \\
-  *                                     1,  & & a \textrm{even} \\
-  *                                     \frac{1 \cdot 3 \dots (a-1)}{\sqrt{2}^a}
-  *                  \end{array}  \right.
-  *    \f]
-  *
-  **/
-  double Ypsi(const int a) 
-  {
-    /* 
-     if(a == 0) return 1.;
-     if(a %  2) return  0.;
-   
-     else {  }
-    */
-     return 0.;
-  };
-
 };
-
 
 #endif // __MOMENTS_H__

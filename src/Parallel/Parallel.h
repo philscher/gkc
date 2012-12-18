@@ -24,7 +24,7 @@
 #endif
 
 // use enum class !
-enum class Op {OP_NULL = 0, SUM=1, MAX=2, MIN=3, BOR=4, BAND=5, LAND=6, LOR=7};
+enum class Op {null = 0, sum=1, max=2, min=3, bor=4, band=5, land=6, lor=7};
 
 #include <mpi.h>
 
@@ -204,7 +204,7 @@ struct NeighbourDir {
 
      // Notify all process who is root (is there a simpler way ?), take care it fails 
      // horribly if there is more than one root, (note 0 is master process also valid)
-    // int master_rank = reduce(isRoot ? myRank : 0, Op::SUM, dir);
+    // int master_rank = reduce(isRoot ? myRank : 0, Op::sum, dir);
      master_rank = 0;
 
 #ifdef GKC_PARALLEL_MPI

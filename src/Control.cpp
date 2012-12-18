@@ -102,7 +102,7 @@ Control::Control(Setup *setup, Parallel *_parallel, Analysis *_analysis) : paral
   // [ method used by the GKW code to controll MPI processes ]
   if (setup->get("Control.useControlFile", 0)) {
         
-        int master_process_id = parallel->reduce( (parallel->myRank == 0) ? System::getProcessID() : 0, Op::SUM, DIR_ALL);
+        int master_process_id = parallel->reduce( (parallel->myRank == 0) ? System::getProcessID() : 0, Op::sum, DIR_ALL);
         cntrl_file_name   = "gkc_" + Setup::num2str(master_process_id) + ".stop";
    } 
    else cntrl_file_name = "";

@@ -160,7 +160,8 @@ class VlasovCilk : public Vlasov {
    *    Please Document Me !
    *
    **/
-   virtual void solve(std::string equation_tyoe, Fields *fields, CComplex *fs, CComplex *fss, double dt, int rk_step, const double rk[3]);
+   virtual void solve(std::string equation_tyoe, Fields *fields, CComplex *fs, CComplex *fss,
+                      double dt, int rk_step, const double rk[3]);
    
  
   protected :

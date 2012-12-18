@@ -138,8 +138,8 @@ class FieldsFFT : public Fields {
   *  @warning We need to normalize the FFT transform here.
   *
   */
-  virtual void solvePoissonEquation(CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
-                                    CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields]);
+  virtual void solvePoissonEquation(CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][Nq],
+                                    CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][Nq]);
   
   /**
   *
@@ -159,8 +159,8 @@ class FieldsFFT : public Fields {
   *  @warning We need to normalize the FFT transform here.
   *
   **/
-  void solveAmpereEquation(CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
-                           CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields]);
+  void solveAmpereEquation(CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][Nq],
+                           CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][Nq]);
 
   /**
   *
@@ -204,8 +204,8 @@ class FieldsFFT : public Fields {
   *  @warning We need to normalize the FFT transform here.
   *
   */
-  void solveBParallelEquation(CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
-                              CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields]);
+  void solveBParallelEquation(CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][Nq],
+                              CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][Nq]);
 
   public:
 
@@ -283,8 +283,8 @@ class FieldsFFT : public Fields {
   */
   void gyroFull(const CComplex In [Nq][NzLD][NkyLD][NxLD], 
                       CComplex Out[Nq][NzLD][NkyLD][NxLD],
-                      CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
-                      CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][plasma->nfields],
+                      CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][Nq],
+                      CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][Nq],
                 const int m, const int s, bool stack=false);  
 
   /**

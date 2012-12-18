@@ -74,7 +74,7 @@ void FieldsHermite::gyroAverage(const CComplex In [Nq][NzLD][NkyLD][NxLD],
 
         // Create Matrix
         // Is it possible to fill array at once ?! otherwise parallelization efficiency will be bad
-        for(int q = 1; q <= Nq; q++) {
+        for(int q = 0; q < Nq; q++) {
         
         for(int  z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
         
@@ -152,9 +152,9 @@ void FieldsHermite::solveFieldEquations(const CComplex Q     [Nq][NxLD][NkyLD][N
 {
    
    // for 3 fields phi and B_perp are coupled and need to be solved differently
-   if( solveEq & Field::phi) solvePoissonEquation  (Q, Field0);
-   if( solveEq & Field::Ap ) check(-1, DMESG("Not Implemented"));
-   if( solveEq & Field::Bpp) check(-1, DMESG("Not Implemented"));
+   if( solveEq & Field::Iphi) solvePoissonEquation  (Q, Field0);
+   if( solveEq & Field::IAp ) check(-1, DMESG("Not Implemented"));
+   if( solveEq & Field::IBp ) check(-1, DMESG("Not Implemented"));
     
    return;
 
