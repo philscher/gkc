@@ -114,39 +114,34 @@ endif
 if SLEPC
 AM_CPPFLAGS +=  -I$(DIR_SLEPC)/include
 gkc_SOURCES +=  Eigenvalue/Eigenvalue_SLEPc.cpp Eigenvalue/Eigenvalue_SLEPc.h Eigenvalue/Eigenvalue.h
+
 gkc_LDADD   += -L$(DIR_SLEPC)/lib  -lslepc 
 endif
 
-
-
-
-################################# 3rd party libs #################
 if PETSC                 
 AM_CPPFLAGS +=  -I$(DIR_PETSC)/include
 gkc_SOURCES += TimeIntegration/TimeIntegration_PETSc.h TimeIntegration/TimeIntegration_PETSc.cpp\
 					Special/PETScMatrixVector.h Special/PETScMatrixVector.cpp \
 					Fields/FieldsHermite.h Fields/FieldsHermite.cpp 
+
 gkc_LDADD   += -L$(DIR_PETSC)/lib -lpetsc 
+# Use static linkage
+#gkc_LDADD +=$(DIR_PETSC)/lib/libpetsc.a
 
 endif
 
+# Link MKL after fftw-3 otherwise will be overwritten (MKL does not include many transforms and thus returns null planner)
+if MKL
+AM_CPPFLAGS += -DMKL_ILP64 -I$(DIR_MKL)/include
+gkc_LDFLAGS += -Wl,-rpath,$(DIR_MKL)/lib/intel64 
+gkc_LDADD   += -L$(DIR_MKL)/lib/intel64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lX11
+endif
+
 # Atlas packages
-# Link MKL after fftw-3 otherwise will be overwritten (MKL crashes for our transforms)
-# And crashes for SLEPc (wtf)
-#if MKL
-#AM_CPPFLAGS += -DMKL_ILP64 -I$(MKLROOT)/include
-#gkc_LDADD   += -L$(MKLROOT)/lib/intel64 -lmkl_cdft_core  -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core -lmkl_blacs_intelmpi_ilp64 -lpthread -lm -lX11
-#gkc_LDFLAGS   += -Wl,-rpath,/home/opt/systemBC/intel/composer_xe_2011_sp1.9.293/mkl/lib/intel64 
-#gkc_LDADD   += -L/home/opt/systemBC/intel/composer_xe_2011_sp1.9.293/mkl/lib/intel64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lX11
-#gkc_LDADD   +=   -L$(MKLROOT)/lib/intel64 -lmkl_rt -lpthread -lm
-#gkc_LDFLAGS += $(MKLROOT)/lib/intel64/libmkl_cdft_core.a $(MKLROOT)/lib/intel64/libmkl_intel_ilp64.a $(MKLROOT)/lib/intel64/libmkl_sequential.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_blacs_intelmpi_ilp64.a -lpthread -lm
 #gkc_LDADD   += -L/usr/lib64/atlas/  -llapack -lblas
+
+#ifdef PAPI
+gkc_LDADD   += -L/home/b/b30683/papi-5.0.0/lib -lpapi
 #endif
-#
-
-
-
-
-
 
 
