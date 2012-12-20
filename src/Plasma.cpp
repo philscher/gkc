@@ -79,8 +79,8 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
   
         
         if(global) { 
-            snprintf(species[s].n_name, 64, "%s", setup->get(key + ".n", "0." ).c_str());
-            snprintf(species[s].T_name, 64, "%s", setup->get(key + ".T", "1." ).c_str());
+            snprintf(species[s].n_name, 64, "%s", setup->get(key + ".Density", "0." ).c_str());
+            snprintf(species[s].T_name, 64, "%s", setup->get(key + ".Temperature", "1." ).c_str());
         
             // Set Temperature and Density Gradient
             FunctionParser n_parser = setup->getFParser(); 
@@ -91,8 +91,11 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
 
             // we not to normalize N, so that total density is equal in gyro-simulations 
             for(int x = NxLlB; x <= NxLuB; x++) { 
-                species[s].n[x] = n_parser.Eval(&X[x]);///sum(exp(-M));
-                species[s].T[x] = T_parser.Eval(&X[x]);
+                species[s].n[x]   = n_parser.Eval(&X[x]);
+                species[s].T[x]   = T_parser.Eval(&X[x]);
+//                species[s].w_T[x] = T_parser.Eval(&X[x]);
+//                species[s].w_n[x] = T_parser.Eval(&X[x]);
+
                 } 
             } 
            
@@ -126,9 +129,10 @@ void Plasma::printOn(std::ostream &output) const
          output << 
                "Type       | " << (global ? " Global" : "Local") << " Cs   : " << cs << std::endl 
             << "Species    | ";
-            if(species[0].n0 != 0.) { output << "0. " << species[0].name << "  Density : " << species[0].n0 << " Charge : " << species[0].q << 
-                                           " Temp : " << species[0].T0 << " FluxAvrg : " << (species[0].doGyro ? "Yes" : "No") << 
-                                             " Phase : " << (species[0].w_n) <<  " (adiabatic) " <<  std::endl;  
+            if(species[0].n0 != 0.) { 
+              output << "0. " << species[0].name << "  Density : " << species[0].n0 << " Charge : " << species[0].q << 
+                                                    " Temp : " << species[0].T0 << " FluxAvrg : " << (species[0].doGyro ? "Yes" : "No") << 
+                                                   " Phase : " << (species[0].w_n) <<  " (adiabatic) " <<  std::endl;  
             } else output << "0. -- No adiabatic species -- " << std::endl;
             
             cout.precision(5);

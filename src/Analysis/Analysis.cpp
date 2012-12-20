@@ -119,7 +119,7 @@ void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][
     double particle = 0.; 
     double heat = 0.;
     
-    if((s >= NsLlD && s <= NsLuD) && parallel->Coord[DIR_XYZ] == 0)  {
+    if((s >= NsLlD && s <= NsLuD) && (parallel->Coord[DIR_VM] == 0))  {
     
       
     ////////////////////////////// Calculate Particle Number ////////////////////////
@@ -448,10 +448,11 @@ void Analysis::writeData(const Timing &timing, const double dt)
     
       for(int s = NsGlD; s <= NsGuD; s++) {
     
-        messageStream << "         | "   << std::setw(10) << plasma->species[s].name << " "  
+        messageStream << "         | "   << std::setw(10) << plasma->species[s].name << " " 
+                      << std::setprecision(2) << std::scientific << std::showpos 
                       << " N : "             << scalarValues.particle_number[s-1]  
                       << " Kinetic Energy: " << scalarValues.kinetic_energy[s-1] 
-                      << " Particle Flux :"  << scalarValues.particle_flux[s-1]  
+                      << " Particle Flux : " << scalarValues.particle_flux[s-1]  
                       << " Heat Flux : "     << scalarValues.heat_flux[s-1] << std::endl;
         charge += plasma->species[s].q  * scalarValues.particle_number[s-1];
        kinetic_energy += scalarValues.kinetic_energy[s-1];

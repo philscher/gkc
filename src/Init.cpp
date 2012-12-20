@@ -32,8 +32,9 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov 
    if(fileIO->resumeFile == false) {
 
    initBackground(setup, grid, (A6zz) vlasov->f0, (A6zz) vlasov->f);
-  
 
+    
+   // Note : do not perturb m=0 modes as this perturbes direclty energy and density of f1 
    if(PerturbationMethod == "NoPerturbation") ;
    else if (PerturbationMethod == "EqualModePower")  PerturbationPSFMode ((A6zz) vlasov->f0, (A6zz) vlasov->f); 
    else if(PerturbationMethod == "Noise")            PerturbationPSFNoise((A6zz) vlasov->f0, (A6zz) vlasov->f); 
@@ -249,7 +250,7 @@ void Init::PerturbationPSFNoise(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB]
     std::srand(random_seed == 0 ? System::getTime() + System::getProcessID() + s : random_seed); 
       
     for(int m   = NmLlD ; m   <= NmLuD ;   m++) { for(int z = NzLlD; z<=NzLuD; z++) {
-    for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { for(int v = NvLlD; v<=NvLuD; v++) {
+    for(int y_k = 1     ; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { for(int v = NvLlD; v<=NvLuD; v++) {
 
       const double random_number = static_cast<double>(std::rand()) / RAND_MAX; // get random number [0,1]
       f[s][m][z][y_k][x][v] += epsilon_0*(random_number-0.5e0) * f0[s][m][z][y_k][x][v];
@@ -269,11 +270,10 @@ void Init::PerturbationPSFExp(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][N
    };
 
    // Note : Ignore species dependence
- 
 
 
-   for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { 
-   for(int z = NzLlD; z<=NzLuD; z++) {   for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {
+   for(int s = NsLlD; s <= NsLuD; s++) { for(int m   = NmLlD; m   <= NmLuD ;   m++) { 
+   for(int z = NzLlD; z<=NzLuD; z++) {   for(int y_k = 1    ; y_k <= NkyLuD; y_k++) {
    
    // Add shifted phase information for poloidal modes
 
@@ -296,24 +296,22 @@ void Init::PerturbationPSFMode(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][
    auto Phase = [=] (const int q, const int N)  -> double { return 2.*M_PI*((double) (q-1)/N); };
    // check if value is reasonable
        
-   for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { for(int v = NvLlD; v<=NvLuD; v++) {
-   for(int x = NxLlD; x <= NxLuD; x++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int z = NzLlD; z<=NzLuD; z++) {
+   for(int s   = NsLlD; s   <= NsLuD ;   s++) { for(int m = NmLlD; m <= NmLuD; m++) { for(int z = NzLlD; z<=NzLuD; z++) {
+   for(int y_k = 1    ; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { for(int v = NvLlD; v<=NvLuD; v++) {
       
-      double pert_x=0., pert_y=0., pert_z=0.;
+      double pert_x=0., pert_z=0.;
       
       pert_z = (Nz == 1) ? 1. : 0.;
       for(int r = 1; r <= Nx/2; r++) pert_x += cos(r*(2.*M_PI*X[x]/Lx)+Phase(r,Nx));//*exp(pow2(M_PI*X[x]/Lx));
-      for(int q = 1; q <= Nky-1; q++) pert_y += 0.;
       for(int n = 1; n <= Nz/2; n++) pert_z += cos(n*(2.*M_PI*Z[z]/Lz)+Phase(n,Nz));//*exp(pow2(M_PI*Z[z]/Lz));
       
       if(pert_x == 0.) pert_x = 1.;
-      if(pert_y == 0.) pert_y = 1.;
       if(pert_z == 0.) pert_z = 1.;
         // for(int r = 1; r <= Nx/2; r++) pert_x +=  cos(r*(2.*M_PI*X[x]/Lx)+Phase(r,Nx));
         // for(int n = 1; n <= Nz/2; n++) pert_z +=  cos(n*(2.*M_PI*Z[z]/Lz)+Phase(n,Nz));
         // vlasov->f(x, y, z, RvLD, RmLD, s)  = (pre + (pert_x*pert_y*pert_z)) * vlasov->f0(x,y,z,RvLD, RmLD, s) / (Nx * Ny * Nz);
       
-        f[s][m][z][y_k][x][v] = epsilon_0 * (pert_x*pert_y*pert_z) * f0[s][m][z][y_k][x][v] * (1./ (Nx * Nky * Nz));
+        f[s][m][z][y_k][x][v] = epsilon_0 * (pert_x*pert_z) * f0[s][m][z][y_k][x][v] * (1./ (Nx * Nky * Nz));
 
     }}} }}}
 

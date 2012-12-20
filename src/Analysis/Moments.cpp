@@ -60,6 +60,8 @@ void Moments::getMoments(const CComplex     f    [NsLD][NmLD][NzLB][NkyLD][NxLB 
     Mom02_m[0][z-NzLlD][y_k][x-NxLlD] = __sec_reduce_add(M[m] * f[s][m][z][y_k][x][NvLlD:NvLD]);
       
   } } } // z, y_k, x
+  
+    // BUG : we may have docomposition in V
 
     // gyro-average Moments (push back to drift-coordinates)
     fields->gyroAverage(Mom00_m, Mom00_m, m, s, false, true);
@@ -79,7 +81,6 @@ void Moments::getMoments(const CComplex     f    [NsLD][NmLD][NzLB][NkyLD][NxLB 
 
   //////////////////////////////////////////////////////////////////////////
   // add field corrections (necessary for k_perp^2 > 1)
-  
   if(doFieldCorrections) {
 
     CComplex AAphi_m_0[NzLD][NkyLD][NxLD],  phi0[NzLD][NkyLD][NxLD],
@@ -98,6 +99,7 @@ void Moments::getMoments(const CComplex     f    [NsLD][NmLD][NzLB][NkyLD][NxLB 
 
   } // doFieldCorrections
 
+
   }
     
 
@@ -105,79 +107,3 @@ void Moments::getMoments(const CComplex     f    [NsLD][NmLD][NzLB][NkyLD][NxLB 
 }
 
 
-/* 
-void Moments::calculateMoment()
-{
-  // add field corrections (necessary for k_perp^2 > 1) 
-  CComplex AAphi_m_0[NzLD][NkyLD][NxLD],  phi0[NzLD][NkyLD][NxLD],
-           AAphi_m_1[NzLD][NkyLD][NxLD];
-
-  phi0[:][:][:] = Field0[Field::phi][NzLlD:NzLD][NkyLD:NkyLD][NxLlD:NxLD];
-
-  // calculate double gyro-average 
-  fields->doubleGyroExp(phi0, AAphi_m_0, 0, s);
-  fields->doubleGyroExp(phi0, AAphi_m_1, 1, s);
-
-  // calculate seperate moments   
-  calculateMoment00(M_00);
-
-
-  Mom20[:][:][:] -= plasma->species[s].q * 0.5 * (phi0[:][:][:] - AAphi_m_0[:][:][:]);
-  Mom02[:][:][:] -= plasma->species[s].q *       (phi0[:][:][:] - AAphi_m_1[:][:][:]);
-
-};
-
-void Moments::calculateMoment00(Mom00, phi0, AAphi_m_0, bool addCorrections) 
-{
-  CComplex Mom00_m[NzLD][NkyLD][NxLD];
-
-  Mom_00[:][:][:] = 0.;
-
-  // integrate over the first adiabat \mu
-  for(int m = NmLlD; m <= NmLuD; m++) {
-  
-  const double d6Z = M_PI * plasma->species[s].n0 * plasma->species[s].T0 * plasma->B0 * dv * grid->dm[m] * grid->dXYZ;
-
-  // calculate (drift-kinetic) moments  
-  for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
-  for(int x = NxLlD; x <= NxLuD; x++) { 
-     
-    Mom00_m[0][z-NzLlD][y_k][x-NxLlD] = __sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD]);
-      
-  } } }
-    
-  fields->gyroAverage(Mom00_m, Mom00_m, m, s, false, true);
-    
-    Mom00[:][:][:] += Mom00_m[0][:][:][:] * d6Z;
-  
-  }
-
-  // add field corrections
-  if(addCorrections) Mom00[:][:][:] -= plasma->species[s].q * (phi0[:][:][:] - AAphi_m_0[:][:][:]);
- 
-}
-
-
-void Moments::calculateMoment20() 
-{
-
-
-
-
-
-
-
-}
-
-
-void Momnets::calculateMoment02() 
-{
-
-
-
-
-
-
-
-}
-*/

@@ -28,7 +28,7 @@
 /**
 *   @brief Initialized the background field and intial perturbation
 *
-*
+*   Currently only contant temperature/density Maxwellian is supported
 *
 **/ 
 class Init   : public IfaceGKC 

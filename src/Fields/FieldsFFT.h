@@ -207,7 +207,17 @@ class FieldsFFT : public Fields {
   void solveBParallelEquation(CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][Nq],
                               CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][Nq]);
 
-  public:
+ public:
+  
+  /**
+  *   Constructor
+  */ 
+  FieldsFFT(Setup *setup, Grid *grid, Parallel *parallel, FileIO * fileIO, Geometry *geo, FFTSolver *fftsolver);
+  /**
+  *   Destructor
+  */ 
+  ~FieldsFFT();
+  
 
   /** 
   *
@@ -308,15 +318,6 @@ class FieldsFFT : public Fields {
   **/  
   void doubleGyroExp(const CComplex In [NzLD][NkyLD][NxLD], 
                            CComplex Out[NzLD][NkyLD][NxLD], const int m, const int s);
-  
-  /**
-  *   Constructor
-  */ 
-  FieldsFFT(Setup *setup, Grid *grid, Parallel *parallel, FileIO * fileIO, Geometry *geo, FFTSolver *fftsolver);
-  /**
-  *   Constructor
-  */ 
-  ~FieldsFFT();
   
   /**
   *    @brief calculates the field energy

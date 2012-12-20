@@ -26,6 +26,8 @@
 
 // Excluding adiabatic species
 #define SPECIES_MAX 4
+
+
 /**
 *   @brief Hold information about the plasma with species and normalizations
 *
@@ -45,6 +47,7 @@ class Plasma : public IfaceGKC {
      { 
        alpha   = 0.;
        sigma   = 0.;
+       //nct::allocate(nct::Range(NxLlB, NxLB))(&T, &n, &w_T, &w_n);
        nct::allocate(nct::Range(NxLlB, NxLB))(&T, &n);
        gyroModel = "";
      };
@@ -85,8 +88,10 @@ class Plasma : public IfaceGKC {
      /// Calculate debye legnth
      double debye2(const int x) const { return T[x]/(4.*M_PI*n[x]*q*q); };
    
-     double *T, ///< Temperature profile
-            *n; ///< Density profile
+     double *T  , ///< Temperature profile
+            *n  ; ///< Density profile
+  //          *w_T, ///< Temperature scale length
+  //          *w_n; ///< Density scale length
    
    } _Species;
 
