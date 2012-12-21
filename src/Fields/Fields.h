@@ -97,14 +97,14 @@ class Fields : public IfaceGKC {
   *  X = Coord[DIR_X] -> Coord[DIR_X] + 1
   *
   **/
-  CComplex  *SendXl,  ///< Send Buffer in X-direction (send to down)
-            *SendXu,  ///< Send buffer in X-direction (send to up)
-            *SendZl,  ///< Send buffer in Z-direction (send to down)
-            *SendZu,  ///< Send buffer in Z-direction (send to up) 
-            *RecvXl,  ///< Recv buffer in X-direction (recv from down)
-            *RecvXu,  ///< Recv buffer in X-direction (recv from up)
-            *RecvZl,  ///< Recv buffer in Z-direction (recv from down) 
-            *RecvZu;  ///< Recv buffer in Z-direction (recv from up)
+  CComplex *SendXl,  ///< Send Buffer in X-direction (send to down)
+           *SendXu,  ///< Send buffer in X-direction (send to up)
+           *SendZl,  ///< Send buffer in Z-direction (send to down)
+           *SendZu,  ///< Send buffer in Z-direction (send to up) 
+           *RecvXl,  ///< Recv buffer in X-direction (recv from down)
+           *RecvXu,  ///< Recv buffer in X-direction (recv from up)
+           *RecvZl,  ///< Recv buffer in Z-direction (recv from down) 
+           *RecvZu;  ///< Recv buffer in Z-direction (recv from up)
    
   nct::allocate ArrayBoundX, ///< Array class for Boundary in X
                 ArrayBoundZ; ///< Array class for Boundary in Z

@@ -134,7 +134,7 @@ CComplex FieldsHermite::getElements(const int x, const int n, const double r, in
   // Integration is very sensitif on order ( why ? some bug ?? )
   check(-1, DMESG("Fix _Complex double -> std::complex<double> cast"));
   
-  return 1./(2.*M_PI) * Integrate::GaussLegendre(Integrand, 0., 2.*M_PI, 128);
+  return 1./(2.*M_PI) * *(reinterpret_cast<CComplex*> (&(Integrate::GaussLegendre(Integrand, 0., 2.*M_PI, 128))));
         
 
 };

@@ -52,80 +52,127 @@ extern int control_triggered_signal;
 class Control : public IfaceGKC {
    
 
-   bool useControlFile;
+  bool useControlFile;
 
-   class CntrlID {
-       bool ok;                   ///< True if condition is met, False otherwise
-       std::string error_message; ///< Errror message describing reason of failure
-      public:
+  class CntrlID {
+    
+    bool ok;                   ///< True if condition is met, False otherwise
+    std::string error_message; ///< Errror message describing reason of failure
+   public:
        
-       CntrlID() { ok=true; error_message="";};
+    CntrlID() { ok=true; error_message="";};
 
-       bool check(bool isOK, std::string message) {
-          // Append messeges of failure
-          if(isOK == false) {
-            ok = false;
-            error_message += std::string("\n") + message;
-         }
-         return isOK && ok;
-       };
-       bool isOK() { return ok; };
+    bool check(bool isOK, std::string message) {
 
-       std::string getMessage() { return error_message;};
+      // Append messeges of failure
+      if(isOK == false) {
+        ok = false;
+        error_message += std::string("\n") + message;
+      }
+      return isOK && ok;
+    };
+       
+    bool isOK() { return ok; };
+    std::string getMessage() { return error_message;};
     
-   };
+  };
 
-   Parallel *parallel;
-   Analysis *analysis;
+  Parallel *parallel;
+  Analysis *analysis;
 
 
-   CntrlID  cntrl;
+  CntrlID  cntrl;
     
-   double maxKineticEnergy ; ///< set with ("Control.MaxKineticEnergy" , double), default : 1.e355
-   double maxElectricEnergy; ///< set with ("Control.MaxElectricEnergy", double), default : 1.e355
-   double maxMagneticEnergy; ///< set with ("Control.MaxMagneticEnergy", double), default : 1.e355
+  double maxKineticEnergy ; ///< set with ("Control.MaxKineticEnergy" , double), default : 1.e355
+  double maxElectricEnergy; ///< set with ("Control.MaxElectricEnergy", double), default : 1.e355
+  double maxMagneticEnergy; ///< set with ("Control.MaxMagneticEnergy", double), default : 1.e355
 
-   /**
-   *   
-   *   @brief Sets the Unix signal handler for
-   *
-   *   SIGINT, SIGFPE, SIGUSR1, SIGUSR2
-   *
-   *   @todo check for other signals to capture
-   *
-   **/
-   void setSignalHandler();
+  /**
+  *   
+  *   @brief Sets the Unix signal handler for
+  *
+  *   SIGINT, SIGFPE, SIGUSR1, SIGUSR2
+  *
+  *   @todo check for other signals to capture
+  *
+  **/
+  void setSignalHandler();
 
-   time_t startTime;        ///< Starting time of simulation 
-   int maxRunningTime;      ///< maximum running time of program ("Control.MaxRunningTime", TimeString), default : "0s"
+  time_t startTime;        ///< Starting time of simulation 
+  int maxRunningTime;      ///< maximum running time of program ("Control.MaxRunningTime", TimeString), default : "0s"
      
-public:
+ public:
+  
+  /**
+  *    @brief constructors
+  *
+  *    Setup variables
+  *
+  *    @xrefitem setup "Todo1" "Todo List1" 
+  *    @xrefitem setup "Todo2" "Todo List2" 
+  *    @xrefitem setup "Todo3" "Todo List3" 
+  *
+  *
+  **/
+  Control(Setup *setup, Parallel *_parallel, Analysis *_analysis);
 
-   /**
-   *   
-   *   @brief name of control file name
-   *
-   *   The code regularly (currently each time step) checks for
-   *   the existence of a stop file. If it's exists, the program
-   *   triggers Cntrl.OK = False, and the main loop is exit.
-   *
-   *   @note The file name is determined by gkc_ + job_number + ".stop" 
-   *
-   **/
-   std::string cntrl_file_name;
+  /**
+  *    @brief constructors
+  *
+  *    Setup variables
+  *
+  *
+  **/
+ ~Control();
 
-    Control(Setup *setup, Parallel *_parallel, Analysis *_analysis);
+  /**
+  *   
+  *   @brief name of control file name
+  *
+  *   The code regularly (currently each time step) checks for
+  *   the existence of a stop file. If it's exists, the program
+  *   triggers Cntrl.OK = False, and the main loop is exit.
+  *
+  *   @note The file name is determined by gkc_ + job_number + ".stop" 
+  *
+  **/
+  std::string cntrl_file_name;
 
-    ~Control();
-     
-    void printLoopStopReason();
+  /**
+  *    @brief please document me
+  *
+  *
+  **/ 
+  void printLoopStopReason();
 
-    void runningException(int status, char *error_message=NULL);
-    bool checkOK(Timing timing, Timing maxTiming);
+  /**
+  *    @brief please document me
+  *
+  *
+  **/ 
+  void runningException(int status, char *error_message=NULL);
+
+  /**
+  *    @brief please document me
+  *
+  *
+  **/ 
+  bool checkOK(Timing timing, Timing maxTiming);
     
-    void signalForceExit(bool val);
+  /**
+  *    @brief please document me
+  *
+  *
+  **/ 
+  void signalForceExit(bool val);
 
-    void printOn(std::ostream &output) const;
+  /**
+  *    @brief please document me
+  *
+  *
+  **/ 
+  void printOn(std::ostream &output) const;
+
 };
 
 

@@ -33,12 +33,12 @@ grid(_grid), parallel(_parallel), geo(_geo), solveEq(0)
   solveEq |=  ((Nq >= 3) && (setup->get("Init.FixedBp" , ".0") == ".0")) ? Field::IBp  : 0;
 
   // for phi terms
-  ArrayField  = nct::allocate(nct::Range(0,Nq), grid->RsLD, grid->RmLD, grid->RzLB, grid->RkyLD, nct::Range(NxLlD-4, NxLD+8))(&Field);
+  ArrayField  = nct::allocate(nct::Range(0,Nq), grid->RsLD, grid->RmLD , grid->RzLB, grid->RkyLD, nct::Range(NxLlD-4, NxLD+8))(&Field);
   ArrayField0 = nct::allocate(nct::Range(0,Nq), grid->RzLD, grid->RkyLD, grid->RxLD)(&Q, &Qm, &Field0);
 
   // Allocate boundary conditions, allocate Send/Recv buffers, note we have 4 ghost cells for X, 0 for Y
-  ArrayBoundX = nct::allocate(nct::Range(0, 4 * NkyLD * NzLD * NmLD * NsLD * Nq))(&SendXl, &SendXu, &RecvXl, &RecvXu);
-  ArrayBoundZ = nct::allocate(nct::Range(0, NxLD * NkyLD * 2 * NmLD * NsLD * Nq))(&SendZl, &SendZu, &RecvZl, &RecvZu);
+  ArrayBoundX = nct::allocate(nct::Range(0,    4 * NkyLD * NzLD * NmLD * NsLD * Nq))(&SendXl, &SendXu, &RecvXl, &RecvXu);
+  ArrayBoundZ = nct::allocate(nct::Range(0, NxLD * NkyLD *    2 * NmLD * NsLD * Nq))(&SendZl, &SendZu, &RecvZl, &RecvZu);
        
       
   //  brackets should be 1/2 but due to numerical errors, we should calculate it ourselves, see Dannert[2] 
@@ -81,7 +81,7 @@ void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
       [=] (CComplex Q[Nq][NzLD][NkyLD][NxLD], CComplex Qm[Nq][NzLD][NkyLD][NxLD])
       {
         #pragma omp for collapse(2)
-        for(int z=NzLlD; z<= NzLuD;z++) { for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { 
+        for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
 
           if  (loop == 0) Q[0:Nq][z][y_k][NxLlD:NxLD]   = Qm[0:Nq][z][y_k][NxLlD:NxLD];
           else            Q[0:Nq][z][y_k][NxLlD:NxLD]  += Qm[0:Nq][z][y_k][NxLlD:NxLD];
@@ -124,7 +124,7 @@ void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
       [=] (CComplex Qm[Nq][NzLD][NkyLD][NxLD], CComplex Field[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]) 
       { 
         #pragma omp for collapse(2)
-        for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) {
+        for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {
 
           Field[0:Nq][s][m][z][y_k][NxLlD:NxLD] = Qm[0:Nq][z][y_k][NxLlD:NxLD]   ;
 
@@ -158,7 +158,8 @@ void Fields::calculateChargeDensity(const CComplex f0         [NsLD][NmLD][NzLB]
   const double pqnB_dvdm = M_PI * plasma->species[s].q * plasma->species[s].n0 * plasma->B0 * dv * grid->dm[m] ;
 
   #pragma omp for collapse(2) nowait
-  for(int z=NzLlD; z<= NzLuD;z++) { for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
+  for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
+  for(int x = NxLlD; x <= NxLuD; x++) {
 
     Field0[Field::phi][z][y_k][x] = ( __sec_reduce_add(f [s][m][z][y_k][x][NvLlD:NvLD]) 
                        - (plasma->global ? __sec_reduce_add(f0[s][m][z][y_k][x][NvLlD:NvLD]) : 0)) * pqnB_dvdm;
@@ -224,8 +225,8 @@ void Fields::updateBoundary()
   {
    
     // X-Boundary (we have extended BC  - 4 ghost cells)
-    SendXl[:][:][:][:][:][:] = Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD  :4];
-    SendXu[:][:][:][:][:][:] = Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLuD-3:4];
+    SendXl[:][:][:][:][:][:] = Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD  :4];
+    SendXu[:][:][:][:][:][:] = Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLuD-3:4];
 
     // Boundaries not required in Y (as we use Fourier modes)
 
@@ -233,11 +234,12 @@ void Fields::updateBoundary()
     for(int y_k = NkyLlD; y_k <= NkyLuD && (Nz > 1); y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { 
 
       // Z-Boundary (N z-we need to connect the magnetic field lines)
-      const CComplex a = ((CComplex) 0. + 1.j) *  (2.*M_PI * (2.* M_PI/Ly) * y_k);
-      
       // NzLlD == NzGlD -> Connect only physcial boundaries after mode made one loop 
-      SendZl[:][:][:][:][y_k-NkyLlD][x-NxLlD] = Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD  :2][y_k][x] * cexp( ((NzLuD == NzGuD) ? a : 0.) * geo->nu(x));
-      SendZu[:][:][:][:][y_k-NkyLlD][x-NxLlD] = Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLuD-1:2][y_k][x] * cexp(-((NzLlD == NzGlD) ? a : 0.) * geo->nu(x));
+      const CComplex shift_l = (NzLlD == NzGlD) ? cexp(+_imag *  (2.* M_PI/Ly) * y_k * geo->nu(x)) : 1.;
+      const CComplex shift_u = (NzLuD == NzGuD) ? cexp(-_imag *  (2.* M_PI/Ly) * y_k * geo->nu(x)) : 1.;
+      
+      SendZl[:][:][:][:][y_k][x-NxLlD] = Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD  :2][y_k][x] * shift_l;
+      SendZu[:][:][:][:][y_k][x-NxLlD] = Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLuD-1:2][y_k][x] * shift_u;
 
     } }
    
@@ -246,13 +248,13 @@ void Fields::updateBoundary()
                                    Fields::SendZl, Fields::SendZu, Fields::RecvZl, Fields::RecvZu, ArrayBoundZ.getNum()); 
 
     // Back copy X-Boundary cell data
-    Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLlB-2:4] = RecvXl[:][:][:][:][:][:];
-    Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][NkyLlD:NkyLD][NxLuD+1:4] = RecvXu[:][:][:][:][:][:];
+    Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlB-2:4] = RecvXl[:][:][:][:][:][:];
+    Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLuD+1:4] = RecvXu[:][:][:][:][:][:];
  
     // Back copy Z-Boundary cell data
     if( Nz > 1 ) {
-      Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlB  :2][NkyLlD:NkyLD][NxLlD:NxLD] = RecvZl[:][:][:][:][:][:];
-      Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLuD+1:2][NkyLlD:NkyLD][NxLlD:NxLD] = RecvZu[:][:][:][:][:][:];
+      Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlB  :2][:][NxLlD:NxLD] = RecvZl[:][:][:][:][:][:];
+      Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLuD+1:2][:][NxLlD:NxLD] = RecvZu[:][:][:][:][:][:];
     }
   
     }((A6zz ) Field, 

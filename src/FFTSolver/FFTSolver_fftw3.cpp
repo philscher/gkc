@@ -433,28 +433,27 @@ void FFTSolver_fftw3::printOn(std::ostream &output) const {
 // transpose from C-ordering to Fortran ordering (required by fftw3-mpi) 
 void FFTSolver_fftw3::transpose(int Nx, int Ny, int Nz, int Nq, CComplex In[Nq][Nz][Ny][Nx], CComplex OutT[Nx][Ny][Nz][Nq])
 {
-     //#pragma omp for collapse(2)
-     #pragma ivdep
-     for(int x=0; x < Nx; x++ ) { for(int y=0; y < Ny; y++ ) {  
-     for(int z=0; z < Nz; z++ ) { for(int q=0; q < Nq; q++ ) {  
+  #pragma ivdep
+  for(int x=0; x < Nx; x++ ) { for(int y=0; y < Ny; y++ ) {  
+  for(int z=0; z < Nz; z++ ) { for(int q=0; q < Nq; q++ ) {  
 
         OutT[x][y][z][q] = In[q][z][y][x];
    
-     } } } }
+  } } } }
   
 }
 
 // transpose from Fortran ordering to C-ordering (required by fftw3-mpi) 
 void FFTSolver_fftw3::transpose_rev(int Nx, int Ny, int Nz, int Nq, CComplex In[Nx][Ny][Nz][Nq], CComplex OutT[Nq][Nz][Ny][Nx])
 {
-     //#pragma omp for collapse(2)
-     #pragma ivdep
-     for(int x=0; x < Nx; x++ ) { for(int y=0; y < Ny; y++ ) {  
-     for(int z=0; z < Nz; z++ ) { for(int q=0; q < Nq; q++ ) {  
+  
+  #pragma ivdep
+  for(int x=0; x < Nx; x++ ) { for(int y=0; y < Ny; y++ ) {  
+  for(int z=0; z < Nz; z++ ) { for(int q=0; q < Nq; q++ ) {  
 
         OutT[q][z][y][x] = In[x][y][z][q];
    
-       } } } }
+  } } } }
   
 }
 

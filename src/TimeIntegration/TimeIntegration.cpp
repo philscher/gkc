@@ -66,7 +66,8 @@ double TimeIntegration::solveTimeStep(Vlasov *vlasov, Fields *fields, TestPartic
   else if(timeIntegrationScheme == "Explicit_RK3" ) solveTimeStepRK3 (timing, dt);
   else if(timeIntegrationScheme == "Explicit_Heun") solveTimeStepHeun(timing, dt);
   else   check(-1, DMESG("No such Integration Scheme"));
- 
+
+  #pragma omp barrier
   #pragma omp single
   {
      timing.time += dt;
@@ -107,6 +108,7 @@ void TimeIntegration::solveTimeStepRK4(Timing timing, const double dt)
   vlasov ->solve(fields, vlasov->fs , vlasov->f ,  dt/6., 4, rk_4);
   particles->integrate(vlasov, fields, 4);
 
+  return;
 };
 
 
@@ -128,7 +130,7 @@ void TimeIntegration::solveTimeStepRK3(Timing timing, const double dt)
   fields->solve(vlasov->f0,vlasov->fss, timing);
   vlasov->solve(fields, vlasov->fss, vlasov->f, 3./4. * dt , 3, rk_3);
         
-
+  return;
 };
       
 
@@ -136,15 +138,16 @@ void TimeIntegration::solveTimeStepRK2(Timing timing, const double dt)
 {
 
  /* 
-        // Runge-Kutta step 1
-        fields->solve(vlasov->f0,vlasov->f, timing);
-        vlasov ->solve(fields, vlasov->f  , vlasov->fs, 0.5e0*dt , 1);
+  
+  // Runge-Kutta step 1
+  fields->solve(vlasov->f0,vlasov->f, timing);
+  vlasov ->solve(fields, vlasov->f  , vlasov->fs, 0.5e0*dt , 1);
 
+  // Runge-Kutta step 2
+  fields->solve(vlasov->f0,vlasov->fs, timing);
+  vlasov ->solve(fields, vlasov->fs , vlasov->fss, 0.5e0*dt, 2);
 
-        // Runge-Kutta step 2
-        fields->solve(vlasov->f0,vlasov->fs, timing);
-        vlasov ->solve(fields, vlasov->fs , vlasov->fss, 0.5e0*dt, 2);
-  * */ 
+ */ 
 
 
 };

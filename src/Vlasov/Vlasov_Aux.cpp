@@ -123,6 +123,9 @@ void VlasovAux::Vlasov_ES(
          //#pragma vector aligned 
          //#pragma vector nontemporal(fss)
          simd_for(int v=NvLlD; v<= NvLuD; v++) { 
+           
+            const CComplex   dg_dv = (8.*(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) 
+                                       - (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))/(12.*dv);
 
             const  CComplex f0_    = f0 [s][m][z][y_k][x][v];
 
@@ -140,6 +143,7 @@ void VlasovAux::Vlasov_ES(
              +  ky* (-(w_n + w_T * (((V[v]*V[v])+ (doGyro ? M[m] : 0.))*kw_T  - sub)) * f0_ * phi_    // Driving term (Temperature/Density gradient)
              -  half_eta_kperp2_phi * f0_)                                            // Contributions from gyro-1 (0 if not neq Gyro-1)
              -  alpha  * V[v]* kp  * ( g + sigma * phi_ * f0_)                        // Linear Landau damping
+//             -  alpha * ky * phi_ * dg_dv                                            // Non-linear Landau damping
              +  Coll[s][m][z][y_k][x][v]  ;                                           // Collisional operator
          
         //////////////////////////////////////////////////////////////////////////////////////////////////////

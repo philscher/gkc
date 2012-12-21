@@ -59,72 +59,65 @@ GKC::GKC(Setup *_setup) : setup(_setup)
   parallel  = new Parallel(setup);
   bench     = new Benchmark(setup, parallel); 
 
-   parallel->print("Initializing GKC++\n");
+  parallel->print("Initializing GKC++\n");
 
-   fileIO    = new FileIO(parallel, setup);
-   grid      = new Grid(setup, parallel, fileIO);
+  fileIO    = new FileIO(parallel, setup);
+  grid      = new Grid(setup, parallel, fileIO);
     
-   if     (geometry_Type == "SA"  ) geometry  = new GeometrySA(setup, grid, fileIO);
-   else if(geometry_Type == "2D"  ) geometry  = new Geometry2D(setup, grid, fileIO);
-   else if(geometry_Type == "Slab") geometry  = new GeometrySlab(setup, grid, fileIO);
-   else check(-1, DMESG("No such Geometry"));
+  if     (geometry_Type == "SA"  ) geometry  = new GeometrySA(setup, grid, fileIO);
+  else if(geometry_Type == "2D"  ) geometry  = new Geometry2D(setup, grid, fileIO);
+  else if(geometry_Type == "Slab") geometry  = new GeometrySlab(setup, grid, fileIO);
+  else check(-1, DMESG("No such Geometry"));
 
-   plasma    = new Plasma(setup, fileIO, geometry);
+  plasma    = new Plasma(setup, fileIO, geometry);
 
 
-   // Load fft-solver 
-   if(fft_solver_name == "") check(-1, DMESG("No FFT Solver Name given"));
+  // Load fft-solver 
+  if(fft_solver_name == "") check(-1, DMESG("No FFT Solver Name given"));
 #ifdef FFTW3
-   else if(fft_solver_name == "fftw3") fftsolver = new FFTSolver_fftw3    (setup, parallel, geometry);
+  else if(fft_solver_name == "fftw3") fftsolver = new FFTSolver_fftw3    (setup, parallel, geometry);
 #endif
-   else check(-1, DMESG("No such FFTSolver name"));
+  else check(-1, DMESG("No such FFTSolver name"));
  
 
-   // Load field solver
-   if     (psolver_type == "DFT"    ) fields   = new FieldsFFT(setup, grid, parallel, fileIO, geometry, fftsolver);
+  // Load field solver
+  if     (psolver_type == "DFT"    ) fields   = new FieldsFFT(setup, grid, parallel, fileIO, geometry, fftsolver);
 #ifdef GKC_HYPRE
-   else if(psolver_type == "Hypre"  ) fields   = new FieldsHypre(setup, grid, parallel, fileIO,geometry, fftsolver);
+  else if(psolver_type == "Hypre"  ) fields   = new FieldsHypre(setup, grid, parallel, fileIO,geometry, fftsolver);
 #endif
-   else if(psolver_type == "Hermite") fields   = new FieldsHermite(setup, grid, parallel, fileIO,geometry);
-   else    check(-1, DMESG("No such Fields Solver"));
+  else if(psolver_type == "Hermite") fields   = new FieldsHermite(setup, grid, parallel, fileIO,geometry);
+  else    check(-1, DMESG("No such Fields Solver"));
 
-   // Load Collisonal Operator
-   if     (collision_type == "None" ) collisions = new Collisions                (grid, parallel, setup, fileIO, geometry); 
-   else if(collision_type == "LB"   ) collisions = new Collisions_LenardBernstein(grid, parallel, setup, fileIO, geometry); 
-   else    check(-1, DMESG("No such Collisions Solver"));
+  // Load Collisonal Operator
+  if     (collision_type == "None" ) collisions = new Collisions                (grid, parallel, setup, fileIO, geometry); 
+  else if(collision_type == "LB"   ) collisions = new Collisions_LenardBernstein(grid, parallel, setup, fileIO, geometry); 
+  else    check(-1, DMESG("No such Collisions Solver"));
     
-   // Load Vlasov Solver
-   if(vlasov_type == "None" ) check(-1, DMESG("No Vlasov Solver Selected"));
-   else if(vlasov_type == "Cilk"   ) vlasov  = new VlasovCilk  (grid, parallel, setup, fileIO, geometry, fftsolver, bench, collisions);
-   else if(vlasov_type == "Aux"    ) vlasov  = new VlasovAux   (grid, parallel, setup, fileIO, geometry, fftsolver, bench, collisions);
-   else if(vlasov_type == "Island" ) vlasov  = new VlasovIsland(grid, parallel, setup, fileIO, geometry, fftsolver, bench, collisions);
-   else if(vlasov_type == "Optim"  ) vlasov  = new VlasovOptim (grid, parallel, setup, fileIO, geometry, fftsolver, bench, collisions);
-   else   check(-1, DMESG("No such Fields Solver"));
+  // Load Vlasov Solver
+  if(vlasov_type == "None" ) check(-1, DMESG("No Vlasov Solver Selected"));
+  else if(vlasov_type == "Cilk"   ) vlasov  = new VlasovCilk  (grid, parallel, setup, fileIO, geometry, fftsolver, bench, collisions);
+  else if(vlasov_type == "Aux"    ) vlasov  = new VlasovAux   (grid, parallel, setup, fileIO, geometry, fftsolver, bench, collisions);
+  else if(vlasov_type == "Island" ) vlasov  = new VlasovIsland(grid, parallel, setup, fileIO, geometry, fftsolver, bench, collisions);
+  else if(vlasov_type == "Optim"  ) vlasov  = new VlasovOptim (grid, parallel, setup, fileIO, geometry, fftsolver, bench, collisions);
+  else   check(-1, DMESG("No such Fields Solver"));
 
 
-   analysis = new Analysis(parallel, vlasov, fields, grid, setup, fftsolver, fileIO, geometry); 
-   visual   = new Visualization_Data(grid, parallel, setup, fileIO, vlasov, fields);
-   event    = new Event(setup, grid, parallel, fileIO, geometry);
-    
-   eigenvalue = new Eigenvalue_SLEPc(fileIO, setup, grid, parallel); 
-
-    
-   /////////////////////////////////////////////////////////////////////////////
-
-   // call before time integration (due to eigenvalue solver)
-   init           = new  Init(parallel, grid, setup, fileIO, vlasov, fields, geometry);
-    
-   control   = new Control(setup, parallel, analysis);
-   particles = new TestParticles(fileIO, setup, parallel);
+  // Load some other general modules
+  analysis        = new Analysis(parallel, vlasov, fields, grid, setup, fftsolver, fileIO, geometry); 
+  visual          = new Visualization_Data(grid, parallel, setup, fileIO, vlasov, fields);
+  event           = new Event(setup, grid, parallel, fileIO, geometry);
+  eigenvalue      = new Eigenvalue_SLEPc(fileIO, setup, grid, parallel); 
+  init            = new Init(parallel, grid, setup, fileIO, vlasov, fields, geometry);
+  control         = new Control(setup, parallel, analysis);
+  particles       = new TestParticles(fileIO, setup, parallel);
    
-
-   timeIntegration = new TimeIntegration(setup, grid, parallel, vlasov, fields, particles, eigenvalue, bench);
+  timeIntegration = new TimeIntegration(setup, grid, parallel, vlasov, fields, particles, eigenvalue, bench);
   
-   // Optimize values to speed up computation
-   bench->bench(vlasov, fields);
+  // Optimize values to speed up computation
+  bench->bench(vlasov, fields);
     
-   printSettings();   
-   setup->check_config();
+  printSettings();   
+  setup->check_config();
 
 }
           
@@ -132,114 +125,121 @@ GKC::GKC(Setup *_setup) : setup(_setup)
 int GKC::mainLoop()   
 {
 
-   parallel->print("Running main loop");
+  parallel->print("Running main loop");
    
 
-   if (gkc_SolType == "IVP") {
+  if (gkc_SolType == "IVP") {
  
-      Timing timing(0,0.) ;
+    Timing timing(0,0.) ;
       
-      timeIntegration->setMaxLinearTimeStep(eigenvalue, vlasov, fields);
+    timeIntegration->setMaxLinearTimeStep(eigenvalue, vlasov, fields);
 
-      bool isOK = true; 
+    bool isOK = true; 
          
-      ////////////////////////  Starting OpenMP global threads   /////////////////////////
-      //
-      //  Create OpenMP threads. These threads exists throughout the system.
-      //  Synchronization occurs during implicit barriers (e.g. #pragma omp for).
-      //  Especially, take care that everything which is defined prior to this point
-      //  (e.g. classes, arrays) are shared variables (race conditions!). Variable defined 
-      //  after this point, like stack variables, are private ! Thus extra care needs
-      //  to be taken.
-      //
-      //  Note : Take care of OpenMP statements inside "omp single" may cause deadlocks
-      //
-      //  @todo benchmark SPMD (Single-Program Multiple Data) code. Inside parallel region
-      //  we can decompose NkylD, NkyLuD, when set to private in omp parallel.
-      //
-      //#pragma omp parallel  private(NkyLlD, NkyLuD)
-      #pragma omp parallel 
-      { 
+    ////////////////////////  Starting OpenMP global threads   /////////////////////////
+    //
+    //  Create OpenMP threads. These threads exists throughout the system.
+    //  Synchronization occurs during implicit barriers (e.g. #pragma omp for).
+    //  Especially, take care that everything which is defined prior to this point
+    //  (e.g. classes, arrays) are shared variables (race conditions!). Variable defined 
+    //  after this point, like stack variables, are private ! Thus extra care needs
+    //  to be taken.
+    //
+    //  Note : Take care of OpenMP statements inside "omp single" may cause deadlocks
+    //
+    //  @todo benchmark SPMD (Single-Program Multiple Data) code. Inside parallel region
+    //  we can decompose NkylD, NkyLuD, when set to private in omp parallel.
+    //
+    //#pragma omp parallel  private(NkyLlD, NkyLuD)
+    #pragma omp parallel 
+    { 
    
-        do {
+      do {
         
-          // integrate for one time-step, give current dt as output
-          const double dt = timeIntegration->solveTimeStep(vlasov, fields, particles, timing);     
+        // integrate for one time-step, give current dt as output
+        const double dt = timeIntegration->solveTimeStep(vlasov, fields, particles, timing);     
 
-          // Analysis results and output data (currently singlethreaded)
-          #pragma omp single 
-          {
-             vlasov->writeData(timing, dt);
-             fields->writeData(timing, dt);
-             visual->writeData(timing, dt);
+        // Analysis results and output data (currently singlethreaded)
+        #pragma omp master
+        {
+          
+          vlasov->writeData(timing, dt);
+          fields->writeData(timing, dt);
+          visual->writeData(timing, dt);
 
-             analysis->writeData(timing, dt);
-             event->checkEvent(timing, vlasov, fields);
-             //fileIO->flush(timing, dt);  
+          analysis->writeData(timing, dt);
+          event->checkEvent(timing, vlasov, fields);
+          //fileIO->flush(timing, dt);  
              
-             isOK =  control->checkOK(timing, timeIntegration->maxTiming);
+          isOK =  control->checkOK(timing, timeIntegration->maxTiming);
 
-           }
-           #pragma omp flush
-           #pragma omp barrier
+        }
+        #pragma omp barrier
+        #pragma omp flush
     
-         } while(isOK);
+      } while(isOK);
 
-      } // parallel section
+    } // parallel section
    
-      control->printLoopStopReason();
+    control->printLoopStopReason();
 
-   }  
-   else if(gkc_SolType == "Eigenvalue") {
+  }  
+  else if(gkc_SolType == "Eigenvalue") {
    
-     eigenvalue->solve(vlasov, fields, visual, control);
+    eigenvalue->solve(vlasov, fields, visual, control);
 
-   } 
-   else  check(-1, DMESG("No Such gkc.Type Solver"));
+  } 
+  else  check(-1, DMESG("No Such gkc.Type Solver"));
 
-   parallel->print("Simulation finished normally ... ");
+  parallel->print("Simulation finished normally ... ");
 
-   return 0;
+  return 0;
 }
 
 
 GKC::~GKC()
 {
-   // Shutdown submodules : ORDER IS IMPORTANT !!
-        delete fields;
-        delete visual;
-        delete vlasov;
-        delete geometry;
-        delete grid;
-        delete analysis;
-        delete particles;
-        delete eigenvalue;
-        delete fileIO;
-        // no need to delete table ?! Anyway SLEPc/PETSc seems to crash
-        // some times FFT crashes, be sude that it is below fileIO (hdf-5 is closed)
-        delete fftsolver;
-        delete control;
-        delete parallel;
-        delete init;
-        delete timeIntegration;
-        delete bench;
+   
+  // Shutdown submodules : ORDER IS IMPORTANT !!
+  delete fields;
+  delete visual;
+  delete vlasov;
+  delete geometry;
+  delete grid;
+  delete analysis;
+  delete particles;
+  delete eigenvalue;
+  delete fileIO;
+  // no need to delete table ?! Anyway SLEPc/PETSc seems to crash
+  // some times FFT crashes, be sude that it is below fileIO (hdf-5 is closed)
+  delete fftsolver;
+  delete control;
+  delete parallel;
+  delete init;
+  delete timeIntegration;
+  delete bench;
+
 }
 
 
 
 void GKC::printSettings() 
 {
-    std::stringstream infoStream;
   
-    time_t start_time = std::time(0); 
+  std::stringstream infoStream;
+  
+  time_t start_time = std::time(0); 
+  
   infoStream 
-            << "Welcome from " << PACKAGE_NAME << " (" << PACKAGE_VERSION <<")  " << PACKAGE_BUGREPORT <<  "      Date :  " << std::ctime(&start_time)         
-            << "-------------------------------------------------------------------------------" << std::endl
-            << *grid << *plasma << *fileIO << *setup << *vlasov  << *fields << *geometry << *init << *parallel << *fftsolver << *timeIntegration;
-            infoStream << *control << *bench << std::endl;
-            infoStream << "-------------------------------------------------------------------------------" << std::endl << std::endl << std::flush;
+  
+    << "Welcome from " << PACKAGE_NAME << " (" << PACKAGE_VERSION <<")  " << PACKAGE_BUGREPORT <<  "      Date :  " << std::ctime(&start_time)         
+    << "-------------------------------------------------------------------------------" << std::endl
+    << *grid << *plasma << *fileIO << *setup << *vlasov  << *fields << *geometry << *init << *parallel << *fftsolver << *timeIntegration;
+    
+  infoStream << *control << *bench << std::endl;
+  infoStream << "-------------------------------------------------------------------------------" << std::endl << std::endl << std::flush;
 
-   parallel->print(infoStream.str());
+  parallel->print(infoStream.str());
 
 }
     

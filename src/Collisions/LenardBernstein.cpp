@@ -17,56 +17,57 @@
 #include "Vlasov/Vlasov.h"
 
 Collisions_LenardBernstein::Collisions_LenardBernstein(Grid *grid, Parallel *parallel, Setup *setup, FileIO *fileIO, Geometry *geo) 
-       : Collisions(grid, parallel, setup, fileIO, geo) 
+: Collisions(grid, parallel, setup, fileIO, geo) 
 
 {
-          beta        = setup->get("Collisions.Beta", 0.e0);
-          consvMoment = setup->get("Collisions.ConserveMoments", 0);
+  
+  beta        = setup->get("Collisions.Beta", 0.e0);
+  consvMoment = setup->get("Collisions.ConserveMoments", 0);
    
-          // allocate arrays
-          ArrayPreFactors = nct::allocate(grid->RsLD, grid->RmLD, grid->RvLD);
-          ArrayPreFactors(&a, &b, &c, &nu);
+  // allocate arrays
+  ArrayPreFactors = nct::allocate(grid->RsLD, grid->RmLD, grid->RvLD);
+  ArrayPreFactors(&a, &b, &c, &nu);
           
-          ArrayCorrectionTerm = nct::allocate(grid->RzLD, grid->RkyLD, grid->RxLD);
-          ArrayCorrectionTerm(&dn, &dP, &dE);
+  ArrayCorrectionTerm = nct::allocate(grid->RzLD, grid->RkyLD, grid->RxLD);
+  ArrayCorrectionTerm(&dn, &dP, &dE);
       
-          // as some terms include complicated functions we pre-calculate them 
-          calculatePreTerms((A3rr) a, (A3rr) b, (A3rr) c, (A3rr) nu);
+  // as some terms include complicated functions we pre-calculate them 
+  calculatePreTerms((A3rr) a, (A3rr) b, (A3rr) c, (A3rr) nu);
+
 };
 
 
 void Collisions_LenardBernstein::calculatePreTerms(double a[NsLD][NmLD][NvLD], double  b[NsLD][NmLD][NvLD], 
                                                    double c[NsLD][NmLD][NvLD], double nu[NsLD][NmLD][NvLD])
-
 {
 
-         for(int s = NsLlD; s <= NsLuD; s++) {
+  for(int s = NsLlD; s <= NsLuD; s++) {  const double v_th = plasma->species[s].alpha;
 
-         const double v_th = plasma->species[s].alpha;
-     
-         for(int m=NmLlD; m<= NmLuD;m++) {  simd_for(int v=NvLlD; v<= NvLuD;v++) {
+  for(int m = NmLlD; m <= NmLuD; m++) {  simd_for(int v=NvLlD; v<= NvLuD;v++) {
 
-           // v = v_\parallel^2 + 2 \mu  / v_{\sigma, th}^2
-           const double v_ = ( pow2(V[v]) + 2. * M[m] ) / pow2(plasma->species[s].alpha);
+      // v = v_\parallel^2 + 2 \mu  / v_{\sigma, th}^2
+      const double v_ = ( pow2(V[v]) + 2. * M[m] ) / pow2(plasma->species[s].alpha);
 
-           nu[s][m][v] = v_ * dv * grid->dm[m]; // directly normalize 
-           a [s][m][v] = 1. - 3. * sqrt(M_PI/2.) * ( erf(v_) - Derf(v_)) * pow(v_, -0.5);
-           b [s][m][v] = V[v] * pow(v_, -3./2.) * erf(v_)    ;
-           c [s][m][v] = pow(v_,-1./2.) *  (erf(v_) - Derf(v_)) ;
+      nu[s][m][v] = v_ * dv * grid->dm[m]; // directly normalize 
+      a [s][m][v] = 1. - 3. * sqrt(M_PI/2.) * ( erf(v_) - Derf(v_)) * pow(v_, -0.5);
+      b [s][m][v] = V[v] * pow(v_, -3./2.) * erf(v_)    ;
+      c [s][m][v] = pow(v_,-1./2.) *  (erf(v_) - Derf(v_)) ;
 
-         } } } 
-       
-       
+      
+  } } } 
+
+  return;
 }
 
 void Collisions_LenardBernstein::initData(hid_t fileID) 
 {
-            hid_t collisionGroup = check(H5Gcreate(fileID, "/Collisions",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Collision : H5Gcreate"));
+  hid_t collisionGroup = check(H5Gcreate(fileID, "/Collisions",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Collision : H5Gcreate"));
      
-            check(H5LTset_attribute_string(collisionGroup, ".", "Model", "Lenard-Bernstein"), DMESG("H5LTset_attribute"));
-            check(H5LTset_attribute_double(collisionGroup, ".", "Beta" , &beta, 1), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_string(collisionGroup, ".", "Model", "Lenard-Bernstein"), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_double(collisionGroup, ".", "Beta" , &beta, 1), DMESG("H5LTset_attribute"));
             
-            H5Gclose(collisionGroup);
+  H5Gclose(collisionGroup);
+
 }
 
 
@@ -86,75 +87,79 @@ void Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const
             const double b [NsLD][NmLD][NvLD],
             const double c [NsLD][NmLD][NvLD],
             const double nu[NsLD][NmLD][NvLD]
-     ) {
+     ) 
+  {
 
-       for(int s = NsLlD; s <= NsLuD; s++) { 
-      
-         if(consvMoment) {
+    for(int s = NsLlD; s <= NsLuD; s++) {  if(consvMoment) {
          
-         for(int m=NmLlD; m<= NmLuD;m++) { 
-            // (1) Calculate Moments (note : can we recycle Fields  n, P ?)
-            const double pre_dvdm = plasma->species[s].n0 * plasma->B0 * dv * grid->dm[m] ;
+    for(int m = NmLlD; m <= NmLuD; m++) { 
 
-            #pragma omp for collapse(2)
-            for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
+      // (1) Calculate Moments (note : can we recycle Fields  n, P ?)
+      const double pre_dvdm = plasma->species[s].n0 * plasma->B0 * dv * grid->dm[m] ;
 
-              dn[z][y_k][x] = __sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD]                       ) * pre_dvdm;
-              dP[z][y_k][x] = __sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD] * V       [NvLlD:NvLD]) * pre_dvdm;
-              dE[z][y_k][x] = __sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD] * nu[s][m][NvLlD:NvLD]);
+      #pragma omp for collapse(2)
+      for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
 
-            } } } }
-          
-            // need to communicate with other CPU's ? 
+        dn[z][y_k][x] = __sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD]                       ) * pre_dvdm;
+        dP[z][y_k][x] = __sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD] * V       [NvLlD:NvLD]) * pre_dvdm;
+        dE[z][y_k][x] = __sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD] * nu[s][m][NvLlD:NvLD]);
 
-        }
-          
-        // b-cast dn, dP, dE 
-        const double _kw_12_dv_dv = 1./(12. * pow2(dv)); // use from e.g. Grid ?
-        const double _kw_12_dv    = 1./(12. * dv )     ;
-
-        #pragma omp for collapse(3)
-        for(int   m = NmLlD ; m   <= NmLuD ; m++  ) { for(int z = NzLlD; z <= NzLuD;z++) {  
-        for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD;x++) {
-           
-        simd_for(int v = NvLlD; v <= NvLuD; v++) {
-
-            
-            // Velocity derivaties for Lennard-Bernstein Collisional Model (shouln't I use G ?)
-           const CComplex f_      = f[s][m][z][y_k][x][v];
-           const CComplex df_dv   = (8. *(f[s][m][z][y_k][x][v+1] - f[s][m][z][y_k][x][v-1]) 
-                                       - (f[s][m][z][y_k][x][v+2] - f[s][m][z][y_k][x][v-2])) * _kw_12_dv;
-           const CComplex ddf_dvv = (16.*(f[s][m][z][y_k][x][v+1] + f[s][m][z][y_k][x][v-1]) 
-                                       - (f[s][m][z][y_k][x][v+2] + f[s][m][z][y_k][x][v-2]) 
-                                   -  30.*f[s][m][z][y_k][x][v]) * _kw_12_dv_dv;
-           const double v2_rms = 1.;//pow2(alpha)
         
-           Coll[s][m][z][y_k][x][v] =
-                 beta  * (f_  + V[v] * df_dv + v2_rms * ddf_dvv)          ///< Lennard-Bernstein Collision term
-                 + (consvMoment ?
-                   (a[s][m][v] * dn[z][y_k][x] +                           ///< Density correction   
-                    b[s][m][v] * dP[z][y_k][x] +                           ///< Momentum correction
-                    c[s][m][v] * dE[z][y_k][x]) * f0[s][m][z][y_k][x][v]  ///< Energy correction
-                   : 0.);
+      } } } }
+          
+      // need to communicate with other CPU's ? 
+    }
+          
+    
+    // b-cast dn, dP, dE 
+    const double _kw_12_dv_dv = 1./(12. * pow2(dv)); // use from e.g. Grid ?
+    const double _kw_12_dv    = 1./(12. * dv )     ;
 
-        }
-
+    
+    #pragma omp for collapse(3)
+    for(int   m = NmLlD ; m   <= NmLuD ; m++  ) { for(int z = NzLlD; z <= NzLuD;z++) {  
+    for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD;x++) {
            
-        } } } } 
-         
-         
-       }
+    simd_for(int v = NvLlD; v <= NvLuD; v++) {
 
-      } ((A6zz) f  , (A6zz) f0, (A6zz) Coll, 
-         (A3zz) dn , (A3zz) dP, (A3zz) dE, 
-         (A3rr) a  , (A3rr) b , (A3rr)  c, (A3rr) nu);
+      // Velocity derivaties for Lennard-Bernstein Collisional Model (shouln't I use G ?)
+      const CComplex f_      = f[s][m][z][y_k][x][v];
+      const CComplex df_dv   = (8. *(f[s][m][z][y_k][x][v+1] - f[s][m][z][y_k][x][v-1]) 
+                                       - (f[s][m][z][y_k][x][v+2] - f[s][m][z][y_k][x][v-2])) * _kw_12_dv;
+      const CComplex ddf_dvv = (16.*(f[s][m][z][y_k][x][v+1] + f[s][m][z][y_k][x][v-1]) 
+                                  - (f[s][m][z][y_k][x][v+2] + f[s][m][z][y_k][x][v-2]) 
+                              -  30.*f[s][m][z][y_k][x][v]) * _kw_12_dv_dv;
+      const double v2_rms    = 1.;//pow2(alpha)
+        
+      Coll[s][m][z][y_k][x][v] =
+                 
+        beta  * (f_  + V[v] * df_dv + v2_rms * ddf_dvv)           ///< Lennard-Bernstein Collision term
+        // add conservative terms 
+        + (consvMoment ?
+          (a[s][m][v] * dn[z][y_k][x] +                           ///< Density correction   
+           b[s][m][v] * dP[z][y_k][x] +                           ///< Momentum correction
+           c[s][m][v] * dE[z][y_k][x]) * f0[s][m][z][y_k][x][v]   ///< Energy correction
+                       : 0.);
+
+    } // v
+
+    } } } } // x, y_k, z, m 
+         
    
-     return;
+  } } ((A6zz) f  , (A6zz) f0, (A6zz) Coll, 
+       (A3zz) dn , (A3zz) dP, (A3zz) dE, 
+       (A3rr) a  , (A3rr) b , (A3rr)  c, (A3rr) nu);
+   
+  return;
+
 };
 
 
- void Collisions_LenardBernstein::printOn(std::ostream &output) const {
-         output   << "Collisions |  Model : Lenard-Bernstein    Beta = " << beta << std::endl;
-        }
+ void Collisions_LenardBernstein::printOn(std::ostream &output) const 
+{
+
+  output   << "Collisions |  Model : Lenard-Bernstein    Beta = " << beta << std::endl;
+  
+}
 
 

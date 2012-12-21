@@ -40,234 +40,276 @@ class PETScMatrixVector;
 **/
 class Vlasov : public IfaceGKC {
 
-   /**
-   *    Please Document Me !
-   *
-   **/
-   friend class Event;
+  /**
+  *    Please Document Me !
+  *
+  **/
+  friend class Event;
 
-   /**
-   *    Please Document Me !
-   *
-   **/
-   friend class PETScMatrixVector;
+  /**
+  *    Please Document Me !
+  *
+  **/
+  friend class PETScMatrixVector;
 
-   /**
-   *    Please Document Me !
-   *
-   **/
-   friend class Benchmark;
+  /**
+  *    Please Document Me !
+  *
+  **/
+  friend class Benchmark;
 
- protected:
   /**
   *
   **/
   enum class Boundary : int { SEND=1,  RECV=2, SENDRECV=3};
 
 
- private:
-   /**
-   *  @brief Buffer for exchange ghost cells in each direction
-   */ 
-   CComplex *SendXl, *SendXu, *SendZl, *SendZu, *SendVl, *SendVu;
-   CComplex *RecvXl, *RecvXu, *RecvZl, *RecvZu, *RecvVl, *RecvVu;
-   nct::allocate ArrayBoundX, ArrayBoundZ, ArrayBoundV;
+  /**
+  *  @brief Buffer for exchange ghost cells in each direction
+  */ 
+  CComplex *SendXl,  ///< Send Buffer in X-direction (send to down)
+           *SendXu,  ///< Send buffer in X-direction (send to up)
+           *SendZl,  ///< Send buffer in Z-direction (send to down)
+           *SendZu,  ///< Send buffer in Z-direction (send to up) 
+           *SendVl,  ///< Send buffer in V-direction (send to down)
+           *SendVu,  ///< Send buffer in V-direction (send to up) 
+           *RecvXl,  ///< Recv buffer in X-direction (recv from down)
+           *RecvXu,  ///< Recv buffer in X-direction (recv from up)
+           *RecvZl,  ///< Recv buffer in Z-direction (recv from down) 
+           *RecvZu,  ///< Recv buffer in Z-direction (recv from up)
+           *RecvVl,  ///< Recv buffer in V-direction (recv from down) 
+           *RecvVu;  ///< Recv buffer in V-direction (recv from up)
+   
+  
+  
+  nct::allocate ArrayBoundX, ///< Allocator for message buffers in X
+                ArrayBoundZ, ///< Allocator for message buffers in Z
+                ArrayBoundV; ///< Allocator for message buffers in V
     
 
  protected:
-   FFTSolver *fft;
-   Parallel *parallel;
-   Grid *grid;
-   Setup *setup;
-   Geometry *geo;
-   Benchmark *bench;  
-   Collisions     *coll;
 
+  FFTSolver *fft;
+  Parallel *parallel;
+  Grid *grid;
+  Setup *setup;
+  Geometry *geo;
+  Benchmark *bench;  
+  Collisions     *coll;
 
-   /**
-   *   Stabilize simulation by adding a small amount of hyper-viscosity.
-   *   Especially needed in x-direction to avoid odd-even decoupling.
-   *     
-   *   Is this similar effect as mentioned in 
-   *    JJ. Quirk , A contribution to the great Riemann solver debate, 1994 ?
-   *
-   *   Values between 1.e-5 - 1.e-3 are OK, otherwise it will have impact on
-   *   physical results.
-   *
-   **/
-   double hyper_visc[DIR_ALL];        
+  /**
+  *   Stabilize simulation by adding a small amount of hyper-viscosity.
+  *   Especially needed in x-direction to avoid odd-even decoupling.
+  *     
+  *   Is this similar effect as mentioned in 
+  *    JJ. Quirk , A contribution to the great Riemann solver debate, 1994 ?
+  *
+  *   Values between 1.e-5 - 1.e-3 are OK, otherwise it will have impact on
+  *   physical results.
+  *
+  **/
+  double hyper_visc[DIR_ALL];        
   
-   /**
-   *    @brief name of Vlasov equation to solve 
-   *
-   **/
-   std::string equation_type;
+  /**
+  *    @brief name of Vlasov equation to solve 
+  *
+  **/
+  std::string equation_type;
 
-   /**
-   *    @brief set if non-linear simulations are performed
-   *
-   **/
-   bool doNonLinear;
+  /**
+  *    @brief set if non-linear simulations are performed
+  *
+  **/
+  bool doNonLinear;
     
         
-   /**
-   *
-   *  Interface to solve Vlasov equation of name equation_type
-   *
-   *  set fs to const f_in 
-   **/
-   virtual void solve(std::string equation_type, Fields *fields, CComplex *fs, CComplex *fss, 
-                      double dt, int rk_step, const double rk[3]) = 0;
+  /**
+  *
+  *  Interface to solve Vlasov equation of name equation_type
+  *
+  *  set fs to const f_in 
+  **/
+  virtual void solve(std::string equation_type, Fields *fields, CComplex *fs, CComplex *fss, 
+                     double dt, int rk_step, const double rk[3]) = 0;
  public:
   
   /**
-   *   @brief Pre-calculate often used factors
-   *
-   *   Pre-calculate often used factors which e.g. include divisions,
-   *   as division requires much more cycles than multiplications.
-   *         
-   *   KW is Kehrwert (German for Multiplicative Inverse)
-   *
-   **/
-   const double _kw_12_dx_dx,    ///< \f$ \frac{1}{12 dx^2} \f$
-                _kw_12_dv   ,    ///< \f$ \frac{1}{16 dv  } \f$
-                _kw_12_dx   ,    ///< \f$ \frac{1}{12 dx  } \f$
-                _kw_12_dz   ,    ///< \f$ \frac{1}{12 dz  } \f$
-                _kw_12_dv_dv,    ///< \f$ \frac{1}{12 dv^2} \f$
-                _kw_16_dx4  ;    ///< \f$ \frac{1}{16 dx^4} \f$
+  *   @brief Pre-calculate often used factors
+  *
+  *   Pre-calculate often used factors which e.g. include divisions,
+  *   as division requires much more cycles than multiplications.
+  *         
+  *   KW is Kehrwert (German for Multiplicative Inverse)
+  *
+  **/
+  const double _kw_12_dx_dx,    ///< \f$ \frac{1}{12 dx^2} \f$
+               _kw_12_dv   ,    ///< \f$ \frac{1}{16 dv  } \f$
+               _kw_12_dx   ,    ///< \f$ \frac{1}{12 dx  } \f$
+               _kw_12_dz   ,    ///< \f$ \frac{1}{12 dz  } \f$
+               _kw_12_dv_dv,    ///< \f$ \frac{1}{12 dv^2} \f$
+               _kw_16_dx4  ;    ///< \f$ \frac{1}{16 dx^4} \f$
 
 
 
-   /**
-   *    Please Document Me !
-   *
-   **/
-   double  Xi_max[3];
+  /**
+  *    @brief Maximum Xi
+  *
+  *    Hold the maximum Xi in x-direction Xi_max[DIR_X] and y-direction 
+  *    Xi_max[DIR_Y] defined as,
+  *
+  *    Xi_max[DIR_X] = max(partial_x Xi)
+  *    Xi_max[DIR_Y] = max(partial_y Xi)
+  *
+  *    which is needed to calculate the CFL condition
+  *
+  **/
+  double  Xi_max[2];
   
-   /**
-   *   @brief 6-dimensional phase-space function
-   *
-   *   @note should this be allocated in TimeIntegation or set to 7dim ?
-   *
-   **/
-   nct::allocate ArrayPhase;
-   CComplex *f0,         ///< Maxwellian 
-            *f ,         ///< Perturbed Phase Space Function
-            *fs,         ///<
-            *fss,
-            *ft, 
-            *f1,         ///< f1
-            *Coll;       ///< Collisional corrections
+  /**
+  *   @brief 6-dimensional phase-space function
+  *
+  *   @note should this be allocated in TimeIntegation or set to 7dim ?
+  *
+  **/
+  nct::allocate ArrayPhase, ///< Allocator distribution functions
+                ArrayG    , ///< Allocation class for G
+                ArrayXi   , ///< Allocation class for Xi
+                ArrayNL   ; ///< Allocation class for non-linear term
+
+  /**
+  *   @brief Phase-space "type" functions
+  *
+  *
+  **/
+  CComplex *f0,         ///< Maxwellian 
+           *f ,         ///< Perturbed Phase Space Function
+           *fs,         ///< Temporary for time step integration
+           *fss,        ///< 
+           *ft,         ///< 
+           *f1,         ///< f1
+           *Coll;       ///< Collisional corrections
    
-   /**
-   *    Please Document Me !
-   *
-   **/
-   CComplex *G, *Xi;
+  /**
+  *    Please Document Me !
+  *
+  **/
+  CComplex *G,  ///< Modified phase distribution with fields contributions
+           *Xi; ///< Combined fields \f$ \Xi = \phi + v_\parallel A_{1\parallel}  \f$
 
-   nct::allocate ArrayG,  ///< Allocation class for G
-                 ArrayXi, ///< Allocation class for Xi
-                 ArrayNL; ///< Allocation class for non-linear term
-   /**
-   *    Please Document Me !
-   *
-   **/
-   Vlasov(Grid *grid, Parallel *parallel, Setup *setup, FileIO *fileIO, Geometry *geo, FFTSolver *fft, Benchmark *bench, Collisions *coll);
+  /**
+  *    Please Document Me !
+  *
+  *
+  *
+  *
+  **/
+  Vlasov(Grid *grid, Parallel *parallel, Setup *setup, FileIO *fileIO, Geometry *geo, FFTSolver *fft, Benchmark *bench, Collisions *coll);
 
-   /**
-   *
-   **/
-   virtual ~Vlasov();
+  /**
+  *
+  *
+  *
+  **/
+  virtual ~Vlasov();
 
-   /**
-   *
-   *  Calls Vlasov::solve(equation type ...)
-   *  Handles boundary conditions
-   *
-   **/
-   void solve(Fields *fields, CComplex *fs, CComplex *fss, double dt, 
-              int rk_step, const double rk[3],  bool useNonBlockingBoundary=true);
+  /**
+  *
+  *  Calls Vlasov::solve(equation type ...)
+  *  Handles boundary conditions
+  *
+  **/
+  void solve(Fields *fields, CComplex *fs, CComplex *fss, double dt, 
+             int rk_step, const double rk[3],  bool useNonBlockingBoundary=true);
 
-   /**
-   *    Please Document Me !
-   *
-   **/
-   void setBoundary(CComplex *f);
+  /**
+  *    Please Document Me !
+  *
+  *
+  *
+  **/
+  void setBoundary(CComplex *f);
 
 
-   void setBoundary(CComplex *f, const Boundary boundary_type);
+  void setBoundary(CComplex *f, const Boundary boundary_type);
 
-   /**
-   *    Please Document Me !
-   *
-   **/
-   std::string getEquationType() const { return equation_type;};
-
-   
-   /**
-   *    for global f simulation we update f
-   *
-   *
-   *   ToDo : Skeleton, update new Naxwellian background
-   *   this is a dummy functions only
-   */ 
-   //int updateMaxwellian() { return GKC_SUCCESS;};
-
-   /**
-   *   @brief get maximum non-linear time step 
-   *
-   *   Calculates the timestep according to a defined CFL number. For the Vlasov equation
-   *   several terms needs to be calculated for the highest possible timestep. These are
-   *
-   *   @param maxCFL maximum CFL value for non-linear terms
-   *
-   *   @return maximum time step value
-   *
-   **/
-   double getMaxNLTimeStep(const double maxCFL);
+  /**
+  *    Please Document Me !
+  *
+  **/
+  std::string getEquationType() const { return equation_type;};
 
    
+  /**
+  *    for global f simulation we update f
+  *
+  *
+  *   ToDo : Skeleton, update new Naxwellian background
+  *   this is a dummy functions only
+  */ 
+  //int updateMaxwellian() { return GKC_SUCCESS;};
+
+  /**
+  *   @brief get maximum non-linear time step 
+  *
+  *   Calculates the timestep according to a defined CFL number. For the Vlasov equation
+  *   several terms needs to be calculated for the highest possible timestep. These are
+  *
+  *   @param maxCFL maximum CFL value for non-linear terms
+  *
+  *   @return maximum time step value
+  *
+  **/
+  double getMaxNLTimeStep(const double maxCFL);
+
    
-   /**
-   *    @brief Holds the non-linear terms from the ExB
-   *
-   **/
-   CComplex *nonLinearTerm; 
    
-   /**
-   *    Please Document Me !
-   *
-   **/
-   virtual void writeData(const Timing &timing, const double dt);
+  /**
+  *    @brief Holds the non-linear terms from the ExB
+  *
+  **/
+  CComplex *nonLinearTerm; 
+   
+  /**
+  *    Please Document Me !
+  *
+  **/
+  virtual void writeData(const Timing &timing, const double dt);
 
 
  protected :
 
-   /**
-   *    Please Document Me !
-   *
-   **/
-   void printOn(std::ostream &output) const;
+  /**
+  *    Please Document Me !
+  *
+  **/
+  void printOn(std::ostream &output) const;
 
-   /**
-   *    Please Document Me !
-   *
-   **/
-   virtual void initData(Setup *setup, FileIO *fileIO);
-//   virtual void initData(hid_t groupID, FileIO *fileIO);
+  /**
+  *    Please Document Me !
+  *
+  **/
+  virtual void initData(Setup *setup, FileIO *fileIO);
 
+  /**
+  *
+  *    Please Document Me !
+  *
+  **/
    void loadData(FileIO *fileIO);
 
    Timing dataOutputF1;
 
-   /**
-   *    Please Document Me !
-   *
-   **/
-   virtual void closeData();
+  /**
+  *    Please Document Me !
+  *
+  **/
+  virtual void closeData();
 
  private:
-   FileAttr *FA_f1, *FA_f0, *FA_psfTime; 
+
+  FileAttr *FA_f1,      ///< Data-output for Phase-perturbation 
+           *FA_f0,      ///< Data output for Maxwelliab
+           *FA_psfTime; ///< Data output for time step writes
 
 };
 

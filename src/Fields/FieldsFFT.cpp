@@ -56,7 +56,8 @@ void FieldsFFT::solveFieldEquations(const CComplex Q     [Nq][NzLD][NkyLD][NxLD]
   // transform back to real-space (kx,ky) -> (x,ky)
   #pragma omp single
   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, ArrayField0.data((CComplex *) Field0));
-   
+
+
   return;
 
 }
@@ -232,7 +233,7 @@ void FieldsFFT::gyroFull(const CComplex In   [Nq][NzLD][NkyLD][NxLD             
   
   #pragma omp single
   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, stack ? (void *) &In[0][0][0][0] : (void *) &In[0][NzLlD][NkyLlD][NxLlD]);
-   
+
   // get therma gyro-radius^2 of species and lambda =  2 x b 
   const double rho_t2  = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0); 
   const double lambda2 = 2. * M[m] * rho_t2;
@@ -266,7 +267,7 @@ void FieldsFFT::gyroFull(const CComplex In   [Nq][NzLD][NkyLD][NxLD             
    
   #pragma omp single
   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, stack ? &Out[0][0][0][0] : &Out[0][NzLlD][NkyLlD][NxLlD]);
-       
+ 
   return;
 }
 

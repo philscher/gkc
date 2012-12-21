@@ -99,7 +99,7 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
   doubleAA    xy_ExB   [NyLD  ][NxLD  ];
   
 
-  //#pragma omp for
+  #pragma omp for
   for(int v=NvLlD; v<=NvLuD; v++) { 
 
     // Transform Xi to real space  
@@ -108,8 +108,8 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
     // for electro-static field this has to be calculated only once
     if(electroMagnetic || (v == NvLlD)) {
 
-      if(electroMagnetic) xky_Xi[:][:] =     Xi                  [z][NkyLlD:NkyLD][NxLlB-2:NxLB+4][v];
-      else                xky_Xi[:][:] = Fields[Field::phi][s][m][z][NkyLlD:NkyLD][NxLlB-2:NxLB+4]   ;
+      if(electroMagnetic) xky_Xi[:][:] =     Xi                  [z][:][NxLlB-2:NxLB+4][v];
+      else                xky_Xi[:][:] = Fields[Field::phi][s][m][z][:][NxLlB-2:NxLB+4]   ;
        
       // xy_Xi[shift by +4][], as we also will use extended BC in Y
       // xy_Xi[NkyLD][:] = 0.; // we do not include Nyquist frequency
@@ -194,11 +194,11 @@ void VlasovCilk::setupXiAndG(
   const double aeb   =  alpha* geo->eps_hat * plasma->beta; 
   const double saeb  =  sigma * alpha * geo->eps_hat * plasma->beta;
 
-  const bool useAp = (plasma->nfields >= 2);
-  const bool useBp = (plasma->nfields >= 3);
+  const bool useAp   = (plasma->nfields >= 2);
+  const bool useBp   = (plasma->nfields >= 3);
 
 
-  // ICC vectorizes useAp/useBp into seperate lopps, check for any speed penelity ? 
+  // ICC vectorizes useAp/useBp into separate lopps, check for any speed penelity ? 
   #pragma omp for collapse(2)
   for(int z = NzLlB; z <= NzLuB; z++) {      for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
   for(int x = NxLlB; x <= NxLuB; x++) { simd_for(int v   = NvLlB ;   v <= NvLuB ;   v++) { 
@@ -214,15 +214,14 @@ void VlasovCilk::setupXiAndG(
   } } // v, x
      
   // Note we have extended boundaries in X (NxLlB-2 -- NxLuB+2) for fields
-  simd_for(int v   = NvLlB ;   v <= NvLuB ;   v++) {
+  simd_for(int v = NvLlB; v <= NvLuB; v++) {
 
-     Xi[z][y_k][NxLlB-2:2][v] = Fields[Field::phi][s][m][z][y_k][NxLlB-2:2] - (useAp ? aeb*V[v]*Fields[Field::Ap][s][m][z][y_k][NxLlB-2:2] : 0.)
-                                                                            - (useBp ? aeb*M[m]*Fields[Field::Bp][s][m][z][y_k][NxLlB-2:2] : 0.);
+    Xi[z][y_k][NxLlB-2:2][v] = Fields[Field::phi][s][m][z][y_k][NxLlB-2:2] - (useAp ? aeb*V[v]*Fields[Field::Ap][s][m][z][y_k][NxLlB-2:2] : 0.)
+                                                                           - (useBp ? aeb*M[m]*Fields[Field::Bp][s][m][z][y_k][NxLlB-2:2] : 0.);
 
-     Xi[z][y_k][NxLuB+1:2][v] = Fields[Field::phi][s][m][z][y_k][NxLuB+1:2] - (useAp ? aeb*V[v]*Fields[Field::Ap][s][m][z][y_k][NxLuB+1:2] : 0.) 
-                                                                            - (useBp ? aeb*M[m]*Fields[Field::Bp][s][m][z][y_k][NxLuB+1:2] : 0.);
+    Xi[z][y_k][NxLuB+1:2][v] = Fields[Field::phi][s][m][z][y_k][NxLuB+1:2] - (useAp ? aeb*V[v]*Fields[Field::Ap][s][m][z][y_k][NxLuB+1:2] : 0.) 
+                                                                           - (useBp ? aeb*M[m]*Fields[Field::Bp][s][m][z][y_k][NxLuB+1:2] : 0.);
   }
-  
   
   } } // y_k, z
 
@@ -245,10 +244,9 @@ void VlasovCilk::Vlasov_EM(
     const double X[NxGB], const double V[NvGB], const double M[NmGB],
     const double dt, const int rk_step, const double rk[3])
 { 
-   
+
   const double B0 = plasma->B0;
 
-   
   for(int s = NsLlD; s <= NsLuD; s++) {
         
     // small abbrevations
@@ -258,96 +256,86 @@ void VlasovCilk::Vlasov_EM(
     const double sigma = plasma->species[s].sigma;
     const double Temp  = plasma->species[s].T0;
     
-    const double sub = (plasma->species[s].doGyro) ? 3./2. : 1./2.;
-      
 
-    for(int m=NmLlD; m<= NmLuD;m++) { 
+  for(int m = NmLlD; m <= NmLuD; m++) { 
 
-      // Calculate before z loop as we use dg_dz and dXi_dz derivative
-      setupXiAndG(g, f0 , Fields, Xi, G, V, M, m , s);
+    // Calculate before z loop as we use dg_dz and dXi_dz derivative
+    setupXiAndG(g, f0 , Fields, Xi, G, V, M, m , s);
       
-      // Nested Parallelism (PoissonBracket variables are allocated on stack)
-      // Cannot collapse as we have no perfetly nested loops
+    // Nested Parallelism (PoissonBracket variables are allocated on stack)
+    // Cannot collapse as we have no perfetly nested loops
           
-      for(int z=NzLlD; z<= NzLuD;z++) { 
+  for(int z = NzLlD; z <= NzLuD; z++) { 
            
-           
-        // calculate non-linear term (rk_step == 0 for eigenvalue calculatinullptr)
-        // CFL condition is calculated inside calculatePoissonBracket
-        if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(G, Xi, nullptr, nullptr, z, m, s, NonLinearTerm, Xi_max, true); 
-           
-  for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
+    // calculate non-linear term (rk_step == 0 for eigenvalue calculatinullptr)
+    if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(G, Xi, nullptr, nullptr, z, m, s, NonLinearTerm, Xi_max, true); 
+    
+  #pragma omp for collapse(2) 
+  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { 
            
        
-      const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];
+    const CComplex phi_    = Fields[Field::phi][s][m][z][y_k][x];
 
-      const CComplex dphi_dx = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1]) 
-                                 - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2])) * _kw_12_dx  ;  
+    const CComplex dphi_dx = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1]) 
+                               - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2])) * _kw_12_dx  ;  
             
-      const CComplex ky = (CComplex (0. + 1.j)) * fft->ky(y_k);
+    const CComplex ky      = _imag * fft->ky(y_k);
 
-      const double CoJB = 1.;///geo->get_J(x,z);
+    const double CoJB = 1.;///geo->get_J(x,z);
     
-      const CComplex kp = (CComplex (0. + 1.j)) * (0.002828);
+    
+  simd_for(int v = NvLlD; v <= NvLuD; v++) {
 
+    const CComplex g_   =  g[s][m][z][y_k][x][v];
+    const CComplex f0_  = f0[s][m][z][y_k][x][v];
 
-  simd_for(int v=NvLlD; v<= NvLuD;v++) {
-        
-
-      const CComplex g_   = g[s][m][z][y_k][x][v];
-      const CComplex f0_  = f0 [s][m][z][y_k][x][v];
-      const CComplex G_   = G[z][y_k][x][v];
-      const CComplex Xi_  = Xi[z][y_k][x][v];
+    const CComplex G_   =  G[z][y_k][x][v];
+    const CComplex Xi_  = Xi[z][y_k][x][v];
 
         
-      const CComplex dg_dv   = (8. *(g[s][m][z][y_k][x][v+1] - g[s][m][z][y_k][x][v-1]) 
-                                    - (g[s][m][z][y_k][x][v+2] - g[s][m][z][y_k][x][v-2])) * _kw_12_dv;
-        
-      /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
+    const CComplex dg_dv   = (8. *(g[s][m][z][y_k][x][v+1] - g[s][m][z][y_k][x][v-1]) 
+                                - (g[s][m][z][y_k][x][v+2] - g[s][m][z][y_k][x][v-2])) * _kw_12_dv;
 
-      // We use CD-4 (central difference fourth order for every variable)
+    const CComplex dG_dz   = (8.*(G[z+1][y_k][x][v] - G[z-1][y_k][x][v])    
+                             -   (G[z+2][y_k][x][v] - G[z-2][y_k][x][v])) * _kw_12_dz;
 
-      const CComplex dG_dz   = (8.*(G[z+1][y_k][x][v] - G[z-1][y_k][x][v])    
-                               -   (G[z+2][y_k][x][v] - G[z-2][y_k][x][v])) * _kw_12_dz;
+    const CComplex dG_dx   = (8.*(G[z][y_k][x+1][v] - G[z][y_k][x-1][v]) 
+                             -   (G[z][y_k][x+2][v] - G[z][y_k][x-2][v])) * _kw_12_dx;
 
-      const CComplex dG_dx   = (8.*(G[z][y_k][x+1][v] - G[z][y_k][x-1][v]) 
-                               -   (G[z][y_k][x+2][v] - G[z][y_k][x-2][v])) * _kw_12_dx;
-
-        
-      // magnetic prefactor defined as  $ \hat{B}_0 / \hat{B}_{0\parallel}^\star = \left[ 1 + \beta_{ref} \sqrt{\frac{\hat{m_\sigma T_{0\sigma}{2}}}}
-      // note j0 is calculated and needs to be replaced, or ? no we calculate j1 ne ?!
-      const double j0 = 0.;
-      const double Bpre  = 1.; //1./(1. + plasma->beta * sqrt(m * T/2.) * j0 / (q * pow2(geo->B(x,y,z))) * V[v]);
+    // magnetic prefactor defined as  $ \hat{B}_0 / \hat{B}_{0\parallel}^\star = \left[ 1 + \beta_{ref} \sqrt{\frac{\hat{m_\sigma T_{0\sigma}{2}}}}
+    // note j0 is calculated and needs to be replaced, or ? no we calculate j1 ne ?!
+    const double j0   = 0.;
+    const double Bpre = 1.; //1./(1. + plasma->beta * sqrt(m * T/2.) * j0 / (q * pow2(geo->B(x,y,z))) * V[v]);
 
         
-      ///////////////   The time derivative of the Vlasov equation      //////////////////////
+    ///////////////   The time derivative of the Vlasov equation      //////////////////////
         
-      const CComplex dg_dt = 
+    const CComplex dg_dt = 
             
-         NonLinearTerm[y_k][x][v]                                                                 // Non-linear ( array is zero for linear simulations) 
-         // + Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - sub)) * f0_ * Xi_ * ky         // Driving Term
-            + Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - sub)) * f0_ * phi_ * ky         // Driving Term
-//          - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0) *                                   
-//            (Kx[z][x] * dG_dx - Ky[z][x] * ky * G_)                                    // Magnetic curvature term
-          //- alpha * pow2(V[v]) * plasma->beta * plasma->w_p * G_ * ky                        // Plasma pressure gradient
-          -  CoJB *  alpha * V[v]*  kp * (g_ + sigma * phi_ *  f0_)                     // Landau damping term
-//            -  CoJB *  alpha * V[v]* dG_dz                                                       // Landau damping term
-//          + alpha  / 2. * M[m] * dB_dz[z][x] * dg_dv                                       // Magnetic mirror term    
- //         + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * Kx[z][x] * 
- //         ((w_n + w_T * (pow2(V[v]) + M[m] * B0)/Temp - sub) * dG_dx + sigma * dphi_dx * f0_); // ??
-;//           + Coll[s][m][z][y_k][x][v];                // Collision term
-
+//    + NonLinearTerm[y_k][x][v]                                                              // Non-linear ( array is zero for linear simulations) 
+//    + Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - 3./2.)) * f0_ * Xi_ * ky          // Source Term
+    + Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - 3./2.)) * f0_ * phi_ * ky          // Source Term
+//    - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0) *                                   
+//      (Kx[z][x] * dG_dx - Ky[z][x] * ky * G_)                                               // Magnetic curvature term
+//    - alpha * pow2(V[v]) * plasma->beta * plasma->w_p * G_ * ky                             // Plasma pressure gradient
+//    - CoJB * alpha * V[v]* dG_dz                                                            // Landau damping term
+    - CoJB * alpha * V[v]* (g_ + sigma * phi_ * f0_)                                                            // Landau damping term
+//    + alpha  / 2. * M[m] * dB_dz[z][x] * dg_dv                                              // Magnetic mirror term    
+//    + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * Kx[z][x] * 
+//    + ((w_n + w_T * (pow2(V[v]) + M[m] * B0)/Temp - 3./2.) * dG_dx + sigma * dphi_dx * f0_) // ??
+//    + Coll[s][m][z][y_k][x][v];                                                             // Collision term
+;
           
-        //////////////////////////// Vlasov End ////////////////////////////
+    //////////////////////////// Vlasov End ////////////////////////////
 
-      //  time-integrate the distribution function    
-      ft[s][m][z][y_k][x][v] = rk[0] * ft[s][m][z][y_k][x][v] + rk[1] * dg_dt             ;
-      h [s][m][z][y_k][x][v] =         f1[s][m][z][y_k][x][v] + (rk[2] * ft[s][m][z][y_k][x][v] + dg_dt) * dt;
+    //  time-integrate the distribution function    
+    ft[s][m][z][y_k][x][v] = rk[0] * ft[s][m][z][y_k][x][v] +  rk[1] * dg_dt             ;
+    h [s][m][z][y_k][x][v] =         f1[s][m][z][y_k][x][v] + (rk[2] * ft[s][m][z][y_k][x][v] + dg_dt) * dt;
         
-      } } // v  y_k
+    } } // v  y_k
 
-      } } }
-   }
+    } } }
+  }
 }
 
 
