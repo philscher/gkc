@@ -18,7 +18,7 @@ Moments::Moments(Setup *setup, Vlasov *_vlasov, Fields *_fields, Grid *_grid, Pa
 : vlasov(_vlasov), fields(_fields), grid(_grid), parallel(_parallel) 
 {
 
-   doFieldCorrections = setup->get("Moments.includeFieldCorrections", 1);
+   doFieldCorrections = setup->get("Moments.FieldCorrections", 1);
 
 
 };
@@ -37,8 +37,8 @@ void Moments::getMoments(const CComplex     f    [NsLD][NmLD][NzLB][NkyLD][NxLB 
   Mom00[:][:][:][:] = 0.;
 
   // temporary arrays for integration over \mu
-  CComplex Mom20_m[1][NzLD][NkyLD][NxLD], Mom02_m[1][NzLD][NkyLD][NxLD], 
-           Mom00_m[1][NzLD][NkyLD][NxLD]; 
+  CComplex Mom20_m[Nq][NzLD][NkyLD][NxLD], Mom02_m[Nq][NzLD][NkyLD][NxLD], 
+           Mom00_m[Nq][NzLD][NkyLD][NxLD]; 
 
 
   for(int s = NsLlD; s <= NsLuD; s++) {

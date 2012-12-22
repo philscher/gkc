@@ -347,8 +347,8 @@ void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEn
   if(parallel->Coord[DIR_VMS] == 0) {
         
     // Lambda funtion to use CEAN notation
-    [&](CComplex kXOut [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
-        CComplex kXIn  [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+    [&](CComplex kXIn  [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+        CComplex kXOut [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
         CComplex Field0[Nq][NzLD][NkyLD][NxLD])
     {
         

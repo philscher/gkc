@@ -43,7 +43,7 @@ Visualization_Data::Visualization_Data(Grid *grid, Parallel *_parallel, Setup *s
      hid_t visualGroup = check(H5Gcreate(fileIO->getFileID(), "/Visualization",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
      FA_slphi      = new FileAttr("Phi", visualGroup, fileIO->file, 4, Fields_dim, Fields_maxdim, Fields_chunkdim, Fields_moffset,  Fields_chunkBdim, Fields_offset, phiWrite && plasma->nfields >= 1,fileIO->complex_tid );
      FA_slAp       = new FileAttr("Ap",  visualGroup, fileIO->file, 4, Fields_dim, Fields_maxdim, Fields_chunkdim, Fields_moffset,  Fields_chunkBdim, Fields_offset, phiWrite && plasma->nfields >= 2, fileIO->complex_tid);
-     FA_slBp       = new FileAttr("Bp",  visualGroup, fileIO->file, 4, Fields_dim, Fields_maxdim, Fields_chunkdim, Fields_moffset,  Fields_chunkBdim, Fields_offset, phiWrite && plasma->nfields >= 3 , fileIO->complex_tid);
+     FA_slBp       = new FileAttr("Bp",  visualGroup, fileIO->file, 4, Fields_dim, Fields_maxdim, Fields_chunkdim, Fields_moffset,  Fields_chunkBdim, Fields_offset, phiWrite && plasma->nfields >= 3, fileIO->complex_tid);
      FA_slphiTime  = fileIO->newTiming(visualGroup);
 
 
@@ -81,7 +81,13 @@ Visualization_Data::~Visualization_Data() {
 void Visualization_Data::writeData(const Timing &timing, const double dt, const bool force) 
 {
         if (timing.check(dataOutputVisual,dt) || force) {
-            FA_slphi->write(fields->ArrayField0.data(fields->Field0));
+            if(Nq >= 1) FA_slphi->write(fields->ArrayField0.data(fields->Field0));
+
+            [=] (CComplex Field0[Nq][NzLD][NkyLD][NxLD]) {
+              if(Nq >= 2) FA_slAp ->write(&Field0[Field::Ap][NzLlD][0][NxLlD]);
+              if(Nq >= 3) FA_slBp ->write(&Field0[Field::Bp][NzLlD][0][NxLlD]);
+            }((A4zz) fields->Field0);
+
             FA_slphiTime->write(&timing);
 
       if(visXV == true) {
