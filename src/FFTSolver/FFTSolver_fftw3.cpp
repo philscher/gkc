@@ -30,7 +30,6 @@ fftw_plan plan_AA_YForward, plan_AA_YBackward;
 // any license issues ? 
 fftw_plan plan_transpose(char storage_type, int rows, int cols, double *in, double *out);
 
-
 FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo) 
 
 : FFTSolver(setup, parallel, geo, Nx*(2*Nky-2)*Nz, Nx*(2*Nky-2), Nx,  (2*Nky-2)) 
@@ -46,10 +45,12 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
     // Setup plans
     int perf_flag = FFTW_ESTIMATE;
     
-    plan   = setup->get("FFTW3.Plan", "Measure");
+    plan   = setup->get("FFTW3.Plan", "Patient");
     if      (plan == "Estimate"   ) perf_flag = FFTW_ESTIMATE;
     else if (plan == "Measure"    ) perf_flag = FFTW_MEASURE;
+    else if (plan == "Patient"    ) perf_flag = FFTW_PATIENT;
     else if (plan == "Exhaustive" ) perf_flag = FFTW_EXHAUSTIVE;
+    else    (-1, DMESG("No such FFTW3.Plan"));
 
     // Setup wisedom
     wisdom = setup->get("FFTW3.Wisdom", "");
@@ -60,8 +61,8 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
 
 #ifdef PARALLEL_OPENMP
     //this should use our global OpenMPI threads
-//    fftw_init_threads();
-//    fftw_plan_with_nthreads(parallel->numThreads);
+    //fftw_init_threads();
+    //fftw_plan_with_nthreads(parallel->numThreads);
 #endif
 
 #ifdef GKC_PARALLEL_MPI
@@ -73,55 +74,55 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
 #endif
     ////////////////////// Set for X-direction (FFT Poisson solver) /////////// 
     
-      // set and check bounds 
-      long X_NxLD, X_NxLlD, X_NkxL, X_NkxLlD, X_numElements, X_Nx = Nx; 
+    // set and check bounds 
+    long X_NxLD, X_NxLlD, X_NkxL, X_NkxLlD, X_numElements, X_Nx = Nx; 
       
-      X_numElements = fftw_mpi_local_size_1d(Nx, parallel->Comm[DIR_X], FFTW_FORWARD, 0, &X_NxLD, &X_NxLlD, &X_NkxL, &X_NkxLlD);
+    X_numElements = fftw_mpi_local_size_1d(Nx, parallel->Comm[DIR_X], FFTW_FORWARD, 0, &X_NxLD, &X_NxLlD, &X_NkxL, &X_NkxLlD);
       
-      FFTSolver::X_NkxL = X_NkxL;
+    FFTSolver::X_NkxL = X_NkxL;
       
-      // Prefactor of 2 for safety (is required otherwise we get crash, but why ?)
-      int numAlloc = 2 * X_numElements * NkyLD * NzLD * nfields;
+    // Prefactor of 2 for safety (is required otherwise we get crash, but why ?)
+    int numAlloc = 2 * X_numElements * NkyLD * NzLD * nfields;
 
-      // allocate arrays 
-      data_kXIn       = (CComplex *) fftw_alloc_complex(numAlloc);
-      data_kXOut      = (CComplex *) fftw_alloc_complex(numAlloc);
-      data_X_rOut     = (CComplex *) fftw_alloc_complex(numAlloc);
-      data_X_rIn      = (CComplex *) fftw_alloc_complex(numAlloc);
-      data_X_Transp_1 = (CComplex *) fftw_alloc_complex(numAlloc);
-      data_X_Transp_2 = (CComplex *) fftw_alloc_complex(numAlloc);
+    // allocate arrays 
+    data_kXIn       = (CComplex *) fftw_alloc_complex(numAlloc);
+    data_kXOut      = (CComplex *) fftw_alloc_complex(numAlloc);
+    data_X_rOut     = (CComplex *) fftw_alloc_complex(numAlloc);
+    data_X_rIn      = (CComplex *) fftw_alloc_complex(numAlloc);
+    data_X_Transp_1 = (CComplex *) fftw_alloc_complex(numAlloc);
+    data_X_Transp_2 = (CComplex *) fftw_alloc_complex(numAlloc);
       
-      check((NxLD != X_NxLD) ? -1 : 0, DMESG("Bounds to not align")); 
+    check((NxLD != X_NxLD) ? -1 : 0, DMESG("Bounds to not align")); 
          
-      // set and check bounds 
-      K1xLlD = X_NkxLlD;       K1xLuD = X_NkxLlD + X_NkxL - 1;
+    // set and check bounds 
+    K1xLlD = X_NkxLlD;       K1xLuD = X_NkxLlD + X_NkxL - 1;
 
-      // used only to calculate offset
-      nct::allocate Array_kX = nct::allocate(nct::Range(0,plasma->nfields), nct::Range(NzLlD,NzLD), nct::Range(NkyLlD, NkyLD), nct::Range(X_NkxLlD, X_NkxL));
+    // used only to calculate offset
+    nct::allocate Array_kX = nct::allocate(nct::Range(0,plasma->nfields), nct::Range(NzLlD,NzLD), nct::Range(NkyLlD, NkyLD), nct::Range(X_NkxLlD, X_NkxL));
       
-      // Calculated shifted pointer for CEAN
-      kXIn  = Array_kX.zero(data_kXIn );
-      kXOut = Array_kX.zero(data_kXOut);
+    // Calculated shifted pointer for CEAN
+    kXIn  = Array_kX.zero(data_kXIn );
+    kXOut = Array_kX.zero(data_kXOut);
 
-      // fftw_plan fftw_mpi_plan_many_dft(int rnk, const ptrdiff_t *n, 
-      //     ptrdiff_t howmany, ptrdiff_t block, ptrdiff_t tblock, fftw_complex *in, fftw_complex *out,
-      //           MPI_Comm comm, int sign, unsigned flags);
+    // fftw_plan fftw_mpi_plan_many_dft(int rnk, const ptrdiff_t *n, 
+    //     ptrdiff_t howmany, ptrdiff_t block, ptrdiff_t tblock, fftw_complex *in, fftw_complex *out,
+    //           MPI_Comm comm, int sign, unsigned flags);
+    
+    long numTrans = NkyLD * NzLD * nfields;
       
-      long numTrans = NkyLD * NzLD * nfields;
-      
-      plan_XForward_Fields  = fftw_mpi_plan_many_dft(1, &X_Nx, numTrans, NxLD, X_NkxL, (fftw_complex *) data_X_rIn, (fftw_complex *) data_kXOut , parallel->Comm[DIR_X], FFTW_FORWARD , perf_flag);
-      plan_XBackward_Fields = fftw_mpi_plan_many_dft(1, &X_Nx, numTrans, NxLD, X_NkxL, (fftw_complex *) data_kXIn , (fftw_complex *) data_X_rOut, parallel->Comm[DIR_X], FFTW_BACKWARD, perf_flag);
+    plan_XForward_Fields  = fftw_mpi_plan_many_dft(1, &X_Nx, numTrans, NxLD, X_NkxL, (fftw_complex *) data_X_rIn, (fftw_complex *) data_kXOut , parallel->Comm[DIR_X], FFTW_FORWARD , perf_flag);
+    plan_XBackward_Fields = fftw_mpi_plan_many_dft(1, &X_Nx, numTrans, NxLD, X_NkxL, (fftw_complex *) data_kXIn , (fftw_complex *) data_X_rOut, parallel->Comm[DIR_X], FFTW_BACKWARD, perf_flag);
 
-       // check plans (maybe null if linked e.g. to MKL)
-       if(plan_XForward_Fields  == NULL) check(-1, DMESG("Plan not supported"));
-       if(plan_XBackward_Fields == NULL) check(-1, DMESG("Plan not supported"));
+    // check plans (maybe null if linked e.g. to MKL)
+    if(plan_XForward_Fields  == NULL) check(-1, DMESG("Plan not supported"));
+    if(plan_XBackward_Fields == NULL) check(-1, DMESG("Plan not supported"));
 
-      // Fields have to be continuous in howmanyfields, and thus we have to transpose the array (use in-place) 
-      // add factor of 2 because we deal with complex numbers not real numbers
-      // plan_FieldTranspose = plan_transpose('R', 2* NxLD, 2 * NkyLD * NzLD * nfields, (double *) kXOut.data(), (double *) kXOut.data());
-      // plan_FieldTranspose_1 = plan_transpose('R', 2 * NkyLD * NzLD * nfields, 2*   NxLD, (double *) data_X_Transp_1, (double *) data_X_Transp_2);
-      // plan_FieldTranspose_2 = plan_transpose('C', 2 * NkyLD * NzLD * nfields, 2 * X_NkxL, (double *) data_X_Transp_1, (double *) data_X_Transp_2);
-      // check(((plan_FieldTranspose_1 == NULL) || (plan_FieldTranspose_2 == NULL)) ? -1 : 0, DMESG("Transpose planner null"));
+    // Fields have to be continuous in howmanyfields, and thus we have to transpose the array (use in-place) 
+    // add factor of 2 because we deal with complex numbers not real numbers
+    // plan_FieldTranspose = plan_transpose('R', 2* NxLD, 2 * NkyLD * NzLD * nfields, (double *) kXOut.data(), (double *) kXOut.data());
+    // plan_FieldTranspose_1 = plan_transpose('R', 2 * NkyLD * NzLD * nfields, 2*   NxLD, (double *) data_X_Transp_1, (double *) data_X_Transp_2);
+    // plan_FieldTranspose_2 = plan_transpose('C', 2 * NkyLD * NzLD * nfields, 2 * X_NkxL, (double *) data_X_Transp_1, (double *) data_X_Transp_2);
+    // check(((plan_FieldTranspose_1 == NULL) || (plan_FieldTranspose_2 == NULL)) ? -1 : 0, DMESG("Transpose planner null"));
 
             
    
@@ -129,25 +130,25 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
     
     ////////////////////////////////// Define Fourier transforms for Y ///////////////// 
     
-      //                                                  howmany                                  stride distance
-      //  leave space for boundary conditions
-      // 
-      //   kYIn[Nky][Nx]
-      //
-      //   [ y0x0 y0x1 y0x2 ... ] [y1x0 y1x1 y1x2 ...] [y2x0 y2x1 ... ] ...
-      //
-      //   thus our FFT routine has stride of NxLD, however our output is same
-      //
-      //   [ y0x0 y0x1 y0x2 ... ] [y1x0 y1x1 y1x2 ...] [y2x0 y2x1 ... ] ...
-      //
-      //   
-      //    from fftw3-doc :
-      //
-      //       fftw_plan fftw_plan_many_dft(int rank, const int *n, int howmany,
-      //                                    fftw_complex *in, const int *inembed,
-      //                                    int istride, int idist,
+    //                                                  howmany                                  stride distance
+    //  leave space for boundary conditions
+    // 
+    //   kYIn[Nky][Nx]
+    //
+    //   [ y0x0 y0x1 y0x2 ... ] [y1x0 y1x1 y1x2 ...] [y2x0 y2x1 ... ] ...
+    //
+    //   thus our FFT routine has stride of NxLD, however our output is same
+    //
+    //   [ y0x0 y0x1 y0x2 ... ] [y1x0 y1x1 y1x2 ...] [y2x0 y2x1 ... ] ...
+    //
+    //   
+    //    from fftw3-doc :
+    //
+    //       fftw_plan fftw_plan_many_dft(int rank, const int *n, int howmany,
+    //                                    fftw_complex *in, const int *inembed,
+    //                                    int istride, int idist,
       //                                    fftw_complex *out, const int *onembed,
-      //                                    int ostride, int odist,
+    //                                    int ostride, int odist,
       //                                    int sign, unsigned flags);
       //
       //      location of input : in + k * idist
@@ -161,9 +162,6 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
       //
       
       //perf_flag |= FFTW_UNALIGNED;
-#ifdef PARALLEL_OPENMP
-  //  fftw_plan_with_nthreads(1);
-#endif
       
       // Orginal
       //
@@ -178,7 +176,6 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
       doubleAA   rY_BD4[NyLD ][NxLB+4]; CComplexAA kY_BD4[NkyLD][NxLB+4];
       plan_YBackward_Field = fftw_plan_many_dft_c2r(1, &NyLD, NxLB+4, (fftw_complex *) kY_BD4, NULL, NxLB+4, 1, (double *) rY_BD4, NULL, NxLB+4, 1, perf_flag);
       
-
       
       doubleAA   rY_BD2[NyLD ][NxLB]; CComplexAA kY_BD2[NkyLD][NxLB];
       plan_YBackward_PSF   = fftw_plan_many_dft_c2r(1, &NyLD, NxLB  , (fftw_complex *) kY_BD2, NULL, NxLB  , 1, (double *) rY_BD2, NULL, NxLB  , 1, perf_flag);
@@ -196,13 +193,7 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
       AA_NkyLD  = 3 * (Nky+1)   / 2   ; 
       AA_NyLD  = 2 * AA_NkyLD - 2     ;
       
-      //int AA_NkyLlD = NkyLlD              ; 
-      //int AA_NkyLuD = NkyLlD + AA_NkyLD -1;
-                
-          
       double   rY_AA[AA_NyLD][NxLD]; CComplex kY_AA[AA_NkyLD][NxLD];
-      
-
       
       //plan_AA_YForward  = fftw_plan_many_dft_r2c(1, &AA_NyLD, NxLD, (double      *) rY_AA, NULL, 1, AA_NyLD ,  (fftw_complex*) kY_AA, NULL, 1, AA_NkyLD, perf_flag);
       //plan_AA_YBackward = fftw_plan_many_dft_c2r(1, &AA_NyLD, NxLD, (fftw_complex*) kY_AA, NULL, 1, AA_NkyLD,  (double      *) rY_AA, NULL, 1, AA_NyLD , perf_flag);
@@ -210,15 +201,9 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
       plan_AA_YForward  = fftw_plan_many_dft_r2c(1, &AA_NyLD, NxLD, (double      *) rY_AA, NULL, NxLD ,  1, (fftw_complex*) kY_AA, NULL, NxLD, 1, perf_flag);
       plan_AA_YBackward = fftw_plan_many_dft_c2r(1, &AA_NyLD, NxLD, (fftw_complex*) kY_AA, NULL, NxLD ,  1, (double      *) rY_AA, NULL, NxLD, 1, perf_flag);
 
-#ifdef PARALLEL_OPENMP
-//    fftw_plan_with_nthreads(parallel->numThreads);
-#endif
-
-
     setNormalizationConstants();
    
     // export it again (only by root job ?!)
-   
     if(wisdom != "") fftw_export_wisdom_to_filename(wisdom.c_str());
    
   }
@@ -229,34 +214,28 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
 /// too much crap here ..... :(
 void FFTSolver_fftw3::solve(const FFT_Type type, const FFT_Sign direction, void *in, void *out) 
 {
-   
-    if(type == FFT_Type::X_FIELDS) {
+  
+  if(type == FFT_Type::X_FIELDS) {
              
-   
-     if(in == nullptr)  check(-1, DMESG("Need Pointer to array"));
-
-     
-     if     (direction == FFT_Sign::Forward )  {
+    if     (direction == FFT_Sign::Forward )  {
     
-       // fftw3-mpi many transform requires specific input (thus we have to transpose our data)
-       transpose(NxLD, NkyLD, NzLD, plasma->nfields      , (A4zz) ((CComplex *) in)             , (A4zz) ((CComplex *) data_X_Transp_1));                
-       fftw_mpi_execute_dft(plan_XForward_Fields , (fftw_complex *) data_X_Transp_1 , (fftw_complex *) data_X_Transp_2); 
-       transpose_rev(X_NkxL, NkyLD, NzLD, plasma->nfields, (A4zz) ((CComplex *) data_X_Transp_2), (A4zz) ((CComplex *) data_kXOut));               
-
-     }
+      // fftw3-mpi many transform requires specific input (thus we have to transpose our data)
+      transpose(NxLD, NkyLD, NzLD, plasma->nfields, (A4zz) ((CComplex *) in), (A4zz) ((CComplex *) data_X_Transp_1));                
+      fftw_mpi_execute_dft(plan_XForward_Fields , (fftw_complex *) data_X_Transp_1 , (fftw_complex *) data_X_Transp_2); 
+      transpose_rev(X_NkxL, NkyLD, NzLD, plasma->nfields, (A4zz) ((CComplex *) data_X_Transp_2), (A4zz) ((CComplex *) data_kXOut));               
+    }
     
-     else if(direction == FFT_Sign::Backward) {
+    else if(direction == FFT_Sign::Backward) {
                   
-       // fftw3-mpi many transform requires specific input (thus we have to transpose our data and backtransform)
-       transpose(X_NkxL, NkyLD, NzLD, plasma->nfields, (A4zz) ((CComplex *) data_kXIn), (A4zz) ((CComplex *) data_X_Transp_1));                
-       fftw_mpi_execute_dft(plan_XBackward_Fields, (fftw_complex *) data_X_Transp_1, (fftw_complex *) data_X_Transp_2 ); 
-       transpose_rev(NxLD, NkyLD, NzLD, plasma->nfields, (A4zz) ((CComplex *) data_X_Transp_2), (A4zz) ((CComplex *) in));                
-     }
+      // fftw3-mpi many transform requires specific input (thus we have to transpose our data and backtransform)
+      transpose(X_NkxL, NkyLD, NzLD, plasma->nfields, (A4zz) ((CComplex *) data_kXIn), (A4zz) ((CComplex *) data_X_Transp_1));                
+      fftw_mpi_execute_dft(plan_XBackward_Fields, (fftw_complex *) data_X_Transp_1, (fftw_complex *) data_X_Transp_2 ); 
+      transpose_rev(NxLD, NkyLD, NzLD, plasma->nfields, (A4zz) ((CComplex *) data_X_Transp_2), (A4zz) ((CComplex *) in));                
+    }
      
-     else   check(-1, DMESG("No such FFT direction"));
-
+    else   check(-1, DMESG("No such FFT direction"));
      
-   }  
+  }  
   
    // These are speed critical (move above x-transformation)
    else if(type == FFT_Type::Y_FIELDS ) {
@@ -420,13 +399,13 @@ fftw_plan plan_transpose(char storage_type, int rows, int cols, double *in, doub
 }
 
     
-void FFTSolver_fftw3::printOn(std::ostream &output) const {
+void FFTSolver_fftw3::printOn(std::ostream &output) const 
+{
 
-         output   << "FFTSolver  |  using fftw-3 interface for (" << std::string(fftw_version) << ")" << std::endl;
-         output   << "           |  Plan : " << (plan == "" ? "None" : plan) << " Wisdom : " << ((wisdom=="") ? "None" : wisdom) << std::endl;
+  output << "FFTSolver  |  using fftw-3 interface for (" << std::string(fftw_version) << ")" << std::endl;
+  output << "           |  Plan : " << (plan == "" ? "None" : plan) << " Wisdom : " << ((wisdom=="") ? "None" : wisdom) << std::endl;
          
 }
-
 
 
 // restrict pointers
@@ -434,8 +413,8 @@ void FFTSolver_fftw3::printOn(std::ostream &output) const {
 void FFTSolver_fftw3::transpose(int Nx, int Ny, int Nz, int Nq, CComplex In[Nq][Nz][Ny][Nx], CComplex OutT[Nx][Ny][Nz][Nq])
 {
   #pragma ivdep
-  for(int x=0; x < Nx; x++ ) { for(int y=0; y < Ny; y++ ) {  
-  for(int z=0; z < Nz; z++ ) { for(int q=0; q < Nq; q++ ) {  
+  for(int x = 0; x < Nx; x++ ) { for(int y = 0; y < Ny; y++ ) {  
+  for(int z = 0; z < Nz; z++ ) { for(int q = 0; q < Nq; q++ ) {  
 
         OutT[x][y][z][q] = In[q][z][y][x];
    

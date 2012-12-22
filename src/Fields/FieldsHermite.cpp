@@ -37,7 +37,7 @@ FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileI
   
   PetscInitialize(&setup->argc, &setup->argv, (char *) 0,  FieldsHermite_help);
   
-  //PetscPopSignalHandler();
+  PetscPopSignalHandler();
   
   GyroMatrix = Array4<Matrix *>(grid->RkyLD, grid->RzLD, grid->RmLD, grid->RsLD); 
   MatrixPoissonSolverLHS = Array2<MatrixSolver *>(grid->RkyLD, grid->RzLD);
@@ -132,8 +132,6 @@ CComplex FieldsHermite::getElements(const int x, const int n, const double r, in
         
   
   // Integration is very sensitif on order ( why ? some bug ?? )
-  check(-1, DMESG("Fix _Complex double -> std::complex<double> cast"));
-  
   return 1./(2.*M_PI) * *(reinterpret_cast<CComplex*> (&(Integrate::GaussLegendre(Integrand, 0., 2.*M_PI, 128))));
         
 

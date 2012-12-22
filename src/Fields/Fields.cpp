@@ -40,7 +40,6 @@ grid(_grid), parallel(_parallel), geo(_geo), solveEq(0)
   ArrayBoundX = nct::allocate(nct::Range(0,    4 * NkyLD * NzLD * NmLD * NsLD * Nq))(&SendXl, &SendXu, &RecvXl, &RecvXu);
   ArrayBoundZ = nct::allocate(nct::Range(0, NxLD * NkyLD *    2 * NmLD * NsLD * Nq))(&SendZl, &SendZu, &RecvZl, &RecvZu);
        
-      
   //  brackets should be 1/2 but due to numerical errors, we should calculate it ourselves, see Dannert[2] 
   Yeb = (1./sqrt(M_PI) * __sec_reduce_add(pow2(V[NvLlD:NvLD]) * exp(-pow2(V[NvLlD:NvLD]))) * dv) * geo->eps_hat * plasma->beta; 
 
@@ -57,7 +56,6 @@ Fields::~Fields()
 
 void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
 {
-
   // calculate source terms  Q (Q is overwritten in the first iteration )
   for(int s = NsLlD, loop=0; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++, loop++) {
 
@@ -126,7 +124,7 @@ void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
         #pragma omp for collapse(2)
         for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {
 
-          Field[0:Nq][s][m][z][y_k][NxLlD:NxLD] = Qm[0:Nq][z][y_k][NxLlD:NxLD]   ;
+          Field[0:Nq][s][m][z][y_k][NxLlD:NxLD] = Qm[0:Nq][z][y_k][NxLlD:NxLD];
 
         } }
 
@@ -147,9 +145,9 @@ void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
 }
 
 
-void Fields::calculateChargeDensity(const CComplex f0         [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                    const CComplex f          [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                    CComplex       Field0             [Nq][NzLD][NkyLD][NxLD]      ,
+void Fields::calculateChargeDensity(const CComplex f0      [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                    const CComplex f       [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                          CComplex Field0          [Nq][NzLD][NkyLD][NxLD]      ,
                                     const int m, const int s) 
 {
   
@@ -172,12 +170,11 @@ void Fields::calculateChargeDensity(const CComplex f0         [NsLD][NmLD][NzLB]
 
 
 
-void Fields::calculateParallelCurrentDensity(const CComplex f0   [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                             const CComplex f    [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                             CComplex       Field0       [Nq][NzLD][NkyLD][NxLD]      ,
+void Fields::calculateParallelCurrentDensity(const CComplex f0    [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                             const CComplex f     [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                                                   CComplex Field0        [Nq][NzLD][NkyLD][NxLD]      ,
                                              const int m, const int s                                  ) 
 {
-   
   const double qa_dvdm = plasma->species[s].q * plasma->species[s].alpha  * plasma->B0 * M_PI * dv * grid->dm[m] ;
    
   #pragma omp for collapse(2) nowait
