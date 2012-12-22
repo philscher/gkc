@@ -74,19 +74,20 @@ VlasovIsland::VlasovIsland(Grid *_grid, Parallel *_parallel, Setup *_setup, File
       -4.17566040e-05, 1.01434574e-03, -1.56855609e-02, 1.50685821e-01,
       -8.66414053e-01, 3.18134960e+00,  6.27800358e-01 };
 
-    const double width_scale = evalPoly(11, polyIsland, width);
+    const double width_scale = (width == 0.) ? 0. : evalPoly(11, polyIsland, abs(width));
 
-
+    auto sign = [=](double a) { return a >= 0. ? 1. : -1.;} ;
 
     // we need to translate island width size to translation size. 
+     MagIs   [x] = 0.5 * sign(width) * pow2(width_scale) * shear/16. * psi ;//cos(zeta * X[x]);
+    dMagIs_dx[x] = 0.5 * sign(width) * pow2(width_scale) * shear/16. * dpsi;// - sin(zeta * X[x]) * zeta;
     
-    MagIs[x]     = 0.5 * pow2(width_scale) * shear/16. * psi ;//cos(zeta * X[x]);
-    dMagIs_dx[x] = 0.5 * pow2(width_scale) * shear/16. * dpsi;// - sin(zeta * X[x]) * zeta;
-
     //MagIs[x]     = 0.5 * width*width*shear/16.  * cos(zeta * X[x]);
     //dMagIs_dx[x] = 0.5 * width*width*shear/16. *  (-sin(zeta * X[x])) * zeta;
  
     }
+        
+//    for(int x=NxLlD; x<= NxLuD;x++) std::cout << "------0----> " << dMagIs_dx[x] << std::endl; 
   
    initDataOutput(setup, fileIO);
 
@@ -95,18 +96,31 @@ VlasovIsland::VlasovIsland(Grid *_grid, Parallel *_parallel, Setup *_setup, File
 
 void VlasovIsland::solve(std::string equation_type, Fields *fields, CComplex *f_in, CComplex *f_out, double dt, int rk_step, const double rk[3]) 
 {
-
   // do I need both, we can stick to e-m ? Speed penality ?
   if(0) ;  
-  
   else if(equation_type == "2D_Island") 
     
       Vlasov_2D_Island((A6zz) f_in, (A6zz) f_out, (A6zz) f0, (A6zz) f, 
                        (A6zz) ft  , (A6zz) Coll, (A6zz) fields->Field, (A3zz) nonLinearTerm,
                        MagIs, dMagIs_dx, X, V, M, dt, rk_step, rk);
-  
-  else   check(-1, DMESG("No Such Equation"));
+  else if(equation_type == "2D_Island_Filter") 
+    
+      Vlasov_2D_Island_filter((A6zz) f_in, (A6zz) f_out, (A6zz) f0, (A6zz) f, 
+                       (A6zz) ft  , (A6zz) Coll, (A6zz) fields->Field, (A3zz) nonLinearTerm,
+                       MagIs, dMagIs_dx, X, V, M, dt, rk_step, rk);
 
+  else if(equation_type == "2D_Island_Equi")
+
+      Vlasov_2D_Island_Equi((A6zz) f_in, (A6zz) f_out, (A6zz) f0, (A6zz) f, 
+                       (A6zz) ft  , (A6zz) Coll, (A6zz) fields->Field, (A3zz) nonLinearTerm,
+                       X, V, M, dt, rk_step, rk);
+  else if(equation_type == "2D_Island_Rotation") 
+    
+      Vlasov_2D_Island_Rotation((A6zz) f_in, (A6zz) f_out, (A6zz) f0, (A6zz) f, 
+                       (A6zz) ft  , (A6zz) Coll, (A6zz) fields->Field, (A3zz) nonLinearTerm,
+                       MagIs, dMagIs_dx, X, V, M, dt, rk_step, rk);
+    
+  else   check(-1, DMESG("No Such Equation"));
 
 
   return;
@@ -114,22 +128,20 @@ void VlasovIsland::solve(std::string equation_type, Fields *fields, CComplex *f_
 }
 
 void VlasovIsland::Vlasov_2D_Island(
-                           CComplex fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex Coll      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex fs        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex fss       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f0  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f1  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex ft        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Coll[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
                            CComplex nonLinearTerm                  [NkyLD][NxLD  ][NvLD],
-                           const double MagIs[NxGB], const double dMagIs[NxGB], 
-                           const double X[NxGB], const double V[NvGB], const double M[NmGB],
+                           const double MagIs[NxGB], const double dMagIs_dx[NxGB], 
+                           const double X[NxGB+4], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3])
 { 
 
   
-    const CComplex imag = ((CComplex) (0. + 1.j));
-
     for(int s = NsLlD; s <= NsLuD; s++) {
         
       // small abbrevations
@@ -157,19 +169,350 @@ void VlasovIsland::Vlasov_2D_Island(
 
         
         // Note : for negative modes we need to use complex conjugate value
-        const CComplex ky     = imag * fft->ky(y_k);
+        const CComplex ky     = _imag * fft->ky(y_k);
         
         // We need to take care of boundaries. For poloidal numbers y_k > N_k-1, we  use zero.
         // For y_k < 0, the corresponding complex conjugate value is used.
         // is ky_p1 = ky or not ?!
-        const CComplex ky_1   = imag * fft->ky(i);
-        const CComplex ky_p1  = ((y_k+i) >= Nky-1) ? 0.    : imag * fft->ky(y_k+i);
-        const CComplex ky_m1  = imag * fft->ky(y_k-i); 
+        const CComplex ky_1   = _imag * fft->ky(i);
+        const CComplex ky_p1  = ((y_k+i) >= Nky-1) ? 0.    : _imag * fft->ky(y_k+i);
+        const CComplex ky_m1  = _imag * fft->ky(y_k-i); 
         
-        //const CComplex ky_1   = imag * fft->ky(1);
-        //const CComplex ky_m1  = imag * (y_k == 0    ) ? -fft-ky_1 : imag * fft->ky(y_k-i); 
-        //const CComplex ky_p1  = ((y_k+i) >= Nky-1) ? 0.    : imag * fft->ky(y_k+i);
-        //const CComplex ky_m1  = imag * fft->ky(y_k-i);
+        //const CComplex ky_1   = _imag * fft->ky(1);
+        //const CComplex ky_m1  = _imag * (y_k == 0    ) ? -fft-ky_1 : _imag * fft->ky(y_k-i); 
+        //const CComplex ky_p1  = ((y_k+i) >= Nky-1) ? 0.    : _imag * fft->ky(y_k+i);
+        //const CComplex ky_m1  = _imag * fft->ky(y_k-i);
+
+        
+        for(int x=NxLlD; x<= NxLuD;x++) {  
+
+          
+          const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];
+          
+          const CComplex dphi_dx  = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1])
+                                      - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2])) * _kw_12_dx  ;  
+
+          /////////////////////////////////////////////////// Magnetic Island Contribution    /////////////////////////////////////////
+        
+          // NOTE :  at the Nyquist frequency we have no coupling with higher frequencies (actually phi(m=Ny) = 0. anyway)
+
+          const CComplex     phi_p1 = ((y_k+i) >= Nky-1) ? 0.                                          : Fields[Field::phi][s][m][z][y_k+i][x] ;
+          const CComplex     phi_m1 = ((y_k-i) <  0    ) ? conj(Fields[Field::phi][s][m][z][i-y_k][x]) : Fields[Field::phi][s][m][z][y_k-i][x] ;
+          //const CComplex     phi_m1 = ( y_k ==  0   ) ? (Fields[Field::phi][s][m][z][1][x]) : Fields[Field::phi][s][m][z][y_k-1][x] ;
+
+          
+          // X-derivative (First Derivative with Central Difference 4th) of phi for poloidal mode +1, take care of Nyquist frequency
+          const CComplex dphi_dx_p1 = ( (y_k+i) >= Nky-1) 
+                                   ? 0.
+
+                                   :      (8.*(Fields[Field::phi][s][m][z][y_k+i][x+1] - Fields[Field::phi][s][m][z][y_k+i][x-1]) 
+                                            - (Fields[Field::phi][s][m][z][y_k+i][x+2] - Fields[Field::phi][s][m][z][y_k+i][x-2])) * _kw_12_dx  ;
+
+          // X-derivative (1st deriv. CD-4 )of phi for poloidal mode -1, take care of complex conjugate relation for y_k=-1
+          const CComplex dphi_dx_m1 = ( (y_k-i) < 0 ) 
+                                   ?  conj(8.*(Fields[Field::phi][s][m][z][i-y_k][x+1] - Fields[Field::phi][s][m][z][i-y_k][x-1]) 
+                                            - (Fields[Field::phi][s][m][z][i-y_k][x+2] - Fields[Field::phi][s][m][z][i-y_k][x-2])) * _kw_12_dx
+                                   :      (8.*(Fields[Field::phi][s][m][z][y_k-i][x+1] - Fields[Field::phi][s][m][z][y_k-i][x-1]) 
+                                            - (Fields[Field::phi][s][m][z][y_k-i][x+2] - Fields[Field::phi][s][m][z][y_k-i][x-2])) * _kw_12_dx ;
+        
+       
+        // The magnetic island
+    
+        //  For the latter term, the intrigate derivative is the \partial_y * Island
+        //  remember the island structure is 
+        //  \partial_y (e^{imx} + e^{-imx}) = (i m) * ( e^{imx} - e^{-imx} )
+        //
+        const CComplex Island_phi =   dMagIs_dx[x] * ( ky_m1 * phi_m1 + ky_p1 * phi_p1) - MagIs[x] *  ky_1 * ( dphi_dx_m1 -  dphi_dx_p1);
+        
+             ///////////////////////////////////////////////////////////////////////////////
+            
+        const CComplex kp = geo->get_kp(x, ky, z);
+           
+        CComplex half_eta_kperp2_phi = 0;
+
+        if(isGyro1) { // first order approximation for gyro-kinetics
+             const CComplex ddphi_dx_dx = (16. *(Fields[Field::phi][s][m][z][y_k][x+1] + Fields[Field::phi][s][m][z][y_k][x-1]) 
+                                              - (Fields[Field::phi][s][m][z][y_k][x+2] + Fields[Field::phi][s][m][z][y_k][x-2]) 
+                                         - 30.*phi_) * _kw_12_dx_dx;
+
+             half_eta_kperp2_phi     = rho_t2 * 0.5 * w_T  * ( (ky*ky) * phi_ + ddphi_dx_dx ) ; 
+         }
+             
+        
+        // velocity space magic
+        simd_for(int v=NvLlD; v<= NvLuD;v++) {
+
+            const CComplex g    = fs[s][m][z][y_k][x][v];
+            const CComplex f0_  = f0[s][m][z][y_k][x][v];
+
+
+        /////////////////////////////////////////////////// Magnetic Island Contribution    /////////////////////////////////////////
+      
+          
+        // X-derivative of f1 (1-CD4) for poloidal mode +1, take care of Nyquist frequency
+        const CComplex dfs_dx_p1  =  ((y_k+i) >= Nky-i)
+
+                            ? 0.
+
+                            : (8. *(fs[s][m][z][y_k+i][x+1][v] - fs[s][m][z][y_k+i][x-1][v])  
+                                 - (fs[s][m][z][y_k+i][x+2][v] - fs[s][m][z][y_k+i][x-2][v])) * _kw_12_dx;
+
+
+        // X-derivative of f1 (1-CD4) for poloidal mode -1, take care of complex conjugate relation for y_k=-1 
+        const CComplex dfs_dx_m1  =  ( (y_k-i) < 0  )
+
+                        ? conj(8. *(fs[s][m][z][i-y_k][x+1][v] - fs[s][m][z][i-y_k][x-1][v])  
+                                 - (fs[s][m][z][i-y_k][x+2][v] - fs[s][m][z][i-y_k][x-2][v])) * _kw_12_dx 
+
+                        :     (8. *(fs[s][m][z][y_k-i][x+1][v] - fs[s][m][z][y_k-i][x-1][v])  
+                                 - (fs[s][m][z][y_k-i][x+2][v] - fs[s][m][z][y_k-i][x-2][v])) * _kw_12_dx;
+
+        // Note Nky-1 is the maximum mode number Nky = 6 i-> [ 0, 1, 2, 3, 4, 5] 
+        const CComplex fs_p1      = ((y_k+i) >= Nky-1) ? 0.                             : fs[s][m][z][y_k+i][x][v] ;
+        const CComplex fs_m1      = ((y_k-i) <  0    ) ? conj(fs[s][m][z][i-y_k][x][v]) : fs[s][m][z][y_k-i][x][v] ;
+        //const CComplex fs_m1      = (y_k ==  0   ) ? (fs[s][m][z][1][x][v]) : fs[s][m][z][y_k-1][x][v] ;
+         
+        // Coupling of phase-space with Island mode-mode coupling
+        const CComplex Island_g =  dMagIs_dx[x] * (ky_m1 * fs_m1  + ky_p1 * fs_p1 )  -  MagIs[x]  * ky_1 *  (dfs_dx_m1  - dfs_dx_p1 )  ;
+
+
+        //// Hypervisocisty to stabilize simulation
+        /*
+        const double hypvisc_phi_val = -1.e-5;
+        
+        const CComplex d4_dx_phi    = (-39. *(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1])  
+                                      + 12. *(Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2]) 
+                                      + 56. * Fields[Field::phi][s][m][z][y_k][x  ])/pow4(dx);
+
+        const CComplex hypvisc_phi    = hypvisc_phi_val * ( d4_dx_phi + pow4(ky) * phi_);
+*/
+
+        /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
+             
+        const CComplex dg_dt =
+  //           +  hypvisc_phi
+             -  alpha * V[v] * (Island_g + sigma * Island_phi * f0_) +                // Island term
+             +  nonLinearTerm[y_k][x][v]                                             // Non-linear ( array is zero for linear simulations) 
+             +  ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])*kw_T  - sub)) * f0_ * 
+//                 phi_    )                     // Source term (Temperature/Density gradient)
+                (phi_ - (y_k == 1 ? V[v] * MagIs[x] : 0.  )  ) )                       // Source term (Temperature/Density gradient)
+     //        -  half_eta_kperp2_phi * f0_)                                            // Contributions from gyro-1 (0 if not neq Gyro-1)
+             -  alpha  * V[v]* kp  * ( g + sigma * phi_ * f0_)                        // Linear Landau damping
+             +  Coll[s][m][z][y_k][x][v]  ;                                           // Collisional operator
+         
+        //////////////////////////////////////////////////////////////////////////////////////////////////////
+        
+
+
+        //////////////////////////// Vlasov End ////////////////////////////
+        //  time-integrate the distribution function    
+        ft [s][m][z][y_k][x][v] = rk[0] * ft[s][m][z][y_k][x][v] + rk[1] * dg_dt             ;
+        fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v]         + (rk[2] * ft[s][m][z][y_k][x][v] + dg_dt) * dt;
+      
+        }}} }}
+   }
+
+}
+
+
+void VlasovIsland::initDataOutput(Setup *setup, FileIO *fileIO) 
+{
+    
+   hid_t islandGroup = check(H5Gcreate(fileIO->getFileID(), "/Islands",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("H5Gcreate"));
+          
+   // Length scale
+   check(H5LTset_attribute_double(islandGroup, ".", "MagIs"    , &MagIs[NxGlD]    , Nx), DMESG("Attribute"));
+   check(H5LTset_attribute_double(islandGroup, ".", "dMagIs_dx", &dMagIs_dx[NxGlD], Nx), DMESG("Attribute"));
+   
+   check(H5LTset_attribute_double(islandGroup, ".", "Width", &width, 1), DMESG("Attribute"));
+   check(H5LTset_attribute_double(islandGroup, ".", "Shear", &shear, 1), DMESG("Attribute"));
+   check(H5LTset_attribute_double(islandGroup, ".", "Omega", &omega, 1), DMESG("Attribute"));
+   check(H5LTset_attribute_int   (islandGroup, ".", "Mode" , &i    , 1), DMESG("Attribute"));
+         
+    H5Gclose(islandGroup);
+
+          
+
+}   
+
+void VlasovIsland::printOn(std::ostream &output) const 
+{
+
+         output   << " Island    |  Width : " << width << std::endl;
+}
+
+
+void VlasovIsland::Vlasov_2D_Island_Equi(
+                           CComplex fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Coll      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
+                           CComplex nonLinearTerm                  [NkyLD][NxLD  ][NvLD],
+                           const double X[NxGB+4], const double V[NvGB], const double M[NmGB],
+                           const double dt, const int rk_step, const double rk[3])
+{ 
+
+//        for(int x=NxLlD; x<= NxLuD;x++) std::cout << "------1----> " << dMagIs_dx[x] << std::endl; 
+
+
+    for(int s = NsLlD; s <= NsLuD; s++) {
+        
+      // small abbrevations
+      const double w_n   = plasma->species[s].w_n;
+      const double w_T   = plasma->species[s].w_T;
+      const double alpha = plasma->species[s].alpha;
+      const double sigma = plasma->species[s].sigma;
+      const double Temp  = plasma->species[s].T0;
+      const double sub   = (plasma->species[s].doGyro) ? 3./2. : 1./2.;
+
+      const double kw_T = 1./Temp;
+
+      bool isGyro1 = (plasma->species[s].gyroModel == "Gyro-1");
+      
+      const double rho_t2 = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0); 
+
+
+      for(int m=NmLlD; m<=NmLuD; m++) { for(int z=NzLlD; z<= NzLuD;z++) {  
+        
+        //calculate non-linear term (rk_step == 0 for eigenvalue calculations)
+        if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
+        
+        for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
+
+        
+        // Note : for negative modes we need to use complex conjugate value
+        const CComplex ky     = _imag * fft->ky(y_k) ;
+        
+        
+
+        
+        for(int x=NxLlD; x<= NxLuD;x++) {  
+
+          
+          const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];
+          
+          const CComplex dphi_dx  = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1])
+                                      - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2])) * _kw_12_dx  ;  
+
+        //  std::cout << "------1----> " << dMagIs_dx[x] << std::endl;  
+        const CComplex kp = geo->get_kp(x, ky, z) - dMagIs_dx[x] * ky;
+        //  std::cout << "------2----> " << kp << std::endl;  
+           
+        CComplex half_eta_kperp2_phi = 0;
+
+        
+        // velocity space magic
+        simd_for(int v=NvLlD; v<= NvLuD;v++) {
+
+            const CComplex g    = fs[s][m][z][y_k][x][v];
+            const CComplex f0_  = f0[s][m][z][y_k][x][v];
+
+
+        /////////////////////////////////////////////////// Magnetic Island Contribution    /////////////////////////////////////////
+      
+
+        /////////// Collisions ////////////////////////////////////////////////////////////////////
+
+        const CComplex dfs_dv    = (8.  *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) - 
+                                         (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2])) * _kw_12_dv;
+
+        const CComplex ddfs_dvv  = (16. *(fs[s][m][z][y_k][x][v+1] + fs[s][m][z][y_k][x][v-1]) -
+                                         (fs[s][m][z][y_k][x][v+2] + fs[s][m][z][y_k][x][v-2]) 
+                                    - 30.*fs[s][m][z][y_k][x][v  ]) * _kw_12_dv_dv;
+
+        //// Hypervisocisty to stabilize simulation
+        /*
+        const double hypvisc_phi_val = -1.e-5;
+        
+        const CComplex d4_dx_phi    = (-39. *(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1])  
+                                      + 12. *(Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2]) 
+                                      + 56. * Fields[Field::phi][s][m][z][y_k][x  ])/pow4(dx);
+
+        const CComplex hypvisc_phi    = hypvisc_phi_val * ( d4_dx_phi + pow4(ky) * phi_);
+*/
+
+        /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
+             
+        const CComplex dg_dt =
+             +  nonLinearTerm[y_k][x][v]                                             // Non-linear ( array is zero for linear simulations) 
+             +  ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])*kw_T  - sub)) * f0_ * phi_     // Driving term (Temperature/Density gradient)
+             -  half_eta_kperp2_phi * f0_)                                            // Contributions from gyro-1 (0 if not neq Gyro-1)
+             -  alpha  * V[v]* kp  * ( g + sigma * phi_ * f0_)                        // Linear Landau damping
+             +  Coll[s][m][z][y_k][x][v]  ;                                           // Collisional operator
+         
+        //////////////////////////////////////////////////////////////////////////////////////////////////////
+        
+
+
+        //////////////////////////// Vlasov End ////////////////////////////
+        //  time-integrate the distribution function    
+        ft [s][m][z][y_k][x][v] = rk[0] * ft[s][m][z][y_k][x][v] + rk[1] * dg_dt             ;
+        fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v]         + (rk[2] * ft[s][m][z][y_k][x][v] + dg_dt) * dt;
+      
+        }}} }}
+   }
+//  std::cout << "OUT" << std::flush;  
+
+}
+
+
+void VlasovIsland::Vlasov_2D_Island_filter(
+                           CComplex fs        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex fss       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f0  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f1  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex ft        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Coll[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
+                           CComplex nonLinearTerm                  [NkyLD][NxLD  ][NvLD],
+                           const double MagIs[NxGB], const double dMagIs_dx[NxGB], 
+                           const double X[NxGB+4], const double V[NvGB], const double M[NmGB],
+                           const double dt, const int rk_step, const double rk[3])
+{ 
+
+  
+    for(int s = NsLlD; s <= NsLuD; s++) {
+        
+      // small abbrevations
+      const double w_n   = plasma->species[s].w_n;
+      const double w_T   = plasma->species[s].w_T;
+      const double alpha = plasma->species[s].alpha;
+      const double sigma = plasma->species[s].sigma;
+      const double Temp  = plasma->species[s].T0;
+      const double sub   = (plasma->species[s].doGyro) ? 3./2. : 1./2.;
+
+      const double kw_T = 1./Temp;
+
+      bool isGyro1 = (plasma->species[s].gyroModel == "Gyro-1");
+      
+      const double rho_t2 = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0); 
+
+
+      for(int m=NmLlD; m<=NmLuD; m++) { for(int z=NzLlD; z<= NzLuD;z++) {  
+        
+        //calculate non-linear term (rk_step == 0 for eigenvalue calculations)
+        if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
+        
+        for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
+
+        
+        // Note : for negative modes we need to use complex conjugate value
+        const CComplex ky     = _imag * fft->ky(y_k);
+        
+        // We need to take care of boundaries. For poloidal numbers y_k > N_k-1, we  use zero.
+        // For y_k < 0, the corresponding complex conjugate value is used.
+        // is ky_p1 = ky or not ?!
+        const CComplex ky_1   = _imag * fft->ky(i);
+        const CComplex ky_p1  = ((y_k+i) >= Nky-1) ? 0.    : _imag * fft->ky(y_k+i);
+        const CComplex ky_m1  = _imag * fft->ky(y_k-i); 
+        
+        //const CComplex ky_1   = _imag * fft->ky(1);
+        //const CComplex ky_m1  = _imag * (y_k == 0    ) ? -fft-ky_1 : _imag * fft->ky(y_k-i); 
+        //const CComplex ky_p1  = ((y_k+i) >= Nky-1) ? 0.    : _imag * fft->ky(y_k+i);
+        //const CComplex ky_m1  = _imag * fft->ky(y_k-i);
 
         
         for(int x=NxLlD; x<= NxLuD;x++) {  
@@ -287,14 +630,14 @@ void VlasovIsland::Vlasov_2D_Island(
         /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
              
         const CComplex dg_dt =
-  //           +  hypvisc_phi
+          ky_filter[y_k] * (                                                          // filter artifically remove parts
              -  alpha * V[v] * (Island_g + sigma * Island_phi * f0_) +                // Island term
              +  nonLinearTerm[y_k][x][v]                                             // Non-linear ( array is zero for linear simulations) 
              +  ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])*kw_T  - sub)) * f0_ * phi_    // Driving term (Temperature/Density gradient)
              -  half_eta_kperp2_phi * f0_)                                            // Contributions from gyro-1 (0 if not neq Gyro-1)
              -  alpha  * V[v]* kp  * ( g + sigma * phi_ * f0_)                        // Linear Landau damping
-             +  Coll[s][m][z][y_k][x][v]  ;                                           // Collisional operator
-         
+             +  Coll[s][m][z][y_k][x][v]                                             // Collisional operator
+             );
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         
 
@@ -310,29 +653,195 @@ void VlasovIsland::Vlasov_2D_Island(
 }
 
 
-void VlasovIsland::initDataOutput(Setup *setup, FileIO *fileIO) 
-{
+void VlasovIsland::Vlasov_2D_Island_Rotation(
+                           CComplex fs        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex fss       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f0  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f1  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex ft        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Coll[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
+                           CComplex nonLinearTerm                  [NkyLD][NxLD  ][NvLD],
+                           const double MagIs[NxGB], const double dMagIs_dx[NxGB], 
+                           const double X[NxGB+4], const double V[NvGB], const double M[NmGB],
+                           const double dt, const int rk_step, const double rk[3])
+{ 
+
+    static double Time = 0.;  if(rk_step == 1) Time += dt;
+
+    const CComplex IslandPhase = cexp(_imag * Time * omega);
+
+
+    for(int s = NsLlD; s <= NsLuD; s++) {
+        
+      // small abbrevations
+      const double w_n   = plasma->species[s].w_n;
+      const double w_T   = plasma->species[s].w_T;
+      const double alpha = plasma->species[s].alpha;
+      const double sigma = plasma->species[s].sigma;
+      const double Temp  = plasma->species[s].T0;
+      const double sub   = (plasma->species[s].doGyro) ? 3./2. : 1./2.;
+
+      const double kw_T = 1./Temp;
+
+      bool isGyro1 = (plasma->species[s].gyroModel == "Gyro-1");
+      
+      const double rho_t2 = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0); 
+
+
+      for(int m=NmLlD; m<=NmLuD; m++) { for(int z=NzLlD; z<= NzLuD;z++) {  
+        
+        //calculate non-linear term (rk_step == 0 for eigenvalue calculations)
+        if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
+        
+        #pragma omp for
+        for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
+
+        
+        // Note : for negative modes we need to use complex conjugate value
+        const CComplex ky     = _imag * fft->ky(y_k);
+        
+        // We need to take care of boundaries. For poloidal numbers y_k > N_k-1, we  use zero.
+        // For y_k < 0, the corresponding complex conjugate value is used.
+        // is ky_p1 = ky or not ?!
+        const CComplex ky_1   = _imag * fft->ky(i);
+        const CComplex ky_p1  = ((y_k+i) >= Nky-1) ? 0.    : _imag * fft->ky(y_k+i);
+        const CComplex ky_m1  = _imag * fft->ky(y_k-i); 
+        
+        //const CComplex ky_1   = _imag * fft->ky(1);
+        //const CComplex ky_m1  = _imag * (y_k == 0    ) ? -fft-ky_1 : _imag * fft->ky(y_k-i); 
+        //const CComplex ky_p1  = ((y_k+i) >= Nky-1) ? 0.    : _imag * fft->ky(y_k+i);
+        //const CComplex ky_m1  = _imag * fft->ky(y_k-i);
+
+        
+        for(int x=NxLlD; x<= NxLuD;x++) {  
+
+          
+          const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];
+          
+          const CComplex dphi_dx  = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1])
+                                      - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2])) * _kw_12_dx  ;  
+
+          /////////////////////////////////////////////////// Magnetic Island Contribution    /////////////////////////////////////////
+        
+          // NOTE :  at the Nyquist frequency we have no coupling with higher frequencies (actually phi(m=Ny) = 0. anyway)
+
+          const CComplex     phi_p1 = ((y_k+i) >= Nky-1) ? 0.                                          : Fields[Field::phi][s][m][z][y_k+i][x] ;
+          const CComplex     phi_m1 = ((y_k-i) <  0    ) ? conj(Fields[Field::phi][s][m][z][i-y_k][x]) : Fields[Field::phi][s][m][z][y_k-i][x] ;
+          //const CComplex     phi_m1 = ( y_k ==  0   ) ? (Fields[Field::phi][s][m][z][1][x]) : Fields[Field::phi][s][m][z][y_k-1][x] ;
+
+          
+          // X-derivative (First Derivative with Central Difference 4th) of phi for poloidal mode +1, take care of Nyquist frequency
+          const CComplex dphi_dx_p1 = ( (y_k+i) >= Nky-1) 
+                                   ? 0.
+
+                                   :      (8.*(Fields[Field::phi][s][m][z][y_k+i][x+1] - Fields[Field::phi][s][m][z][y_k+i][x-1]) 
+                                            - (Fields[Field::phi][s][m][z][y_k+i][x+2] - Fields[Field::phi][s][m][z][y_k+i][x-2])) * _kw_12_dx  ;
+
+          // X-derivative (1st deriv. CD-4 )of phi for poloidal mode -1, take care of complex conjugate relation for y_k=-1
+          const CComplex dphi_dx_m1 = ( (y_k-i) < 0 ) 
+                                   ?  conj(8.*(Fields[Field::phi][s][m][z][i-y_k][x+1] - Fields[Field::phi][s][m][z][i-y_k][x-1]) 
+                                            - (Fields[Field::phi][s][m][z][i-y_k][x+2] - Fields[Field::phi][s][m][z][i-y_k][x-2])) * _kw_12_dx
+                                   :      (8.*(Fields[Field::phi][s][m][z][y_k-i][x+1] - Fields[Field::phi][s][m][z][y_k-i][x-1]) 
+                                            - (Fields[Field::phi][s][m][z][y_k-i][x+2] - Fields[Field::phi][s][m][z][y_k-i][x-2])) * _kw_12_dx ;
+        
+       
+        // The magnetic island
     
-   hid_t islandGroup = check(H5Gcreate(fileIO->getFileID(), "/Islands",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("H5Gcreate"));
+        //  For the latter term, the intrigate derivative is the \partial_y * Island
+        //  remember the island structure is 
+        //  \partial_y (e^{imx} + e^{-imx}) = (i m) * ( e^{imx} - e^{-imx} )
+        //
+        const CComplex Island_phi =   dMagIs_dx[x] * ( ky_m1 * phi_m1 + ky_p1 * phi_p1) - MagIs[x] *  ky_1 * ( dphi_dx_m1 -  dphi_dx_p1);
+        
+             ///////////////////////////////////////////////////////////////////////////////
+            
+        const CComplex kp = geo->get_kp(x, ky, z);
+           
+        CComplex half_eta_kperp2_phi = 0;
+
+        if(isGyro1) { // first order approximation for gyro-kinetics
+             const CComplex ddphi_dx_dx = (16. *(Fields[Field::phi][s][m][z][y_k][x+1] + Fields[Field::phi][s][m][z][y_k][x-1]) 
+                                              - (Fields[Field::phi][s][m][z][y_k][x+2] + Fields[Field::phi][s][m][z][y_k][x-2]) 
+                                         - 30.*phi_) * _kw_12_dx_dx;
+
+             half_eta_kperp2_phi     = rho_t2 * 0.5 * w_T  * ( (ky*ky) * phi_ + ddphi_dx_dx ) ; 
+         }
+             
+        
+        // velocity space magic
+        simd_for(int v=NvLlD; v<= NvLuD;v++) {
+
+            const CComplex g    = fs[s][m][z][y_k][x][v];
+            const CComplex f0_  = f0[s][m][z][y_k][x][v];
+
+
+        /////////////////////////////////////////////////// Magnetic Island Contribution    /////////////////////////////////////////
+      
           
-   // Length scale
-   check(H5LTset_attribute_double(islandGroup, ".", "MagIs"    , &MagIs[NxGlD]    , Nx), DMESG("Attribute"));
-   check(H5LTset_attribute_double(islandGroup, ".", "dMagIs_dx", &dMagIs_dx[NxGlD], Nx), DMESG("Attribute"));
-   
-   check(H5LTset_attribute_double(islandGroup, ".", "Width", &width, 1), DMESG("Attribute"));
-   check(H5LTset_attribute_double(islandGroup, ".", "Shear", &shear, 1), DMESG("Attribute"));
-   check(H5LTset_attribute_int   (islandGroup, ".", "Mode" , &i    , 1), DMESG("Attribute"));
+        // X-derivative of f1 (1-CD4) for poloidal mode +1, take care of Nyquist frequency
+        const CComplex dfs_dx_p1  =  ((y_k+i) >= Nky-i)
+
+                            ? 0.
+
+                            : (8. *(fs[s][m][z][y_k+i][x+1][v] - fs[s][m][z][y_k+i][x-1][v])  
+                                 - (fs[s][m][z][y_k+i][x+2][v] - fs[s][m][z][y_k+i][x-2][v])) * _kw_12_dx;
+
+
+        // X-derivative of f1 (1-CD4) for poloidal mode -1, take care of complex conjugate relation for y_k=-1 
+        const CComplex dfs_dx_m1  =  ( (y_k-i) < 0  )
+
+                        ? conj(8. *(fs[s][m][z][i-y_k][x+1][v] - fs[s][m][z][i-y_k][x-1][v])  
+                                 - (fs[s][m][z][i-y_k][x+2][v] - fs[s][m][z][i-y_k][x-2][v])) * _kw_12_dx 
+
+                        :     (8. *(fs[s][m][z][y_k-i][x+1][v] - fs[s][m][z][y_k-i][x-1][v])  
+                                 - (fs[s][m][z][y_k-i][x+2][v] - fs[s][m][z][y_k-i][x-2][v])) * _kw_12_dx;
+
+        // Note Nky-1 is the maximum mode number Nky = 6 i-> [ 0, 1, 2, 3, 4, 5] 
+        const CComplex fs_p1      = ((y_k+i) >= Nky-1) ? 0.                             : fs[s][m][z][y_k+i][x][v] ;
+        const CComplex fs_m1      = ((y_k-i) <  0    ) ? conj(fs[s][m][z][i-y_k][x][v]) : fs[s][m][z][y_k-i][x][v] ;
+        //const CComplex fs_m1      = (y_k ==  0   ) ? (fs[s][m][z][1][x][v]) : fs[s][m][z][y_k-1][x][v] ;
          
-    H5Gclose(islandGroup);
+        // Coupling of phase-space with Island mode-mode coupling
+        const CComplex Island_g =  dMagIs_dx[x] * (ky_m1 * fs_m1  + ky_p1 * fs_p1 )  -  MagIs[x]  * ky_1 *  (dfs_dx_m1  - dfs_dx_p1 )  ;
 
-          
 
-}   
+        //// Hypervisocisty to stabilize simulation
+        /*
+        const double hypvisc_phi_val = -1.e-5;
+        
+        const CComplex d4_dx_phi    = (-39. *(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1])  
+                                      + 12. *(Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2]) 
+                                      + 56. * Fields[Field::phi][s][m][z][y_k][x  ])/pow4(dx);
 
-void VlasovIsland::printOn(std::ostream &output) const 
-{
+        const CComplex hypvisc_phi    = hypvisc_phi_val * ( d4_dx_phi + pow4(ky) * phi_);
+*/
 
-         output   << " Island    |  Width : " << width << std::endl;
+        /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
+             
+        const CComplex dg_dt = (y_k == 0) ? 0. : 
+  //           +  hypvisc_phi
+             -  IslandPhase * alpha * V[v] * (Island_g + sigma * Island_phi * f0_) +                // Island term
+             +  nonLinearTerm[y_k][x][v]                                             // Non-linear ( array is zero for linear simulations) 
+             +  ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])*kw_T  - sub)) * f0_ * 
+//                 phi_    )                     // Source term (Temperature/Density gradient)
+           phi_)   //  (phi_ - (y_k == 1 ? V[v] * MagIs[x] : 0.  )  ) )                       // Source term (Temperature/Density gradient)
+     //        -  half_eta_kperp2_phi * f0_)                                            // Contributions from gyro-1 (0 if not neq Gyro-1)
+             -  alpha  * V[v]* kp  * ( g + sigma * phi_ * f0_)                        // Linear Landau damping
+             +  Coll[s][m][z][y_k][x][v]  ;                                           // Collisional operator
+         
+        //////////////////////////////////////////////////////////////////////////////////////////////////////
+        
+
+
+        //////////////////////////// Vlasov End ////////////////////////////
+        //  time-integrate the distribution function    
+        ft [s][m][z][y_k][x][v] = rk[0] * ft[s][m][z][y_k][x][v] + rk[1] * dg_dt             ;
+        fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v]         + (rk[2] * ft[s][m][z][y_k][x][v] + dg_dt) * dt;
+      
+        }}} }}
+   }
+
 }
 
 

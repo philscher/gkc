@@ -32,7 +32,7 @@ void VlasovCilk::solve(std::string equation_type, Fields *fields, CComplex *f_in
   else if(equation_type == "EM") Vlasov_EM((A6zz) f_in, (A6zz) f_out, (A6zz) f0, (A6zz) f, (A6zz) ft, (A6zz) Coll, 
                                            (A6zz) fields->Field, (A4zz) Xi, (A4zz) G, (A3zz) nonLinearTerm,
                                            (A2rr) geo->Kx, (A2rr) geo->Ky, (A2rr) geo->dB_dz,
-                                           X, V, M,  dt, rk_step, rk);
+                                           dt, rk_step, rk);
   else   check(-1, DMESG("No Such Equation"));
 
   return;
@@ -183,7 +183,6 @@ void VlasovCilk::setupXiAndG(
                            const CComplex Fields [Nq][NsLD][NmLD ][NzLB][NkyLD][NxLB+4],
                            CComplex Xi        [NzLB][NkyLD][NxLB+4][NvLB ],
                            CComplex G         [NzLB][NkyLD][NxLB][NvLB ],
-                           const double V[NvGB], const double M[NmGB],
                            const int m, const int s) 
 {
 
@@ -191,7 +190,7 @@ void VlasovCilk::setupXiAndG(
   const double alpha = plasma->species[s].alpha;
   const double sigma = plasma->species[s].sigma;
   
-  const double aeb   =  alpha* geo->eps_hat * plasma->beta; 
+  const double aeb   =  alpha * geo->eps_hat * plasma->beta; 
   const double saeb  =  sigma * alpha * geo->eps_hat * plasma->beta;
 
   const bool useAp   = (plasma->nfields >= 2);
@@ -239,9 +238,8 @@ void VlasovCilk::Vlasov_EM(
     const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
     CComplex Xi             [NzLB][NkyLD][NxLB+4][NvLB],
     CComplex G              [NzLB][NkyLD][NxLB  ][NvLB],
-    CComplex NonLinearTerm        [NkyLD][NxLD  ][NvLD],        // Non-Linear Term
+    CComplex NonLinearTerm        [NkyLD][NxLD  ][NvLD],        // Non-Linear Term (ExB)
     const double Kx[NzLD][NxLD], const double Ky[NzLD][NxLD], const double dB_dz[NzLD][NxLD], // Geometry stuff
-    const double X[NxGB], const double V[NvGB], const double M[NmGB],
     const double dt, const int rk_step, const double rk[3])
 { 
 
@@ -260,7 +258,7 @@ void VlasovCilk::Vlasov_EM(
   for(int m = NmLlD; m <= NmLuD; m++) { 
 
     // Calculate before z loop as we use dg_dz and dXi_dz derivative
-    setupXiAndG(g, f0 , Fields, Xi, G, V, M, m , s);
+    setupXiAndG(g, f0 , Fields, Xi, G, m , s);
       
     // Nested Parallelism (PoissonBracket variables are allocated on stack)
     // Cannot collapse as we have no perfetly nested loops
@@ -312,19 +310,16 @@ void VlasovCilk::Vlasov_EM(
         
     const CComplex dg_dt = 
             
-//    + NonLinearTerm[y_k][x][v]                                                              // Non-linear ( array is zero for linear simulations) 
-//    + Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - 3./2.)) * f0_ * Xi_ * ky          // Source Term
-    + Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - 3./2.)) * f0_ * phi_ * ky          // Source Term
-//    - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0) *                                   
-//      (Kx[z][x] * dG_dx - Ky[z][x] * ky * G_)                                               // Magnetic curvature term
-//    - alpha * pow2(V[v]) * plasma->beta * plasma->w_p * G_ * ky                             // Plasma pressure gradient
-//    - CoJB * alpha * V[v]* dG_dz                                                            // Landau damping term
-    - CoJB * alpha * V[v]* (g_ + sigma * phi_ * f0_)                                                            // Landau damping term
-//    + alpha  / 2. * M[m] * dB_dz[z][x] * dg_dv                                              // Magnetic mirror term    
-//    + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * Kx[z][x] * 
-//    + ((w_n + w_T * (pow2(V[v]) + M[m] * B0)/Temp - 3./2.) * dG_dx + sigma * dphi_dx * f0_) // ??
-//    + Coll[s][m][z][y_k][x][v];                                                             // Collision term
-;
+    + NonLinearTerm[y_k][x][v]                                                              // Non-linear ( array is zero for linear simulations) 
+    + Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - 3./2.)) * f0_ * Xi_ * ky          // Source Term
+    - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0) *                                   
+      (Kx[z][x] * dG_dx - Ky[z][x] * ky * G_)                                               // Magnetic curvature term
+    - alpha * pow2(V[v]) * plasma->beta * plasma->w_p * G_ * ky                             // Plasma pressure gradient
+    - CoJB * alpha * V[v]* dG_dz                                                            // Landau damping term
+    + alpha  / 2. * M[m] * dB_dz[z][x] * dg_dv                                              // Magnetic mirror term    
+    + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * Kx[z][x] * 
+    + ((w_n + w_T * (pow2(V[v]) + M[m] * B0)/Temp - 3./2.) * dG_dx + sigma * dphi_dx * f0_) // ??
+    + Coll[s][m][z][y_k][x][v];                                                             // Collision term
           
     //////////////////////////// Vlasov End ////////////////////////////
 

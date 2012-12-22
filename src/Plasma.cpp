@@ -31,15 +31,6 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
       
       cs      = setup->get("Plasma.cs",   1. );
      
-      std::string type = setup->get("Plasma.Type", "phi");
-/* 
-      if     (type == "phi"      ) nfields = 1;
-      else if(type == "phi,Ap"   ) nfields = 2;
-      else if(type == "phi,Ap,Bp") nfields = 3;
-      else   check(-1, DMESG("So such Plasma.Type"));
-
- * */   
-      nfields  = (setup->get("Plasma.Bp", 0 ) == 1) ? 3 : nfields;
       nfields  = ((beta > 0.e0)  ? 2 : 1);
       nfields  = (setup->get("Plasma.Bp", 0 ) == 1) ? 3 : nfields;
       

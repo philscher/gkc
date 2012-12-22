@@ -49,75 +49,77 @@
 **/
 class Grid : public IfaceGKC {
 
-  public:
-   /// @name Number of ghost cells
-   ///@{
-   int NxGC, ///< Number of ghost cells in x-directions
-       NyGC, ///< Number of ghost cells in y-direction
-       NzGC, ///< Number of ghost cells in z-direction
-       NvGC; ///< Number of ghost cells in v-direction
-   ///@}
+ public:
 
-   double *dm; ///< Weights for \f$ \mu(m) \f$
+  /// @name Number of ghost cells
+  ///@{
+  int NxGC, ///< Number of ghost cells in x-directions
+      NyGC, ///< Number of ghost cells in y-direction
+      NzGC, ///< Number of ghost cells in z-direction
+      NvGC; ///< Number of ghost cells in v-direction
+  ///@}
+
+  double *dm; ///< Weights for \f$ \mu(m) \f$
   
-   /// @name Ranges for computational domain
-   ///@{
-   nct::Range RzLD, RxLD, RvLD, RmLD, RsLD, RkyLD; 
-   nct::Range RxLB, RzLB, RvLB, RmLB, RsLB;
+  /// @name Ranges for computational domain
+  ///@{
+  nct::Range RzLD, RxLD, RvLD, RmLD, RsLD, RkyLD; 
+  nct::Range RxLB, RzLB, RvLB, RmLB, RsLB;
    
-   nct::Range RxGB, RzGB, RvGB, RmGB, RsGB;
-   nct::Range RxLB4;
+  nct::Range RxGB, RzGB, RvGB, RmGB, RsGB;
+  nct::Range RxLB4;
 
-   ///@}
+  ///@}
    
-   /// @name Ranges for computational domain
-   ///@{
-   nct::Range RxGD, RkyGD, RzGD, RvGD, RmGD, RsGD; 
-   ///@}
+  /// @name Ranges for computational domain
+  ///@{
+  nct::Range RxGD, RkyGD, RzGD, RvGD, RmGD, RsGD; 
+  ///@}
 
-   /** \f$ textrm{d}x textrm{d}y textrm{d}z \f$
-   *   \f$ textrm{d}x textrm{d}y textrm{d}z textrm{d}v_\parallel  \f$
-   *
-   *    @note will depend on geometry
-   **/
-   double dXYZ, dXYZV;
-   /// Local Grid size (for Domain & Boundary)
-   int NxGD, NyGD, NkyGD, NzGD, NvGD, NmGD, NsGD;
+  /** \f$ textrm{d}x textrm{d}y textrm{d}z \f$
+  *   \f$ textrm{d}x textrm{d}y textrm{d}z textrm{d}v_\parallel  \f$
+  *
+  *    @note will depend on geometry
+  **/
+  double dXYZ, dXYZV;
 
-   /// Constructor
-   Grid(Setup *setup, Parallel *parallel, FileIO *fileIO);
+  /// Local Grid size (for Domain & Boundary)
+  int NxGD, NyGD, NkyGD, NzGD, NvGD, NmGD, NsGD;
 
-   /// Destructor
-   ~Grid();
+  /// Constructor
+  Grid(Setup *setup, Parallel *parallel, FileIO *fileIO);
 
-  protected:
-   /// Class information
-   virtual void printOn(std::ostream &output) const;
+  /// Destructor
+ ~Grid();
 
-  public: 
+ protected:
+
+  /// Class information
+  virtual void printOn(std::ostream &output) const;
+
+ public: 
    
-   /**
-   *    @brief saves grid information to output file
-   *
-   *
-   *    @param fileIO class
-   **/
-   void initData(FileIO *fileIO);
+  /**
+  *    @brief saves grid information to output file
+  *
+  *
+  *    @param fileIO class
+  **/
+  void initData(FileIO *fileIO);
    
-   /// Class information
-   virtual void writeData(const Timing &timing, const double dt) {};
+  /// Class information
+  virtual void writeData(const Timing &timing, const double dt) {};
    
-   /// Class information
-   virtual void closeData() {};
+  /// Class information
+  virtual void closeData() {};
 
-   ///  returns total global domain size (@todo accept DIR)
-   int getGlobalSize() const { return Nx * Nky * Nz * Nv * Nm * Ns; };
+  ///  returns total global domain size (@todo accept DIR)
+  int getGlobalSize() const { return Nx * Nky * Nz * Nv * Nm * Ns; };
    
-   ///  returns total local domain size (@todo accept DIR)
-   int getLocalSize() const { return NxLD * NkyLD * NzLD * NvLD * NmLD * NsLD;};
+  ///  returns total local domain size (@todo accept DIR)
+  int getLocalSize() const { return NxLD * NkyLD * NzLD * NvLD * NmLD * NsLD;};
+
 };
-
-
 
 #endif // __GRID_H_
 

@@ -42,7 +42,7 @@ void VlasovAux::solve(std::string equation_type, Fields *fields, CComplex *f_in,
 
       Vlasov_EM   ((A6zz) f_in, (A6zz) f_out, (A6zz) f0, (A6zz) f,
                    (A6zz) ft, (A6zz) Coll, (A6zz) fields->Field, (A3zz) nonLinearTerm,
-                   (A4zz) Xi, (A4zz) G, X, V, M, dt, rk_step, rk);
+                   (A4zz) Xi, (A4zz) G, dt, rk_step, rk);
 
   else if(equation_type == "Landau_Damping")
     
@@ -101,7 +101,7 @@ void VlasovAux::Vlasov_ES(
       #pragma omp for
       for(int y_k=NkyLlD; y_k <= NkyLuD; y_k++) { 
              
-         const CComplex ky = ((CComplex) (0. + 1.j))  * fft->ky(y_k);
+         const CComplex ky = _imag  * fft->ky(y_k);
              
          for(int x=NxLlD; x<= NxLuD; x++) { 
          
@@ -171,7 +171,6 @@ void VlasovAux::Vlasov_EM(
                            CComplex    nonLinearTerm               [NkyLD][NxLD  ][NvLD],
                            CComplex Xi       [NzLB][NkyLD][NxLB+4][NvLB],
                            CComplex G        [NzLB][NkyLD][NxLB][NvLB],
-                           const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3])
 { 
 
@@ -189,67 +188,69 @@ void VlasovAux::Vlasov_EM(
       bool isGyro1 = (plasma->species[s].gyroModel == "Gyro-1");
       
 
-    for(int m=NmLlD; m<= NmLuD;m++) { 
+    for(int m = NmLlD; m <= NmLuD; m++) { 
  
-          setupXiAndG(fs, f0 , Fields, Xi, G, V, M, m , s);
+          setupXiAndG(fs, f0 , Fields, Xi, G, m , s);
        
-         
-    for(int z=NzLlD; z<= NzLuD;z++) { 
+    for(int z = NzLlD; z <= NzLuD; z++) { 
       
           if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(G, Xi, nullptr, nullptr, z, m, s, nonLinearTerm, Xi_max, true); 
       
-          for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
-       
-          const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];
+    for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { 
+
+      const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];
                
-          const CComplex dphi_dx = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1]) 
-                                     - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2]))/(12.*dx)  ;  
+      const CComplex dphi_dx = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1]) 
+                                 - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2])) * _kw_12_dx;
 
-          const CComplex ky = ((CComplex) (0. + 1.i)) *  fft->ky(y_k);
-          const CComplex kp = geo->get_kp(x, ky, z);
+      const CComplex ky = _imag *  fft->ky(y_k);
+      const CComplex kp = geo->get_kp(x, ky, z);
 
-   #pragma ivdep
-   #pragma vector always 
-   for(int v=NvLlD; v<= NvLuD;v++) {
+    #pragma ivdep
+    #pragma vector always 
+    for(int v = NvLlD; v <= NvLuD; v++) {
            
-           // Sign has no influence on result ...
-           const CComplex kp = geo->get_kp(x, ky, z);
-        
+      // Sign has no influence on result ...
+      const CComplex kp = geo->get_kp(x, ky, z);
 
       const CComplex g    = fs[s][m][z][y_k][x][v];
-      const CComplex F0   = f0 [s][m][z][y_k][x][v];
-      const CComplex G_   = G[z][y_k][x][v];
+      const CComplex F0   = f0[s][m][z][y_k][x][v];
+
+      const CComplex G_   =  G[z][y_k][x][v];
       const CComplex Xi_  = Xi[z][y_k][x][v];
 
       // calculate first order Average
       CComplex half_eta_kperp2_Xi = 0;
       if(isGyro1) { // first order approximation for gyro-kinetics
-             const CComplex ddXi_dx_dx = (16. *(Xi[z][y_k][x+1][v] + Xi[z][y_k][x-1][v])
-                                             - (Xi[z][y_k][x+2][v] + Xi[z][y_k][x-2][v]) - 30.*Xi_) * _kw_12_dx_dx;
-             half_eta_kperp2_Xi     = 0.5 * w_T  * ( (ky*ky) * Xi_ + ddXi_dx_dx ) ; 
-           }
+
+         const CComplex ddXi_dx_dx = (16. *(Xi[z][y_k][x+1][v] + Xi[z][y_k][x-1][v])
+                                         - (Xi[z][y_k][x+2][v] + Xi[z][y_k][x-2][v]) - 30.*Xi_) * _kw_12_dx_dx;
+         half_eta_kperp2_Xi     = 0.5 * w_T  * ( (ky*ky) * Xi_ + ddXi_dx_dx ) ; 
+      }
              
     
-     /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
+    /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
    
             
-     const CComplex dg_dt = 
-             +  nonLinearTerm[y_k][x][v]                                             // Non-linear ( array is zero for linear simulations) 
-             +  ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])/Temp  - sub)) * F0 * Xi_     // Driving term (Temperature/Density gradient)
-             -  half_eta_kperp2_Xi * F0)                                             // Contributions from gyro-1 (0 if not neq Gyro-1)
-             -  alpha  * V[v]* kp  * ( g + sigma * Xi_ * F0)                         // Linear Landau damping
-             +  Coll[s][m][z][y_k][x][v]  ;                                          // Collisional operator
+    const CComplex dg_dt = 
+    
+    +  nonLinearTerm[y_k][x][v]                                             // Non-linear ( array is zero for linear simulations) 
+    +  ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])/Temp  - sub)) * F0 * Xi_     // Driving term (Temperature/Density gradient)
+    -  half_eta_kperp2_Xi * F0)                                             // Contributions from gyro-1 (0 if not neq Gyro-1)
+    -  alpha  * V[v]* kp  * G_                                              // Linear Landau damping
+    +  Coll[s][m][z][y_k][x][v]  ;                                          // Collisional operator
          
         
-        //////////////////////////// Vlasov End ////////////////////////////
+    //////////////////////////// Vlasov End ////////////////////////////
   
-        //  time-integrate the distribution function    
-        ft [s][m][z][y_k][x][v] = rk[0] * ft[s][m][z][y_k][x][v] + rk[1] * dg_dt             ;
-        fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v]         + (rk[2] * ft[s][m][z][y_k][x][v] + dg_dt) * dt;
+    //  time-integrate the distribution function    
+    ft [s][m][z][y_k][x][v] = rk[0] * ft[s][m][z][y_k][x][v] +  rk[1] * dg_dt             ;
+    fss[s][m][z][y_k][x][v] =         f1[s][m][z][y_k][x][v] + (rk[2] * ft[s][m][z][y_k][x][v] + dg_dt) * dt;
 
 
 
-      }}} }}
+   } } } 
+   } }
    }
 }
 
@@ -322,19 +323,19 @@ void    VlasovAux::Vlasov_2D_Fullf(
       
       for(int m=NmLlD; m<= NmLuD;m++) { 
   
-       // gyro-fluid model
- //      if(calculate_nonLinear && (rk_step != 0)) calculatePoissonBracket(fields->phi, _fs,m, s);
-       //if(doNonLinear)   calculatePoissonBracket(fields->phi(RxLD, RkyLD, RzLD, m, s), _fs,m, s);
-       
        // calculate for estimation of CFL condition
-       for(int z=NzLlD; z<= NzLuD;z++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x=NxLlD; x<= NxLuD;x++) { 
+       for(int z=NzLlD; z<= NzLuD;z++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
+         
+         
+       for(int x=NxLlD; x<= NxLuD;x++) { 
        
-             const CComplex dphi_dx  = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1]) - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2]))/(12.*dx)  ;  
+             const CComplex dphi_dx  = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1]) 
+                                         - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2]))/(12.*dx)  ;  
 
-             const CComplex ky = ((CComplex) (0. + 1.i)) *  fft->ky(y_k);
+             const CComplex ky = _imag *  fft->ky(y_k);
              const CComplex kp = geo->get_kp(x, ky, z);
 
-            simd_for(int v=NvLlD; v<= NvLuD;v++) {
+        simd_for(int v=NvLlD; v<= NvLuD;v++) {
         
 
 
@@ -343,10 +344,6 @@ void    VlasovAux::Vlasov_2D_Fullf(
         const CComplex g_   = fs [s][m][z][y_k][x][v];
         const CComplex f0_  = f0 [s][m][z][y_k][x][v];
         const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];
-
-        // Hyper diffusion terms
-        //const Complex d4g_dv    =  0.;
-//        const Complex d4g_dv    =  -1.e-3 * (-39. *(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1])  + 12. *(fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]) + 56. * fs[s][m][z][y_k][x][v]);///pow4(dv);
 
         /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
         CComplex dg_dt = 
@@ -361,9 +358,6 @@ void    VlasovAux::Vlasov_2D_Fullf(
            - alpha  * V[v]* kp * ( g_ + sigma * phi_ * f0_ )
              +  Coll[s][m][z][y_k][x][v]  ;                                           // Collisional operator
           ;
-
-            // Energy evolution term
-//          + rhoOverLn * 1./mass*(shear * X[x] + theta) * dXi_dy *df1_dv;
 
 
         //////////////////////////// Vlasov End ////////////////////////////

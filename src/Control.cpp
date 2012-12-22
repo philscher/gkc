@@ -35,35 +35,40 @@ Parallel *gl_parallel; // need extern variables for signal handler
 void signal_handler(int sig)
 
 {
-    //?!std::cerr << "Signal : " << std::strsignal( sig ) << " received." << std::endl;
-    std::cerr << "Signal : " << strsignal( sig ) << " received." << std::endl;
-    System::printStackTrace();
-      
-    switch(sig) {
-      case(SIGFPE)  :
-                       std::cerr << "Floating point exception occured. Exiting" << std::endl;
-                       control_triggered_signal |= SIGFPE;
-                       
-                       // we have to unmask the signal otherwie program will slow down
-                       signal(SIGFPE, SIG_IGN);
-                       // now we raise SIGUSR1 which is propagetaed by mpirun to other processes
-                       //raise(SIGUSR2);
-                       break;
+  
+  //?!std::cerr << "Signal : " << std::strsignal( sig ) << " received." << std::endl;
+  std::cerr << "Signal : " << strsignal( sig ) << " received." << std::endl;
+  System::printStackTrace();
+  //abort();
 
-                       // when SIGINT or SIGTERM appears, e.g. openmpi first propagates SIGTERM too all procecess, waits a couple
-                       // of seconds and then exists, (we should take care that this time is enough to finish the job)
-      case(SIGINT)   : std::cerr << "SIGINT received, raising SIGTERM" << std::endl;
+  switch(sig) {
+
+    case(SIGFPE)  :
+                       
+      std::cerr << "Floating point exception occured. Exiting" << std::endl;
+      control_triggered_signal |= SIGFPE;
+                       
+      // we have to unmask the signal otherwie program will slow down
+      signal(SIGFPE, SIG_IGN);
+      // now we raise SIGUSR1 which is propagetaed by mpirun to other processes
+      //raise(SIGUSR2);
+      break;
+
+      // when SIGINT or SIGTERM appears, e.g. openmpi first propagates SIGTERM too all procecess, waits a couple
+      // of seconds and then exists, (we should take care that this time is enough to finish the job)
+      
+    case(SIGINT)   : std::cerr << "SIGINT received, raising SIGTERM" << std::endl;
                        control_triggered_signal |= SIGINT;
                  //      signal(SIGINT, SIG_IGN);
                  //      raise(SIGTERM); 
                        break;
 
-      case(SIGTERM)  : //helios->runningException(GKC_EXIT); 
+    case(SIGTERM)  : //helios->runningException(GKC_EXIT); 
                        std::cout << "SIGTERM" << std::endl;
                        control_triggered_signal |= SIGTERM;
                        break;
-      
-      case(SIGSEGV)  : 
+    
+    case(SIGSEGV)  : 
                        gl_parallel->print("SEGV received (Memory violation). Stack large enough ?");
                        control_triggered_signal |= SIGSEGV;
                        // any change to emergeny close HDF-5 file ?

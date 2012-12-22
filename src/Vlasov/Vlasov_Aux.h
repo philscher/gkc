@@ -98,7 +98,6 @@ class VlasovAux : public VlasovCilk {
                            CComplex    nonLinear               [NkyLD][NxLD  ][NvLD],
                            CComplex Xi       [NzLB][NkyLD][NxLB][NvLB],
                            CComplex G        [NzLB][NkyLD][NxLB][NvLB],
-                           const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3]);
 
   
