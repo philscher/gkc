@@ -33,6 +33,10 @@
 *   The perpendicular gradient squared is 
 *   \f[ k_\perp^2 = k_x^2 + k_y^2 \f]
 *
+*   \f$ k_{1\parallel} \f$ cannot be fixed but is defined through the
+*   parallel length and number of discretization points, such that
+*   \f$ k_{1\parallel} = \frac{2\pi}{L_z} n \f$.
+*
 **/
 class GeometrySlab : public Geometry
 {
@@ -69,6 +73,9 @@ public:
 
   /**  
   *    @name Defines the magnetic field and its variations
+  *
+  *    Constant magnetic field through the whole domain,
+  *    thus gradients are zero.
   *
   **/
   ///@{

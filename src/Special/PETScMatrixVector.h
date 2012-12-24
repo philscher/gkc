@@ -31,15 +31,42 @@ PetscErrorCode MatrixVectorProduct(Mat A, Vec x, Vec y);
 
 int petc_signal_handler(int sig, void *ctx);
 
-
-
-
+/**
+*    @brief PETSc interface for Matrix-Vector multiplication
+*
+*
+**/
 class PETScMatrixVector
-{ 
-  public:
-        PETScMatrixVector(Vlasov *vlasov, Fields *fields, bool includeZF=false);
-        static PetscErrorCode MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_y) ;
-        static CComplex* getCreateVector(Grid *grid, Vec &Vec_x);
+{
+
+ public:
+    
+  /** 
+  *    Note : Needs to be called to initlized global variables
+  **/
+  PETScMatrixVector(Vlasov *vlasov, Fields *fields, bool includeZF=false);
+   
+  /** 
+  *  
+  *  @brief Matrix-Vector multiplication with the Vlasov equation
+  *
+  *  Interface for matrix-free matrix-vector multiplication.
+  *  With 
+  *  
+  *  \f[
+  *        f_{1\sigma} = L_{gy} f_{1\sigma}'
+  *  \f]
+  *       
+  *
+  **/
+  static PetscErrorCode MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_y);
+
+  /**
+  *
+  * 
+  **/
+  static CComplex* getCreateVector(Grid *grid, Vec &Vec_x);
+
 };
 
 

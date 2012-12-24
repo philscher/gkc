@@ -2,13 +2,14 @@
  * =====================================================================================
  *
  *
- *         Author:  Lurker (?), Paul P. Hilscher (2011) 
+ *         Author:  Lurker (?), Paul P. Hilscher (2011)
+ *
+ *                  Using from
  *                  from http://www.terathon.com/c4engine/doco/Math/Vector3D.html
  *                  License from post : 
  *                      I'm working on a test 3D engine, and have started on a 3D vector class. 
  *                      I'm looking for opinions, feel free to use it in your code if 
  *                      you wish (probably not enough there to use anyway :p )
- *                  Comment : Nope, very useful ! Thanks :)
  *
  *    Description:  
  *    ToDo       : Add Templates

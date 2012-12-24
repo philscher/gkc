@@ -443,7 +443,7 @@ void Analysis::writeData(const Timing &timing, const double dt)
     
       std::stringstream messageStream;
       messageStream << std::endl << std::endl << "Analysis | " << std::setprecision(3) << "Time : " << timing.time << " Step : " << timing.step << "   ";
-      messageStream << "Field Energy : (phi) " << scalarValues.phiEnergy  << "  (Ap) " << scalarValues.ApEnergy  <<  "  (Bp) " << scalarValues.BpEnergy << std::endl; 
+      messageStream << "Field Energy : (φ) " << scalarValues.phiEnergy  << "  (A∥) " << scalarValues.ApEnergy  <<  "  (B∥) " << scalarValues.BpEnergy << std::endl; 
       double charge = 0., kinetic_energy=0.;
     
       for(int s = NsGlD; s <= NsGuD; s++) {

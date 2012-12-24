@@ -15,7 +15,7 @@
 
 #include "Fields/FieldsHermite.h"
 
-#include "Special/HermiteInterpolation.h"
+#include "Special/Interpolate/HermiteInterpolation.h"
 #include "Special/Integrate/Integrate.h"
 #include "Matrix/SpecialMatrix.h"
 

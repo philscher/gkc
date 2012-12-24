@@ -178,11 +178,11 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
                            
 
 void VlasovCilk::setupXiAndG(
-                           const CComplex g   [NsLD][NmLD ][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f0  [NsLD][NmLD ][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex Fields [Nq][NsLD][NmLD ][NzLB][NkyLD][NxLB+4],
-                           CComplex Xi        [NzLB][NkyLD][NxLB+4][NvLB ],
-                           CComplex G         [NzLB][NkyLD][NxLB][NvLB ],
+                           const CComplex g          [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex f0         [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Fields [Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           CComplex Xi                           [NzLB][NkyLD][NxLB+4][NvLB],
+                           CComplex G                            [NzLB][NkyLD][NxLB  ][NvLB],
                            const int m, const int s) 
 {
 
@@ -229,12 +229,12 @@ void VlasovCilk::setupXiAndG(
 
 
 void VlasovCilk::Vlasov_EM(
-    const CComplex g  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Current step phase-space function
-    CComplex       h  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Phase-space function for next step
-    const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Background Maxwellian
-    const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // previous RK-Step
-    CComplex       ft [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // previous RK-Step
-    CComplex     Coll [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Collisional corrections
+    const CComplex g   [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Current step phase-space function
+    CComplex       h   [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Phase-space function for next step
+    const CComplex f0  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Background Maxwellian
+    const CComplex f1  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // previous RK-Step
+    CComplex       ft  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // previous RK-Step
+    CComplex       Coll[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Collisional corrections
     const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
     CComplex Xi             [NzLB][NkyLD][NxLB+4][NvLB],
     CComplex G              [NzLB][NkyLD][NxLB  ][NvLB],
@@ -294,11 +294,13 @@ void VlasovCilk::Vlasov_EM(
     const CComplex dg_dv   = (8. *(g[s][m][z][y_k][x][v+1] - g[s][m][z][y_k][x][v-1]) 
                                 - (g[s][m][z][y_k][x][v+2] - g[s][m][z][y_k][x][v-2])) * _kw_12_dv;
 
-    const CComplex dG_dz   = (8.*(G[z+1][y_k][x][v] - G[z-1][y_k][x][v])    
-                             -   (G[z+2][y_k][x][v] - G[z-2][y_k][x][v])) * _kw_12_dz;
 
     const CComplex dG_dx   = (8.*(G[z][y_k][x+1][v] - G[z][y_k][x-1][v]) 
                              -   (G[z][y_k][x+2][v] - G[z][y_k][x-2][v])) * _kw_12_dx;
+    
+    const CComplex dG_dz   = (8.*(G[z+1][y_k][x][v] - G[z-1][y_k][x][v])    
+                             -   (G[z+2][y_k][x][v] - G[z-2][y_k][x][v])) * _kw_12_dz;
+
 
     // magnetic prefactor defined as  $ \hat{B}_0 / \hat{B}_{0\parallel}^\star = \left[ 1 + \beta_{ref} \sqrt{\frac{\hat{m_\sigma T_{0\sigma}{2}}}}
     // note j0 is calculated and needs to be replaced, or ? no we calculate j1 ne ?!

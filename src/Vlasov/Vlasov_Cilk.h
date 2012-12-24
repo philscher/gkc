@@ -103,11 +103,11 @@ class VlasovCilk : public Vlasov {
    *
    **/
    void setupXiAndG(
-                           const CComplex g           [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex g          [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
                            const CComplex f0         [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex Fields [Nq][NsLD][NmLD ][NzLB][NkyLD][NxLB+4],
-                           CComplex Xi                         [NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex G                          [NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex Fields [Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           CComplex Xi                           [NzLB][NkyLD][NxLB  ][NvLB],
+                           CComplex G                            [NzLB][NkyLD][NxLB  ][NvLB],
                            const int m, const int s);
 
 
