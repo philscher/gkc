@@ -136,8 +136,8 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
       const CComplex shift_u = (NzLuD == NzGuD) ? cexp(-_imag *  (2.* M_PI/Ly) * y_k * geo->nu(x)) : 1.;
             
       // NzLlD == NzGlD -> Connect only physcial boundaries after mode made one loop 
-      SendZl[:][:][:][:][y_k][x-NxLlD] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD  :2][y_k][x][NvLlD:NvLD] * shift_l;
-      SendZu[:][:][:][:][y_k][x-NxLlD] = g[NsLlD:NsLD][NmLlD:NmLD][NzLuD-1:2][y_k][x][NvLlD:NvLD] * shift_u;
+      SendZl[:][:][:][y_k][x-NxLlD][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD  :2][y_k][x][NvLlD:NvLD] * shift_l;
+      SendZu[:][:][:][y_k][x-NxLlD][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLuD-1:2][y_k][x][NvLlD:NvLD] * shift_u;
                
     } }
     parallel->updateBoundaryVlasov(Vlasov::SendZu, Vlasov::SendZl, Vlasov::RecvZu, Vlasov::RecvZl, ArrayBoundZ.getNum(), DIR_Z);
