@@ -12,8 +12,8 @@
  */
 
 
-#ifndef __Eigenvalue_H
-#define __Eigenvalue_H
+#ifndef __GKC_EIGENVALUE_H
+#define __GKC_EIGENVALUE_H
 
 #include "Global.h"
 #include "Parallel/Parallel.h"
@@ -38,63 +38,64 @@
 **/
 class Eigenvalue : public IfaceGKC {
 
-  protected:
+ protected:
 
-   Parallel *parallel;
-   Grid     *grid;
+  Parallel *parallel;
+  Grid     *grid;
 
-   /**
-   *  @brief structure to store the eigenvalue
-   *
-   **/
-   struct EigenValue {
+  /**
+  *  @brief structure to store the eigenvalue
+  *
+  **/
+  struct EigenValue {
     
-     Complex EigenValue  ; ///< the eigenvalue
-     double AbsoluteError; ///< the absolute error
+    Complex EigenValue  ; ///< the eigenvalue
+    double AbsoluteError; ///< the absolute error
 
-   };
+  };
 
-   bool includeZF; ///< true if Zonal Flow is included
+  bool includeZF; ///< true if Zonal Flow is included
 
-  public:
-   /**
-   *    Please Document Me !
-   *
-   **/
-   Eigenvalue(FileIO *fileIO, Setup *setup, Grid *_grid, Parallel *_parallel) : parallel(_parallel), grid(_grid) 
-   {
-      includeZF = setup->get("Eigenvalue.IncludeZF", 0);
-   };
+ public:
 
-   /**
-   *    Please Document Me !
-   *
-   **/
-   virtual void solve(Vlasov *vlasov, Fields *fields, Visualization *visual, Control *control) = 0;
+  /**
+  *    Please Document Me !
+  *
+  **/
+  Eigenvalue(FileIO *fileIO, Setup *setup, Grid *_grid, Parallel *_parallel) : parallel(_parallel), grid(_grid) 
+  {
+    includeZF = setup->get("Eigenvalue.IncludeZF", 0);
+  };
+
+  /**
+  *    Please Document Me !
+  *
+  **/
+  virtual void solve(Vlasov *vlasov, Fields *fields, Visualization *visual, Control *control) = 0;
   
-   /**
-   *    Please Document Me !
-   *
-   **/
-   virtual ~Eigenvalue() {};
+  /**
+  *    Please Document Me !
+  *
+  **/
+  virtual ~Eigenvalue() {};
 
   
-   /**
-   *  @brief Get Maximum Absolute Eigenvalue for determining
-   *         the maximum stable linear timestep
-   *
-   **/
-   virtual Complex getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields) = 0;
+  /**
+  *  @brief Get Maximum Absolute Eigenvalue for determining
+  *         the maximum stable linear timestep
+  *
+  **/
+  virtual Complex getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields) = 0;
 
-  protected :
+ protected :
   
-   /**
-   *    Please Document Me !
-   *
-   **/
-   void InitDataOutput(Setup *setup, FileIO *fileIO);
+  /**
+  *    Please Document Me !
+  *
+  **/
+  void InitDataOutput(Setup *setup, FileIO *fileIO);
 
 };
 
 
-#endif // __Eigenvalue_H
+#endif // __GKC_EIGENVALUE_H

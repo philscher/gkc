@@ -220,8 +220,8 @@ void Analysis::initData(Setup *setup, FileIO *fileIO)
      
   hid_t momGroup = check(H5Gcreate(fileIO->getFileID(), "/Moments", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
 
-  hsize_t mom_dsdim[] =  { grid->NzGD , NkyLD      , grid->NxGD , NsLD , 1            };
-  hsize_t mom_dmdim[] =  { grid->NzGD , NkyLD      , grid->NxGD , Ns   , H5S_UNLIMITED};
+  hsize_t mom_dsdim[] =  { Nz  , Nky, Nx, Ns, 1            };
+  hsize_t mom_dmdim[] =  { Nz  , Nky, Nx, Ns, H5S_UNLIMITED};
   hsize_t mom_cBdim[] =  { NzLD       , NkyLD      , NxLD       , NsLD , 1            };
   hsize_t mom_cDdim[] =  { NzLD       , NkyLD      , NxLD       , NsLD , 1            };
   hsize_t mom_cmoff[] =  { 0, 0, 0, 0, 0                                              };
