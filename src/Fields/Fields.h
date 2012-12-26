@@ -399,10 +399,8 @@ class Fields : public IfaceGKC {
   *
   *
   **/
-  FileAttr *FA_phi, 
-           *FA_Ap , 
-           *FA_Bp ,
-           *FA_phiTime;
+  FileAttr *FA_fields    , ///< FileAttribute for fields (phi,Ap,Bp) 
+           *FA_fieldsTime; ///< FileAttribute for time 
 
 
   /**
