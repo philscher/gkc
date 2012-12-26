@@ -31,8 +31,8 @@ Visualization_Data::Visualization_Data(Grid *grid, Parallel *_parallel, Setup *s
      
      // We only save the first Z(z=0) slide, especially useful in 2D simulations
      int numZSlide = 1;
-     hsize_t Fields_dim      [] = { numZSlide  , NkyLD, grid->NxGD,             1 };
-     hsize_t Fields_maxdim   [] = { numZSlide  , NkyLD, grid->NxGD, H5S_UNLIMITED };
+     hsize_t Fields_dim      [] = { numZSlide  , NkyLD, Nx,             1 };
+     hsize_t Fields_maxdim   [] = { numZSlide  , NkyLD, Nx, H5S_UNLIMITED };
      hsize_t Fields_chunkBdim[] = { numZSlide  , NkyLD, NxLD      ,             1 };
      hsize_t Fields_chunkdim [] = { numZSlide  , NkyLD, NxLD      ,             1 };
      hsize_t Fields_moffset  [] = { 0, 0, 0, 0 };
@@ -50,9 +50,9 @@ Visualization_Data::Visualization_Data(Grid *grid, Parallel *_parallel, Setup *s
      /////////////////////// Velocity space (X(0)-V) ///////////////////////////////////////
       visXV = setup->get("Visualization.XV", 0);
       if(visXV == true) {
-        hsize_t XV_dim[]      =  { grid->NxGD, grid->NvGD,  grid->NsGD, 1  };
-        hsize_t XV_maxdim[]   =  { grid->NxGD, grid->NvGD, grid->NsGD, H5S_UNLIMITED };
-        hsize_t XV_chunkBdim[] = { grid->NxGD, NvLD      , NsLD, 1 };
+        hsize_t XV_dim[]      =  { Nx, Nv,  Ns, 1  };
+        hsize_t XV_maxdim[]   =  { Nx, Nv, Ns, H5S_UNLIMITED };
+        hsize_t XV_chunkBdim[] = { Nx, NvLD      , NsLD, 1 };
         hsize_t XV_chunkdim[] =  { NxLD      , NvLD      , NsLD, 1 };
         hsize_t XV_moffset[]   = { 0, 0, 0, 0, 0, 0 };
      

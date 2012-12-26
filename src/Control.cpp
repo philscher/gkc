@@ -36,9 +36,10 @@ void signal_handler(int sig)
 
 {
   
-  //?!std::cerr << "Signal : " << std::strsignal( sig ) << " received." << std::endl;
+  // any method to give putput critical streams at once ?
   std::cerr << "Signal : " << strsignal( sig ) << " received." << std::endl;
   System::printStackTrace();
+  std::cerr << std::flush;
   //abort();
 
   switch(sig) {
@@ -118,7 +119,6 @@ Control::Control(Setup *setup, Parallel *_parallel, Analysis *_analysis) : paral
         
    // Some Tests to check the function
    maxRunningTime = Setup::getSecondsFromTimeString(setup->get("Control.MaxRunningTime", "0s"));
-std::cout << " MaxRunningTime : " << maxRunningTime << std::endl;
    // set start Time
    startTime = time(NULL);
   
@@ -154,7 +154,7 @@ void Control::setSignalHandler()
     signal(SIGUSR2 , signal_handler);
     signal(SIGSEGV , signal_handler);
     signal(SIGBUS  , signal_handler);
-// catch all signals
+// catch all signals (SIGKILL and SIGSTOP are uncatchable)
     for ( int i = 0; i < 32; i++ ) signal( i, signal_handler );
 //    for ( int i = 0; i < 32; i++ ) signal( 0x1111111111111111, signal_handler );
 

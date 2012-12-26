@@ -15,14 +15,13 @@
 int process_rank;
 
 
-void set_stacksize(int size_Mbytes)
+void set_min_stacksize(int size_Mbytes)
 {
     const rlim_t kStackSize = size_Mbytes * 1024 * 1024;   // min stack size = 16 MB
     struct rlimit rl;
 
     int result = getrlimit(RLIMIT_STACK, &rl);
     
-    std::cout << " Stack size is : " << rl.rlim_cur/(1024*1024) << " MBytes" << std::endl;
     
     if (result == 0)
     {
@@ -50,7 +49,7 @@ void set_stacksize(int size_Mbytes)
 int main(int argc, char **argv)
 {
     // Set stack size (necesary to set for local jobs) 
-    set_stacksize(128);
+    set_min_stacksize(256);
     // Some internal variables
     time_t start_sim_time, start_all_time, end_sim_time, end_all_time;
     

@@ -18,11 +18,11 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
 
 : fft(_fft), bench(_bench), parallel(_parallel), grid(_grid), setup(_setup), geo(_geo), coll(_coll)
 
-, _kw_12_dx_dx(1./(12.*dx*dx))
-, _kw_12_dv   ( 1./(12.*dv)  )
-, _kw_12_dx   ( 1./(12.*dx)  )
-, _kw_12_dz   ( 1./(12.*dz)  )
-, _kw_12_dv_dv( 1./(12.*dv*dv))
+, _kw_12_dx_dx( 1./(12.*dx*dx)   )
+, _kw_12_dv   ( 1./(12.*dv)      )
+, _kw_12_dx   ( 1./(12.*dx)      )
+, _kw_12_dz   ( 1./(12.*dz)      )
+, _kw_12_dv_dv( 1./(12.*dv*dv)   )
 , _kw_16_dx4  ( 1./(16.*pow4(dx)))
 
 
@@ -36,13 +36,12 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
    ArrayNL = nct::allocate(grid->RkyLD, grid->RxLD , grid->RvLD)(&nonLinearTerm);
    
    // allocate boundary (mpi) buffers
-   int BoundX_num =    2 * NkyLD * NzLD * NvLD * NmLD * NsLD;
+   int BoundX_num =    2 * Nky * NzLD * NvLD * NmLD * NsLD;
+   int BoundZ_num = NxLD * Nky *    2 * NvLD * NmLD * NsLD;
+   int BoundV_num = NxLD * Nky * NzLD *    2 * NmLD * NsLD;
+
    ArrayBoundX = nct::allocate(nct::Range(0 , BoundX_num ))(&SendXu, &SendXl, &RecvXl, &RecvXu);
-  
-   int BoundZ_num = NxLD * NkyLD *    2 * NvLD * NmLD * NsLD;
    ArrayBoundZ = nct::allocate(nct::Range(0 , BoundZ_num ))(&SendZu, &SendZl, &RecvZl, &RecvZu);
-   
-   int BoundV_num = NxLD * NkyLD * NzLD *    2 * NmLD * NsLD;
    ArrayBoundV = nct::allocate(nct::Range(0 , BoundV_num ))(&SendVu, &SendVl, &RecvVl, &RecvVu);
   
    equation_type       = setup->get("Vlasov.Equation" , "ES");        
@@ -51,7 +50,7 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
    const std::string dir_string[] = { "X", "Y", "Z", "V", "M", "S" };
    
 
-   for(int dir = DIR_X ; dir <= DIR_S ; dir++) hyper_visc[dir] = setup->get("Vlasov.HyperViscosity." + dir_string[dir]   ,  0.0);
+   for(int dir = DIR_X ; dir <= DIR_S ; dir++) hyper_visc[dir] = setup->get("Vlasov.HyperViscosity." + dir_string[dir], 0.0);
    
    dataOutputF1      = Timing( setup->get("DataOutput.Vlasov.Step", -1),
                                setup->get("DataOutput.Vlasov.Time", -1.));
@@ -110,13 +109,13 @@ void Vlasov::setBoundary(CComplex *f)
 void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
 {
     [=] (
-         CComplex g     [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-         CComplex SendXl[NsLD][NmLD][NzLD][NkyLD][GC2 ][NvLD], CComplex SendXu[NsLD][NmLD][NzLD][NkyLD][GC2 ][NvLD], 
-         CComplex RecvXl[NsLD][NmLD][NzLD][NkyLD][GC2 ][NvLD], CComplex RecvXu[NsLD][NmLD][NzLD][NkyLD][GC2 ][NvLD], 
-         CComplex SendZl[NsLD][NmLD][GC2 ][NkyLD][NxLD][NvLD], CComplex SendZu[NsLD][NmLD][GC2 ][NkyLD][NxLD][NvLD],
-         CComplex RecvZl[NsLD][NmLD][GC2 ][NkyLD][NxLD][NvLD], CComplex RecvZu[NsLD][NmLD][GC2 ][NkyLD][NxLD][NvLD],
-         CComplex SendVl[NsLD][NmLD][NzLD][NkyLD][NxLD][GC2 ], CComplex SendVu[NsLD][NmLD][NvLD][NkyLD][NxLD][GC2 ],
-         CComplex RecvVl[NsLD][NmLD][NzLD][NkyLD][NxLD][GC2 ], CComplex RecvVu[NsLD][NmLD][NvLD][NkyLD][NxLD][GC2 ])
+         CComplex g     [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
+         CComplex SendXl[NsLD][NmLD][NzLD][Nky][GC2 ][NvLD], CComplex SendXu[NsLD][NmLD][NzLD][Nky][GC2 ][NvLD], 
+         CComplex RecvXl[NsLD][NmLD][NzLD][Nky][GC2 ][NvLD], CComplex RecvXu[NsLD][NmLD][NzLD][Nky][GC2 ][NvLD], 
+         CComplex SendZl[NsLD][NmLD][GC2 ][Nky][NxLD][NvLD], CComplex SendZu[NsLD][NmLD][GC2 ][Nky][NxLD][NvLD],
+         CComplex RecvZl[NsLD][NmLD][GC2 ][Nky][NxLD][NvLD], CComplex RecvZu[NsLD][NmLD][GC2 ][Nky][NxLD][NvLD],
+         CComplex SendVl[NsLD][NmLD][NzLD][Nky][NxLD][GC2 ], CComplex SendVu[NsLD][NmLD][NvLD][Nky][NxLD][GC2 ],
+         CComplex RecvVl[NsLD][NmLD][NzLD][Nky][NxLD][GC2 ], CComplex RecvVu[NsLD][NmLD][NvLD][Nky][NxLD][GC2 ])
   {
 
   /////////////////////////// Send Boundaries //////////////////////////////
@@ -125,7 +124,7 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
     // X-Boundary (Note, we may have different boundaries for global simulations)
     SendXl[:][:][:][:][:][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD  :2][NvLlD:NvLD];
     SendXu[:][:][:][:][:][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLuD-1:2][NvLlD:NvLD];
-    parallel->updateBoundaryVlasov(Vlasov::SendXu, Vlasov::SendXl, Vlasov::RecvXu, Vlasov::RecvXl, ArrayBoundX.getNum(),  DIR_X);
+    parallel->updateBoundaryVlasov(Vlasov::SendXu, Vlasov::SendXl, Vlasov::RecvXu, Vlasov::RecvXl, ArrayBoundX.getNum(), DIR_X);
    
     // We do not domain decompose poloidal (y) fourier modes, thus boundaries not required
   
@@ -169,16 +168,14 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
     
     // Set boundary in Z
     if(Nz > 1) {
-       g[NsLlD:NsLD][NmLlD:NmLD][NzLlB  :2][:][NxLlD:NxLD][NvLlD:NvLD] = RecvZl[:][:][:][:][:][:]; 
-       g[NsLlD:NsLD][NmLlD:NmLD][NzLuD+1:2][:][NxLlD:NxLD][NvLlD:NvLD] = RecvZu[:][:][:][:][:][:]; 
+      g[NsLlD:NsLD][NmLlD:NmLD][NzLlB  :2][:][NxLlD:NxLD][NvLlD:NvLD] = RecvZl[:][:][:][:][:][:]; 
+      g[NsLlD:NsLD][NmLlD:NmLD][NzLuD+1:2][:][NxLlD:NxLD][NvLlD:NvLD] = RecvZu[:][:][:][:][:][:]; 
     }
 
     // Set boundary in V
     if(parallel->decomposition[DIR_V] > 1) {
-       
-       g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLlB  :2] = RecvVl[:][:][:][:][:][:]; 
-       g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLuD+1:2] = RecvVu[:][:][:][:][:][:]; 
-
+      g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLlB  :2] = RecvVl[:][:][:][:][:][:]; 
+      g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLuD+1:2] = RecvVu[:][:][:][:][:][:]; 
     }
    
   }
@@ -229,10 +226,10 @@ void Vlasov::initData(Setup *setup, FileIO *fileIO)
   H5Gset_comment(psfGroup, "/Vlasov", "Stores the phase space function")  ; 
   
   // Phase space dimensions
-  hsize_t psf_dim[]       = { grid->NsGD, grid->NmGD, grid->NzGD, NkyLD , grid->NxGD, grid->NvGD,             1 };
-  hsize_t psf_maxdim[]    = { grid->NsGD, grid->NmGD, grid->NzGD, NkyLD , grid->NxGD, grid->NvGD, H5S_UNLIMITED };
-  hsize_t psf_chunkBdim[] = { NsLB      , NmLB      , NzLB      , NkyLD , NxLB      , NvLB      ,             1 };
-  hsize_t psf_chunkdim[]  = { NsLD      , NmLD      , NzLD      , NkyLD , NxLD      , NvLD      ,             1 };
+  hsize_t psf_dim[]       = { Ns , Nm, Nz, Nky, Nx, Nv,             1 };
+  hsize_t psf_maxdim[]    = { Ns , Nm, Nz, Nky, Nx, Nv, H5S_UNLIMITED };
+  hsize_t psf_chunkBdim[] = { NsLB      , NmLB      , NzLB      , Nky , NxLB      , NvLB      ,             1 };
+  hsize_t psf_chunkdim[]  = { NsLD      , NmLD      , NzLD      , Nky , NxLD      , NvLD      ,             1 };
   hsize_t psf_offset[]    = { NsLlB-1   , NmLlB-1   , NzLlB-1   , NkyLlB, NxLlB-1   , NvLlB-1   ,             0 };
   hsize_t psf_moffset[]   = { 0         , 0         , 2         , 0     , 2         , 2         , 0             };
      
@@ -296,8 +293,8 @@ void Vlasov::loadData(FileIO *fileIO)
   hsize_t psf_dim[]       = { grid->NsGD, grid->NmGD, grid->NvGD, grid->NzGD, grid->NkyGD, grid->NxGD,  1 };
   hsize_t psf_maxdim[]    = { grid->NsGD, grid->NmGD, grid->NvGD, grid->NzGD, grid->NkyGD, grid->NxGD, H5S_UNLIMITED};
   hsize_t psf_moffset[]   = { 0, 0, 2, 0, 2, 2, 0 };
-  hsize_t psf_chunkBdim[] = { NsLB, NmLB, NvLB, NzLB, NkyLD, NxLB, 1};
-  hsize_t psf_chunkdim[]  = { NsLD, NmLD, NvLD, NzLD, NkyLD, NxLD, 1};
+  hsize_t psf_chunkBdim[] = { NsLB, NmLB, NvLB, NzLB, Nky, NxLB, 1};
+  hsize_t psf_chunkdim[]  = { NsLD, NmLD, NvLD, NzLD, Nky, NxLD, 1};
   */
   return;
 }

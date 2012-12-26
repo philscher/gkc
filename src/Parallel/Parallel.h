@@ -97,7 +97,7 @@ struct NeighbourDir {
 
    NeighbourDir Talk[DIR_S+1]; ///< Communication struct for Vlasov & Fields boundary
 
-   MPI_Comm Comm[DIR_SIZE]; ///< MPI Communicator or differet sizes
+   MPI_Comm Comm[DIR_SIZE]; ///< MPI Communicators for Dir directions (warning not all implemented)
    int dirMaster[DIR_SIZE]; ///< Master process in direction dir (usually the one with Coord[dir] == 0)
   
    /**
@@ -238,6 +238,7 @@ struct NeighbourDir {
    **/
    template<class T>  void  reduce(T *A, Op op, int dir, int Num, bool allreduce=true)
    {
+    allreduce=false;
      // No need to reduce if not decomposed (should be handled by MPI library if in-place or ?
      if( (dir <= DIR_S) && (decomposition[dir] == 1)) return;
 
@@ -290,6 +291,8 @@ struct NeighbourDir {
    **/
    virtual void print(std::string message);
 
+
+  virtual void printProcessID(); 
   protected:
 
    virtual void printOn(std::ostream &output) const ;

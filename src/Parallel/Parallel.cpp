@@ -25,7 +25,8 @@
 extern int process_rank;
 
 // MPI_Error handler so we can use check and backtrace
-void check_mpi(MPI_Comm *comm, int *err_code, ...) {
+void check_mpi(MPI_Comm *comm, int *err_code, ...) 
+{
 
   char string[MPI_MAX_ERROR_STRING]; int len;
   MPI_Error_string(*err_code, string, &len);
@@ -92,12 +93,10 @@ Parallel::Parallel(Setup *setup)
 
   checkValidDecomposition(setup);
    
-  // need to set to 1 for MPI
-  int dec_Y = decomposition[DIR_Y]; decomposition[DIR_Y] = 1; 
-   
-    
   /////////////////// Create 6-D Cartesian Grid ////////////////////
   int periods[6] = { 1, 1, 1, 0, 0, 0};
+  // Remove OpenMP decomposition, for the MPI call 
+  decomposition[DIR_Y] = 1; 
   MPI_Cart_create(MPI_COMM_WORLD, 6, decomposition, periods, 1, &Comm[DIR_ALL]);
 
   // Get Cart coordinates to set 
@@ -410,4 +409,18 @@ int Parallel::getWorkerID(int dir)
 void Parallel::barrier(int dir) 
 {
   MPI_Barrier(Comm[dir]);
+};
+
+
+void Parallel::printProcessID()
+{
+  std::cout << " Parallel rank  " << myRank 
+            << " Thread   id    " << threadID
+  << " Decomposition  "  
+         << "X(" << decomposition[DIR_X] << ")  Y(" << decomposition[DIR_Y] << ") "
+         << "Z(" << decomposition[DIR_Z] << ")  V(" << decomposition[DIR_V] << ") "
+         << "M(" << decomposition[DIR_M] << ")  S(" << decomposition[DIR_S] << ") " 
+         << std::endl << std::flush;
+
+
 };

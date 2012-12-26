@@ -83,9 +83,6 @@ class Grid : public IfaceGKC {
   **/
   double dXYZ, dXYZV;
 
-  /// Local Grid size (for Domain & Boundary)
-  int NxGD, NyGD, NkyGD, NzGD, NvGD, NmGD, NsGD;
-
   /// Constructor
   Grid(Setup *setup, Parallel *parallel, FileIO *fileIO);
 

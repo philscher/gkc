@@ -56,8 +56,8 @@ FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileI
   setDoubleGyroAverageMatrix(setup);
         
   // Create Vectors
-  VecCreateMPI(parallel->Comm[DIR_X], NxLD, grid->NxGD, &GyroVector_X);
-  VecCreateMPI(parallel->Comm[DIR_X], NxLD, grid->NxGD, &GyroVector_XAvrg);
+  VecCreateMPI(parallel->Comm[DIR_X], NxLD, Nx, &GyroVector_X);
+  VecCreateMPI(parallel->Comm[DIR_X], NxLD, Nx, &GyroVector_XAvrg);
   VecAssemblyBegin(GyroVector_X    );    VecAssemblyEnd  (GyroVector_X    );
   VecAssemblyBegin(GyroVector_XAvrg);    VecAssemblyEnd  (GyroVector_XAvrg);
 
@@ -259,7 +259,7 @@ void FieldsHermite::solvePoissonEquation(const CComplex Q     [Nq][NxLD][NkyLD][
 Matrix* FieldsHermite::getGyroAveragingMatrix(const double mu, const int y_k, const int z, const int s)
 {
 
-  Matrix *M = new Matrix(NxLD, grid->NxGD, DIR_X, parallel);         
+  Matrix *M = new Matrix(NxLD, Nx, DIR_X, parallel);         
            
   // fill martrix
   for(int x = NxLlD; x <= NxLuD; x++) { for(int n = NxLlD; n <= NxLuD; n++) {
@@ -295,8 +295,8 @@ void FieldsHermite::setDoubleGyroAverageMatrix(Setup *setup)
   ///////////////////////     Create Double GyroAverageMatrix /////////////////////
   // Note : int_0^infty J cdot J e^{mu} is sensitiv, thus we use higher order matrix
   //        to setup this matrix (linear matrix) Increase by factor 8
-  Matrix Matrix_Gamma0    (NxLD, grid->NxGD, DIR_X, parallel);
-  Matrix Matrix_PoissonLHS(NxLD, grid->NxGD, DIR_X, parallel);
+  Matrix Matrix_Gamma0    (NxLD, Nx, DIR_X, parallel);
+  Matrix Matrix_PoissonLHS(NxLD, Nx, DIR_X, parallel);
 
   int integrationOrder = setup->get("Fields.Hermite.DoubleGyroIntegrationOrder", 32);
         

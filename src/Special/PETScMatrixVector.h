@@ -39,7 +39,7 @@ int petc_signal_handler(int sig, void *ctx);
 class PETScMatrixVector
 {
 
- public:
+public:
     
   /** 
   *    Note : Needs to be called to initlized global variables
@@ -62,10 +62,12 @@ class PETScMatrixVector
   static PetscErrorCode MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_y);
 
   /**
+  *    @brief Create PETSc vector
   *
+  *    @param NkyRed  reduce Nky by NkyRed
   * 
   **/
-  static CComplex* getCreateVector(Grid *grid, Vec &Vec_x);
+  static CComplex* getCreateVector(Grid *grid, Vec &Vec_x, int NkyRed=0);
 
 };
 

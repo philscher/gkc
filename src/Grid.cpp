@@ -139,7 +139,6 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
   NmLB = NmLuB - NmLlB + 1; NsLB = NsLuB - NsLlB + 1;
     
   // Set number of local/global Domain points 
-  NxGD = Nx ; NyGD = Ny; NzGD = Nz; NvGD = Nv; NmGD= Nm; NsGD=Ns;
   NxGB = Nx + 2*NxGC  ; NyGB = Ny + 2*NyGC;
   NzGB = Nz + 2*NxGC  ; NvGB = Nv + 2*NxGC;
   NmGB = Nm           ; NsGB = Ns;
@@ -171,11 +170,11 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
   RsGB.setRange(NsGlB, NsGB);
   
   // Set Ranges of Global Domain (LD)
-  RxGD.setRange(NxGlD, NxGD);
-  RzGD.setRange(NzGlD, NzGD);
-  RvGD.setRange(NvGlD, NvGD);
-  RmGD.setRange(NmGlD, NmGD);
-  RsGD.setRange(NsGlD, NsGD);
+  RxGD.setRange(NxGlD, Nx);
+  RzGD.setRange(NzGlD, Nz);
+  RvGD.setRange(NvGlD, Nv);
+  RmGD.setRange(NmGlD, Nm);
+  RsGD.setRange(NsGlD, Ns);
  
   ///////////////  Set Grid  Domain ////////////
 

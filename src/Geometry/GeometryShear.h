@@ -80,34 +80,32 @@
 **/
 class GeometryShear : public Geometry
 {
-   double Ls,    ///< Shearing length  
-          shear; ///< Shearing
+  double Ls,    ///< Shearing length  
+         shear; ///< Shearing
 
-   bool connectFieldLines,   ///< True if field lines are connected at z-boundary
-        roundShearToConnect;
+  bool connectFieldLines,   ///< True if field lines are connected at z-boundary
+       roundShearToConnect;
 
-  public:
-
-
+ public:
 
    GeometryShear(Setup *setup, Grid *grid, FileIO *fileIO) : Geometry(setup, grid, fileIO)  {
      
 
-      shear               = setup->get("Geometry.Shear"   , 0.);
-      connectFieldLines   = setup->get("Geometry.ConnectFieldLines", 1);
-      roundShearToConnect = setup->get("Geometry.RoundShearToConnect", 1);
+    shear               = setup->get("Geometry.Shear"   , 0.);
+    connectFieldLines   = setup->get("Geometry.ConnectFieldLines", 1);
+    roundShearToConnect = setup->get("Geometry.RoundShearToConnect", 1);
 
-      //check connection length, underwise parallel boundary will fail
-      // modf :  extract signed integral and fractional values from floating-point number
-      if((abs(fmod(2. * M_PI * shear * Lx/Ly, 1.)) > 1.e-5) && roundShearToConnect) {
-         std::cout << "Warning : Rounding shear to ensure magnetic field line connection" << std::endl;
-                const double di = round(2. * M_PI * shear * Lx/Ly);
-           shear = di / (2. * M_PI) * Ly/Lx;
-      }
+    //check connection length, underwise parallel boundary will fail
+    // modf :  extract signed integral and fractional values from floating-point number
+    if((abs(fmod(2. * M_PI * shear * Lx/Ly, 1.)) > 1.e-5) && roundShearToConnect) {
+       std::cout << "Warning : Rounding shear to ensure magnetic field line connection" << std::endl;
+              const double di = round(2. * M_PI * shear * Lx/Ly);
+         shear = di / (2. * M_PI) * Ly/Lx;
+    }
 
-
-      // if shear is zero, set connection length to high number (what about FPE)
-      Ls = (shear != 0.) ?   Lz / (2. * M_PI * shear) : 1.e99;
+    // if shear is zero, set connection length to high number (what about FPE)
+    Ls = (shear != 0.) ?   Lz / (2. * M_PI * shear) : 1.e99;
+   
    };
 
  
@@ -163,14 +161,14 @@ class GeometryShear : public Geometry
 
    void initData(hid_t geometryGroup) {
 
-      check(H5LTset_attribute_string(geometryGroup, ".", "Type", "Sheared Slab"), DMESG("H5LTset_attribute"));
-      check(H5LTset_attribute_string(geometryGroup, ".", "ConnectFieldLines", connectFieldLines ? "true" : "false"), DMESG("H5LTset_attribute"));
-      check(H5LTset_attribute_string(geometryGroup, ".", "RoundShearToConnect", roundShearToConnect ? "true" : "false"), DMESG("H5LTset_attribute"));
+    check(H5LTset_attribute_string(geometryGroup, ".", "Type", "Sheared Slab"), DMESG("H5LTset_attribute"));
+    check(H5LTset_attribute_string(geometryGroup, ".", "ConnectFieldLines", connectFieldLines ? "true" : "false"), DMESG("H5LTset_attribute"));
+    check(H5LTset_attribute_string(geometryGroup, ".", "RoundShearToConnect", roundShearToConnect ? "true" : "false"), DMESG("H5LTset_attribute"));
       
-      check(H5LTset_attribute_double(geometryGroup, ".", "Shear"   ,  &shear, 1), DMESG("H5LTset_attribute"));
-      check(H5LTset_attribute_double(geometryGroup, ".", "eps_hat"   ,  &eps_hat, 1), DMESG("H5LTset_attribute"));
+    check(H5LTset_attribute_double(geometryGroup, ".", "Shear"   ,  &shear, 1), DMESG("H5LTset_attribute"));
+    check(H5LTset_attribute_double(geometryGroup, ".", "eps_hat"   ,  &eps_hat, 1), DMESG("H5LTset_attribute"));
 
-   }
+   };
 
 
   // virtual void writeData(Timing *timing) {};

@@ -164,7 +164,7 @@ class System
     std::cerr << "Showing " << size << " stack frames : " << std::endl;  
     
     // Output them
-    for (int i = 0; i < size; i++) std::cerr << "    :  " << strings[i] << std::endl;
+    for (int i = 0; i < size; i++) std::cout << "    :  " << strings[i] << std::endl;
     free (strings);
 
    }

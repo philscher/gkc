@@ -174,7 +174,7 @@ void Init::initBackground(Setup *setup, Grid *grid,
    FunctionParser f0_parser = setup->getFParser();
    check(((f0_parser.Parse(plasma->species[s].f0_str, "x,z,v,m,n,T") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
    
-    for(int m   = NmLlB ; m   <= NmLuB ; m++  ) {  for(int z = NzLlB; z <= NzLuB; z++) { 
+    for(int m   = NmLlB ; m   <= NmLuB ;   m++) {  for(int z = NzLlB; z <= NzLuB; z++) { 
     for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  for(int x = NxLlB; x <= NxLuB; x++) { 
       
       const double n = plasma->species[s].n[x];

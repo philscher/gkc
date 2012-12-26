@@ -15,7 +15,7 @@
 
 #include "PETScMatrixVector.h"
 
-Vlasov *GL_vlasov;
+Vlasov *GL_vlasov; /// global variable to use for MatrixVectorProduct
 Fields *GL_fields;
 
 bool GL_includeZF;
@@ -47,8 +47,8 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
 
 {
 
-  [=] (CComplex  fs  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],  
-       CComplex  fss [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB])
+  [=] (CComplex  fs [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],  
+       CComplex  fss[NsLD][NmLD][NzLB][Nky][NxLB][NvLB])
   {
       
     if(process_rank == 0 ) std::cout << "\r"   << "Iteration  : " << GL_iter++ << std::flush;
@@ -61,18 +61,19 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
     // copy whole phase space function (waste but starting point) (important due to bounday conditions
     // we can built wrapper around this and directly pass it
     int n = 0;
-    for(int s = NsLlD; s <= NsLuD; s++) { for(int m   = NmLlD; m  <= NmLuD   ; m++  ) { for(int z = NzLlD; z <= NzLuD; z++) {
+    for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { for(int z = NzLlD; z <= NzLuD; z++) {
     for(int y_k = (GL_includeZF ? 0 : 1); y_k <= NkyLuD-1; y_k++) {   // iterate from y_k=0 only Zonal Flow is included
-    for(int x = NxLlD; x <= NxLuD; x++) { for(int v = NvLlD       ; v <= NvLuD; v++) { 
+    for(int x = NxLlD; x <= NxLuD; x++) { for(int v = NvLlD; v <= NvLuD; v++) { 
       
-           fs[s][m][z][y_k][x][v] = x_F1[n++];
+      fs[s][m][z][y_k][x][v] = x_F1[n++];
 
     }}} }}}
 
     GL_vlasov->setBoundary(GL_vlasov->fs); 
-    GL_fields->solve(GL_vlasov->f0,  GL_vlasov->fs); 
+    GL_fields->solve(GL_vlasov->f0, GL_vlasov->fs); 
    
-    const double rk_0[] = { 0., 0., 0.};
+    // Set zero time integration coefficient so that fss = F_gy(fs) 
+    const double rk_0[] = { 0., 0., 0.}; 
     GL_vlasov->solve(GL_vlasov->getEquationType(), GL_fields, GL_vlasov->fs, GL_vlasov->fss, 1., 0, rk_0);
    
     // copy whole phase space function (waste but starting point) (important due to bounday conditions
@@ -82,7 +83,7 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
     for(int y_k = (GL_includeZF ? 0 : 1); y_k <= NkyLuD-1; y_k++) {   // iterate from y_k=0 only if Zonal Flow is included
     for(int x = NxLlD; x <= NxLuD; x++) { for(int v = NvLlD; v <= NvLuD; v++) { 
 
-       y_F1[n++] = fss[s][m][z][y_k][x][v];
+      y_F1[n++] = fss[s][m][z][y_k][x][v];
 
     }}} }}}
  
@@ -91,13 +92,19 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
 
     } ((A6zz) GL_vlasov->fs, (A6zz) GL_vlasov->fss);
    
-   return 0; // return 0 (success) required for PETSc
+  return 0; // return 0 (success) required for PETSc
+
 }
 
-CComplex* PETScMatrixVector::getCreateVector(Grid *grid, Vec &Vec_x) 
+CComplex* PETScMatrixVector::getCreateVector(Grid *grid, Vec &Vec_x, int NkyRed) 
 {
 
   CComplex *xp;
+
+  // Usually, Zonal flow/Nyquiest frequency is negelcted
+  int getGlobalSize =    Nx * (Nky - NkyRed) * Nz   * Nv   * Nm   * Ns; 
+  int getLocalSize  =  NxLD * (Nky - NkyRed) * NzLD * NvLD * NmLD * NsLD;
+  
 
   VecCreateMPI(MPI_COMM_WORLD, grid->getLocalSize(), grid->getGlobalSize(), &Vec_x);
   VecAssemblyBegin(Vec_x);
@@ -106,6 +113,7 @@ CComplex* PETScMatrixVector::getCreateVector(Grid *grid, Vec &Vec_x)
   VecGetArray    (Vec_x, (PetscScalar **) &xp);
 
   return xp;
+
 }
  
 
