@@ -164,9 +164,8 @@ class allocate : public ArrayBase
    *
    **/ 
    allocate(Range R0, alloc_flags user_flags = alloc_flags::USE_DEFAULT)             
+          : flags(user_flags)
    {
-        flags &= user_flags;
-
         // get total array size
         Num = R0.Num() ; 
        
@@ -185,7 +184,8 @@ class allocate : public ArrayBase
    *
    **/ 
    allocate(Range R0, Range R1, 
-            alloc_flags user_flags = alloc_flags::USE_DEFAULT)             
+            alloc_flags user_flags = alloc_flags::USE_DEFAULT) 
+          : flags(user_flags)
    { 
         // get total array size
         Num = R0.Num() * R1.Num(); 
@@ -212,6 +212,7 @@ class allocate : public ArrayBase
    **/ 
    allocate(Range R0, Range R1, Range R2,
             alloc_flags user_flags = alloc_flags::USE_DEFAULT)             
+          : flags(user_flags)
    {
      
         // get total array size
@@ -237,6 +238,7 @@ class allocate : public ArrayBase
    **/ 
    allocate(Range R0, Range R1, Range R2, Range R3,
             alloc_flags user_flags = alloc_flags::USE_DEFAULT)             
+          : flags(user_flags)
    {
        
        Num = R3.Num() * R2.Num() * R1.Num() * R0.Num();
@@ -267,6 +269,7 @@ class allocate : public ArrayBase
    allocate(Range R0, Range R1, Range R2, Range R3,
             Range R4,
             alloc_flags user_flags = alloc_flags::USE_DEFAULT)             
+          : flags(user_flags)
    {
        
        Num = R4.Num() * R3.Num() * R2.Num() * 
@@ -296,6 +299,7 @@ class allocate : public ArrayBase
    allocate(Range R0, Range R1, Range R2, Range R3,
             Range R4, Range R5,
             alloc_flags user_flags = alloc_flags::USE_DEFAULT)             
+          : flags(user_flags)
    {
        // get total array size
        Num = R5.Num() * R4.Num() * R3.Num() * 
