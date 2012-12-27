@@ -38,42 +38,44 @@ namespace nct { /// use better nct for numerical computing toolkit
 class Range
 {
 
-   int Start,  ///< Starting point
-       Length; ///< Length of range
+  int Start,  ///< Starting point
+      Length; ///< Length of range
 
 
-  public:
-   Range(int _Start=0, int _Length=0) : Start(_Start), Length(_Length) {};
+ public:
 
-   /**
-   *   @brief get number of elements inside the range
-   *
-   *   @return number of elements
-   **/
-   int Num() const { return Length; };
+  Range(int _Start=0, int _Length=0) : Start(_Start), Length(_Length) {};
 
-   /**
-   *   @brief get starting point of range
-   *
-   *   @return starting point of range
-   *
-   **/
-   int Off() const { return Start ; };
+  /**
+  *   @brief get number of elements inside the range
+  *
+  *   @return number of elements
+  **/
+  int Num() const { return Length; };
 
-   void setRange(int _Start, int _Length) 
-   {
+  /**
+  *   @brief get starting point of range
+  *
+  *   @return starting point of range
+  *
+  **/
+  int Off() const { return Start ; };
+
+  void setRange(int _Start, int _Length) 
+  {
       Start  = _Start;
       Length = _Length;
-   };
+  };
+
 };
 
 
 enum alloc_flags  { 
-               MA  =1      ,    ///< do use Memory Aligned (default)
-               SET_ZERO=2  ,    ///< do not set to Zero 
-               DEALLOC=4   ,    ///< do not deallocate 
-               USE_DEFAULT = 7, ///< use default values 
-             };
+             MA  =1      ,    ///< do use Memory Aligned (default)
+             SET_ZERO=2  ,    ///< do not set to Zero 
+             DEALLOC=4   ,    ///< do not deallocate 
+             USE_DEFAULT = 7, ///< use default values 
+           };
 
 
 /**
@@ -119,125 +121,142 @@ class allocate : public ArrayBase
   
   std::stack<void *> ptr_stack;
 
-  public:
+ public:
 
-   int getNum() const { return Num; };
-   int getOff() const { return Off; };
+  int getNum() const { return Num; };
+  int getOff() const { return Off; };
 
-   allocate(int _flags = SET_ZERO | DEALLOC) : flags(_flags)
-   {
-      Num = 0;
-      Off = 0;
-   };
+  allocate(int _flags = SET_ZERO | DEALLOC) : flags(_flags)
+  {
+    Num = 0;
+    Off = 0;
+  };
 
+  /**
+  *    @brief move assigment operator
+  *
+  *    We define a move assignment operator. Using copy
+  *    construcor should be avoided as it may deallocate
+  *    all variables once the destructor is called, leaving
+  *    the other object's variables in an undefined state.
+  *
+  **/
+  allocate& operator=(allocate&& alloc)
+  {
+    flags     = alloc.flags;
+    Num       = alloc.Num;
+    Off       = alloc.Off;
+    ptr_stack = alloc.ptr_stack;
 
-   /**
-   *    @brief returns pointer with offset removed
-   *
-   *    Points to first element
-   *
-   **/
-   template<class T> T* data(T *g0)
-   {
-         T *g = g0 + Off;
-         return g; 
-   };
+    // empty stack of rvalue, so it cannot deallocated
+    while (!alloc.ptr_stack.empty()) alloc.ptr_stack.pop();
+    
+    return *this;
+  }
+
+  /**
+  *    @brief returns pointer with offset removed
+  *
+  *    Points to first element
+  *
+  **/
+  template<class T> T* data(T *g0)
+  {
+    T *g = g0 + Off;
+    return g; 
+  };
    
-   /**
-   *
-   *   @brief returns pointer which included offset
-   *
-   **/ 
-   template<class T> T* zero(T *g)
-   {
-         T *g0 = g - Off;
-         return g0; 
-   };
+  /**
+  *
+  *   @brief returns pointer which included offset
+  *
+  **/ 
+  template<class T> T* zero(T *g)
+  {
+    T *g0 = g - Off;
+    return g0; 
+  };
 
-   
-
-   /**
-   *    @brief calculated offset for one dimensional arrays.
-   *
-   *    @param R0         Range of first dimension
-   *    @param user_flags Set additionally user flags
-   *
-   **/ 
-   allocate(Range R0, alloc_flags user_flags = alloc_flags::USE_DEFAULT)             
+  /**
+  *    @brief calculated offset for one dimensional arrays.
+  *
+  *    @param R0         Range of first dimension
+  *    @param user_flags Set additionally user flags
+  *
+  **/ 
+  allocate(Range R0, alloc_flags user_flags = alloc_flags::USE_DEFAULT)             
           : flags(user_flags)
-   {
-        // get total array size
-        Num = R0.Num() ; 
+  {
+    // get total array size
+    Num = R0.Num() ; 
        
-        // calculate offset to p[0]
-        Off = R0.Off(); 
+    // calculate offset to p[0]
+    Off = R0.Off(); 
      
-   };
+  };
 
-   /**
-   *    @brief calculated offset for two dimensional arrays.
-   *
-   *    @param R0         Range of first  dimension
-   *    @param R1         Range of second dimension
-   *
-   *    @param user_flags Set additionally user flags
-   *
-   **/ 
-   allocate(Range R0, Range R1, 
-            alloc_flags user_flags = alloc_flags::USE_DEFAULT) 
+  /**
+  *    @brief calculated offset for two dimensional arrays.
+  *
+  *    @param R0         Range of first  dimension
+  *    @param R1         Range of second dimension
+  *
+  *    @param user_flags Set additionally user flags
+  *
+  **/ 
+  allocate(Range R0, Range R1, 
+           alloc_flags user_flags = alloc_flags::USE_DEFAULT) 
           : flags(user_flags)
-   { 
-        // get total array size
-        Num = R0.Num() * R1.Num(); 
+  { 
+    // get total array size
+    Num = R0.Num() * R1.Num(); 
         
-        // calculate offset to p[0][0]
-        Off = 
-              R0.Off() * (R1.Num()) 
-            + R1.Off() ;
-   };
+    // calculate offset to p[0][0]
+    Off = R0.Off() * (R1.Num()) 
+        + R1.Off() ;
+  };
    
    
-   /**
-   *    @brief calculated offset for three dimensional arrays.
-   *
-   *    Note : R0 has largest stride
-   *           R2 is  continuous 
-   *
-   *    @param R0         Range of third  dimension
-   *           R1         Range of second dimension
-   *           R2         Range of first  dimension
-   *
-   *    @param user_flags Set additionally user flags
-   *
-   **/ 
-   allocate(Range R0, Range R1, Range R2,
-            alloc_flags user_flags = alloc_flags::USE_DEFAULT)             
+  /**
+  *    @brief calculated offset for three dimensional arrays.
+  *
+  *    Note : R0 has largest stride
+  *           R2 is  continuous 
+  *
+  *    @param R0         Range of third  dimension
+  *           R1         Range of second dimension
+  *           R2         Range of first  dimension
+  *
+  *    @param user_flags Set additionally user flags
+  *
+  **/ 
+  allocate(Range R0, Range R1, Range R2,
+           alloc_flags user_flags = alloc_flags::USE_DEFAULT)             
           : flags(user_flags)
-   {
+  {
      
-        // get total array size
-        Num = R2.Num() * R1.Num() * R0.Num();
+    // get total array size
+    Num = R2.Num() * R1.Num() * R0.Num();
 
-        // calculate offset to p[0][0][0]
-        Off = 
-          R0.Off() * (R1.Num() * R2.Num()) 
+    // calculate offset to p[0][0][0]
+    Off = R0.Off() * (R1.Num() * R2.Num()) 
         + R1.Off() * (R2.Num()) 
         + R2.Off() ;
 
-   };
+  };
 
-   /**
-   *    @brief calculated offset for four dimensional arrays.
-   *
-   *    @param R0 range in third  dimension
-   *           R1 Range in second dimension
-   *           R2 Range in first  dimension
-   *           R3 Range in first  dimension
-   *    @param user_flags Set additionally user flags
-   *
-   **/ 
-   allocate(Range R0, Range R1, Range R2, Range R3,
-            alloc_flags user_flags = alloc_flags::USE_DEFAULT)             
+  /**
+  *    @brief calculated offset for four dimensional arrays.
+  *
+  *    @param R0 range in third  dimension
+  *           R1 Range in second dimension
+  *           R2 Range in first  dimension
+  *           R3 Range in first  dimension
+  *    @param user_flags Set additionally user flags
+  *
+  **/ 
+  allocate(Range R0, Range R1, Range R2, Range R3,
+           alloc_flags user_flags = alloc_flags::USE_DEFAULT)             
           : flags(user_flags)
    {
        
@@ -327,21 +346,19 @@ class allocate : public ArrayBase
     **/ 
     ~allocate()
     {
-      std::cout << "Do not de-allocating" << std::endl;
-      //System::printStackTrace() ;
-      return;
-         if(flags & alloc_flags::DEALLOC) { 
-           std::cout << "De-allocating arrays" << std::endl << std::flush; 
-            // Deallocate all arrays
-            while (!ptr_stack.empty()) {
+
+     if(flags & alloc_flags::DEALLOC) { 
            
-              // release top element
-              void *ptr = ptr_stack.top();
-               
-              //if() free(ptr)
-              _mm_free(ptr);
-              // remove element on top
-              ptr_stack.pop();
+       while (!ptr_stack.empty()) {
+      
+         // release top element
+         void *ptr = ptr_stack.top();
+         
+         if(flags & MA) _mm_free(ptr);
+         else               free(ptr);
+         
+         // remove element on top
+         ptr_stack.pop();
             }
          }
     };
@@ -352,13 +369,15 @@ class allocate : public ArrayBase
     *     In order to increase performance, we should align the data. 
     *     The best alignment can be found by using ...
     *
+    *     @note we return an rvalue reference, so move constructor
+    *     is called on re-assignment.
     *
     **/
-    template<class T> allocate& operator()(T **g)
+    template<class T> allocate&& operator()(T **g)
     {
          
-         //*g = ((T *) malloc(Num * sizeof(T)));
-         *g = ((T *) _mm_malloc(Num * sizeof(T), 64));
+         if(flags & alloc_flags::MA) *g = ((T *) _mm_malloc(Num * sizeof(T), 64));
+         else                        *g = ((T *)     malloc(Num * sizeof(T)));
 
            ptr_stack.push((void *) *g);
         
@@ -382,7 +401,7 @@ class allocate : public ArrayBase
     *
     *
     **/
-    template<class T> allocate& operator()(T **g0, T **g1)
+    template<class T> allocate&& operator()(T **g0, T **g1)
     {
          operator()(g0);
          operator()(g1);
@@ -398,7 +417,7 @@ class allocate : public ArrayBase
     *
     *
     **/
-    template<class T> allocate& operator()(T **g0, T **g1, T **g2)
+    template<class T> allocate&& operator()(T **g0, T **g1, T **g2)
     {
          operator()(g0);
          operator()(g1);
@@ -415,7 +434,7 @@ class allocate : public ArrayBase
     *
     *
     **/
-    template<class T> allocate& operator()(T **g0, T **g1, T **g2, T **g3)
+    template<class T> allocate&& operator()(T **g0, T **g1, T **g2, T **g3)
     {
          operator()(g0);
          operator()(g1);
@@ -433,7 +452,7 @@ class allocate : public ArrayBase
     *
     *
     **/
-    template<class T> allocate& operator()(T **g0, T **g1, T **g2, T **g3, T **g4)
+    template<class T> allocate&& operator()(T **g0, T **g1, T **g2, T **g3, T **g4)
     {
          operator()(g0);
          operator()(g1);
@@ -452,7 +471,7 @@ class allocate : public ArrayBase
     *
     *
     **/
-    template<class T> allocate& operator()(T **g0, T **g1, T **g2, T **g3, T **g4, T **g5)
+    template<class T> allocate&& operator()(T **g0, T **g1, T **g2, T **g3, T **g4, T **g5)
     {
          operator()(g0);
          operator()(g1);
@@ -464,7 +483,7 @@ class allocate : public ArrayBase
          return *this;
     }
 
-    template<class T> allocate& operator()(T **g0, T **g1, T **g2, T **g3, T **g4, T **g5, T**g6)
+    template<class T> allocate&& operator()(T **g0, T **g1, T **g2, T **g3, T **g4, T **g5, T**g6)
     {
          operator()(g0);
          operator()(g1);
