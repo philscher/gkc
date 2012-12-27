@@ -17,7 +17,7 @@
 #include "Global.h"
 #include "Parallel.h"
 
-#include "System.h"
+#include "Tools/System.h"
 
 #include <array>
 
@@ -106,6 +106,7 @@ Parallel::Parallel(Setup *setup)
   MPI_Cart_coords(Comm[DIR_ALL], myRank, 6, Coord);
  
   // Get combined positions 
+  Coord[DIR_XYZ]   = ((Coord[DIR_X] == 0) && (Coord[DIR_Y] == 0) && (Coord[DIR_Z] == 0)) ? 0 : -1;
   Coord[DIR_VMS]   = ((Coord[DIR_V] == 0) && (Coord[DIR_M] == 0) && (Coord[DIR_S] == 0)) ? 0 : -1;
   Coord[DIR_VM ]   = ((Coord[DIR_V] == 0) && (Coord[DIR_M] == 0))                        ? 0 : -1;
   Coord[DIR_MS ]   = ((Coord[DIR_M] == 0) && (Coord[DIR_S] == 0))                        ? 0 : -1;
