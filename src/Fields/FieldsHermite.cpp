@@ -19,9 +19,8 @@
 #include "Special/Integrate/Integrate.h"
 #include "Matrix/SpecialMatrix.h"
 
-#include "Tools.h"
-
-#include "System.h"
+#include "Tools/Tools.h"
+#include "Tools/System.h"
 
 #include "petscmat.h" 
 

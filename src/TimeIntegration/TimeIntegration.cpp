@@ -12,7 +12,7 @@
  */
 
 #include "TimeIntegration.h"
-
+#include "Tools/TermColor.h"
 
 TimeIntegration::TimeIntegration(Setup *setup, Grid *grid, Parallel *_parallel, Vlasov *_vlasov,
                                  Fields *_fields, TestParticles *_particles, Eigenvalue *eigenvalue, Benchmark *_bench) 
@@ -190,12 +190,14 @@ void TimeIntegration::writeTimeStep(Timing timing, Timing maxTiming, double dt)
   // should I use flush ? For many CPU maybe not good.
   if(parallel->myRank == 0 && !(timing.step % outputRatio)) {
   
-    std::cout   << "\r" << "Steps  : " << timing.step  << "/" << maxTiming.step 
+    std::cout   << TermColor::bright << TermColor::lyellow   
+                << "\r" << "Steps  : " << timing.step  << "/" << maxTiming.step 
                 << "  Time : " << timing.time  << "/" << maxTiming.time 
                 << std::setprecision(3) <<   "  dt : " << dt << std::flush; 
  
     std::cout << "  Run. Time : " << Timing::TimeStringFromSeconds(std::time(0) - start_time);
     std::cout << Timing::getRemainingTimeString(timing, maxTiming, start_time);
+    std::cout << TermColor::cdefault;
 
   
   }

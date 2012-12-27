@@ -43,6 +43,7 @@ class Geometry2D : public Geometry
   double *By;
   std::string By_str;
 
+  nct::allocate ArrayBy;
 
  public:
   double theta, ///< Angle to the magnetic field
@@ -67,9 +68,8 @@ class Geometry2D : public Geometry
     By_parser.AddConstant("theta", theta);
     check(((By_parser.Parse(By_str, "x") == -1) ? 1 : -1), DMESG("Parsing error of shear condition"));
 
-    //By.resize(Range(NxGlD, NxGuD));
-    nct::allocate(nct::Range(NxLlD, NxLD))(&By);
-    //for(int x=NxGlD; x <= NxGuD; x++) By[x] = By_parser.Eval(&X[x]) ;
+    ArrayBy = nct::allocate(nct::Range(NxLlB, NxLB))(&By);
+
     for(int x=NxLlD; x <= NxLuD; x++) By[x] = By_parser.Eval(&X[x]) ;
 
 

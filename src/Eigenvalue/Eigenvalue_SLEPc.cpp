@@ -15,7 +15,7 @@
 #include "Eigenvalue_SLEPc.h"
 #include "Grid.h"
 #include "Timing.h"
-#include "System.h"
+#include "Tools/System.h"
 
 #include "Special/PETScMatrixVector.h"
 
@@ -267,7 +267,7 @@ void Eigenvalue_SLEPc::initData(Setup *setup, FileIO *fileIO)
   // ********************* setup Table for EigenValues *****************
   EigenValue EigVal_table;
          
-  size_t EigVal_offsets[] = { HOFFSET( EigenValue, EigenValue ), HOFFSET( EigenValue, AbsoluteError) };
+  size_t EigVal_offsets[] = { HOFFSET(EigenValue, EigenValue), HOFFSET(EigenValue, AbsoluteError) };
   size_t EigVal_sizes  [] = { sizeof(EigVal_table.EigenValue) ,  sizeof(EigVal_table.AbsoluteError) };
   hid_t  EigVal_types  [] = { fileIO->complex_tid , H5T_NATIVE_DOUBLE };
   const char * EigVal_names  [] = {"Eigenvalue", "Absolute Error"};

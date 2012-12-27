@@ -44,7 +44,6 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][Nky][FFTSolver::X_Nk
 
   double   pSpec[Nq][Nx]; pSpec[:][:] = 0.;
   CComplex pFreq[Nq][Nx]; pFreq[:][:] = 0.;
-
   // Note : take care that the FFT output is of for e.g. an 8 number sequence [0, 1, 2, 3, 4,-3,-2,-1]
   // Note : atan2 is not a linear function, thus phase has to be calculated at last
   if(parallel->Coord[DIR_VMS] == 0) {
@@ -326,7 +325,7 @@ void Analysis::initData(Setup *setup, FileIO *fileIO)
                    Ns * sizeof(scalarValues.entropy[0]), Ns * sizeof(scalarValues.heat_flux[0]), Ns * sizeof(scalarValues.particle_flux[0])};
 
   hid_t SV_types[] = { H5T_NATIVE_INT, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, 
-                          fileIO->species_tid, fileIO->species_tid, fileIO->species_tid, fileIO->species_tid, fileIO->species_tid } ;
+                       fileIO->species_tid, fileIO->species_tid, fileIO->species_tid, fileIO->species_tid, fileIO->species_tid } ;
   
   const char *SV_names[] = { "Timestep", "Time", "phiEnergy", "ApEnergy", "BpEnergy", "ParticleNumber", "KineticEnergy", "Entropy", "HeatFlux", "ParticleFlux" };
 
@@ -444,7 +443,9 @@ void Analysis::writeData(const Timing &timing, const double dt)
     
       std::stringstream messageStream;
       messageStream << std::endl << std::endl << "Analysis | " << std::setprecision(3) << "Time : " << timing.time << " Step : " << timing.step << "   ";
-      messageStream << "Field Energy : (φ) " << scalarValues.phiEnergy  << "  (A∥) " << scalarValues.ApEnergy  <<  "  (B∥) " << scalarValues.BpEnergy << std::endl; 
+      messageStream << "Field Energy : (φ) " << scalarValues.phiEnergy  << 
+                       "  (A∥) " << ((Nq >= 2) ? Setup::num2str(scalarValues.ApEnergy) : "off") << 
+                       "  (B∥) " << ((Nq >= 3) ? Setup::num2str(scalarValues.BpEnergy) : "off") << std::endl; 
       double charge = 0., kinetic_energy=0.;
     
       for(int s = NsGlD; s <= NsGuD; s++) {

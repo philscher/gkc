@@ -14,7 +14,7 @@
 #include "Plasma.h"
 #include "Special/HermitePoly.h"
 
-#include "System.h"
+#include "Tools/System.h"
 
 Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov *vlasov, Fields *fields, Geometry *_geo) : geo(_geo)
 {
