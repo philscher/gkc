@@ -144,28 +144,28 @@ void Plasma::printOn(std::ostream &output) const
 
 void Plasma::initData(FileIO *fileIO) 
 {
-          hid_t plasmaGroup = check(H5Gcreate(fileIO->getFileID(), "/Plasma",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group for Geometry : H5Gcreate"));
+  
+  hid_t plasmaGroup = check(H5Gcreate(fileIO->getFileID(), "/Plasma",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group for Geometry : H5Gcreate"));
 
-         check(H5LTset_attribute_double(plasmaGroup, ".", "Debye2",  &debye2, 1), DMESG("H5LTset_attribute"));
-         check(H5LTset_attribute_double(plasmaGroup, ".", "beta"  ,  &beta  , 1), DMESG("H5LTset_attribute"));
-         check(H5LTset_attribute_double(plasmaGroup, ".", "B0"    ,  &B0    , 1), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_double(plasmaGroup, ".", "Debye2",  &debye2, 1), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_double(plasmaGroup, ".", "beta"  ,  &beta  , 1), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_double(plasmaGroup, ".", "B0"    ,  &B0    , 1), DMESG("H5LTset_attribute"));
          
-          //////////////////////// Set Table for species.
+  //////////////////////// Set Table for species.
          
-         size_t species_offset[]     = { HOFFSET( Species, name ), HOFFSET( Species, q ), HOFFSET( Species, m ), HOFFSET( Species, n ), HOFFSET( Species, w_T ), HOFFSET( Species, w_n ), HOFFSET( Species, collision ) };
-         size_t species_sizes[]      = { sizeof(species[0].name ), sizeof(species[0].q ), sizeof(species[0].m ), sizeof(species[0].n ), sizeof(species[0].w_T ), sizeof(species[0].w_n ), sizeof(species[0].collision ) };
-         hid_t species_type[]        = { fileIO->s256_tid        , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE      , H5T_NATIVE_DOUBLE      , H5T_NATIVE_DOUBLE             };
-         const char *species_names[] = { "Name"                  , "Charge"             , "Mass"               , "Density"            , "w_T"                  , "w_n"                  , "Collision"                   };
+  
+  size_t spec_offset[]  = { HOFFSET( Species, name ), HOFFSET( Species, q   ), HOFFSET( Species, m ), HOFFSET( Species, n ), 
+                            HOFFSET( Species, w_T  ), HOFFSET( Species, w_n ) };
+  size_t spec_sizes[]   = { sizeof(species[0].name ), sizeof(species[0].q ), sizeof(species[0].m ), sizeof(species[0].n ), sizeof(species[0].w_T ), sizeof(species[0].w_n ) };
+  hid_t spec_type[]     = { fileIO->s256_tid        , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE      , H5T_NATIVE_DOUBLE       };
+  char *spec_names[] = { "Name"                  , "Charge"             , "Mass"               , "Density"            , "w_T"                  , "w_n"                      };
 
-         // Note : +1 for adiabatic species
-         check(H5TBmake_table("SpeciesTable", fileIO->getFileID(), "Species", (hsize_t) 7, (hsize_t) 0, sizeof(Species), (const char**) species_names,
-                               species_offset, species_type, 32, NULL, 0, &species[0] ), DMESG("H5Tmake_table : Species"));
+  // Note : +1 for adiabatic species
+  check(H5TBmake_table("SpeciesTable", fileIO->getFileID(), "Species", (hsize_t) 6, (hsize_t) Ns+1, sizeof(Species), spec_names,
+                       spec_offset, spec_type, Ns+1, NULL, 0, &species[0] ), DMESG("H5Tmake_table : Species"));
         
-         // create table for all included species
-          for(int s=0; s <= NsGuD; s++)  H5TBappend_records (fileIO->getFileID(), "Species", 1, sizeof(Species), species_offset, species_sizes, &species[s]); 
-
-     /////////////////////
+  /////////////////////
          
-         H5Gclose(plasmaGroup);
+  H5Gclose(plasmaGroup);
 };
 

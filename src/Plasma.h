@@ -36,30 +36,29 @@ class Plasma : public IfaceGKC {
 
   public:
 
-   /**
-   *   @brief Information about Species
-   *
-   **/
-   typedef struct Species 
-   {
+  /**
+  *   @brief Information about Species
+  *
+  **/
+  typedef struct Species 
+  {
 
-     Species() : q(0.), m(0.), collision(0.), w_n(0.), w_T(0.), doGyro(true), T0(0.), n0(0.) 
-     { 
-       alpha   = 0.;
-       sigma   = 0.;
-       //nct::allocate(nct::Range(NxLlB, NxLB))(&T, &n, &w_T, &w_n);
-       nct::allocate(nct::Range(NxLlB, NxLB))(&T, &n);
-       gyroModel = "";
-     };
+    Species() : q(0.), m(0.), w_n(0.), w_T(0.), doGyro(true), T0(0.), n0(0.) 
+    { 
+      alpha   = 0.;
+      sigma   = 0.;
+      //nct::allocate(nct::Range(NxLlB, NxLB))(&T, &n, &w_T, &w_n);
+      nct::allocate(nct::Range(NxLlB, NxLB))(&T, &n);
+      gyroModel = "";
+    };
    
-     double q;          ///< Charge 
-     double m;          ///< Mass 
-     double collision;  ///< Collisional Frequency 
-     double w_n;        ///< Density gradient
-     double w_T;        ///< Temperature gradient
-     double T0;         ///< Temperature normalization
-     double n0;         ///< Density normalization
-     bool   doGyro;     ///< Set if gyro-averaging is performed
+    double q;          ///< Charge 
+    double m;          ///< Mass 
+    double w_n;        ///< Density gradient
+    double w_T;        ///< Temperature gradient
+    double T0;         ///< Temperature normalization
+    double n0;         ///< Density normalization
+    bool   doGyro;     ///< Set if gyro-averaging is performed
    
      double scale_v;    ///< Velocity scale / Thermal velocity
      double scale_n;    ///< Density scale 
