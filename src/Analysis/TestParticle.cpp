@@ -7,33 +7,22 @@ TestParticles::TestParticles(FileIO *fileIO, Setup *setup, Parallel *_parallel) 
     Total_Tracer = setup->get("Tracers.Number", 0);
     particles = new Particle[Total_Tracer];      
  
-
-
   /* 
   for(int n = 1; n <= NumberOfParticles; n++) {
 
          Particle->checkIsOnGrid;
-         
          Particle->Advance();
-         
-
-
-
       }
 
       // update Information   
-
-
  * */
 
+};
 
-   };
 
-
-TestParticles::~TestParticles() {
-//    delete FA_X;
-//    delete FA_V;
-
+TestParticles::~TestParticles() 
+{
+   delete[] particles;
 
 }
 

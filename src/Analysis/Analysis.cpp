@@ -22,21 +22,22 @@ parallel(_parallel),setup(_setup), vlasov(_vlasov), grid(_grid), fields(_fields)
 
 {
 
-     initData(setup, fileIO);
+  initData(setup, fileIO);
 
-     moments = new Moments(setup, vlasov, fields, grid, parallel);
+  moments = new Moments(setup, vlasov, fields, grid, parallel);
 }
 
 
 
 Analysis::~Analysis() 
 {
-   closeData();
+  delete moments;
+  closeData();
 }
 
 
-void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_NkxL], 
-                                CComplex  Field0 [Nq][NzLD][NkyLD][NxLD]      ,
+void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][Nky][FFTSolver::X_NkxL], 
+                                CComplex  Field0 [Nq][NzLD][Nky][NxLD]      ,
                                 double    pSpecX [Nq][Nx/2+1], double pSpecY [Nq][Nky],
                                 double    pPhaseX[Nq][Nx/2+1], double pPhaseY[Nq][Nky])
 {
@@ -56,8 +57,8 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
       // Mode power & Phase shifts for X (domain decomposed) |\phi(k_x)|
       for(int x_k=fft->K1xLlD; x_k <= fft->K1xLuD; x_k++) {
 
-        pSpec[q][x_k] = __sec_reduce_add(cabs(kXOut[q][NzLlD:NzLD][NkyLlD:NkyLD][x_k]))/fft->Norm_X; 
-        pFreq[q][x_k] = __sec_reduce_add(     kXOut[q][NzLlD:NzLD][NkyLlD:NkyLD][x_k] )/fft->Norm_X;
+        pSpec[q][x_k] = __sec_reduce_add(cabs(kXOut[q][NzLlD:NzLD][NkyLlD:Nky][x_k]))/fft->Norm_X; 
+        pFreq[q][x_k] = __sec_reduce_add(     kXOut[q][NzLlD:NzLD][NkyLlD:Nky][x_k] )/fft->Norm_X;
 
       }
             
@@ -99,18 +100,18 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][NkyLD][FFTSolver::X_
 //////////////////////// Calculate scalar values ///////////////////////////
 
 
-void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
-                                     const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                     const CComplex Mom00[NsLD][NzLD][NkyLD][NxLD], 
-                                     const CComplex Mom20[NsLD][NzLD][NkyLD][NxLD], 
-                                     const CComplex Mom02[NsLD][NzLD][NkyLD][NxLD], 
-                                     double ParticleFlux[Nq][NsLD][NkyLD][NxLD], 
-                                     double HeatFlux[Nq][NsLD][NkyLD][NxLD],
+void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB], 
+                                     const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
+                                     const CComplex Mom00[NsLD][NzLD][Nky][NxLD], 
+                                     const CComplex Mom20[NsLD][NzLD][Nky][NxLD], 
+                                     const CComplex Mom02[NsLD][NzLD][Nky][NxLD], 
+                                     double ParticleFlux[Nq][NsLD][Nky][NxLD], 
+                                     double HeatFlux[Nq][NsLD][Nky][NxLD],
                                      ScalarValues &scalarValues) 
 
 {
   
-    for(int s = NsGlD; s <= NsGuD; s++) {
+  for(int s = NsGlD; s <= NsGuD; s++) {
     
       
     double number = 0.e0;
@@ -172,12 +173,12 @@ void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][
 
 
 void Analysis::getParticleHeatFlux( 
-                                   double ParticleFlux[Nq][NsLD][NkyLD][NxLD], 
-                                   double HeatFlux[Nq][NsLD][NkyLD][NxLD],
-                                   const CComplex  Field0[Nq][NzLD][NkyLD][NxLD],
-                                   const CComplex Mom00[NsLD][NzLD][NkyLD][NxLD], 
-                                   const CComplex Mom20[NsLD][NzLD][NkyLD][NxLD], 
-                                   const CComplex Mom02[NsLD][NzLD][NkyLD][NxLD] 
+                                   double ParticleFlux[Nq][NsLD][Nky][NxLD], 
+                                   double HeatFlux[Nq][NsLD][Nky][NxLD],
+                                   const CComplex  Field0[Nq][NzLD][Nky][NxLD],
+                                   const CComplex Mom00[NsLD][NzLD][Nky][NxLD], 
+                                   const CComplex Mom20[NsLD][NzLD][Nky][NxLD], 
+                                   const CComplex Mom02[NsLD][NzLD][Nky][NxLD] 
                                   )
 {
   // Triad condition. Heat/Particles are only transported by the y_k = 0, as the other y_k > 0 
@@ -220,12 +221,12 @@ void Analysis::initData(Setup *setup, FileIO *fileIO)
      
   hid_t momGroup = check(H5Gcreate(fileIO->getFileID(), "/Moments", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
 
-  hsize_t mom_dsdim[] =  { Nz  , Nky, Nx, Ns, 1            };
-  hsize_t mom_dmdim[] =  { Nz  , Nky, Nx, Ns, H5S_UNLIMITED};
-  hsize_t mom_cBdim[] =  { NzLD       , NkyLD      , NxLD       , NsLD , 1            };
-  hsize_t mom_cDdim[] =  { NzLD       , NkyLD      , NxLD       , NsLD , 1            };
-  hsize_t mom_cmoff[] =  { 0, 0, 0, 0, 0                                              };
-  hsize_t mom_cdoff[] =  { NzLlD-3    , 0          , NxLlD-3    , NsLlD-1,  0          };
+  hsize_t mom_dsdim[] =  { Nz  , Nky, Nx  , Ns  , 1             };
+  hsize_t mom_dmdim[] =  { Nz  , Nky, Nx  , Ns  , H5S_UNLIMITED };
+  hsize_t mom_cBdim[] =  { NzLD, Nky, NxLD, NsLD, 1             };
+  hsize_t mom_cDdim[] =  { NzLD, Nky, NxLD, NsLD, 1             };
+  hsize_t mom_cmoff[] =  { 0   , 0  , 0   , 0   , 0             };
+  hsize_t mom_cdoff[] =  { NzLlD-3, 0 , NxLlD-3, NsLlD-1,  0    };
      
   bool momWrite = (parallel->Coord[DIR_VM] == 0);
      
@@ -355,12 +356,12 @@ void Analysis::writeData(const Timing &timing, const double dt)
       timing.check(dataOutputStatistics, dt)) 
   {
 
-      CComplex  Mom_Tp[NsLD][NzLD][NkyLD][NxLD], 
-                Mom_To[NsLD][NzLD][NkyLD][NxLD], 
-                Mom_n [NsLD][NzLD][NkyLD][NxLD]; 
+      CComplex  Mom_Tp[NsLD][NzLD][Nky][NxLD], 
+                Mom_To[NsLD][NzLD][Nky][NxLD], 
+                Mom_n [NsLD][NzLD][Nky][NxLD]; 
         
-      double     HeatFlux[Nq][NsLD][NkyLD][NxLD],  // Heat flux   
-             ParticleFlux[Nq][NsLD][NkyLD][NxLD];  // Particle flux
+      double     HeatFlux[Nq][NsLD][Nky][NxLD],  // Heat flux   
+             ParticleFlux[Nq][NsLD][Nky][NxLD];  // Particle flux
 
 
       // Get Moments of Vlasov equation

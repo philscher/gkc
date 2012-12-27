@@ -204,11 +204,13 @@ GKC::~GKC()
   delete fields;
   delete visual;
   delete vlasov;
+  delete collisions; 
   delete geometry;
   delete grid;
   delete analysis;
   delete particles;
   delete eigenvalue;
+  delete event;
   delete fileIO;
   // no need to delete table ?! Anyway SLEPc/PETSc seems to crash
   // some times FFT crashes, be sude that it is below fileIO (hdf-5 is closed)

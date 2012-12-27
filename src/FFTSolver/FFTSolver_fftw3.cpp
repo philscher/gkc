@@ -302,7 +302,8 @@ FFTSolver_fftw3::~FFTSolver_fftw3()
     fftw_free(data_kXOut );
     fftw_free(data_kXIn  );
     
-
+    fftw_free(data_X_Transp_1);
+    fftw_free(data_X_Transp_2);
 }
 
 

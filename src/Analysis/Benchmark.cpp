@@ -31,6 +31,8 @@ Benchmark::Benchmark(Setup *setup, Parallel *_parallel) : parallel(_parallel)
 */
 // reset counters PAPIF_stop_counters(NULL, array_length, check)
    }
+  
+   simMaxGFLOPS = 0.;
 };
    
 Benchmark::~Benchmark()

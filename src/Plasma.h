@@ -11,8 +11,8 @@
  * =====================================================================================
  */
 
-#ifndef PLASMA_H__
-#define PLASMA_H__
+#ifndef __GKC_PLASMA_H__
+#define __GKC_PLASMA_H__
 
 #include "Global.h"
 #include "Setup.h"
@@ -31,10 +31,12 @@
 /**
 *   @brief Hold information about the plasma with species and normalizations
 *
+*
+*
 **/
 class Plasma : public IfaceGKC {
 
-  public:
+ public:
 
   /**
   *   @brief Information about Species
@@ -60,104 +62,111 @@ class Plasma : public IfaceGKC {
     double n0;         ///< Density normalization
     bool   doGyro;     ///< Set if gyro-averaging is performed
    
-     double scale_v;    ///< Velocity scale / Thermal velocity
-     double scale_n;    ///< Density scale 
-     double sigma;      ///< sigma 
-     double alpha;      ///< alpha
+    double scale_v;    ///< Velocity scale / Thermal velocity
+    double scale_n;    ///< Density scale 
+    double sigma;      ///< sigma 
+    double alpha;      ///< alpha
    
-   
-     char name[64];     ///< name of species
-     char n_name[64];   ///< dont know
-     char T_name[64];   ///< dont know
+    char name[64];     ///< name of species
+    char n_name[64];   ///< dont know
+    char T_name[64];   ///< dont know
   
-     /////////// Below non-POD types (and not saved [yet] in HDF-5 file) ////////////
-     std::string gyroModel;
-     std::string f0_str;
+    /////////// Below non-POD types (and not saved [yet] in HDF-5 file) ////////////
+    std::string gyroModel;
+    std::string f0_str;
       
-     // stupid fix, but we have to otherwise all stuff is private
+    // stupid fix, but we have to otherwise all stuff is private
    
-   void update(Geometry *geo, double cs) { 
-        scale_v = sqrt(2.*T0/m); 
-        scale_n = n0;
-        alpha = scale_v*  1./(cs*sqrt(geo->eps_hat));
-        sigma = q / T0;
-   
-     };
+  void update(Geometry *geo, double cs) { 
 
-     /// Calculate debye legnth
-     double debye2(const int x) const { return T[x]/(4.*M_PI*n[x]*q*q); };
+    scale_v = sqrt(2.*T0/m); 
+    scale_n = n0;
+    alpha   = scale_v*  1./(cs*sqrt(geo->eps_hat));
+    sigma   = q / T0;
    
-     double *T  , ///< Temperature profile
-            *n  ; ///< Density profile
+  };
+
+  /// Calculate debye legnth
+  double debye2(const int x) const { return T[x]/(4.*M_PI*n[x]*q*q); };
+   
+  double *T  , ///< Temperature profile
+         *n  ; ///< Density profile
   //          *w_T, ///< Temperature scale length
   //          *w_n; ///< Density scale length
    
-   } _Species;
+  } _Species;
 
-   // Check what is really necessary also in plasma
+  // Check what is really necessary also in plasma
 
-   double n_ref, ///< Reference 
-          L_ref, ///< Reference scale length
-          T_ref; ///< Reference temperature
+  double n_ref, ///< Reference 
+         L_ref, ///< Reference scale length
+         T_ref; ///< Reference temperature
    
-   double cs;  ///<  speed of sound of ions \f$ c_s = \sqrt{\frac{T_{e0}}{m_i}} \f$ 
+  double cs;  ///<  speed of sound of ions \f$ c_s = \sqrt{\frac{T_{e0}}{m_i}} \f$ 
 
     
-   /**  The normalized Debye length (from e.g. G\"orler PhD Eq. (2.82))
-   *
-   * \f[
-   *      \lambda_D = \lambda_D / \rho_{ref} = \sqrt{T_{ref}}{4\pi\rho_{ref}^2 n_{ref} e^2}
-   * \f]
-   *  @note needs to be 1-d over X
-   **/
-   double debye2;
+  /**  The normalized Debye length (from e.g. G\"orler PhD Eq. (2.82))
+  *
+  * \f[
+  *      \lambda_D = \lambda_D / \rho_{ref} = \sqrt{T_{ref}}{4\pi\rho_{ref}^2 n_{ref} e^2}
+  * \f]
+  *  @note needs to be 1-d over X
+  **/
+  double debye2;
 
-   /**
-   *   @todo is it necessary ?
-   **/
-   bool global;
+  /**
+  *   @todo is it necessary ?
+  *
+  *
+  **/
+  bool global;
 
-   double B0,    ///< Scale of Equilibrium Magnetic field \f$ B_0 \f$
-          beta,  ///< Plasma pressure  \f$ \beta \f$  
-          w_p;   ///< Plasma pressure scale length \f$ \omega_p \f$
+  double B0,    ///< Scale of Equilibrium Magnetic field \f$ B_0 \f$
+         beta,  ///< Plasma pressure  \f$ \beta \f$  
+         w_p;   ///< Plasma pressure scale length \f$ \omega_p \f$
 
-   /**
-   *   @todo is it necessary ?
-   **/
-   int nfields;
+  /**
+  *   @todo is it necessary ?
+  *
+  *
+  **/
+  int nfields;
    
-   /**
-   *   Note Species goes from 0 ... SPECIES_MAX, where 0 is an
-   *   adiabatic species.
-   *   @todo check impact on speed
-   **/
-   Species species[SPECIES_MAX+1];
+  /**
+  *   Note Species goes from 0 ... SPECIES_MAX, where 0 is an
+  *   adiabatic species.
+  *   @todo check impact on speed
+  *
+  *
+  **/
+  Species species[SPECIES_MAX+1];
    
-   /**
-   *    @brief intializes species 
-   *
-   *
-   * 
-   **/
-   Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int nfields=1);
+  /**
+  *    @brief intializes species 
+  *
+  *
+  * 
+  **/
+  Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int nfields=1);
    
-   /**
-    *
-    *  @brief Free up resources
-    *
-   **/
-   virtual ~Plasma() {};
+  /**
+  *
+  *  @brief Free up resources
+  *
+  **/
+  virtual ~Plasma() {};
 
 
-protected:
+ protected:
 
-    virtual void printOn(std::ostream &output) const;
+  virtual void printOn(std::ostream &output) const;
 
-    void initData(FileIO *fileIO) ;
-    virtual void writeData(const Timing &timing, const double dt) {};
-    virtual void closeData() {};
+  void initData(FileIO *fileIO) ;
+  virtual void writeData(const Timing &timing, const double dt) {};
+  virtual void closeData() {};
+
 };
 
 
-#endif // CONFIG_H__
+#endif // __GKC_PLASMA_H__
 
