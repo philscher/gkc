@@ -29,8 +29,8 @@ VlasovIsland::VlasovIsland(Grid *_grid, Parallel *_parallel, Setup *_setup, File
     
 
     //// Setup Magnetic Island structure
-    nct::allocate(nct::Range(NxGlD, Nx))(&MagIs, &dMagIs_dx);
-    nct::allocate(nct::Range(NkyLlD, Nky))(&ky_filter);
+    ArrayX = nct::allocate(nct::Range(NxGlD, Nx))(&MagIs, &dMagIs_dx);
+    ArrayY = nct::allocate(nct::Range(NkyLlD, Nky))(&ky_filter);
     
     const double ky0   = setup->get("Island.Filter.ky0", 1.2); 
     const double filter_gradient = setup->get("Island.Filter.Gradient  ", 10.); 

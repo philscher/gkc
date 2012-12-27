@@ -22,13 +22,13 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
 {
       
   // Set global parameters 
-  debye2 = setup->get("Plasma.Debye2", 0. ); 
-  B0     = setup->get("Plasma.B0"    , 1. );
+  debye2  = setup->get("Plasma.Debye2", 0. ); 
+  B0      = setup->get("Plasma.B0"    , 1. );
        
-  beta   =  setup->get("Plasma.Beta"    , 0. );
-  w_p    =  setup->get("Plasma.w_p"    , 0. );
-  global  = setup->get("Plasma.Global",   0 );
-  cs      = setup->get("Plasma.cs",   1. );
+  beta    = setup->get("Plasma.Beta"  , 0. );
+  w_p     = setup->get("Plasma.w_p"   , 0. );
+  global  = setup->get("Plasma.Global", 0  );
+  cs      = setup->get("Plasma.cs"    , 1. );
      
   nfields  = ((beta > 0.e0)  ? 2 : 1);
   nfields  = (setup->get("Plasma.Bp", 0 ) == 1) ? 3 : nfields;
@@ -53,11 +53,11 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
 
     std::string species_name = setup->get(key + ".Name"  , "Unnamed");
     snprintf(species[s].name, sizeof(species_name.c_str()), "%s", species_name.c_str());
-    species[s].m   = setup->get(key + ".Mass"       , 1. );
-    species[s].n0  = setup->get(key + ".Density"    , 0. );
-    species[s].T0  = setup->get(key + ".Temperature", 1. );
-    species[s].q   = setup->get(key + ".Charge"     , 1. );
-    species[s].gyroModel  = setup->get(key + ".gyroModel", (Nm > 1) ? "Gyro" : "Gyro-1" );
+    species[s].m         = setup->get(key + ".Mass"       , 1. );
+    species[s].n0        = setup->get(key + ".Density"    , 0. );
+    species[s].T0        = setup->get(key + ".Temperature", 1. );
+    species[s].q         = setup->get(key + ".Charge"     , 1. );
+    species[s].gyroModel = setup->get(key + ".gyroModel", (Nm > 1) ? "Gyro" : "Gyro-1" );
 
     if  (species[s].doGyro)  species[s].f0_str = setup->get(key + ".F0"      , "n/(pi*T)^1.5*exp(-v^2/T)*exp(-m/T)" );
     else          species[s].f0_str = setup->get(key + ".F0"      , "n/(pi*T)^1.5*exp(-v^2/T)*T/Nm" );

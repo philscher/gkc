@@ -33,6 +33,9 @@
 **/
 class VlasovIsland : public VlasovAux {
 
+   nct::allocate ArrayX,
+                 ArrayY;
+
    double width, ///< Magnetic Island width
           shear, ///< Shearing rate
           omega; ///< Island frequeny

@@ -73,12 +73,12 @@ Nice stuff http://stackoverflow.com/questions/841433/gcc-attribute-alignedx-expl
 // take care, for electro-static simulations, G & Xi are null pointers (for e-m f&phi respectively)
 //
 //
-void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][NkyLD][NxLB  ][NvLB],  // in case of e-m
-                                         const CComplex Xi              [NzLB][NkyLD][NxLB+4][NvLB],  // in case of e-m
-                                         const CComplex  f [NsLD][NmLD ][NzLB][NkyLD][NxLB  ][NvLB],  // in case of e-s
-                                         const CComplex Fields[Nq][NsLD][NmLD ][NzLB][NkyLD][NxLB+4], // in case of e-s
+void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][Nky][NxLB  ][NvLB],  // in case of e-m
+                                         const CComplex Xi              [NzLB][Nky][NxLB+4][NvLB],  // in case of e-m
+                                         const CComplex  f [NsLD][NmLD ][NzLB][Nky][NxLB  ][NvLB],  // in case of e-s
+                                         const CComplex Fields[Nq][NsLD][NmLD ][NzLB][Nky][NxLB+4], // in case of e-s
                                          const int z, const int m, const int s,
-                                         CComplex ExB[NkyLD][NxLD][NvLD], double Xi_max[3], const bool electroMagnetic)
+                                         CComplex ExB[Nky][NxLD][NvLD], double Xi_max[3], const bool electroMagnetic)
 {
   // phase space function & Poisson bracket
   const double _kw_fft_Norm = 1./(fft->Norm_Y_Backward * fft->Norm_Y_Backward * fft->Norm_Y_Forward);
@@ -88,9 +88,9 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
  
   // THERE is also OMP_STACKSIZE !
       
-  CComplexAA  xky_Xi [NkyLD][NxLB+4];
-  CComplexAA  xky_f1 [NkyLD][NxLB  ];
-  CComplexAA  xky_ExB[NkyLD][NxLD  ];
+  CComplexAA  xky_Xi [Nky][NxLB+4];
+  CComplexAA  xky_f1 [Nky][NxLB  ];
+  CComplexAA  xky_ExB[Nky][NxLD  ];
 
   doubleAA    xy_Xi    [NyLD+8][NxLB+4]; // extended BC 
   doubleAA    xy_dXi_dy[NyLD+4][NxLB  ]; // normal BC
@@ -112,7 +112,7 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
       else                xky_Xi[:][:] = Fields[Field::phi][s][m][z][:][NxLlB-2:NxLB+4]   ;
        
       // xy_Xi[shift by +4][], as we also will use extended BC in Y
-      // xy_Xi[NkyLD][:] = 0.; // we do not include Nyquist frequency
+      // xy_Xi[Nky][:] = 0.; // we do not include Nyquist frequency
       fft->solve(FFT_Type::Y_FIELDS, FFT_Sign::Backward, xky_Xi, &xy_Xi[4][0]);
        
       // Set Periodic-Boundary in Y (in X is not necessary as we transform it too)
@@ -135,8 +135,8 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
         
     }
 
-    if(electroMagnetic) xky_f1[:][:] = G      [z][NkyLlD:NkyLD][NxLlB:NxLB][v];
-    else                xky_f1[:][:] = f[s][m][z][NkyLlD:NkyLD][NxLlB:NxLB][v];
+    if(electroMagnetic) xky_f1[:][:] = G      [z][NkyLlD:Nky][NxLlB:NxLB][v];
+    else                xky_f1[:][:] = f[s][m][z][NkyLlD:Nky][NxLlB:NxLB][v];
 
     fft->solve(FFT_Type::Y_PSF, FFT_Sign::Backward, (CComplex *) xky_f1, &xy_f1[2][0]);
 
@@ -168,7 +168,7 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
     fft->solve(FFT_Type::Y_NL, FFT_Sign::Forward, xy_ExB, (CComplex *) xky_ExB);
 
     // Done - store the non-linear term in ExB
-    ExB[NkyLlD:NkyLD][NxLlD:NxLD][v] = xky_ExB[:][:];
+    ExB[NkyLlD:Nky][NxLlD:NxLD][v] = xky_ExB[:][:];
 
   }
     
@@ -178,11 +178,11 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
                            
 
 void VlasovCilk::setupXiAndG(
-                           const CComplex g          [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f0         [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex Fields [Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           CComplex Xi                           [NzLB][NkyLD][NxLB+4][NvLB],
-                           CComplex G                            [NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex g          [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex f0         [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex Fields [Nq][NsLD][NmLD][NzLB][Nky][NxLB+4]      ,
+                           CComplex Xi                           [NzLB][Nky][NxLB+4][NvLB],
+                           CComplex G                            [NzLB][Nky][NxLB  ][NvLB],
                            const int m, const int s) 
 {
 
@@ -229,16 +229,16 @@ void VlasovCilk::setupXiAndG(
 
 
 void VlasovCilk::Vlasov_EM(
-    const CComplex g   [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Current step phase-space function
-    CComplex       h   [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Phase-space function for next step
-    const CComplex f0  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Background Maxwellian
-    const CComplex f1  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // previous RK-Step
-    CComplex       ft  [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // previous RK-Step
-    CComplex       Coll[NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],  // Collisional corrections
-    const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-    CComplex Xi             [NzLB][NkyLD][NxLB+4][NvLB],
-    CComplex G              [NzLB][NkyLD][NxLB  ][NvLB],
-    CComplex NonLinearTerm        [NkyLD][NxLD  ][NvLD],        // Non-Linear Term (ExB)
+    const CComplex g   [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],  // Current step phase-space function
+    CComplex       h   [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],  // Phase-space function for next step
+    const CComplex f0  [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],  // Background Maxwellian
+    const CComplex f1  [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],  // previous RK-Step
+    CComplex       ft  [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],  // previous RK-Step
+    CComplex       Coll[NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],  // Collisional corrections
+    const CComplex Fields[Nq][NsLD][NmLD][NzLB][Nky][NxLB+4],
+    CComplex Xi             [NzLB][Nky][NxLB+4][NvLB],
+    CComplex G              [NzLB][Nky][NxLB  ][NvLB],
+    CComplex NonLinearTerm        [Nky][NxLD  ][NvLD],        // Non-Linear Term (ExB)
     const double Kx[NzLD][NxLD], const double Ky[NzLD][NxLD], const double dB_dz[NzLD][NxLD], // Geometry stuff
     const double dt, const int rk_step, const double rk[3])
 { 
@@ -258,7 +258,7 @@ void VlasovCilk::Vlasov_EM(
   for(int m = NmLlD; m <= NmLuD; m++) { 
 
     // Calculate before z loop as we use dg_dz and dXi_dz derivative
-    setupXiAndG(g, f0 , Fields, Xi, G, m , s);
+    setupXiAndG(g, f0, Fields, Xi, G, m, s);
       
     // Nested Parallelism (PoissonBracket variables are allocated on stack)
     // Cannot collapse as we have no perfetly nested loops

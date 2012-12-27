@@ -58,14 +58,14 @@ void VlasovAux::solve(std::string equation_type, Fields *fields, CComplex *f_in,
 
 
 void VlasovAux::Vlasov_ES(
-                           const CComplex fs        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex fss             [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f0        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f1        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex ft              [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex Coll      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex Fields[Nq][NsLD][NmLB][NzLB][NkyLD][NxLB+4],
-                           CComplex       nonLinearTerm               [NkyLD][NxLD  ][NvLD],
+                           const CComplex fs        [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           CComplex fss             [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex f0        [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex f1        [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           CComplex ft              [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex Coll      [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex Fields[Nq][NsLD][NmLB][NzLB][Nky][NxLB+4],
+                           CComplex       nonLinearTerm               [Nky][NxLD  ][NvLD],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3])
 { 
@@ -161,16 +161,16 @@ void VlasovAux::Vlasov_ES(
 
 
 void VlasovAux::Vlasov_EM(
-                           CComplex fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex Coll      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
-                           CComplex    nonLinearTerm               [NkyLD][NxLD  ][NvLD],
-                           CComplex Xi       [NzLB][NkyLD][NxLB+4][NvLB],
-                           CComplex G        [NzLB][NkyLD][NxLB][NvLB],
+                           CComplex fs       [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           CComplex fss      [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex f0 [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex f1 [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           CComplex ft       [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex Coll      [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex Fields[Nq][NsLD][NmLD][NzLB][Nky][NxLB+4]      ,
+                           CComplex    nonLinearTerm               [Nky][NxLD  ][NvLD],
+                           CComplex Xi       [NzLB][Nky][NxLB+4][NvLB],
+                           CComplex G        [NzLB][Nky][NxLB][NvLB],
                            const double dt, const int rk_step, const double rk[3])
 { 
 
@@ -255,12 +255,12 @@ void VlasovAux::Vlasov_EM(
 }
 
 void VlasovAux::Landau_Damping(
-                           CComplex fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex Fields[Field::phi][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           CComplex fs       [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           CComplex fss      [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex f0 [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex f1 [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           CComplex ft       [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex Fields[Field::phi][NsLD][NmLD][NzLB][Nky][NxLB+4],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3])
 { 
@@ -300,13 +300,13 @@ void VlasovAux::Landau_Damping(
 
 
 void    VlasovAux::Vlasov_2D_Fullf(
-                           CComplex fs               [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex fss              [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f0         [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f1         [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex ft               [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex Coll      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const  CComplex Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
+                           CComplex fs               [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           CComplex fss              [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex f0         [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex f1         [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           CComplex ft               [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex Coll      [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const  CComplex Fields[Nq][NsLD][NmLD][NzLB][Nky][NxLB+4],
                            const double dt, const int rk_step, const double rk[3])
 { 
 

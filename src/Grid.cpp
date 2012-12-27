@@ -180,23 +180,19 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
 
   
   // X (Note : For gyro-averaged fields we have extended boubdaries
-  nct::allocate(nct::Range(NxGlB-2, NxGB+4))(&X);
+  ArrayX = nct::allocate(nct::Range(NxGlB-2, NxGB+4))(&X);
+  ArrayZ = nct::allocate(nct::Range(NzGlB  , NzGB))(&Z);
+  ArrayV = nct::allocate(nct::Range(NvGlB  , NvGB))(&V);
+  ArrayM = nct::allocate(nct::Range(NmGlB  , NmGB))(&M, &dm);
+
+  // Use  equidistant grid for X, Z and V
   bool includeX0Point = setup->get("Grid.IncludeX0Point", 0);
   for(int x = NxGlB-2; x <= NxGuB+2; x++) X[x] = -  Lx/2. + dx * ( x - NxGC - 1) + ((includeX0Point) ? dx/2. : 0.);
-
-
-  
-  // Use  equidistant grid for Y, Z and V
-  nct::allocate(nct::Range(NyGlB  , NyGB))(&Y);
-  for(int y = NyGlB; y <= NyGuB; y++) Y[y] = dy * ( y - NyGC - 1);
-  nct::allocate(nct::Range(NzGlB  , NzGB))(&Z);
   for(int z = NzGlB; z <= NzGuB; z++) Z[z] = dz * ( z - NzGC - 1);
-  nct::allocate(nct::Range(NvGlB  , NvGB))(&V);
   for(int v = NvGlB; v <= NvGuB; v++) V[v] = -  Lv + dv * ( v - NvGlD);
     
   // M For mu we can choose between linear and Gaussian integration
   // In case of Nm=1 (drift-kinetic, gyro-1st), dm = 1, and M = 0. ! should it be automatic ?
-  nct::allocate(nct::Range(NmGlB  , NmGB))(&M, &dm);
   Integrate integrate("Gauss-Legendre", Nm, 0., Lm);
   for(int m=NmGlD, n=0; m <= NmGuD; m++, n++) { M[m] = (Nm == 1) ? 0. : integrate.x(n) ; dm[m] = (Nm ==1) ? 1. : integrate.w(n); }
 

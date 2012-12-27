@@ -69,12 +69,12 @@ class VlasovCilk : public Vlasov {
    *
    *
    **/
-   void calculatePoissonBracket(const CComplex  G              [NzLB][NkyLD][NxLB  ][NvLB],   // in case of e-m
-                                const CComplex Xi              [NzLB][NkyLD][NxLB+4][NvLB],   // in case of e-m
-                                const CComplex  f [NsLD][NmLD ][NzLB][NkyLD][NxLB  ][NvLB],   // in case of e-s
-                                const CComplex Fields [Nq][NsLD][NmLD ][NzLB][NkyLD][NxLB+4], // in case of e-s
+   void calculatePoissonBracket(const CComplex  G              [NzLB][Nky][NxLB  ][NvLB],   // in case of e-m
+                                const CComplex Xi              [NzLB][Nky][NxLB+4][NvLB],   // in case of e-m
+                                const CComplex  f [NsLD][NmLD ][NzLB][Nky][NxLB  ][NvLB],   // in case of e-s
+                                const CComplex Fields [Nq][NsLD][NmLD ][NzLB][Nky][NxLB+4], // in case of e-s
                                 const int z, const int m, const int s                     ,
-                                CComplex ExB[NkyLD][NxLD][NvLD], double Xi_max[3], const bool electroMagnetic);
+                                CComplex ExB[Nky][NxLD][NvLD], double Xi_max[3], const bool electroMagnetic);
 
 
    /**
@@ -103,11 +103,11 @@ class VlasovCilk : public Vlasov {
    *
    **/
    void setupXiAndG(
-                           const CComplex g          [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f0         [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex Fields [Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-                           CComplex Xi                           [NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex G                            [NzLB][NkyLD][NxLB  ][NvLB],
+                           const CComplex g          [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex f0         [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex Fields [Nq][NsLD][NmLD][NzLB][Nky][NxLB+4],
+                                 CComplex Xi                     [NzLB][Nky][NxLB+4][NvLB],
+                                 CComplex G                      [NzLB][Nky][NxLB  ][NvLB],
                            const int m, const int s);
 
 
@@ -116,17 +116,18 @@ class VlasovCilk : public Vlasov {
    *
    **/
    void Vlasov_EM(
-                           const CComplex fs       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex fss      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex f1 [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex ft       [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           CComplex Coll     [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const CComplex Fields [Nq][NsLD][NmLD ][NzLB][NkyLD][NxLB+4],
-                           CComplex Xi       [NzLD][NkyLD][NxLD  ][NvLD],
-                           CComplex G        [NzLD][NkyLD][NxLD  ][NvLD],
-                           CComplex ExB            [NkyLD][NxLB  ][NvLB],
-                           const double Kx[NzLD][NxLD], const double Ky[NzLD][NxLD], const double dB_dz[NzLD][NxLD], // Geometry stuff
+                           const CComplex fs         [NsLD][NmLD][NzLB][Nky][NxLB   ][NvLB],
+                           CComplex fss              [NsLD][NmLD][NzLB][Nky][NxLB   ][NvLB],
+                           const CComplex f0         [NsLD][NmLD][NzLB][Nky][NxLB   ][NvLB],
+                           const CComplex f1         [NsLD][NmLD][NzLB][Nky][NxLB   ][NvLB],
+                           CComplex ft               [NsLD][NmLD][NzLB][Nky][NxLB   ][NvLB],
+                           CComplex Coll             [NsLD][NmLD][NzLB][Nky][NxLB   ][NvLB],
+                           const CComplex Fields [Nq][NsLD][NmLD ][NzLB][Nky][NxLB+4]      ,
+                           CComplex Xi                            [NzLD][Nky][NxLB+4][NvLD],
+                           CComplex G                             [NzLD][Nky][NxLD  ][NvLD],
+                           CComplex ExB                                 [Nky][NxLB  ][NvLB],
+                           const double Kx[NzLD][NxLD], const double Ky[NzLD][NxLD], 
+                           const double dB_dz[NzLD][NxLD], // Geometry stuff
                            const double dt, const int rk_step, const double rk[3]);
 
    /**

@@ -8,7 +8,7 @@ gkc_SOURCES = main.cpp GKC.cpp FileIO.cpp Fields/Fields.cpp Fields/FieldsFFT.cpp
 				  Analysis/Analysis.cpp  Init.cpp Control.cpp Analysis/Moments.cpp \
               Plasma.cpp Special/LA.cpp TimeIntegration/Timing.cpp Analysis/TestParticle.cpp TimeIntegration/TimeIntegration.cpp \
               FFTSolver/FFTSolver.cpp Visualization/Visualization_Data.cpp Analysis/Benchmark.cpp \
-				  Collisions/LenardBernstein.cpp
+				  Collisions/LenardBernstein.cpp Tools/TermColor.cpp
 
 
 
@@ -25,7 +25,7 @@ gkc_SOURCES += GKC.h FileIO.h Fields/Fields.h Fields/FieldsFFT.h Setup.h Grid.h 
 			      Collisions/Collisions.h Collisions/LenardBernstein.h \
 			      Geometry/Geometry.h Geometry/Geometry2D.h Geometry/GeometryShear.h \
                Geometry/GeometrySlab.h Geometry/GeometrySA.h Geometry/GeometryCHEASE.h\
-			      System.h Special/SpecialMath.h Special/HermitePoly.h Tools.h Special/Vector3D.h 
+			      Tools/System.h Tools/TermColor.h Special/SpecialMath.h Special/HermitePoly.h Tools/Tools.h Special/Vector3D.h 
 	
 # Integration sub-module
 gkc_SOURCES += Special/Integrate/GaussChebychevFirstWeights.h Special/Integrate/GaussChebychevSecondWeights.h \

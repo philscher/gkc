@@ -47,11 +47,11 @@ class Plasma : public IfaceGKC {
 
     Species() : q(0.), m(0.), w_n(0.), w_T(0.), doGyro(true), T0(0.), n0(0.) 
     { 
-      alpha   = 0.;
-      sigma   = 0.;
-      //nct::allocate(nct::Range(NxLlB, NxLB))(&T, &n, &w_T, &w_n);
-      nct::allocate(nct::Range(NxLlB, NxLB))(&T, &n);
+      alpha     = 0.;
+      sigma     = 0.;
       gyroModel = "";
+      
+      ArrayProfiles = nct::allocate(nct::Range(NxLlB, NxLB))(&T, &n, &w_gT, &w_gn);
     };
    
     double q;          ///< Charge 
@@ -68,33 +68,34 @@ class Plasma : public IfaceGKC {
     double alpha;      ///< alpha
    
     char name[64];     ///< name of species
-    char n_name[64];   ///< dont know
-    char T_name[64];   ///< dont know
+    char n_name[64];   ///< Density function string    , e.g  n(x) = "1"
+    char T_name[64];   ///< Temperature function string, e.g. T(x) = "1/x"
   
     /////////// Below non-POD types (and not saved [yet] in HDF-5 file) ////////////
     std::string gyroModel;
     std::string f0_str;
+    nct::allocate ArrayProfiles;
       
     // stupid fix, but we have to otherwise all stuff is private
-   
-  void update(Geometry *geo, double cs) { 
+    void update(Geometry *geo, double cs) { 
 
-    scale_v = sqrt(2.*T0/m); 
-    scale_n = n0;
-    alpha   = scale_v*  1./(cs*sqrt(geo->eps_hat));
-    sigma   = q / T0;
+      scale_v = sqrt(2.*T0/m); 
+      scale_n = n0;
+      alpha   = scale_v*  1./(cs*sqrt(geo->eps_hat));
+      sigma   = q / T0;
    
-  };
+    };
 
-  /// Calculate debye legnth
-  double debye2(const int x) const { return T[x]/(4.*M_PI*n[x]*q*q); };
+    /// Calculate debye legnth
+    double debye2(const int x) const { return T[x]/(4.*M_PI*n[x]*q*q); };
    
-  double *T  , ///< Temperature profile
-         *n  ; ///< Density profile
-  //          *w_T, ///< Temperature scale length
-  //          *w_n; ///< Density scale length
+    double *T  , ///< Temperature profile
+           *n  , ///< Density profile
+          *w_gT, ///< Temperature scale length
+          *w_gn; ///< Density scale length
    
   } _Species;
+
 
   // Check what is really necessary also in plasma
 

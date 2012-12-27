@@ -48,6 +48,11 @@
 *
 **/
 class Grid : public IfaceGKC {
+  
+  nct::allocate ArrayX, ///< Array class for Boundary in X
+                ArrayZ, ///< Array class for Boundary in Z
+                ArrayV, ///< Array class for Boundary in Z
+                ArrayM; ///< Array class for Boundary in Z
 
  public:
 

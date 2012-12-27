@@ -132,7 +132,7 @@ extern int    NxGB, NyGB, NkyGD, NzGB, NvGB, NmGB, NsGB;
 extern double dx, dy, dz, dv;
 extern double Lx, Ly, Lz, Lv, Lm;
 
-extern double *X, *Y, *Z, *V, *M, *Z;
+extern double *X, *Z, *V, *M, *Z;
 
 
 /****************************************************************************/

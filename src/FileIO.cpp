@@ -46,18 +46,17 @@ FileIO::FileIO(Parallel *_parallel, Setup *setup)  :  parallel(_parallel)
   H5Tinsert(timing_tid, "Timestep", HOFFSET(Timing, step), H5T_NATIVE_INT   );
   H5Tinsert(timing_tid, "Time"    , HOFFSET(Timing, time), H5T_NATIVE_DOUBLE);
 
-  // don't changes r and i name otherwise it will break compatibiltiy with pyTables
+  // do not changes r and i name otherwise it will break compatibiltiy with pyTables
   complex_tid = H5Tcreate(H5T_COMPOUND, sizeof (ComplexSplit_t));
-  H5Tinsert(complex_tid, "r", HOFFSET(ComplexSplit_t,r), H5T_NATIVE_DOUBLE);
-  H5Tinsert(complex_tid, "i", HOFFSET(ComplexSplit_t,i), H5T_NATIVE_DOUBLE);
+  H5Tinsert(complex_tid, "r", HOFFSET(ComplexSplit_t, r), H5T_NATIVE_DOUBLE);
+  H5Tinsert(complex_tid, "i", HOFFSET(ComplexSplit_t, i), H5T_NATIVE_DOUBLE);
     
   vector3D_tid = H5Tcreate(H5T_COMPOUND, sizeof (Vector3D));
-  H5Tinsert(vector3D_tid, "x", HOFFSET(Vector3D,x), H5T_NATIVE_DOUBLE);
-  H5Tinsert(vector3D_tid, "y", HOFFSET(Vector3D,y), H5T_NATIVE_DOUBLE);
-  H5Tinsert(vector3D_tid, "z", HOFFSET(Vector3D,z), H5T_NATIVE_DOUBLE);
+  H5Tinsert(vector3D_tid, "x", HOFFSET(Vector3D, x), H5T_NATIVE_DOUBLE);
+  H5Tinsert(vector3D_tid, "y", HOFFSET(Vector3D, y), H5T_NATIVE_DOUBLE);
+  H5Tinsert(vector3D_tid, "z", HOFFSET(Vector3D, z), H5T_NATIVE_DOUBLE);
 
-  // move somewhere else !
-  hsize_t species_dim[] = { setup->get("Grid.Ns", 1)}; 
+  hsize_t species_dim[1] = { setup->get("Grid.Ns", 1) }; 
   species_tid = H5Tarray_create(H5T_NATIVE_DOUBLE, 1, species_dim);
     
   // used for species name
