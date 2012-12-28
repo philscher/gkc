@@ -36,7 +36,7 @@ void TimeIntegration::setMaxLinearTimeStep(Eigenvalue *eigenvalue, Vlasov *vlaso
 
   if     (linearTimeStep == "Estimate"  ) maxLinearTimeStep = 1.e-99; // not implemented, use estimate of max(kp)
   else if(linearTimeStep == "Eigenvalue") maxLinearTimeStep = getMaxTimeStepFromEigenvalue(vlasov, fields, eigenvalue);
-  else                                    maxLinearTimeStep = Setup::str2num(linearTimeStep);
+  else                                    maxLinearTimeStep = std::stod(linearTimeStep);
 
 }
 

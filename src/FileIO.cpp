@@ -131,7 +131,7 @@ void FileIO::create(Setup *setup)
      
        std::vector<std::string> key_value = Setup::split(const_vec[s],"=");
        
-       double value = Setup::str2num(key_value[1]);
+       double value = std::stod(key_value[1]);
        int dim[] = { 1 };
        
        check(H5LTset_attribute_double(constantsGroup, ".", Setup::trimLower(key_value[0], false).c_str(), &value, 1), DMESG("H5LTset_attribute"));

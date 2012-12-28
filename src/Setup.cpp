@@ -229,7 +229,7 @@ FunctionParser Setup::getFParser()
       
       for(int s = 0; s < const_vec.size(); s++) { 
             std::vector<std::string> key_value = split(const_vec[s],"=");
-            parser.AddConstant(trimLower(key_value[0], false), str2num(key_value[1]));
+            parser.AddConstant(trimLower(key_value[0], false), std::stod(key_value[1]));
 
       };
    }

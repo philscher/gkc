@@ -69,23 +69,6 @@ class Setup : public IfaceGKC {
   **/ 
   enum GKCCmdLineFlags { GKC_STATISTICS=1, GKC_VERBOSE=2, GKC_OVERWRITE=4, GKC_READ_STDIN=8} ;
  
-  /** 
-  *    @brief cast string representation of double to double
-  *
-  *    @todo is there any more C++ style way ?
-  *
-  **/
-  static double str2num( const std::string s )
-  {
-        return atof(s.c_str());
-        /* 
-        std::istringstream i(s);
-        double x;
-        if (!(i >> x)) return 0;
-        return x;
-         * */
-  }
-
   /**
   *    @brief Converts a number to std::string
   *
