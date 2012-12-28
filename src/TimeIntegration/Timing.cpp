@@ -98,7 +98,7 @@ std::string Timing::getRemainingTimeString(Timing timing, Timing maxTiming, time
    
    }
 
-   if(remainingSeconds > 0) remainTimeString = "  Time left : " + TimeStringFromSeconds(remainingSeconds);
+   if(remainingSeconds > 0) remainTimeString = "  Time left : ~ " + TimeStringFromSeconds(remainingSeconds);
    else                     remainTimeString = "-d:-h:-m:-s";  
 
    return remainTimeString;

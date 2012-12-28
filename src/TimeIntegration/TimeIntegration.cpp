@@ -193,7 +193,7 @@ void TimeIntegration::writeTimeStep(Timing timing, Timing maxTiming, double dt)
     std::cout   << TermColor::bright << TermColor::lyellow   
                 << "\r" << "Steps  : " << timing.step  << "/" << maxTiming.step 
                 << "  Time : " << timing.time  << "/" << maxTiming.time 
-                << std::setprecision(3) <<   "  dt : " << dt << std::flush; 
+                << std::setprecision(3) <<   " Δt : " << dt << std::flush; 
  
     std::cout << "  Run. Time : " << Timing::TimeStringFromSeconds(std::time(0) - start_time);
     std::cout << Timing::getRemainingTimeString(timing, maxTiming, start_time);

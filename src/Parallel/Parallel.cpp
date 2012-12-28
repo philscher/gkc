@@ -71,9 +71,10 @@ Parallel::Parallel(Setup *setup)
     Talk[dir].phi_msg_tag[0] = ++i; Talk[dir].phi_msg_tag[1] = ++i;
   }
    
-  // MPI-2 standard allows to pass NULL for (&argc, &argv)
-  int provided = 0; int required = numThreads == 1 ? MPI_THREAD_SINGLE : MPI_THREAD_SERIALIZED;
-  MPI_Init_thread(NULL, NULL, required, &provided);
+  // Initialize MPI
+  int provided = 0; 
+  int required = numThreads == 1 ? MPI_THREAD_SINGLE : MPI_THREAD_FUNNELED;
+  MPI_Init_thread(&setup->argc, &setup->argv, required, &provided);
   //check(provided < required ? -1 : 1, DMESG("MPI : Thread level support not available (use only one thread)"));
 
   MPI_Comm_size(MPI_COMM_WORLD, &numProcesses); 

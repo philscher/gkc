@@ -193,8 +193,8 @@ void VlasovCilk::setupXiAndG(
   const double aeb   =  alpha * geo->eps_hat * plasma->beta; 
   const double saeb  =  sigma * alpha * geo->eps_hat * plasma->beta;
 
-  const bool useAp   = (plasma->nfields >= 2);
-  const bool useBp   = (plasma->nfields >= 3);
+  const bool useAp   = (Nq >= 2);
+  const bool useBp   = (Nq >= 3);
 
 
   // ICC vectorizes useAp/useBp into separate lopps, check for any speed penelity ? 
