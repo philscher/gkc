@@ -43,7 +43,6 @@ PetscErrorCode petsc_error_handler(MPI_Comm comm, int line, const char *fun, con
 
 Eigenvalue_SLEPc::Eigenvalue_SLEPc(FileIO *fileIO, Setup *setup, Grid *grid, Parallel *_parallel) : Eigenvalue(fileIO, setup,grid,  _parallel)
 {
-    
   
   SlepcInitialize(&setup->argc, &setup->argv, (char *) 0,  help);
      
@@ -57,7 +56,6 @@ Eigenvalue_SLEPc::Eigenvalue_SLEPc(FileIO *fileIO, Setup *setup, Grid *grid, Par
   // Note : We do not include Nyquist frequency , Zonal Flow (ZF) per switch
   int local_size  = NxLD * (includeZF ? NkyLD-1 : NkyLD-2) * NzLD * NvLD * NmLD * NsLD;
   int global_size = Nx   * (includeZF ? NkyLD-1 : NkyLD-2) * Nz   * Nv   * Nm   * Ns  ;
-
 
 
   MatCreateShell(parallel->Comm[DIR_ALL], local_size, local_size, global_size, global_size, &subDiv, &A_F1);
@@ -142,7 +140,7 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
       
       for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++  ) { for(int z = NzLlD; z <= NzLuD; z++) {
       for(int y_k = (includeZF ? 0 : 1); y_k <= NkyLuD-1; y_k++) { 
-      for(int x = NxLlD, n = 0; x <= NxLuD; x++) { for(int v = NvLlD; v <= NvLuD; v++) { 
+      for(int x = NxLlD; x <= NxLuD; x++) { for(int v = NvLlD; v <= NvLuD; v++) { 
 
         init_x[n++] = 1.e-5 * f[s][m][z][y_k][x][v];
 
