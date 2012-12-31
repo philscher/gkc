@@ -187,8 +187,8 @@ void VlasovCilk::setupXiAndG(
 {
 
   // small abbrevations
-  const double alpha = plasma->species[s].alpha;
-  const double sigma = plasma->species[s].sigma;
+  const double alpha = species[s].alpha;
+  const double sigma = species[s].sigma;
   
   const double aeb   =  alpha * geo->eps_hat * plasma->beta; 
   const double saeb  =  sigma * alpha * geo->eps_hat * plasma->beta;
@@ -213,13 +213,14 @@ void VlasovCilk::setupXiAndG(
   } } // v, x
      
   // Note we have extended boundaries in X (NxLlB-2 -- NxLuB+2) for fields
+  // Intel Inspector complains about useAp ? ... memory violation, is it true? 
   simd_for(int v = NvLlB; v <= NvLuB; v++) {
 
-    Xi[z][y_k][NxLlB-2:2][v] = Fields[Field::phi][s][m][z][y_k][NxLlB-2:2] - (useAp ? aeb*V[v]*Fields[Field::Ap][s][m][z][y_k][NxLlB-2:2] : 0.)
-                                                                           - (useBp ? aeb*M[m]*Fields[Field::Bp][s][m][z][y_k][NxLlB-2:2] : 0.);
+    Xi[z][y_k][NxLlB-2:2][v] = Fields[Field::phi][s][m][z][y_k][NxLlB-2:2]  - (useAp ? aeb*V[v]*Fields[Field::Ap][s][m][z][y_k][NxLlB-2:2] : 0.)
+                                                                            - (useBp ? aeb*M[m]*Fields[Field::Bp][s][m][z][y_k][NxLlB-2:2] : 0.);
 
-    Xi[z][y_k][NxLuB+1:2][v] = Fields[Field::phi][s][m][z][y_k][NxLuB+1:2] - (useAp ? aeb*V[v]*Fields[Field::Ap][s][m][z][y_k][NxLuB+1:2] : 0.) 
-                                                                           - (useBp ? aeb*M[m]*Fields[Field::Bp][s][m][z][y_k][NxLuB+1:2] : 0.);
+    Xi[z][y_k][NxLuB+1:2][v] = Fields[Field::phi][s][m][z][y_k][NxLuB+1:2]  - (useAp ? aeb*V[v]*Fields[Field::Ap][s][m][z][y_k][NxLuB+1:2] : 0.) 
+                                                                            - (useBp ? aeb*M[m]*Fields[Field::Bp][s][m][z][y_k][NxLuB+1:2] : 0.);
   }
   
   } } // y_k, z
@@ -248,11 +249,11 @@ void VlasovCilk::Vlasov_EM(
   for(int s = NsLlD; s <= NsLuD; s++) {
         
     // small abbrevations
-    const double w_n   = plasma->species[s].w_n;
-    const double w_T   = plasma->species[s].w_T;
-    const double alpha = plasma->species[s].alpha;
-    const double sigma = plasma->species[s].sigma;
-    const double Temp  = plasma->species[s].T0;
+    const double w_n   = species[s].w_n;
+    const double w_T   = species[s].w_T;
+    const double alpha = species[s].alpha;
+    const double sigma = species[s].sigma;
+    const double Temp  = species[s].T0;
     
 
   for(int m = NmLlD; m <= NmLuD; m++) { 
@@ -351,4 +352,15 @@ void VlasovCilk::initData(Setup *setup, FileIO *fileIO)
 
   return;
 }
+
+   
+void VlasovCilk::calculateParallelNonLinearity(
+                                const CComplex f          [NsLD][NmLD][NzLB][Nky][NxLB   ][NvLB],
+                                const CComplex Fields [Nq][NsLD][NmLD ][NzLB][Nky][NxLB+4], // in case of e-s
+                                const int z, const int m, const int s                     ,
+                                CComplex NonLinearTerm[Nky][NxLD][NvLD])
+{
+   check(-1, DMESG("Not implemented"));
+
+};
 

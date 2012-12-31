@@ -16,11 +16,13 @@
 
 // plasma defined global
 Plasma *plasma;
-
+Species *species;
 
 Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) : nfields(_nfields) 
 {
-      
+
+  species = new Species[SPECIES_MAX+1];
+
   // Set global parameters 
   debye2  = setup->get("Plasma.Debye2", 0. ); 
   B0      = setup->get("Plasma.B0"    , 1. );
@@ -29,6 +31,13 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
   w_p     = setup->get("Plasma.w_p"   , 0. );
   global  = setup->get("Plasma.Global", 0  );
   cs      = setup->get("Plasma.cs"    , 1. );
+ 
+  // Set reference lengths
+    n_ref   = setup->get("Plasma.ReferenceDensity    ", 1.);
+    c_ref   = setup->get("Plasma.ReferenceC          ", 1.);
+    T_ref   = setup->get("Plasma.ReferenceTemperature", 1.);
+    L_ref   = setup->get("Plasma.ReferenceLength     ", 1.);
+  rho_ref   = setup->get("Plasma.ReferenceLength     ", 1.);
      
   nfields  = ((beta > 0.e0)  ? 2 : 1);
   nfields  = (setup->get("Plasma.Bp", 0 ) == 1) ? 3 : nfields;
@@ -115,6 +124,12 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
 
   initData(fileIO);
    
+};
+
+Plasma::~Plasma()
+{
+
+   delete[] species;
 };
 
 

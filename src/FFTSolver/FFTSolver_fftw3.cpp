@@ -180,7 +180,6 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
       doubleAA   rY_BD2[NyLD ][NxLB]; CComplexAA kY_BD2[NkyLD][NxLB];
       plan_YBackward_PSF   = fftw_plan_many_dft_c2r(1, &NyLD, NxLB  , (fftw_complex *) kY_BD2, NULL, NxLB  , 1, (double *) rY_BD2, NULL, NxLB  , 1, perf_flag);
       
-
       
       doubleAA   rY_BD0[NyLD ][NxLD]; CComplexAA kY_BD0[NkyLD][NxLD];
       plan_YForward_NL     = fftw_plan_many_dft_r2c(1, &NyLD, NxLD, (double *     ) rY_BD0, NULL, NxLD, 1, (fftw_complex *) kY_BD0, NULL, NxLD , 1, perf_flag);

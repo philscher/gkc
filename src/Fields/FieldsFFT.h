@@ -304,16 +304,18 @@ class FieldsFFT : public Fields {
   *
   *  \f{align}{
   *         
-  *    \int_0^\infty J_0^2(\sqrt{(lambda mu)}) e^{-\mu}    
+  *    \int_0^\infty J_0^2(\sqrt{(lambda mu)}) e^{-\mu}  d\mu  
   *                &= I_0(b) e^{-b} \\
-  *    \int_0^\infty J_0^2(\sqrt{(lambda mu)}) e^{-\mu}\mu 
+  *    \int_0^\infty J_0^2(\sqrt{(lambda mu)}) e^{-\mu}\mu d\mu
   *                &= \Gamma_0-b\left(\Gamma_0-\Gamma_1\right) \\
   *    \int_0^\infty J_0^2(\sqrt{(lambda mu)}) e^{-\mu}\mu^{1/2} 
   *                &= ? \\
-  *    \int_0^\infty J_0^2(\sqrt{(lambda mu)}) e^{-\mu}\mu^2 
+  *    \int_0^\infty J_0^2(\sqrt{(lambda mu)}) e^{-\mu}\mu^2 d\mu
   *                &= ? 
   *
   *  \f}
+  *
+  *  for, first and second equation, see Callen.
   *
   **/  
   void doubleGyroExp(const CComplex In [NzLD][NkyLD][NxLD], 

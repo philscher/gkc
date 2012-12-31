@@ -37,9 +37,9 @@
 *    \f[
 *       g^{ij} = 
 *       \left( \begin{array}{lll}   
-*     1                         &  \frac{\hat{s}} {q_0 R_0} z                                   & 0 \\
-*     \frac{hat{s}}{q_0}{R_0} z &  1 + \frac{z^2}{L_s^2} + \left( \frac{r_0}{q_0 R_0} \right)^2 & 0 \\
-*                       0       &  \frac{q_0 R_0}{r_0}                                          & \left( \frac{q_0 R_0}{r_0} \right)^2 
+*     1                          &  \frac{\hat{s}} {q_0 R_0} z                                   & 0 \\
+*     \frac{\hat{s}}{q_0}{R_0} z &  1 + \frac{z^2}{L_s^2} + \left( \frac{r_0}{q_0 R_0} \right)^2 & 0 \\
+*                        0       &  \frac{q_0 R_0}{r_0}                                          & \left( \frac{q_0 R_0}{r_0} \right)^2 
 *       
 *       \end{array} \right)
 *    \f]

@@ -119,6 +119,8 @@ class SpecialMath
    *  @brief Modified bessel function of first order
    *  @image html GK_Gamma1.png
    *
+   *  Is this correct ?! Inconsistent with Asytrophys gyrokinetics
+   *
    */
    static inline double Gamma1(const double b, bool gyro=true) 
    {
@@ -163,9 +165,12 @@ class SpecialMath
    }
 
    /**
-   *  @brief Modified bessel function of first order
-   *   \f[     \Delta =  I_0(b) e^{-b} + b \left( I_1(b) - I_0(b) \right) e^{-b} \f]
-   *  @image html GK_Delta.png
+   *  @brief Definition of \f$ \Delta_1 \f$  
+   *   \f[   
+   *       \int_0^\infty J_0^2(lambda) \mu  e^{-mu} d\mu = 
+   *       \Delta(b) =  I_0(b) e^{-b} + b \left( I_1(b) - I_0(b) \right) e^{-b} 
+   *    \f]
+   *  @image html GK_Delta_1.png
    *
    **/
    static inline double Delta_1(const double b) 

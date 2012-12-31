@@ -25,7 +25,6 @@
 
 
 
-class Visualization;
 
 /**
 *   @brief class for reading/writing data using HDF5

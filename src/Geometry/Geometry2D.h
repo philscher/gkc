@@ -40,12 +40,14 @@
 **/
 class Geometry2D : public Geometry
 {
+
   double *By;
   std::string By_str;
 
   nct::allocate ArrayBy;
 
  public:
+
   double theta, ///< Angle to the magnetic field
          shear, ///< Magnetic field shear
          kz;    ///< Constant wavenumber factor
@@ -57,12 +59,9 @@ class Geometry2D : public Geometry
     shear               = setup->get("Geometry.Shear"   , 0.);
     By_str              = setup->get("Geometry.By"   , "shear*x+theta");
     kz                  = setup->get("Geometry.kz"   ,  0.);
-   
+  
+    check(Lz == 1. ? 1 : -1, DMESG("In two dimensional simulations Lz should be 1"));
 
-   //std::cout << "SubString : " << setup->get("Geometry.By" , "0.").substr(0,4) << std::endl;
-  // if (setup->get("Geometry.By" , "0.").substr(0,4) == "File") setFieldFromDataFile(setup, fields->Field0, Field::Ap, setup->get("Init.FixedAp", "0."));
-  // else if (plasma->nfields >= 2) setFieldFromFunction(setup, fields->Field0, Field::Ap, setup->get("Init.FixedAp", "0."));
-    
     FunctionParser By_parser = setup->getFParser();
     By_parser.AddConstant("shear", shear);
     By_parser.AddConstant("theta", theta);
@@ -80,10 +79,9 @@ class Geometry2D : public Geometry
 
   };
 
-  
+ 
+  /// \f$ J(\vec{x}) = 0 \f$
   inline double get_J(const int x, const int z) { return 1.; };
-
-
 
    /**  
    *    @name Defines the magnetic field and its variations
@@ -131,7 +129,8 @@ class Geometry2D : public Geometry
 
 
    void printOn(std::ostream& output) const {
-         output   << "Geometry   |  Sheared Slab   By : " << By_str  << " Shear : " << shear << " Theta : "  <<  theta << std::endl;
+         output   << "Geometry   |  Sheared Slab   By : " << By_str  << " Shear : " << shear << " Theta : "  <<  theta  
+                                                                     << " kz : " << kz << std::endl;
    };
 
    void initData(hid_t geometryGroup) {
@@ -142,9 +141,6 @@ class Geometry2D : public Geometry
           check(H5LTset_attribute_double(geometryGroup, ".", "kz"   ,  &kz, 1), DMESG("H5LTset_attribute"));
     }
 
-
-//     virtual void writeData(Timing *timing) {};
-//     virtual void closeData() {};
 
 private:
 

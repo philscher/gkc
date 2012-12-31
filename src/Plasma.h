@@ -21,28 +21,20 @@
 #include "Geometry.h"
 
 
-// BUG : if SPECIES_MAX >= 8 HDF-5 gives bus error
-// why ?1
 
-// Excluding adiabatic species
+// Maximum number of species (excluding adiabatic species) to be 
+// included without recompilation
+// BUG : if SPECIES_MAX >= 8 HDF-5 gives bus error
 #define SPECIES_MAX 4
 
 
 /**
-*   @brief Hold information about the plasma with species and normalizations
+*   @brief Information about Species
 *
-*
+*   Definition of species included.
 *
 **/
-class Plasma : public IfaceGKC {
-
- public:
-
-  /**
-  *   @brief Information about Species
-  *
-  **/
-  typedef struct Species 
+typedef struct Species 
   {
 
     Species() : q(0.), m(0.), w_n(0.), w_T(0.), doGyro(true), T0(0.), n0(0.) 
@@ -62,8 +54,7 @@ class Plasma : public IfaceGKC {
     double n0;         ///< Density normalization
     bool   doGyro;     ///< Set if gyro-averaging is performed
    
-    double scale_v;    ///< Velocity scale / Thermal velocity
-    double scale_n;    ///< Density scale 
+    double v_th;    ///< Velocity scale / Thermal velocity
     double sigma;      ///< sigma 
     double alpha;      ///< alpha
    
@@ -79,9 +70,8 @@ class Plasma : public IfaceGKC {
     // stupid fix, but we have to otherwise all stuff is private
     void update(Geometry *geo, double cs) { 
 
-      scale_v = sqrt(2.*T0/m); 
-      scale_n = n0;
-      alpha   = scale_v*  1./(cs*sqrt(geo->eps_hat));
+      v_th = sqrt(2.*T0/m); 
+      alpha   = v_th*  1./(cs*sqrt(geo->eps_hat));
       sigma   = q / T0;
    
     };
@@ -96,11 +86,22 @@ class Plasma : public IfaceGKC {
    
   } _Species;
 
+/**
+*   @brief Hold information about the plasma with species and normalizations
+*
+*   General normalization and intialization of species, including 
+*   initial temperature profiles / density profiles etc.
+*
+*
+**/
+class Plasma : public IfaceGKC {
 
-  // Check what is really necessary also in plasma
+ public:
 
   double n_ref, ///< Reference 
          L_ref, ///< Reference scale length
+       rho_ref, ///< Gyro-radius reference length
+         c_ref, ///< Sound speed reference
          T_ref; ///< Reference temperature
    
   double cs;  ///<  speed of sound of ions \f$ c_s = \sqrt{\frac{T_{e0}}{m_i}} \f$ 
@@ -127,25 +128,13 @@ class Plasma : public IfaceGKC {
          w_p;   ///< Plasma pressure scale length \f$ \omega_p \f$
 
   /**
-  *   @todo is it necessary ?
-  *
+  *   @todo is it necessary ? It is defined in Fields.cpp as Nq anyway, ..
   *
   **/
   int nfields;
    
   /**
-  *   Note Species goes from 0 ... SPECIES_MAX, where 0 is an
-  *   adiabatic species.
-  *   @todo check impact on speed
-  *
-  *
-  **/
-  Species species[SPECIES_MAX+1];
-   
-  /**
   *    @brief intializes species 
-  *
-  *
   * 
   **/
   Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int nfields=1);
@@ -155,7 +144,7 @@ class Plasma : public IfaceGKC {
   *  @brief Free up resources
   *
   **/
-  virtual ~Plasma() {};
+ ~Plasma();
 
 
  protected:

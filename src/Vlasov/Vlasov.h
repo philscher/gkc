@@ -120,7 +120,7 @@ class Vlasov : public IfaceGKC {
   *    @brief set if non-linear simulations are performed
   *
   **/
-  bool doNonLinear;
+  bool doNonLinear; 
     
         
   /**

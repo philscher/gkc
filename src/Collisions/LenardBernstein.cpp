@@ -41,12 +41,12 @@ void Collisions_LenardBernstein::calculatePreTerms(double a[NsLD][NmLD][NvLD], d
                                                    double c[NsLD][NmLD][NvLD], double nu[NsLD][NmLD][NvLD])
 {
 
-  for(int s = NsLlD; s <= NsLuD; s++) {  const double v_th = plasma->species[s].alpha;
+  for(int s = NsLlD; s <= NsLuD; s++) {  const double v_th = species[s].alpha;
 
   for(int m = NmLlD; m <= NmLuD; m++) {  simd_for(int v=NvLlD; v<= NvLuD;v++) {
 
       // v = v_\parallel^2 + 2 \mu  / v_{\sigma, th}^2
-      const double v_ = ( pow2(V[v]) + 2. * M[m] ) / pow2(plasma->species[s].alpha);
+      const double v_ = ( pow2(V[v]) + 2. * M[m] ) / pow2(species[s].alpha);
 
       nu[s][m][v] = v_ * dv * grid->dm[m]; // directly normalize 
       a [s][m][v] = 1. - 3. * sqrt(M_PI/2.) * ( erf(v_) - Derf(v_)) * pow(v_, -0.5);
@@ -95,10 +95,10 @@ void Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const
     for(int m = NmLlD; m <= NmLuD; m++) { 
 
       // (1) Calculate Moments (note : can we recycle Fields  n, P ?)
-      const double pre_dvdm = plasma->species[s].n0 * plasma->B0 * dv * grid->dm[m] ;
+      const double pre_dvdm = species[s].n0 * plasma->B0 * dv * grid->dm[m] ;
 
       #pragma omp for collapse(2)
-      for(int z=NzLlD; z<= NzLuD;z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD;x++) {
+      for(int z=NzLlD; z<= NzLuD; z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD; x++) {
 
         dn[z][y_k][x] = __sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD]                       ) * pre_dvdm;
         dP[z][y_k][x] = __sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD] * V       [NvLlD:NvLD]) * pre_dvdm;
@@ -117,15 +117,15 @@ void Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const
 
     
     #pragma omp for collapse(3)
-    for(int   m = NmLlD ; m   <= NmLuD ; m++  ) { for(int z = NzLlD; z <= NzLuD;z++) {  
-    for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD;x++) {
+    for(int   m = NmLlD ; m   <= NmLuD ; m++  ) { for(int z = NzLlD; z <= NzLuD; z++) {  
+    for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) {
            
     simd_for(int v = NvLlD; v <= NvLuD; v++) {
 
       // Velocity derivaties for Lennard-Bernstein Collisional Model (shouln't I use G ?)
       const CComplex f_      = f[s][m][z][y_k][x][v];
       const CComplex df_dv   = (8. *(f[s][m][z][y_k][x][v+1] - f[s][m][z][y_k][x][v-1]) 
-                                       - (f[s][m][z][y_k][x][v+2] - f[s][m][z][y_k][x][v-2])) * _kw_12_dv;
+                                  - (f[s][m][z][y_k][x][v+2] - f[s][m][z][y_k][x][v-2])) * _kw_12_dv;
       const CComplex ddf_dvv = (16.*(f[s][m][z][y_k][x][v+1] + f[s][m][z][y_k][x][v-1]) 
                                   - (f[s][m][z][y_k][x][v+2] + f[s][m][z][y_k][x][v-2]) 
                               -  30.*f[s][m][z][y_k][x][v]) * _kw_12_dv_dv;

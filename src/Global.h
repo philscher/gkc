@@ -166,6 +166,11 @@ class IfaceDataIO {
 class Plasma;
 extern Plasma *plasma;
 
+class Species;
+extern Species *species;
+
+
+
 
 typedef CComplex(*A6zz)[0][0][0][0][0];
 typedef CComplex(*A5zz)[0][0][0][0];

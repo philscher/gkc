@@ -43,10 +43,12 @@ class VlasovCilk : public Vlasov {
    *    It is caculated as
    *    
    *    \f[
-   *        \left[< Xi >, f_{1sigma} \right] = frac{partial Xi}
+   *      \mathcal{N}{}_{\left< \chi \right> \times g_{1\sigma}} = 
+   *        \frac{\partial \left< \chi \right>}{\partial x} \frac{\partial f_{1\sigma}}{\partial y}
+   *      - \frac{\partial \left< \chi \right>}{\partial y} \frac{\partial f_{1\sigma}}{\partial x}
    *    \f]
    *
-   *    Currently implemented as Arakawa (Morinishi) type scheme.
+   *    Currently implemented using Arakawa (Morinishi) type scheme.
    *    
    *    @todo Describe and add reference
    *
@@ -75,15 +77,37 @@ class VlasovCilk : public Vlasov {
                                 const CComplex Fields [Nq][NsLD][NmLD ][NzLB][Nky][NxLB+4], // in case of e-s
                                 const int z, const int m, const int s                     ,
                                 CComplex ExB[Nky][NxLD][NvLD], double Xi_max[3], const bool electroMagnetic);
-
+   /** 
+   *
+   *   @brief Calculate the parallel non-linearity as give by Goerler, PhD Thesis, Eq.(2.52)
+   *
+   *   @note implementation broken
+   *
+   *   \f[
+   *      \mathcal{N}{}_{v_\parallel} = 
+   *       \left\{ v_\parallel \hat{b}_0 \left( q_\sigma \nabla \left< \phi \right> 
+   *     + \frac{q_\sigma}{c} \left< \dot{A}_{1\parallel} \right> \hat{b}_0
+   *     + \mu \nabla \left< B_{1\parallel} \right> \right)
+   *     + \frac{B_0}{B_{0\parallel}^\star} \left( v_\zeta + v_{\nabla B} + v_c \right) \cdot
+   *          \left( q_\sigma \nabla \left< \phi \right> 
+   *     + \mu \nabla \left( B_0 + \left< B_{1\parallel}\right> \right) \right) \right\}
+   *          \frac{1}{m_\sigma v_\parallel} \frac{\partial f_{1\sigma}}{\partial v_\parallel}
+   *   \f]
+   *
+   **/
+   virtual void calculateParallelNonLinearity(
+                                const CComplex f          [NsLD][NmLD][NzLB][Nky][NxLB   ][NvLB],
+                                const CComplex Fields [Nq][NsLD][NmLD ][NzLB][Nky][NxLB+4], // in case of e-s
+                                const int z, const int m, const int s                     ,
+                                CComplex NonLinearTerm[Nky][NxLD][NvLD]);
 
    /**
    *
    *   @brief Calculated the gyro-average modified potential
    *
    *   \f[ 
-   *        \bar{\Xi} = \bar{\phi}_1 - \frac{v_\parallel}{c}\bar{A}_{1\parallel} 
-   *                + \frac{\mu}{q_\sigma} \bar{B}_{1\parallel}
+   *        \left<\chi \right> = \left<\phi_1 \right> - \frac{v_\parallel}{c}\eft<{A}_{1\parallel} \right>
+   *                + \frac{\mu}{q_\sigma} \left< {B}_{1\parallel} \right>
    *   \f]
    *
    *  as well as the Gamma abbrevation functions (Eq. 2.50 below)
@@ -96,10 +120,12 @@ class VlasovCilk : public Vlasov {
    *  and F1 which needs to be reconstructed from g and is needed for the magnetic mirror term (Eq. 2.50)
    *
    *  \f[ 
-   *     F_1 = g_{1\sigma} - \frac{q_sigma}{c}\bar{A}_{1\parallel}\frac{v_\parallel}{T_{0\sigma}} F_{0\sigma} 
+   *     f_{1\sigma} = g_{1\sigma} - \frac{q_\sigma}{c}\bar{A}_{1\parallel}\frac{v_\parallel}{T_{0\sigma}} F_{0\sigma} 
    *  \f]
    *
    *   Reference : @cite Note from Goerles PhD Thesis (Eq. 2.32)
+   *
+   *   @note note calculation of \f$ f_{1\sigma} \f$ is not implemented
    *
    **/
    void setupXiAndG(
@@ -134,12 +160,12 @@ class VlasovCilk : public Vlasov {
    *
    *  Set the Krook operator 
    *  \f[
-   *     \frac{\partial g_{1sigma}}{\partial t} = \dots - \nu(x) g_{1\sigma}
+   *     \frac{\partial g_{1\sigma}}{\partial t} = \dots - \nu(x) g_{1\sigma}
    *  \f]
-   * Is used to damp oscillations close to the simulation boundary.
+   * 
+   *   Is used to damp oscillations close to the simulation boundary.
    *
-   *  Note : 
-   *          * Is this the no-slip boundary condition ?
+   *  @note   * Is this the no-slip boundary condition ?
    *          * Violates conservation of particles, energy and momentum and
    *            needs to be fixed by modifing the fields. See Lapillone.
    *

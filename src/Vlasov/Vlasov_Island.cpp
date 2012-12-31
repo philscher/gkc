@@ -145,18 +145,18 @@ void VlasovIsland::Vlasov_2D_Island(
     for(int s = NsLlD; s <= NsLuD; s++) {
         
       // small abbrevations
-      const double w_n   = plasma->species[s].w_n;
-      const double w_T   = plasma->species[s].w_T;
-      const double alpha = plasma->species[s].alpha;
-      const double sigma = plasma->species[s].sigma;
-      const double Temp  = plasma->species[s].T0;
-      const double sub   = (plasma->species[s].doGyro) ? 3./2. : 1./2.;
+      const double w_n   = species[s].w_n;
+      const double w_T   = species[s].w_T;
+      const double alpha = species[s].alpha;
+      const double sigma = species[s].sigma;
+      const double Temp  = species[s].T0;
+      const double sub   = (species[s].doGyro) ? 3./2. : 1./2.;
 
       const double kw_T = 1./Temp;
 
-      bool isGyro1 = (plasma->species[s].gyroModel == "Gyro-1");
+      bool isGyro1 = (species[s].gyroModel == "Gyro-1");
       
-      const double rho_t2 = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0); 
+      const double rho_t2 = species[s].T0 * species[s].m / (pow2(species[s].q) * plasma->B0); 
 
 
       for(int m=NmLlD; m<=NmLuD; m++) { for(int z=NzLlD; z<= NzLuD;z++) {  
@@ -361,18 +361,18 @@ void VlasovIsland::Vlasov_2D_Island_Equi(
     for(int s = NsLlD; s <= NsLuD; s++) {
         
       // small abbrevations
-      const double w_n   = plasma->species[s].w_n;
-      const double w_T   = plasma->species[s].w_T;
-      const double alpha = plasma->species[s].alpha;
-      const double sigma = plasma->species[s].sigma;
-      const double Temp  = plasma->species[s].T0;
-      const double sub   = (plasma->species[s].doGyro) ? 3./2. : 1./2.;
+      const double w_n   = species[s].w_n;
+      const double w_T   = species[s].w_T;
+      const double alpha = species[s].alpha;
+      const double sigma = species[s].sigma;
+      const double Temp  = species[s].T0;
+      const double sub   = (species[s].doGyro) ? 3./2. : 1./2.;
 
       const double kw_T = 1./Temp;
 
-      bool isGyro1 = (plasma->species[s].gyroModel == "Gyro-1");
+      bool isGyro1 = (species[s].gyroModel == "Gyro-1");
       
-      const double rho_t2 = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0); 
+      const double rho_t2 = species[s].T0 * species[s].m / (pow2(species[s].q) * plasma->B0); 
 
 
       for(int m=NmLlD; m<=NmLuD; m++) { for(int z=NzLlD; z<= NzLuD;z++) {  
@@ -477,18 +477,18 @@ void VlasovIsland::Vlasov_2D_Island_filter(
     for(int s = NsLlD; s <= NsLuD; s++) {
         
       // small abbrevations
-      const double w_n   = plasma->species[s].w_n;
-      const double w_T   = plasma->species[s].w_T;
-      const double alpha = plasma->species[s].alpha;
-      const double sigma = plasma->species[s].sigma;
-      const double Temp  = plasma->species[s].T0;
-      const double sub   = (plasma->species[s].doGyro) ? 3./2. : 1./2.;
+      const double w_n   = species[s].w_n;
+      const double w_T   = species[s].w_T;
+      const double alpha = species[s].alpha;
+      const double sigma = species[s].sigma;
+      const double Temp  = species[s].T0;
+      const double sub   = (species[s].doGyro) ? 3./2. : 1./2.;
 
       const double kw_T = 1./Temp;
 
-      bool isGyro1 = (plasma->species[s].gyroModel == "Gyro-1");
+      bool isGyro1 = (species[s].gyroModel == "Gyro-1");
       
-      const double rho_t2 = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0); 
+      const double rho_t2 = species[s].T0 * species[s].m / (pow2(species[s].q) * plasma->B0); 
 
 
       for(int m=NmLlD; m<=NmLuD; m++) { for(int z=NzLlD; z<= NzLuD;z++) {  
@@ -675,18 +675,18 @@ void VlasovIsland::Vlasov_2D_Island_Rotation(
     for(int s = NsLlD; s <= NsLuD; s++) {
         
       // small abbrevations
-      const double w_n   = plasma->species[s].w_n;
-      const double w_T   = plasma->species[s].w_T;
-      const double alpha = plasma->species[s].alpha;
-      const double sigma = plasma->species[s].sigma;
-      const double Temp  = plasma->species[s].T0;
-      const double sub   = (plasma->species[s].doGyro) ? 3./2. : 1./2.;
+      const double w_n   = species[s].w_n;
+      const double w_T   = species[s].w_T;
+      const double alpha = species[s].alpha;
+      const double sigma = species[s].sigma;
+      const double Temp  = species[s].T0;
+      const double sub   = (species[s].doGyro) ? 3./2. : 1./2.;
 
       const double kw_T = 1./Temp;
 
-      bool isGyro1 = (plasma->species[s].gyroModel == "Gyro-1");
+      bool isGyro1 = (species[s].gyroModel == "Gyro-1");
       
-      const double rho_t2 = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0); 
+      const double rho_t2 = species[s].T0 * species[s].m / (pow2(species[s].q) * plasma->B0); 
 
 
       for(int m=NmLlD; m<=NmLuD; m++) { for(int z=NzLlD; z<= NzLuD;z++) {  
