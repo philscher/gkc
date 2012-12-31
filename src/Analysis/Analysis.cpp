@@ -56,17 +56,16 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][Nky][FFTSolver::X_Nk
       // Mode power & Phase shifts for X (domain decomposed) |\phi(k_x)|
       for(int x_k=fft->K1xLlD; x_k <= fft->K1xLuD; x_k++) {
 
-        pSpec[q][x_k] = __sec_reduce_add(cabs(kXOut[q][NzLlD:NzLD][NkyLlD:Nky][x_k]))/fft->Norm_X; 
-        pFreq[q][x_k] = __sec_reduce_add(     kXOut[q][NzLlD:NzLD][NkyLlD:Nky][x_k] )/fft->Norm_X;
+        pSpec[q][x_k] = __sec_reduce_add(cabs(kXOut[q][NzLlD:NzLD][NkyLlD:Nky][x_k]))/fft->Norm_X * dy * dz; 
+        pFreq[q][x_k] = __sec_reduce_add(     kXOut[q][NzLlD:NzLD][NkyLlD:Nky][x_k] )/fft->Norm_X * dy * dz;
 
       }
-            
       
       // Mode power & Phase shifts for Y (not decomposed) |\phi(k_y)|
       for(int y_k = NkyLlD; y_k <=  NkyLuD ; y_k++) { 
         
-        pSpecY [q][y_k] =      __sec_reduce_add(cabs(Field0[q][NzLlD:NzLD][y_k][NxLlD:NxLD])); 
-        pPhaseY[q][y_k] = carg(__sec_reduce_add(     Field0[q][NzLlD:NzLD][y_k][NxLlD:NxLD]));
+        pSpecY [q][y_k] =      __sec_reduce_add(cabs(Field0[q][NzLlD:NzLD][y_k][NxLlD:NxLD])) * dx * dz; 
+        pPhaseY[q][y_k] = carg(__sec_reduce_add(     Field0[q][NzLlD:NzLD][y_k][NxLlD:NxLD])) * dx * dz;
 
       }
       
@@ -122,19 +121,23 @@ void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky][Nx
     if((s >= NsLlD && s <= NsLuD) && (parallel->Coord[DIR_VM] == 0))  {
     
       
-    ////////////////////////////// Calculate Particle Number ////////////////////////
+    ////////////////////////////// Calculate Particle Number /////////////////////////////
+    
     number =  creal(__sec_reduce_add(Mom00[s-NsLlD][0:NzLD][0][0:NxLD]));
     
     //////////// Calculate Kinetic Energy  //////////////////////////
     
-    kineticEnergy = creal(__sec_reduce_add(Mom20[s-NsLlD][0:NzLD][0][0:NxLD])) +
-                    creal(__sec_reduce_add(Mom02[s-NsLlD][0:NzLD][0][0:NxLD]));
+    kineticEnergy = (__sec_reduce_add(creal(Mom20[s-NsLlD][0:NzLD][0][0:NxLD])) +
+                     __sec_reduce_add(creal(Mom02[s-NsLlD][0:NzLD][0][0:NxLD])) ) * grid->dXYZ;
+    std::cout <<   __sec_reduce_add(creal(Mom02[s-NsLlD][0:NzLD][0][0:NxLD]))  * grid->dXYZ << std::endl;
+    
+    kineticEnergy = 0.5 * species[s].m * (__sec_reduce_add(creal(Mom20[s-NsLlD][0:NzLD][0][0:NxLD]))) * grid->dXYZ;
 
-    ////////////////////////////// Calculate Entropy ////////////////////////////////////
+    ////////////////////////////// Calculate Entropy /////////////////////////////////////
     
     //#pragma omp parallel for reduction(+:kineticEnergy) collapse (2)
     for(int m = NmLlD; m <= NmLuD; m++) {
-    for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) {
+    for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {
     for(int x = NxLlD; x <= NxLuD; x++) { 
 
       entropy += creal(pow2(__sec_reduce_add(f [s][m][z][0][x][NvLlD:NvLD])))/
@@ -443,27 +446,35 @@ void Analysis::writeData(const Timing &timing, const double dt)
     
       std::stringstream messageStream;
       messageStream << std::endl << std::endl << "Analysis | " << std::setprecision(3) << "Time : " << timing.time << " Step : " << timing.step << "   ";
-      messageStream << "Field Energy : (φ) " << scalarValues.phiEnergy  << 
+      messageStream << std::setprecision(2) << std::scientific << 
+                       "Field Energy : (φ) " << scalarValues.phiEnergy  << 
                        "  (A∥) " << ((Nq >= 2) ? Setup::num2str(scalarValues.ApEnergy) : "off") << 
                        "  (B∥) " << ((Nq >= 3) ? Setup::num2str(scalarValues.BpEnergy) : "off") << std::endl; 
       double charge = 0., kinetic_energy=0.;
     
       for(int s = NsGlD; s <= NsGuD; s++) {
     
-        messageStream << "         | "   << std::setw(10) << plasma->species[s].name << " " 
-                      << std::setprecision(2) << std::scientific << std::showpos 
+        messageStream << "         | "   << std::setw(10) << species[s].name << " " 
+//                      << std::setprecision(2) << std::scientific << std::showpos 
+                      << std::showpos 
                       << " N : "             << scalarValues.particle_number[s-1]  
                       << " Kinetic Energy: " << scalarValues.kinetic_energy[s-1] 
                       << " Particle Flux : " << scalarValues.particle_flux[s-1]  
                       << " Heat Flux : "     << scalarValues.heat_flux[s-1] << std::endl;
-        charge += plasma->species[s].q  * scalarValues.particle_number[s-1];
+        charge += species[s].q  * scalarValues.particle_number[s-1];
        kinetic_energy += scalarValues.kinetic_energy[s-1];
 
       }
-    
-      messageStream <<
-        "         | Total Energy " << kinetic_energy+scalarValues.phiEnergy + scalarValues.ApEnergy + scalarValues.BpEnergy << 
-              "    Total Charge = " << ((plasma->species[0].n0 != 0.) ? 0. : charge) << std::endl;  
+      
+      /////////////   Output some non-mandatory values  //////////////////////////
+      const double field_energy = scalarValues.phiEnergy + scalarValues.ApEnergy + scalarValues.BpEnergy;
+   
+      messageStream << std::setprecision(4);
+      if(vlasov->doNonLinearParallel) messageStream << "         | Total Energy Ratio : " <<  std::noshowpos << std::fixed << 100*abs((kinetic_energy+field_energy)/(field_energy == 0. ? 1.e-99 : field_energy)) << "%";
+      if(Ns > 1                     ) messageStream << "    Total Charge = " << ((species[0].n0 != 0.) ? 0. : charge);
+      messageStream << std::endl; 
+      messageStream << std::setprecision(5) << field_energy/(kinetic_energy == 0. ? 1.e-99 : kinetic_energy) << " " << kinetic_energy/(field_energy == 0. ? 1.e-99 : field_energy) << std::endl;
+
       parallel->print(messageStream.str());
     
      }
