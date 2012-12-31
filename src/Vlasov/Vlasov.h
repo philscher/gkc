@@ -132,6 +132,8 @@ class Vlasov : public IfaceGKC {
   virtual void solve(std::string equation_type, Fields *fields, CComplex *fs, CComplex *fss, 
                      double dt, int rk_step, const double rk[3]) = 0;
  public:
+       
+  bool doNonLinearParallel; ///< Calculate the parallel non-linearity
   
   /**
   *   @brief Pre-calculate often used factors

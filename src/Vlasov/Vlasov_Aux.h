@@ -51,7 +51,7 @@ class VlasovAux : public VlasovCilk {
    *    \f[ 
    *          \frac{g_1}{\partial t} = 
    *          - \frac{B_0}{B_0^\star} \left( \omega_n + \omega_T \left(v^2+\mu B_t \right) \right) 
-   *            \frac{\partial \Xi}{\partial y} F_{0\sigma} - \alpha v_\parallel \frac{\partial G}{\partial z} 
+   *            \frac{\partial \chi}{\partial y} F_{0\sigma} - \alpha v_\parallel \frac{\partial G}{\partial z} 
    *    \f]
    *
    *   Sheared geometry is expressed as \f$ B_0 = \left( 0, -x/L_s, 1 \right) \f$ with L_s the shearing length. The parallel component
@@ -129,6 +129,32 @@ class VlasovAux : public VlasovCilk {
                            const CComplex Field[Nq][NsLD][NmLD][NzLB][Nky][NxLB+4],
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3]);
+
+
+   /**
+   *   @brief Calculates the parallel non-linearity term for two-dimensional geometry
+   *
+   *   \f[
+   *      \mathcal{N}{}_{v_\parallel} = 
+   *      \alpha_\sigma \frac{q_\sigma}{m_\sigma} 
+   *      k_\parallel \left<\phi\right> \frac{\partial g_{1\sigma}}{\partial v_\parallel} 
+   *     
+   *   \f]
+   *
+   *   @note only electrostatic calculation is supported
+   *
+   **/
+   void calculateParallelNonLinearity(
+                                const CComplex f          [NsLD][NmLD][NzLB][Nky][NxLB   ][NvLB],
+                                const CComplex Fields [Nq][NsLD][NmLD ][NzLB][Nky][NxLB+4], // in case of e-s
+                                const int z, const int m, const int s                     ,
+                                CComplex NonLinearTerm[Nky][NxLD][NvLD]);
+   
+   void calculateParallelNonLinearity2(
+                                const CComplex f          [NsLD][NmLD][NzLB][Nky][NxLB   ][NvLB],
+                                const CComplex Fields [Nq][NsLD][NmLD ][NzLB][Nky][NxLB+4], // in case of e-s
+                                const int z, const int m, const int s                     ,
+                                CComplex NonLinearTerm[Nky][NxLD][NvLD]);
 
 
   public:

@@ -63,6 +63,12 @@ AM_CPPFLAGS  = -ggdb -O3 -Wall -Wno-unknown-pragmas -I./external  -I./FFTSolver 
 
 #Vlasov/Vlasov_Cilk.h Vlasov/Vlasov_Aux.h Vlasov/Vlasov_Optim.h Vlasov/Vlasov_Island.h Vlasov/Vlasov.
 
+
+#### Link 3rd party libraries
+
+
+# HDF-5
+
 # Add for HDF-5 file
 gkc_LDFLAGS  =   -L$(DIR_HDF5)/lib/
 gkc_LDADD    =   $(DIR_HDF5)/lib/libhdf5_hl.a $(DIR_HDF5)/lib/libhdf5.a  -lz 

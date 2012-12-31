@@ -75,26 +75,27 @@ void VlasovAux::Vlasov_ES(
   for(int s = NsLlD; s <= NsLuD; s++) {
         
       // some abbrevations
-      const double w_n   = plasma->species[s].w_n;
-      const double w_T   = plasma->species[s].w_T;
-      const double alpha = plasma->species[s].alpha;
-      const double sigma = plasma->species[s].sigma;
-      const double kw_T  = 1./plasma->species[s].T0;
+      const double w_n   = species[s].w_n;
+      const double w_T   = species[s].w_T;
+      const double alpha = species[s].alpha;
+      const double sigma = species[s].sigma;
+      const double kw_T  = 1./species[s].T0;
     
-      const double sub = (plasma->species[s].doGyro) ? 3./2. : 1./2.;
+      const double sub = (species[s].doGyro) ? 3./2. : 1./2.;
         
-      const bool doGyro  = (plasma->species[s].doGyro);
-      const bool isGyro1 = (plasma->species[s].gyroModel == "Gyro-1");
+      const bool doGyro  = (species[s].doGyro);
+      const bool isGyro1 = (species[s].gyroModel == "Gyro-1");
     
-      const double rho_t2 = plasma->species[s].T0 * plasma->species[s].m / (pow2(plasma->species[s].q) * plasma->B0); 
+      const double rho_t2 = species[s].T0 * species[s].m / (pow2(species[s].q) * plasma->B0); 
      
       // Cannot do omp parallelization here (due to nonlinear term ..)
-      for(int m=NmLlD; m<= NmLuD;m++) { for(int z=NzLlD; z<= NzLuD;z++) { 
+      for(int m = NmLlD; m <= NmLuD; m++) { for(int z = NzLlD; z <= NzLuD; z++) { 
       
       // calculate non-linear term (rk_step == 0 for eigenvalue calculations)
      // #pragma omp single
      //   {
-      if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
+//      if(doNonLinear         && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
+      if(doNonLinearParallel && (rk_step != 0)) calculateParallelNonLinearity2(fs, Fields, z, m, s, nonLinearTerm);
       //  }
       //#pragma omp flush
 
@@ -131,10 +132,6 @@ void VlasovAux::Vlasov_ES(
 
             const  CComplex g      = fs [s][m][z][y_k][x][v];
         
-            // hyperdiffusion terms
-            // const Complex d4fs_d4x = (-(fs[s][m][z][y_k][x-2][v] + fs[s][m][z][y_k][x+2][v]) + 4. * (fs[s][m][z][y_k][x-1][v] + fs[s][m][z][y_k][x+1][v]) - 6.*fs[s][m][z][y_k][x][v])/_16_dx4;
-       
-       
             ///////////////   The time derivative of the Vlasov equation      //////////////////////
        
             const CComplex dg_dt =
@@ -143,7 +140,6 @@ void VlasovAux::Vlasov_ES(
              +  ky* (-(w_n + w_T * (((V[v]*V[v])+ (doGyro ? M[m] : 0.))*kw_T  - sub)) * f0_ * phi_    // Driving term (Temperature/Density gradient)
              -  half_eta_kperp2_phi * f0_)                                            // Contributions from gyro-1 (0 if not neq Gyro-1)
              -  alpha  * V[v]* kp  * ( g + sigma * phi_ * f0_)                        // Linear Landau damping
-//             -  alpha * ky * phi_ * dg_dv                                            // Non-linear Landau damping
              +  Coll[s][m][z][y_k][x][v]  ;                                           // Collisional operator
          
         //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -177,15 +173,15 @@ void VlasovAux::Vlasov_EM(
    for(int s = NsLlD; s <= NsLuD; s++) {
         
       // abbrevations
-      const double w_n   = plasma->species[s].w_n;
-      const double w_T   = plasma->species[s].w_T;
-      const double alpha = plasma->species[s].alpha;
-      const double sigma = plasma->species[s].sigma;
-      const double Temp  = plasma->species[s].T0;
+      const double w_n   = species[s].w_n;
+      const double w_T   = species[s].w_T;
+      const double alpha = species[s].alpha;
+      const double sigma = species[s].sigma;
+      const double Temp  = species[s].T0;
     
-      const double sub   = (plasma->species[s].doGyro) ? 3./2. : 1./2.;
+      const double sub   = (species[s].doGyro) ? 3./2. : 1./2.;
       
-      bool isGyro1 = (plasma->species[s].gyroModel == "Gyro-1");
+      bool isGyro1 = (species[s].gyroModel == "Gyro-1");
       
 
     for(int m = NmLlD; m <= NmLuD; m++) { 
@@ -210,7 +206,7 @@ void VlasovAux::Vlasov_EM(
     #pragma vector always 
     for(int v = NvLlD; v <= NvLuD; v++) {
            
-      // Sign has no influence on result ...
+      // sign has no influence on result ...
       const CComplex kp = geo->get_kp(x, ky, z);
 
       const CComplex g    = fs[s][m][z][y_k][x][v];
@@ -267,7 +263,7 @@ void VlasovAux::Landau_Damping(
 
    for(int s = NsLlD; s <= NsLuD; s++) { for(int m=NmLlD; m<= NmLuD;m++) { 
       
-     const double alpha = plasma->species[s].alpha;
+     const double alpha = species[s].alpha;
   
          for(int z=NzLlD; z<= NzLuD;z++) {       for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
          for(int x=NxLlD; x<= NxLuD;x++) {  simd_for(int v=NvLlD; v<= NvLuD;v++)         {
@@ -313,13 +309,13 @@ void    VlasovAux::Vlasov_2D_Fullf(
    for(int s = NsLlD; s <= NsLuD; s++) {
         
       // small abbrevations
-      const double w_n   = plasma->species[s].w_n;
-      const double w_T   = plasma->species[s].w_T;
-      const double alpha = plasma->species[s].alpha;
-      const double sigma = plasma->species[s].sigma;
-      const double Temp  = plasma->species[s].T0;
+      const double w_n   = species[s].w_n;
+      const double w_T   = species[s].w_T;
+      const double alpha = species[s].alpha;
+      const double sigma = species[s].sigma;
+      const double Temp  = species[s].T0;
     
-      const double sub = (plasma->species[s].doGyro) ? 3./2. : 1./2.;
+      const double sub = (species[s].doGyro) ? 3./2. : 1./2.;
       
       for(int m=NmLlD; m<= NmLuD;m++) { 
   
@@ -371,4 +367,95 @@ void    VlasovAux::Vlasov_2D_Fullf(
 
 
 
+void VlasovAux::calculateParallelNonLinearity(
+                                const CComplex f          [NsLD][NmLD][NzLB][Nky][NxLB   ][NvLB],
+                                const CComplex Fields [Nq][NsLD][NmLD ][NzLB][Nky][NxLB+4], // in case of e-s
+                                const int z, const int m, const int s                     ,
+                                CComplex nonLinearTerm[Nky][NxLD][NvLD])
+{
+  
+  const double half_vth_kw_T = 0.5 * species[s].q * species[s].v_th / species[s].T0; 
+
+  #pragma omp for
+  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
+  
+    const CComplex ky   = _imag  * fft->ky(y_k);
+          
+  for(int x = NxLlD; x <= NxLuD; x++) { 
+ 
+    const CComplex kp   = geo->get_kp(x, ky, z);
+    const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];
+
+  simd_for(int v = NvLlD; v <= NvLuD; v++) { 
+
+    const CComplex  dg_dv = (8.*(f[s][m][z][y_k][x][v+1] - f[s][m][z][y_k][x][v-1]) 
+                              - (f[s][m][z][y_k][x][v+2] - f[s][m][z][y_k][x][v-2])) * _kw_12_dv;
+
+    //  Kinetic energy can only be contain in the m=0 mode, otherwise it will
+    //  cancel out. Thus we direclty only calculte the m=0 mode which is given
+    //  by  (m=0) = (m') + (m'') = 0 -> m' = -m'' = m''*.
+    //  m = 0 needs to be per definition real
+    //
+    //  m_sigma is absorbed in dg_dv
+    //
+    nonLinearTerm[0][x][v] -= half_vth_kw_T * creal((kp * phi_) * conj(dg_dv));
+               
+   
+  } } }
+
+
+};
+
+void VlasovAux::calculateParallelNonLinearity2(
+                                const CComplex f          [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                                const CComplex Fields [Nq][NsLD][NmLD][NzLB][Nky][NxLB+4], 
+                                const int z, const int m, const int s                    ,
+                                CComplex nonLinearTerm[Nky][NxLD][NvLD])
+{
+  nonLinearTerm[:][NxLlD:NxLD][NvLlD:NvLD] = 0.; 
+  
+  const double _kw_fft_Norm  = 1./(fft->Norm_Y_Backward * fft->Norm_Y_Backward * fft->Norm_Y_Forward);
+  const double half_vth_kw_T = 0.5 * species[s].q *  pow2(species[s].v_th) / species[s].T0; 
+ 
+
+  // Note : we do not use any anti-aliasing method here!
+
+  CComplex Arr_NkyNx[Nky][NxLD], NL_NxNky[Nky][NxLD];
+  
+  doubleAA xy_phi_kp[NyLD][NxLD], xy_dg_dv[NyLD][NxLD], NL_NxNy[NyLD][NxLD];
+
+  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  for(int x = NxLlD; x <= NxLuD; x++) { 
+ 
+    const CComplex ky   = _imag  * fft->ky(y_k);
+    const CComplex kp   = geo->get_kp(x, ky, z);
+    const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];
+
+    Arr_NkyNx[y_k][x-NxLlD] = kp * phi_ ;
+
+  } }
+
+  fft->solve(FFT_Type::Y_NL, FFT_Sign::Backward, (CComplex *) Arr_NkyNx, &xy_phi_kp);
+
+  for(int v = NvLlD; v <= NvLuD; v++) {
+
+  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { 
+  
+    Arr_NkyNx[y_k][x-NxLlD] = (8.*(f[s][m][z][y_k][x][v+1] - f[s][m][z][y_k][x][v-1]) 
+                                - (f[s][m][z][y_k][x][v+2] - f[s][m][z][y_k][x][v-2])) * _kw_12_dv;
+ 
+  } } // y_k, x
+  
+  fft->solve(FFT_Type::Y_NL, FFT_Sign::Backward, (CComplex *) Arr_NkyNx, &xy_dg_dv);
+
+  // multiply non-linear terms
+  NL_NxNy[:][:] = _kw_fft_Norm * half_vth_kw_T * xy_phi_kp[:][:] * xy_dg_dv[:][:] ;
+   
+  fft->solve(FFT_Type::Y_NL, FFT_Sign::Forward, NL_NxNy, (CComplex *) NL_NxNky);
+
+  nonLinearTerm[:][NxLlD:NxLD][v] -= NL_NxNky[:][:]; 
+  
+  } // v
+
+
+};
 

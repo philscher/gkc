@@ -46,6 +46,7 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
   
    equation_type       = setup->get("Vlasov.Equation" , "ES");        
    doNonLinear         = setup->get("Vlasov.doNonLinear", 0      );
+   doNonLinearParallel = setup->get("Vlasov.doNonLinearParallel", 0);
 
    const std::string dir_string[] = { "X", "Y", "Z", "V", "M", "S" };
    
