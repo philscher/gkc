@@ -64,7 +64,21 @@
 *
 *    where for \f$ k_\perp^2 > 1 \f$, additional correction terms are included.
 *
+*   The perturbed parallel temperature is defined as, Goerler, PhD Thesis, Eq. (3.81)
+*   \f[
+*        \hat{T}_{parallel1,sigma} = 
+*            \frac{2 M_{20} - T_{p\sigma} M_{00}}{\hat{n}_{p\sigma}}
+*   \f]
+*  
+*  and the perpendicular temperature as, Eq.(3.82)
+*   
+*   \f[
+*        \hat{T}_{\perp,1\sigma} = 
+*            \frac{M_{02} - T_{p\sigma} M_{00}}{\hat{n}_{p\sigma}}
+*   \f]
 *
+*   where, the second term on the RHS arises, as we substract the constribution from the
+*   equilibrium temperature.
 *
 **/
 class Moments 
@@ -176,6 +190,19 @@ class Moments
   *
   **/
   void calculateMoment02() {};
+  
+  
+  void calculateMoment_Ap(const CComplex     f [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                          const CComplex Field0[Nq][NzLD][NkyLD][NxLD],
+                                CComplex Mom10[NsLD][NzLD][NkyLD][NxLD], 
+                                CComplex Mom30[NsLD][NzLD][NkyLD][NxLD],
+                                CComplex Mom12[NsLD][NzLD][NkyLD][NxLD]);
+
+  void calculateMoment_Bp(const CComplex     f    [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
+                          const CComplex Field0[Nq][NzLD][NkyLD][NxLD],
+                                CComplex Mom02[NsLD][NzLD][NkyLD][NxLD], 
+                                CComplex Mom22[NsLD][NzLD][NkyLD][NxLD],
+                                CComplex Mom04[NsLD][NzLD][NkyLD][NxLD]);
 
 };
 
