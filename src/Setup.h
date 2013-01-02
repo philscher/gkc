@@ -51,13 +51,13 @@ class Setup : public IfaceGKC {
   *   @brief hash which holds all file configuration options
   *
   **/ 
-  map   <std::string, std::string> config;
+  std::map   <std::string, std::string> config;
   
   /**
   *  @brief array to check access to configuration
   *
   **/ 
-  vector<std::string> config_check;
+  std::vector<std::string> config_check;
 
   std::string commandLineOptions,  ///< line options specified by -x
                 extraLineOptions;  ///< line options specified by -o

@@ -135,7 +135,7 @@ argv=_argv;
   std::string line;
   std::ifstream file;
   
-  file.open(setupFilename.c_str(), ios::in);
+  file.open(setupFilename.c_str(), std::ios::in);
   check(file.is_open(), DMESG("Could open find file! Wrong path ?"));
 
   
@@ -146,7 +146,7 @@ argv=_argv;
 
   
   // Parse configuation file given per -c option
-  file.seekg (0, ios::beg);
+  file.seekg (0, std::ios::beg);
   // read setup file line per line
   while(std::getline(file, line)) parseOption(line);
   file.close();
@@ -280,7 +280,7 @@ void Setup::check_config()
    
    if(config_check.size() != 0) {
   
-      vector<std::string>::const_iterator mode;
+     std::vector<std::string>::const_iterator mode;
     
       for(mode =  config_check.begin(); mode != config_check.end(); mode++) { 
             std::cout << "Element not accessed : " << *mode << std::endl;
@@ -314,7 +314,7 @@ template<class T> T Setup::get(std::string key, const T default_Value)
             stream >> t;
            
             // delete element in check
-            vector<std::string>::iterator f = find(config_check.begin(), config_check.end(), key);
+            std::vector<std::string>::iterator f = find(config_check.begin(), config_check.end(), key);
             if( f != config_check.end() ) config_check.erase(f);
             
             

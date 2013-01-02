@@ -171,7 +171,7 @@ class FFTSolver : public IfaceGKC {
    *
    *   @return the name with version of the FFT library used
    **/
-   virtual string getLibraryName()  = 0;
+   virtual std::string getLibraryName()  = 0;
 
    /**
    *  @brief multiplies 2-arrays by transforming to real space

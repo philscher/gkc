@@ -60,7 +60,7 @@ double TimeIntegration::solveTimeStep(Vlasov *vlasov, Fields *fields, TestPartic
 {
   
   // set time-step as minimum between (constant) linear timestep and (if enabled) from non-linear dt
-  double dt = min(maxLinearTimeStep, useCFL ? vlasov->getMaxNLTimeStep(maxCFLNumber) : 1.e99);
+  double dt = std::min(maxLinearTimeStep, useCFL ? vlasov->getMaxNLTimeStep(maxCFLNumber) : 1.e99);
 
   if     (timeIntegrationScheme == "Explicit_RK4" ) solveTimeStepRK4 (timing, dt);
   else if(timeIntegrationScheme == "Explicit_RK3" ) solveTimeStepRK3 (timing, dt);

@@ -89,7 +89,7 @@ void Benchmark::bench(Vlasov *vlasov, Fields *fields)
           std::cout << "Vlasov full  " << benchtest(vlasov_full ) << std::endl;
           std::cout << "Poisson      " << benchtest(poisson     ) << std::endl;
           double ggflops = benchtest(full_step  );
-          simMaxGFLOPS =  max(simMaxGFLOPS, ggflops);
+          simMaxGFLOPS   = std::max(simMaxGFLOPS, ggflops);
           std::cout << "One Step     " << ggflops << std::endl;
    
        }

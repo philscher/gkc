@@ -130,8 +130,8 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
       } } 
         
       // get maximum value to calculate CFL condition 
-      Xi_max[DIR_Y] = max(Xi_max[DIR_Y], __sec_reduce_max(cabs(xy_dXi_dy[:][:])));
-      Xi_max[DIR_X] = max(Xi_max[DIR_X], __sec_reduce_max(cabs(xy_dXi_dx[:][:])));
+      Xi_max[DIR_Y] = std::max(Xi_max[DIR_Y], __sec_reduce_max(cabs(xy_dXi_dy[:][:])));
+      Xi_max[DIR_X] = std::max(Xi_max[DIR_X], __sec_reduce_max(cabs(xy_dXi_dx[:][:])));
         
     }
 

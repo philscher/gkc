@@ -50,7 +50,6 @@ extern "C" CComplex cexp (CComplex z);
 
 #define _imag ((CComplex) (0.+1.j)) 
 
-using namespace std;
 
 template<class T> __attribute__((vector)) inline T pow2(T x) { return x*x; };
 template<class T> inline T pow3(T x) { return x*x*x; };

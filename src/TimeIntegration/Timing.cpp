@@ -94,7 +94,7 @@ std::string Timing::getRemainingTimeString(Timing timing, Timing maxTiming, time
      int sec_step = (int) (maxTiming.step > 0 ? (int) ((1.-(double) timing.step/(double) maxTiming.step)/((double) timing.step/(double) maxTiming.step) * (double) time) : 1e6);// - time;
      int sec_time = (int) (maxTiming.time > 0 ? (int) ((1.-timing.time/maxTiming.time)/(timing.time/maxTiming.time) * (double) time) : 1.e6);// - time;
 
-     remainingSeconds = min(sec_step, sec_time);
+     remainingSeconds = std::min(sec_step, sec_time);
    
    }
 

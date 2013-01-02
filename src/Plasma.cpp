@@ -144,7 +144,7 @@ void Plasma::printOn(std::ostream &output) const
                                                    " Phase : " << (species[0].w_n) <<  " (adiabatic) " <<  std::endl;  
             } else output << "0. -- No adiabatic species -- " << std::endl;
             
-            cout.precision(5);
+            std::cout << std::setprecision(5);
             for(int s = 1; s <= Ns; s++) {
             output   
             << "          +| " << s << ". " << species[s].name << "  Charge : " << species[s].q << "     Mass : " << species[s].m;

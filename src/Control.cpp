@@ -175,7 +175,7 @@ bool Control::checkOK(Timing timing, Timing maxTiming)
   // {
 
       cntrl.check(timing <= maxTiming, "(1) : Time Limit for simulation reached");
-      if(cntrl_file_name != "") cntrl.check(ifstream(cntrl_file_name.c_str()) == NULL, "(1) : Manual stop bu using file.stop trigger");
+      if(cntrl_file_name != "") cntrl.check(std::ifstream(cntrl_file_name.c_str()) == NULL, "(1) : Manual stop bu using file.stop trigger");
       
       
       cntrl.check(((time(NULL)-startTime) < maxRunningTime) || (maxRunningTime == 0), "(1) : Running Time Limit Reached");

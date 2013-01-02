@@ -197,14 +197,14 @@ double Vlasov::getMaxNLTimeStep(const double maxCFL)
   #pragma omp single copyprivate(dt_NL)
   {
     // from non-linear ExB Term
-    const double NL_ExB_v    = max(Xi_max[DIR_X]/dy , Xi_max[DIR_Y]/dx);
+    const double NL_ExB_v    = std::max(Xi_max[DIR_X]/dy , Xi_max[DIR_Y]/dx);
 
     // from non-linear Landau damping (particle trapping)
     const double NL_Landau_v = 0.; // Not included yet
 
     // if non-linear terms are very small, there is no restriction on
     // time step, add 1.e-10 to avoid division by 0 
-    double NL = max(NL_ExB_v, NL_Landau_v) + 1.e-10; 
+    double NL = std::max(NL_ExB_v, NL_Landau_v) + 1.e-10; 
 
     // get global maximum timestep time step 
     dt_NL = maxCFL / parallel->reduce(NL, Op::max);

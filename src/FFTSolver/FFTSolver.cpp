@@ -83,9 +83,9 @@ void FFTSolver::parseSuppressMode(const std::string &value, std::vector<int> &su
     std::vector<std::string> result = Setup::split(sub_str, ",");
                      
     // needs cleanup !
-    vector<std::string>::const_iterator it;
+    std::vector<std::string>::const_iterator it;
                                                for(it = result.begin(); it != result.end(); it++) {
-                                                   if((*it).find("-") == string::npos) {
+                                                   if((*it).find("-") == std::string::npos) {
                                                    //if((*it).find("-") != -1) {
                                                     std::vector<std::string> res2 = Setup::split(*it, "-");
                                                     for(int i = atoi(res2[0].c_str()); i < atoi(res2[1].c_str()); i++) {
