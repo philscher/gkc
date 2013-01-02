@@ -181,9 +181,9 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
   
   // X (Note : For gyro-averaged fields we have extended boubdaries
   ArrayX = nct::allocate(nct::Range(NxGlB-2, NxGB+4))(&X);
-  ArrayZ = nct::allocate(nct::Range(NzGlB  , NzGB))(&Z);
-  ArrayV = nct::allocate(nct::Range(NvGlB  , NvGB))(&V);
-  ArrayM = nct::allocate(nct::Range(NmGlB  , NmGB))(&M, &dm);
+  ArrayZ = nct::allocate(RzGB)(&Z);
+  ArrayV = nct::allocate(RvGB)(&V);
+  ArrayM = nct::allocate(RmGB)(&M, &dm);
 
   // Use  equidistant grid for X, Z and V
   bool includeX0Point = setup->get("Grid.IncludeX0Point", 0);

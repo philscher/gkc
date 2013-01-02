@@ -42,10 +42,11 @@ class FileIO : public IfaceGKC
 
   Timing dataFileFlushTiming; ///< Timing when to flush the HDF-5 file
    
-  // Data files
-  std::string outputFileName;    ///< Name of the output file
-  std::string info;              ///< additional information to append to the file
-
+  std::string outputFileName,    ///< Name of the output file
+              info;              ///< additional information to append to the file
+  
+  void create(Setup *setup, bool allowOverwrite);
+  
  public:
   
   /**
@@ -87,8 +88,7 @@ class FileIO : public IfaceGKC
 
   hid_t getFileID() const { return file; };
 
-  // move to private
-  bool resumeFile, overwriteFile;
+  bool resumeFile   ; 
 
   hid_t  newGroup(std::string name, hid_t parentNode=-2);
         
@@ -100,10 +100,6 @@ class FileIO : public IfaceGKC
   virtual void initData(Setup *setup);
   virtual void writeData(const Timing &timing, const double dt) {};
   virtual void closeData() {};
-
- private:
-
-  void create(Setup *setup);
 
 };
 

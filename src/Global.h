@@ -150,15 +150,7 @@ class IfaceGKC {
 
     // Data Output Operation
 };
-    
-class IfaceDataIO {
-    virtual ~IfaceDataIO() { };
-    virtual void initData(FileIO *fileIO) = 0;
-    virtual void loadData() {};
-    virtual void writeData(Timing timing, double dt) = 0;
-    virtual void closeData() = 0;
-};
-
+   
 // Forward declaration
 class Plasma;
 extern Plasma *plasma;

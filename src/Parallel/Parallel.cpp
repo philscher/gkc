@@ -74,7 +74,8 @@ Parallel::Parallel(Setup *setup)
   // Initialize MPI
   int provided = 0; 
   int required = numThreads == 1 ? MPI_THREAD_SINGLE : MPI_THREAD_FUNNELED;
-  MPI_Init_thread(&setup->argc, &setup->argv, required, &provided);
+  //MPI_Init_thread(&setup->argc, &setup->argv, required, &provided);
+  MPI_Init_thread(NULL, NULL, required, &provided);
   //check(provided < required ? -1 : 1, DMESG("MPI : Thread level support not available (use only one thread)"));
 
   MPI_Comm_size(MPI_COMM_WORLD, &numProcesses); 
@@ -202,7 +203,9 @@ Parallel::~Parallel()
 
 void Parallel::updateBoundaryVlasov(CComplex *Sendu, CComplex *Sendl, CComplex *Recvu, CComplex  *Recvl, int num, int dir)
 {
-        
+  
+ // OPTIM : If we don't decompose,  copy Sendu->Recvl, .., without going through MPI
+
 #ifdef GKC_PARALLEL_MPI
      
   auto mpi_type = getMPIDataType(typeid(CComplex)); 
@@ -242,7 +245,7 @@ void Parallel::updateBoundaryVlasov(CComplex *Sendu, CComplex *Sendl, CComplex *
 void Parallel::updateBoundaryVlasovBarrier() 
 {
   // BUG what happen if we never sent a message, what does Waitall
-                                 MPI_Waitall(4, Talk[DIR_X].psf_msg_req, Talk[DIR_X].msg_status);
+  check(MPI_Waitall(4, Talk[DIR_X].psf_msg_req, Talk[DIR_X].msg_status) != MPI_SUCCESS ? -1 : 0, DMESG("MPI Error"));
   //if(decomposition[DIR_X] > 1) MPI_Waitall(4, Talk[DIR_X].psf_msg_req, Talk[DIR_X].msg_status);
   if(Nz > 1) MPI_Waitall(4, Talk[DIR_Z].psf_msg_req, Talk[DIR_Z].msg_status);
   if(decomposition[DIR_V] > 1) MPI_Waitall(4, Talk[DIR_V].psf_msg_req, Talk[DIR_V].msg_status);
@@ -268,15 +271,16 @@ void  Parallel::updateBoundaryFields(CComplex *SendXl, CComplex *SendXu, CComple
   MPI_Irecv(RecvXu, num_X, MPI_DOUBLE_COMPLEX, Talk[DIR_X].rank_u, Talk[DIR_X].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[2]); 
   MPI_Isend(SendXl, num_X, MPI_DOUBLE_COMPLEX, Talk[DIR_X].rank_l, Talk[DIR_X].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[3]);
 
-  // For Z-Direction
+  // For Z-Direction (ignore if we don't use Z direction)
+  if(Nz > 1) {
   MPI_Irecv(RecvZl, num_Z, MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_l, Talk[DIR_Z].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[4]); 
   MPI_Isend(SendZu, num_Z, MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_u, Talk[DIR_Z].phi_msg_tag[0], Comm[DIR_ALL], &msg_request[5]);
       
   MPI_Irecv(RecvZu, num_Z, MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_u, Talk[DIR_Z].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[6]); 
   MPI_Isend(SendZl, num_Z, MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_l, Talk[DIR_Z].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[7]);
-
+  }
   // Field boundries required for Vlasov solver, thus wait
-  MPI_Waitall(8, msg_request, msg_status);
+  MPI_Waitall(Nz > 1 ? 8 : 4, msg_request, msg_status);
       
   return;
 }

@@ -17,6 +17,13 @@
 #include "hdf5.h"
 #include "hdf5_hl.h"
 
+/**
+*  
+*  @brief Class for simplifing HDF-5 dataset creation
+*
+*  Warning if we use std::string a.c_str(), the resulting pointer
+*  is invalid once a gets out of scope !
+**/
 class FileAttr
 {
  
@@ -60,9 +67,9 @@ class FileAttr
   *   
   **/
   FileAttr(std::string _name, hid_t group, hid_t file_id, int _ndim, 
-           hsize_t _dim[], hsize_t _mdim[], 
-           hsize_t _cdim[], hsize_t moff[], 
-           hsize_t cBdim[], hsize_t _off[],   
+           hsize_t  _dim[] , hsize_t _mdim[], 
+           hsize_t _cdim[], hsize_t  moff[], 
+           hsize_t cBdim[], hsize_t  _off[],   
            bool _write, 
            hid_t _typeId_hdf = H5T_NATIVE_DOUBLE, 
            bool createFile=true) 
@@ -99,7 +106,7 @@ class FileAttr
       //H5Pset_chunk_cache(dapl, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, 1.);
       hid_t dapl   = H5P_DEFAULT;
 
-      dataset_hdf = check(H5Dcreate2(group, _name.c_str(), typeId_hdf, dspace, H5P_DEFAULT, dcpl, dapl), DMESG(name + "H5Dcreate2"));
+      dataset_hdf = check(H5Dcreate2(group, name.c_str(), typeId_hdf, dspace, H5P_DEFAULT, dcpl, dapl), DMESG(name + "H5Dcreate2"));
       H5Pclose(dcpl); 
       H5Pclose(dapl); 
       H5Sclose(dspace);

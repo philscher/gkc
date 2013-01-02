@@ -31,11 +31,11 @@ Visualization_Data::Visualization_Data(Grid *grid, Parallel *_parallel, Setup *s
      
      // We only save the first Z(z=0) slide, especially useful in 2D simulations
      int numZSlide = 1;
-     hsize_t Fields_dim      [] = { numZSlide  , NkyLD, Nx,             1 };
-     hsize_t Fields_maxdim   [] = { numZSlide  , NkyLD, Nx, H5S_UNLIMITED };
-     hsize_t Fields_chunkBdim[] = { numZSlide  , NkyLD, NxLD      ,             1 };
-     hsize_t Fields_chunkdim [] = { numZSlide  , NkyLD, NxLD      ,             1 };
-     hsize_t Fields_moffset  [] = { 0, 0, 0, 0 };
+     hsize_t Fields_dim      [] = { numZSlide, NkyLD, Nx  ,             1 };
+     hsize_t Fields_maxdim   [] = { numZSlide, NkyLD, Nx  , H5S_UNLIMITED };
+     hsize_t Fields_chunkBdim[] = { numZSlide, NkyLD, NxLD,             1 };
+     hsize_t Fields_chunkdim [] = { numZSlide, NkyLD, NxLD,             1 };
+     hsize_t Fields_moffset  [] = { 0        , 0    ,   0 , 0             };
      hsize_t Fields_offset   [] = {NzLlB-1, NkyLlB , NxLlB-1, 0 }; 
      
      bool phiWrite = (parallel->Coord[DIR_VMS] == 0) && (parallel->Coord[DIR_Z] == 0);
@@ -67,38 +67,43 @@ Visualization_Data::Visualization_Data(Grid *grid, Parallel *_parallel, Setup *s
 
 }   
     
-Visualization_Data::~Visualization_Data() {
+Visualization_Data::~Visualization_Data() 
+{
 
-    delete FA_slphi;
-    delete FA_slAp;
-    delete FA_slBp;
-    delete FA_slphiTime;
+  delete FA_slphi;
+  delete FA_slAp;
+  delete FA_slBp;
+  delete FA_slphiTime;
     
-    if(visXV == true) delete FA_XV;
+  if(visXV == true) delete FA_XV;
 
 };
 
 void Visualization_Data::writeData(const Timing &timing, const double dt, const bool force) 
 {
-        if (timing.check(dataOutputVisual,dt) || force) {
-            if(Nq >= 1) FA_slphi->write(fields->ArrayField0.data(fields->Field0));
+    
+  if (timing.check(dataOutputVisual,dt) || force) {
 
-            [=] (CComplex Field0[Nq][NzLD][NkyLD][NxLD]) {
-              if(Nq >= 2) FA_slAp ->write(&Field0[Field::Ap][NzLlD][0][NxLlD]);
-              if(Nq >= 3) FA_slBp ->write(&Field0[Field::Bp][NzLlD][0][NxLlD]);
-            }((A4zz) fields->Field0);
+    [=] (CComplex Field0[Nq][NzLD][NkyLD][NxLD]) {
+    
+      if(Nq >= 1) FA_slphi->write(&Field0[Field::phi][NzLlD][0][NxLlD]);
+      if(Nq >= 2) FA_slAp ->write(&Field0[Field::Ap ][NzLlD][0][NxLlD]);
+      if(Nq >= 3) FA_slBp ->write(&Field0[Field::Bp ][NzLlD][0][NxLlD]);
+      
+    }((A4zz) fields->Field0);
+    
+    FA_slphiTime->write(&timing);
 
-            FA_slphiTime->write(&timing);
+    if(visXV == true) {
+      
+      //ArrXV(RxLD, RvLD, RsLD) = vlasov->f(RxLD, 0, NzLlD, RvLD, NmLlD, RsLD);
+      //if(plasma->global == false) ArrXV(RxLD, RvLD, RsLD) += vlasov->f0(RxLD, 0, NzLlD, RvLD, NmLlD, RsLD);
+      //FA_XV->write(ArrXV);
+    
+    }
 
-      if(visXV == true) {
-            //ArrXV(RxLD, RvLD, RsLD) = vlasov->f(RxLD, 0, NzLlD, RvLD, NmLlD, RsLD);
-            //if(plasma->global == false) ArrXV(RxLD, RvLD, RsLD) += vlasov->f0(RxLD, 0, NzLlD, RvLD, NmLlD, RsLD);
-            //FA_XV->write(ArrXV);
-
-      }
-
-
-      parallel->print("Wrote Visual  data ... "); 
-      }
+    parallel->print("Wrote Visual  data ... "); 
+    
+  }
 }
      

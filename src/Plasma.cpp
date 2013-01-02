@@ -135,26 +135,29 @@ Plasma::~Plasma()
 
 void Plasma::printOn(std::ostream &output) const 
 {
-         output << 
-               "Type       | " << (global ? " Global" : "Local") << " Cs   : " << cs << std::endl 
-            << "Species    | ";
-            if(species[0].n0 != 0.) { 
-              output << "0. " << species[0].name << "  Density : " << species[0].n0 << " Charge : " << species[0].q << 
-                                                    " Temp : " << species[0].T0 << " FluxAvrg : " << (species[0].doGyro ? "Yes" : "No") << 
-                                                   " Phase : " << (species[0].w_n) <<  " (adiabatic) " <<  std::endl;  
-            } else output << "0. -- No adiabatic species -- " << std::endl;
+         
+  output << "Type       | " << (global ? " Global" : "Local") << " Cs   : " << cs << std::endl 
+         << "Species    | ";
+
+  // print adiabatic species
+  if(species[0].n0 != 0.) { 
+    output << "0. " << species[0].name << "  Density : " << species[0].n0 << 
+       " Charge : " << species[0].q <<    " Temp : " << species[0].T0 << " FluxAvrg : " 
+         << (species[0].doGyro ? "Yes" : "No") <<  " Phase : " << (species[0].w_n) <<  " (adiabatic) " <<  std::endl;  
+  } else output << "0. -- No adiabatic species -- " << std::endl;
             
-            std::cout << std::setprecision(5);
-            for(int s = 1; s <= Ns; s++) {
-            output   
-            << "          +| " << s << ". " << species[s].name << "  Charge : " << species[s].q << "     Mass : " << species[s].m;
-            if(global) {
-             output << " T : " << species[s].T_name << " n0 : " << species[s].n_name  <<  std::endl;
-            } else {
-             output << " T0 : " << species[s].T0 << " n0 : " << species[s].n0 <<
-             "  w_n : " << species[s].w_n << "  w_T : " << species[s].w_T << " Model : " << species[s].gyroModel << " "  << std::endl;
-            }
-            }
+  std::cout << std::setprecision(2);
+  // print kinetic species
+  for(int s = 1; s <= Ns; s++) {
+
+  output << "          +| " << s << ". " << species[s].name << "  Charge : " << species[s].q << "     Mass : " << species[s].m;
+  
+  if(global) {
+    output << " T : " << species[s].T_name << " n0 : " << species[s].n_name  <<  std::endl;
+  } else {
+    output << " T0 : " << species[s].T0 << " n0 : " << species[s].n0 <<
+      "  w_n : " << species[s].w_n << "  w_T : " << species[s].w_T << " Model : " << species[s].gyroModel << " "  << std::endl;
+  } }
      
 }
 

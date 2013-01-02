@@ -214,6 +214,7 @@ GKC::~GKC()
   delete fileIO;
   // no need to delete table ?! Anyway SLEPc/PETSc seems to crash
   // some times FFT crashes, be sude that it is below fileIO (hdf-5 is closed)
+  delete plasma;
   delete fftsolver;
   delete control;
   delete parallel;

@@ -53,7 +53,7 @@ class TableAttr
             //node = check(H5Gcreate(_node, name.c_str(),H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Spectrum : H5Gcreate"));
 
             check(H5TBmake_table(name.c_str(), nodeID, name.c_str(), (hsize_t) numCol, (hsize_t) 0, sizeof(T), (const char**) field_names,
-                                           offsets, types, 32, NULL, 0, table ), DMESG("H5Tmake_table : scalarValue"));
+                                           offsets, types, 100, NULL, 0, table ), DMESG("H5Tmake_table : scalarValue"));
   }
   
   template<class T> int append(T *table, int n=1) {

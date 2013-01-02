@@ -84,7 +84,7 @@ class VlasovAux : public VlasovCilk {
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3]);
    /**
-   *    Please Document Me !
+   *    @brief two-dimensional sheared slab goemetry (electro-magnetic)
    *
    **/
    void Vlasov_EM(
@@ -101,21 +101,6 @@ class VlasovAux : public VlasovCilk {
                            const double dt, const int rk_step, const double rk[3]);
 
   
-   /**
-   *   @brief perform full-f simulations
-   *
-   **/
-   void    Vlasov_2D_Fullf(
-                           CComplex fs               [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
-                           CComplex fss              [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
-                           const CComplex f0         [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
-                           const CComplex f1         [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
-                           CComplex ft               [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
-                           const CComplex Coll       [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
-                           const  CComplex Fields[Nq][NsLD][NmLD][NzLB][Nky][NxLB+4],
-                           const double dt, const int rk_step, const double rk[3]);
-
-
    /**
    *    Please Document Me !
    *

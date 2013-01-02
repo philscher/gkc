@@ -34,11 +34,12 @@ FileIO::FileIO(Parallel *_parallel, Setup *setup)  :  parallel(_parallel)
   inputFileName         = setup->get("DataOutput.InputFileName", "");
   outputFileName        = setup->get("DataOutput.OutputFileName", "default.h5");
   info                  = setup->get("DataOutput.Info", "No information provided");
-  overwriteFile         = setup->get("DataOutput.Overwrite", 0) || (setup->flags & Setup::GKC_OVERWRITE);
    
   dataFileFlushTiming  = Timing(setup->get("DataOutput.Flush.Step", -1)       , setup->get("DataOutput.Flush.Time", 100.)); 
     
   resumeFile            = inputFileName != "";
+  
+  bool allowOverwrite   = setup->get("DataOutput.Overwrite", 0) || (setup->flags & Setup::GKC_OVERWRITE);
     
 
   ///////// Define Timing Datatype
@@ -64,12 +65,12 @@ FileIO::FileIO(Parallel *_parallel, Setup *setup)  :  parallel(_parallel)
   s256_tid = H5Tcopy(H5T_C_S1); H5Tset_size(s256_tid, 64); H5Tset_strpad(s256_tid, H5T_STR_NULLTERM);
 
   // Create/Load HDF5 file
-  if(resumeFile == false || (inputFileName != outputFileName)) create(setup);
+  if(resumeFile == false || (inputFileName != outputFileName)) create(setup, allowOverwrite);
 
 }
 
 
-void FileIO::create(Setup *setup) 
+void FileIO::create(Setup *setup, bool allowOverwrite) 
 {
 
   hid_t file_apl = H5Pcreate(H5P_FILE_ACCESS);
@@ -94,9 +95,10 @@ void FileIO::create(Setup *setup)
   // Note, still close file if some objects are oben
   // This should not happen thus give a warning
   H5Pset_fclose_degree(file_apl, H5F_CLOSE_STRONG);
-  
-  file = check(H5Fcreate(outputFileName.c_str(), (overwriteFile ? H5F_ACC_TRUNC : H5F_ACC_EXCL),
-              H5P_DEFAULT, file_apl ), DMESG("H5FCreate : HDF5 File (File already exists ? use -f to overwrite) : " + outputFileName));
+ 
+  // Create new output file
+  file = check(H5Fcreate(outputFileName.c_str(), (allowOverwrite ? H5F_ACC_TRUNC : H5F_ACC_EXCL),
+          H5P_DEFAULT, file_apl ), DMESG("H5FCreate : HDF5 File (File already exists ? use -f to overwrite)"));
      
   check( H5Pclose(file_apl),   DMESG("H5Pclose"));
 
@@ -157,10 +159,10 @@ FileIO::~FileIO()
    // Free all HDF5 resources
 
    // close some extra stuff
-   check( H5Tclose(complex_tid),   DMESG("H5Tclose"));
-   check( H5Tclose(timing_tid),   DMESG("H5Tclose"));
-   check( H5Tclose(species_tid),  DMESG("H5Tclose"));
-   check( H5Tclose(s256_tid),     DMESG("H5Tclose"));
+   check( H5Tclose(complex_tid), DMESG("H5Tclose"));
+   check( H5Tclose(timing_tid ), DMESG("H5Tclose"));
+   check( H5Tclose(species_tid), DMESG("H5Tclose"));
+   check( H5Tclose(s256_tid   ), DMESG("H5Tclose"));
 
    // close file
    check( H5Fclose(file)    , DMESG("Unable to close file ..."));
@@ -170,7 +172,8 @@ FileIO::~FileIO()
 hid_t  FileIO::newGroup(std::string name, hid_t parentNode)
 {
    if (parentNode == -2) parentNode = getFileID();
-   hid_t newGroup = check(H5Gcreate(parentNode, name.c_str(),H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Spectrum : H5Gcreate"));
+   hid_t newGroup = check(H5Gcreate(parentNode, name.c_str(),H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), 
+                          DMESG("Error creating group file for Spectrum : H5Gcreate"));
    return newGroup;
 };
 
@@ -191,10 +194,12 @@ void FileIO::printOn(std::ostream &output) const
 FileAttr* FileIO::newTiming(hid_t group, hsize_t offset, bool write)
 {
     
-   hsize_t timing_chunkdim[] = {1}; hsize_t timing_maxdim[] = {H5S_UNLIMITED};
-   hsize_t time_dim[1] = { 1 };
+   hsize_t timing_cdim  [1] = {1             };
+   hsize_t timing_maxdim[1] = {H5S_UNLIMITED };
+   hsize_t timing_dim   [1] = {1             };
    
-   FileAttr *Attr =  new FileAttr("Time", group, file, 1, time_dim, timing_maxdim, timing_chunkdim, &offset,  timing_chunkdim, &offset, parallel->myRank == 0, timing_tid);
+   FileAttr *Attr = new FileAttr("Time", group, file, 1, timing_dim, timing_maxdim, timing_cdim, &offset,  
+                                  timing_cdim, &offset, parallel->myRank == 0, timing_tid);
     
    return Attr;
 }

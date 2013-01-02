@@ -31,8 +31,8 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
    ArrayPhase = nct::allocate(grid->RsLD, grid->RmLD, grid->RzLB, grid->RkyLD, grid->RxLB, grid->RvLB);
    ArrayPhase(&f0, &f, &fss, &fs, &f1, &ft, &Coll);
    
-   ArrayXi = nct::allocate(grid->RzLB , grid->RkyLD, nct::Range(NxLlB-2, NxLB+4), grid->RvLB)(&Xi);
-   ArrayG  = nct::allocate(grid->RzLB , grid->RkyLD, grid->RxLB, grid->RvLB)(&G );
+   ArrayXi = nct::allocate(grid->RzLB , grid->RkyLD, grid->RxLB4, grid->RvLB)(&Xi);
+   ArrayG  = nct::allocate(grid->RzLB , grid->RkyLD, grid->RxLB , grid->RvLB)(&G );
    ArrayNL = nct::allocate(grid->RkyLD, grid->RxLD , grid->RvLD)(&nonLinearTerm);
    
    // allocate boundary (mpi) buffers
@@ -130,7 +130,8 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
     // We do not domain decompose poloidal (y) fourier modes, thus boundaries not required
   
     // Z-Boundary (skip exchange in case we use only 2D (Nz == 1) simulations 
-    for(int y_k = NkyLlD; y_k <= NkyLuD && (Nz > 1); y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { 
+    if(Nz > 1) {
+    for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { 
 
       const CComplex shift_l = (NzLlD == NzGlD) ? cexp(+_imag *  (2.* M_PI/Ly) * y_k * geo->nu(x)) : 1.;
       const CComplex shift_u = (NzLuD == NzGuD) ? cexp(-_imag *  (2.* M_PI/Ly) * y_k * geo->nu(x)) : 1.;
@@ -141,7 +142,8 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
                
     } }
     parallel->updateBoundaryVlasov(Vlasov::SendZu, Vlasov::SendZl, Vlasov::RecvZu, Vlasov::RecvZl, ArrayBoundZ.getNum(), DIR_Z);
-   
+    } // (Nz > 1)
+
     // We do not need to communicate for M and S as we do not have boundary cells (yet)
   
     // Decomposition in velocity is rather unlikely, thus give non-decomposed version too

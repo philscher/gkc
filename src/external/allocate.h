@@ -125,9 +125,10 @@ class allocate
   int Num, ///< Number of Elements 
       Off; ///< Offset from p[0] to p[n] = first element
 
-  int flags; // Deallocate all arrays after usage
+  int flags; ///< Deallocate all arrays after usage
+ 
   
-  std::stack<void *> ptr_stack;
+  std::stack<void *> ptr_stack; ///< stack holding array pointers
 
  public:
 
@@ -154,9 +155,12 @@ class allocate
     flags     = alloc.flags;
     Num       = alloc.Num;
     Off       = alloc.Off;
-    ptr_stack = alloc.ptr_stack;
 
-    // empty stack of rvalue, so it cannot deallocated
+    // propably move can be used, but 
+    ptr_stack = alloc.ptr_stack;
+    //ptr_stack = std::move(alloc.ptr_stack);
+
+    // empty stack of rvalue, so it cannot deallocate
     while (!alloc.ptr_stack.empty()) alloc.ptr_stack.pop();
     
     return *this;

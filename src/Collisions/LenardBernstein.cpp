@@ -25,48 +25,42 @@ Collisions_LenardBernstein::Collisions_LenardBernstein(Grid *grid, Parallel *par
   consvMoment = setup->get("Collisions.ConserveMoments", 0);
    
   // allocate arrays
-  ArrayPreFactors = nct::allocate(grid->RsLD, grid->RmLD, grid->RvLD)(&a, &b, &c, &nu);
-          
+  ArrayPreFactors     = nct::allocate(grid->RsLD, grid->RmLD , grid->RvLD)(&a , &b , &c , &nu);
   ArrayCorrectionTerm = nct::allocate(grid->RzLD, grid->RkyLD, grid->RxLD)(&dn, &dP, &dE);
       
   // as some terms include complicated functions we pre-calculate them 
   calculatePreTerms((A3rr) a, (A3rr) b, (A3rr) c, (A3rr) nu);
 
-};
+}
 
+ 
+Collisions_LenardBernstein::~Collisions_LenardBernstein()
+{
+
+
+}
+ 
 
 void Collisions_LenardBernstein::calculatePreTerms(double a[NsLD][NmLD][NvLD], double  b[NsLD][NmLD][NvLD], 
                                                    double c[NsLD][NmLD][NvLD], double nu[NsLD][NmLD][NvLD])
 {
 
-  for(int s = NsLlD; s <= NsLuD; s++) {  const double v_th = species[s].alpha;
+  for(int s = NsLlD; s <= NsLuD; s++) { 
+  for(int m = NmLlD; m <= NmLuD; m++) { simd_for(int v = NvLlD; v <= NvLuD; v++) {
 
-  for(int m = NmLlD; m <= NmLuD; m++) {  simd_for(int v=NvLlD; v<= NvLuD;v++) {
+    // v = v_\parallel^2 + 2 \mu  / v_{\sigma, th}^2
+    const double v_ = ( pow2(V[v]) + 2. * M[m] ) / pow2(species[s].v_th);
 
-      // v = v_\parallel^2 + 2 \mu  / v_{\sigma, th}^2
-      const double v_ = ( pow2(V[v]) + 2. * M[m] ) / pow2(species[s].alpha);
-
-      nu[s][m][v] = v_ * dv * grid->dm[m]; // directly normalize 
-      a [s][m][v] = 1. - 3. * sqrt(M_PI/2.) * ( erf(v_) - Derf(v_)) * pow(v_, -0.5);
-      b [s][m][v] = V[v] * pow(v_, -3./2.) * erf(v_)    ;
-      c [s][m][v] = pow(v_,-1./2.) *  (erf(v_) - Derf(v_)) ;
-
+    nu[s][m][v] = v_ * dv * grid->dm[m]; // directly normalize 
+    a [s][m][v] = 1. - 3. * sqrt(M_PI/2.) * ( erf(v_) - Derf(v_)) * pow(v_, -0.5);
+    b [s][m][v] = V[v] * pow(v_, -3./2.) * erf(v_)    ;
+    c [s][m][v] = pow(v_,-1./2.) *  (erf(v_) - Derf(v_)) ;
       
-  } } } 
+  } } } // s, m, v 
 
   return;
 }
 
-void Collisions_LenardBernstein::initData(hid_t fileID) 
-{
-  hid_t collisionGroup = check(H5Gcreate(fileID, "/Collisions",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Collision : H5Gcreate"));
-     
-  check(H5LTset_attribute_string(collisionGroup, ".", "Model", "Lenard-Bernstein"), DMESG("H5LTset_attribute"));
-  check(H5LTset_attribute_double(collisionGroup, ".", "Beta" , &beta, 1), DMESG("H5LTset_attribute"));
-            
-  H5Gclose(collisionGroup);
-
-}
 
 
 void Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const CComplex *f0, CComplex *Coll, double dt, int rk_step) 
@@ -75,12 +69,12 @@ void Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const
   // Don't calculate collisions if collisionality is set to zero
   if (beta == 0.) return;
 
-  [=](const CComplex f   [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],  // Phase-space function for current timestep
-      const CComplex f0  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],  // Background Maxwellian
-            CComplex Coll[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],  // Collisional term
-            CComplex dn              [NzLD][NkyLD][NxLD]      ,
-            CComplex dP              [NzLD][NkyLD][NxLD]      ,
-            CComplex dE              [NzLD][NkyLD][NxLD]      ,
+  [=](const CComplex f   [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],  // Phase-space function for current timestep
+      const CComplex f0  [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],  // Background Maxwellian
+            CComplex Coll[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],  // Collisional term
+            CComplex dn              [NzLD][Nky][NxLD]      ,
+            CComplex dP              [NzLD][Nky][NxLD]      ,
+            CComplex dE              [NzLD][Nky][NxLD]      ,
             const double a [NsLD][NmLD][NvLD],
             const double b [NsLD][NmLD][NvLD],
             const double c [NsLD][NmLD][NvLD],
@@ -89,14 +83,14 @@ void Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const
   {
 
     for(int s = NsLlD; s <= NsLuD; s++) {  if(consvMoment) {
-         
     for(int m = NmLlD; m <= NmLuD; m++) { 
 
       // (1) Calculate Moments (note : can we recycle Fields  n, P ?)
       const double pre_dvdm = species[s].n0 * plasma->B0 * dv * grid->dm[m] ;
 
       #pragma omp for collapse(2)
-      for(int z=NzLlD; z<= NzLuD; z++) {  for(int y_k=NkyLlD; y_k<= NkyLuD; y_k++) { for(int x=NxLlD; x<= NxLuD; x++) {
+      for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
+      for(int x = NxLlD; x <= NxLuD; x++) {
 
         dn[z][y_k][x] = __sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD]                       ) * pre_dvdm;
         dP[z][y_k][x] = __sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD] * V       [NvLlD:NvLD]) * pre_dvdm;
@@ -132,11 +126,11 @@ void Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const
       Coll[s][m][z][y_k][x][v] =
                  
         beta  * (f_  + V[v] * df_dv + v2_rms * ddf_dvv)           ///< Lennard-Bernstein Collision term
-        // add conservative terms 
+        // add conservation terms 
         + (consvMoment ?
-          (a[s][m][v] * dn[z][y_k][x] +                           ///< Density correction   
+          (a[s][m][v] * dn[z][y_k][x] +                           ///< Density  correction   
            b[s][m][v] * dP[z][y_k][x] +                           ///< Momentum correction
-           c[s][m][v] * dE[z][y_k][x]) * f0[s][m][z][y_k][x][v]   ///< Energy correction
+           c[s][m][v] * dE[z][y_k][x]) * f0[s][m][z][y_k][x][v]   ///< Energy   correction
                        : 0.);
 
     } // v
@@ -160,4 +154,14 @@ void Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const
   
 }
 
+void Collisions_LenardBernstein::initData(hid_t fileID) 
+{
+  hid_t collisionGroup = check(H5Gcreate(fileID, "/Collisions",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Collision : H5Gcreate"));
+     
+  check(H5LTset_attribute_string(collisionGroup, ".", "Model", "Lenard-Bernstein"), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_double(collisionGroup, ".", "Beta" , &beta, 1), DMESG("H5LTset_attribute"));
+            
+  H5Gclose(collisionGroup);
+
+}
 
