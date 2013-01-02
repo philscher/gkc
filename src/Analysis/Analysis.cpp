@@ -129,7 +129,6 @@ void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky][Nx
     
     kineticEnergy = (__sec_reduce_add(creal(Mom20[s-NsLlD][0:NzLD][0][0:NxLD])) +
                      __sec_reduce_add(creal(Mom02[s-NsLlD][0:NzLD][0][0:NxLD])) ) * grid->dXYZ;
-    std::cout <<   __sec_reduce_add(creal(Mom02[s-NsLlD][0:NzLD][0][0:NxLD]))  * grid->dXYZ << std::endl;
     
     kineticEnergy = 0.5 * species[s].m * (__sec_reduce_add(creal(Mom20[s-NsLlD][0:NzLD][0][0:NxLD]))) * grid->dXYZ;
 
@@ -223,12 +222,12 @@ void Analysis::initData(Setup *setup, FileIO *fileIO)
      
   hid_t momGroup = check(H5Gcreate(fileIO->getFileID(), "/Moments", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
 
-  hsize_t mom_dsdim[] =  { Nz  , Nky, Nx  , Ns  , 1             };
-  hsize_t mom_dmdim[] =  { Nz  , Nky, Nx  , Ns  , H5S_UNLIMITED };
-  hsize_t mom_cBdim[] =  { NzLD, Nky, NxLD, NsLD, 1             };
-  hsize_t mom_cDdim[] =  { NzLD, Nky, NxLD, NsLD, 1             };
-  hsize_t mom_cmoff[] =  { 0   , 0  , 0   , 0   , 0             };
-  hsize_t mom_cdoff[] =  { NzLlD-3, 0 , NxLlD-3, NsLlD-1,  0    };
+  hsize_t mom_dsdim[] =  { Ns     , Nz     , Nky, Nx     , 1             };
+  hsize_t mom_dmdim[] =  { Ns     , Nz     , Nky, Nx     , H5S_UNLIMITED };
+  hsize_t mom_cBdim[] =  { NsLD   , NzLD   , Nky, NxLD   , 1             };
+  hsize_t mom_cDdim[] =  { NsLD   , NzLD   , Nky, NxLD   , 1             };
+  hsize_t mom_cmoff[] =  { 0      , 0      , 0  , 0      , 0             };
+  hsize_t mom_cdoff[] =  { NsLlD-1, NzLlD-3, 0  , NxLlD-3, 0             };
      
   bool momWrite = (parallel->Coord[DIR_VM] == 0);
      
