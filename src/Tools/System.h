@@ -118,7 +118,7 @@ class System
       unsigned long m_lib   = 0; // library 
       unsigned long m_data  = 0; // data
 
-      fscanf (file, "%ul", &m_vsize);  // Just need the first num: vm size
+      fscanf (file, "%lu", &m_vsize);  // Just need the first num: vm size
       fclose (file);
       size = (size_t) m_vsize * getpagesize();
     }

@@ -25,11 +25,9 @@ Collisions_LenardBernstein::Collisions_LenardBernstein(Grid *grid, Parallel *par
   consvMoment = setup->get("Collisions.ConserveMoments", 0);
    
   // allocate arrays
-  ArrayPreFactors = nct::allocate(grid->RsLD, grid->RmLD, grid->RvLD);
-  ArrayPreFactors(&a, &b, &c, &nu);
+  ArrayPreFactors = nct::allocate(grid->RsLD, grid->RmLD, grid->RvLD)(&a, &b, &c, &nu);
           
-  ArrayCorrectionTerm = nct::allocate(grid->RzLD, grid->RkyLD, grid->RxLD);
-  ArrayCorrectionTerm(&dn, &dP, &dE);
+  ArrayCorrectionTerm = nct::allocate(grid->RzLD, grid->RkyLD, grid->RxLD)(&dn, &dP, &dE);
       
   // as some terms include complicated functions we pre-calculate them 
   calculatePreTerms((A3rr) a, (A3rr) b, (A3rr) c, (A3rr) nu);

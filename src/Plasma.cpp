@@ -176,7 +176,7 @@ void Plasma::initData(FileIO *fileIO)
                             HOFFSET( Species, w_T  ), HOFFSET( Species, w_n ) };
   size_t spec_sizes[]   = { sizeof(species[0].name ), sizeof(species[0].q ), sizeof(species[0].m ), sizeof(species[0].n ), sizeof(species[0].w_T ), sizeof(species[0].w_n ) };
   hid_t spec_type[]     = { fileIO->s256_tid        , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE      , H5T_NATIVE_DOUBLE       };
-  char *spec_names[] = { "Name"                  , "Charge"             , "Mass"               , "Density"            , "w_T"                  , "w_n"                      };
+  const char *spec_names[] = { "Name"                  , "Charge"             , "Mass"               , "Density"            , "w_T"                  , "w_n"                      };
 
   // Note : +1 for adiabatic species
   check(H5TBmake_table("SpeciesTable", fileIO->getFileID(), "Species", (hsize_t) 6, (hsize_t) Ns+1, sizeof(Species), spec_names,

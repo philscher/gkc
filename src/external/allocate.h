@@ -120,17 +120,7 @@ enum alloc_flags  {
 **/
 #include<typeinfo>
 
-class ArrayBase
-{
-   protected:
-//     int Num;
-//     int sizeOfType;
-     
-//     const std::type_info *typeInfo;
-};
-
-
-class allocate : public ArrayBase 
+class allocate 
 {
   int Num, ///< Number of Elements 
       Off; ///< Offset from p[0] to p[n] = first element
@@ -365,20 +355,20 @@ class allocate : public ArrayBase
     ~allocate()
     {
 
-     if(flags & alloc_flags::DEALLOC) { 
+      if(flags & alloc_flags::DEALLOC) { 
            
-       while (!ptr_stack.empty()) {
+        while (!ptr_stack.empty()) {
       
-         // release top element
-         void *ptr = ptr_stack.top();
+          // release top element
+          void *ptr = ptr_stack.top();
          
-         if(flags & MA) _mm_free(ptr);
-         else               free(ptr);
+          if(flags & MA) _mm_free(ptr);
+          else               free(ptr);
          
-         // remove element on top
-         ptr_stack.pop();
-            }
-         }
+          // remove element on top
+          ptr_stack.pop();
+        }
+      }
     };
 
     /**

@@ -87,8 +87,8 @@ class SFL {
   static double i0e( const double x);
 
 
-static complex <float> c4_cos ( complex <float> z);
-static complex <float> c4_sin ( complex <float> z);
+static std::complex <float> c4_cos ( std::complex <float> z);
+static std::complex <float> c4_sin ( std::complex <float> z);
 static int i4_abs ( int i);
 static int i4_mach ( int i);
 static int i4_max ( int i1, int i2);

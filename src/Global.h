@@ -32,7 +32,7 @@ typedef std::complex<double> Complex;
 
 typedef _Complex double CComplex;  
 typedef double               Real   ;
-//#define _Imaginary ((CComplex) (0.+1.j)); 
+#define _imag ((CComplex) (0.+1.j)) 
    
 // align to cache-lines
 typedef __declspec(align(64)) double     doubleAA;
@@ -48,7 +48,6 @@ extern "C" CComplex conj(CComplex z);
 extern "C" CComplex cexp (CComplex z);
 
 
-#define _imag ((CComplex) (0.+1.j)) 
 
 
 template<class T> __attribute__((vector)) inline T pow2(T x) { return x*x; };
@@ -145,7 +144,6 @@ class IfaceGKC {
    
     protected:
       virtual void printOn(std::ostream &output) const = 0;
-      //virtual ~IfaceGKC() { closeData(); };
       virtual ~IfaceGKC() { };
     public:
     friend std::ostream& operator<<(std::ostream& output, const IfaceGKC& ih) { ih.printOn(output); return output; };
@@ -167,8 +165,6 @@ extern Plasma *plasma;
 
 class Species;
 extern Species *species;
-
-
 
 
 typedef CComplex(*A6zz)[0][0][0][0][0];
