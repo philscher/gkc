@@ -19,104 +19,67 @@
 Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov *vlasov, Fields *fields, Geometry *_geo) : geo(_geo)
 {
 
-
-   epsilon_0          = setup->get("Init.Epsilon0", 1.e-14); 
-   sigma              = setup->get("Init.Sigma"   , 8.    ); 
-   // check for predefined perturbations
-   PerturbationMethod = setup->get("Init.Perturbation", "");
+  epsilon_0          = setup->get("Init.Epsilon0", 1.e-14); 
+  sigma              = setup->get("Init.Sigma"   , 8.    ); 
+  // check for predefined perturbations
+  PerturbationMethod = setup->get("Init.Perturbation", "");
    
-   random_seed = setup->get("Init.RandomSeed", 0);
+  random_seed = setup->get("Init.RandomSeed", 0);
    
-   
-   // Only perturbed if not continued
-   if(fileIO->resumeFile == false) {
+  // Only perturbed if simulation is not resumbed
+  if(fileIO->resumeFile == false) {
 
-   initBackground(setup, grid, (A6zz) vlasov->f0, (A6zz) vlasov->f);
-
+    initBackground(setup, grid, (A6zz) vlasov->f0, (A6zz) vlasov->f);
     
-   // Note : do not perturb m=0 modes as this perturbes direclty energy and density of f1 
-   if(PerturbationMethod == "NoPerturbation") ;
-   else if (PerturbationMethod == "EqualModePower")  PerturbationPSFMode ((A6zz) vlasov->f0, (A6zz) vlasov->f); 
-   else if(PerturbationMethod == "Noise")            PerturbationPSFNoise((A6zz) vlasov->f0, (A6zz) vlasov->f); 
-   else if(PerturbationMethod == "Exp")              PerturbationPSFExp  ((A6zz) vlasov->f0, (A6zz) vlasov->f); 
-   //else if(PerturbationMethod == "PSFHermitePoly")    PerturbationHermitePolynomial(vlasov, s, plasma->global ? 1. : 0., setup->get("Init.HermitePolynomial", 0));
-   else check(-1, DMESG("No such Perturbation Method"));  
+    // Note : do not perturb m=0 modes as this perturbes direclty energy and density of f1 
+    if     (PerturbationMethod == "NoPerturbation") ;
+    else if(PerturbationMethod == "EqualModePower")  PerturbationPSFMode ((A6zz) vlasov->f0, (A6zz) vlasov->f); 
+    else if(PerturbationMethod == "Noise"         )  PerturbationPSFNoise((A6zz) vlasov->f0, (A6zz) vlasov->f); 
+    else if(PerturbationMethod == "Exp"           )  PerturbationPSFExp  ((A6zz) vlasov->f0, (A6zz) vlasov->f); 
+    else check(-1, DMESG("No such Perturbation Method"));  
    
-   ////////////////////////////////////////////// Recheck Charge Neutrality for Perturabtion and correct  /////////////////////////
-
-/*
-   if(Ns > 1 && setup->get("Init.ChargeNeutral", 0)) {
-     check(-1, DMESG("Buggy"));
-     double total_charge = 0.;
-   	for(int m = NmLlD; m <= NmLuD; m++) total_charge = parallel->collect((NkyLlD == 0) ? sum(abs(fields->calculateChargeDensity((A6zz) vlasov->f0.dataZero(), (A6zz) vlasov->f.dataZero(), (A4zz) fields->Field0.dataZero(), m, 1)(RxLD, 0, RzLD, Q::rho))) : 0.); 
-    
-        for(int s = NsLlD; s <= NsLuD; s++) vlasov->f(RxLB, RkyLD, RzLB, RvLB, RmLB, s) *= (1. - total_charge/((double) Ns));
-   }
-*/
-           
    // Field is first index, is last index not better ? e.g. write as vector ?
-   [=] (CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-        CComplex Field0[Nq][NzLD][NkyLD][NxLD]          , CComplex Field[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4],
-        CComplex      Q[Nq][NzLD][NkyLD][NxLD])
+   [=] (CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB], CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
+        CComplex Field0[Nq][NzLD][Nky][NxLD]          , CComplex Field[Nq][NsLD][NmLD][NzLB][Nky][NxLB+4],
+        CComplex      Q[Nq][NzLD][Nky][NxLD])
    {
 
-   /////////////////////////////////////// Initialize dynamic Fields for Ap (we use Canonical Momentum Method) ////////////////////////////
-   if(Nq >= 2) {
-   	FunctionParser Ap_parser = setup->getFParser();
+   /////////////////////////////////////// Initialize dynamic Fields for Ap & Bp (we use Canonical Momentum Method) /////////////
+    if(Nq >= 2) {
+      
+      FunctionParser  Ap_parser = setup->getFParser();
    	FunctionParser phi_parser = setup->getFParser();
-   	check(((phi_parser.Parse(setup->get("Init.phi", "0."), "x,y_k,z") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
-   	check((( Ap_parser.Parse(setup->get("Init.Ap ", "0."), "x,y_k,z") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
 
-   	for(int s = NsLlD; s <= NsLuB; s++) { for(int m = NmLlD; m <= NmLuD; m++) {
-   
-     	for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  for(int x = NxLlD; x <= NxLuD; x++) {
+   	check(((phi_parser.Parse(setup->get("Init.phi", "0."), "x,y_k,z") == -1) ? 1 : -1), DMESG("Parsing error"));
+   	check((( Ap_parser.Parse(setup->get("Init.Ap ", "0."), "x,y_k,z") == -1) ? 1 : -1), DMESG("Parsing error"));
 
-         	//const Complex pos[3] = { X[x], Y(y_k), Z[z] };
-         	const double pos[3] = { X[x], y_k, Z[z] };
-         //	fields->Field0 (x,y_k,z,Field::Ap ) = (y_k == 1) ? Complex(sqrt(2.),sqrt(2.)) * Ap_parser.Eval(pos) : 0.;
-         //	fields->Field0(x,y_k,z, Field::phi) = Complex(sqrt(2.), sqrt(2.)) * phi_parser.Eval(pos);
+   	for(int s = NsLlD; s <= NsLuB; s++) { for(int m   = NmLlD ; m   <= NmLuD ;   m++) {
+     	for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  
+      for(int x = NxLlD; x <= NxLuD; x++) {
+
+        const double pos[3] = { X[x], y_k, Z[z] };
+        //	fields->Field0 (x,y_k,z,Field::Ap ) = (y_k == 1) ? Complex(sqrt(2.),sqrt(2.)) * Ap_parser.Eval(pos) : 0.;
+        //	fields->Field0(x,y_k,z, Field::phi) = Complex(sqrt(2.), sqrt(2.)) * phi_parser.Eval(pos);
+        // 	fields->Bp(x,y,z,m,s ) = Bp_parser.Eval(pos);
   
      	} } }
 
-       	//fields->gyroAverage(fields->Field0(RxLD,RkyLD, RzLD, RFields), fields->Field(RxLD, RkyLD, RzLD, m , s, RFields), m, s, true);
+       //fields->gyroAverage(fields->Field0(RxLD,RkyLD, RzLD, RFields), fields->Field(RxLD, RkyLD, RzLD, m , s, RFields), m, s, true);
+       //fields->Bp (RxLD, RyLD, RzLD, m, s) = fields->gyroAverage(fields->Bp (RxLD,RyLD, RzLD,  m, s), m, s, Field::phi);
 
-
-    	} }
+    	} } // s, m
            
-   }
+    } // Nq > 2
 
 
-/*
-   /////////////////////////////////////// Initialize dynamic Fields for Bp (we use Canonical Momentum Method) ////////////////////////////
-   if(Nq >= 3) {
-
-   	FunctionParser Bp_parser = setup->getFParser();
-   	check(((Bp_parser.Parse(setup->get("Init.Bp", "0."), "x,y,z") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
-
-   	for(int s = NsLlD; s <= NsLuB; s++) { for(int m = NmLlD; m <= NmLuB; m++) {
-   
-     	for(int z = NzLlD; z <= NzLuB; z++) { for(int y = NkyLlD; y <= NkyLuD; y++) {  for(int x = NxLlD; x <= NxLuD; x++) {
-
-         	const double pos[3] = { X[x], Y[y], Z[z] };
-         	fields->Bp(x,y,z,m,s ) = Bp_parser.Eval(pos);
-  
-     	}}}
-
-        fields->Bp (RxLD, RyLD, RzLD, m, s) = fields->gyroAverage(fields->Bp (RxLD,RyLD, RzLD,  m, s), m, s, Field::phi);
-   
-   ` 	}}
-           
-   }
-*/
-  
-   ////////////////////////////////////////////////////////////// 
-   // Perform gyro-average of the fields
+    ////////////////////////////////////////////////////////////// 
+    // Perform gyro-average of the fields
     for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) {
         
-       	fields->gyroAverage(Field0, Q, m, s, true);
+      fields->gyroAverage(Field0, Q, m, s, true);
 
-         Field[0:Nq][s][m][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD] 
-          =  Q[0:Nq]      [NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD];
+      Field[0:Nq][s][m][NzLlD:NzLD][:][NxLlD:NxLD] 
+       =  Q[0:Nq]      [NzLlD:NzLD][:][NxLlD:NxLD];
    
    
    } }
@@ -161,8 +124,8 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov 
 
 
 void Init::initBackground(Setup *setup, Grid *grid, 
-                          CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                          CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB])
+                          CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
+                          CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB])
 {
   ////////////////////////////////////////////////////  Initial Condition Maxwellian f0 = (...) ///////////////
   
@@ -171,8 +134,8 @@ void Init::initBackground(Setup *setup, Grid *grid,
     // Initialize Form of f, Ap, phi, and g, we need superposition between genereal f1 pertubration and species dependent
     const double VOff = 0.;//setup->get("Plasma.Species" + Setup::num2str(s) + ".VelocityOffset", 0.);
       
-   FunctionParser f0_parser = setup->getFParser();
-   check(((f0_parser.Parse(species[s].f0_str, "x,z,v,m,n,T") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
+    FunctionParser f0_parser = setup->getFParser();
+    check(((f0_parser.Parse(species[s].f0_str, "x,z,v,m,n,T") == -1) ? 1 : -1), DMESG("Parsing error of Initial condition n(x)"));
    
     for(int m   = NmLlB ; m   <= NmLuB ;   m++) {  for(int z = NzLlB; z <= NzLuB; z++) { 
     for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  for(int x = NxLlB; x <= NxLuB; x++) { 
@@ -185,31 +148,17 @@ void Init::initBackground(Setup *setup, Grid *grid,
       
       for(int v = NvLlB; v <= NvLuB; v++) { 
       
-      // although only F0(x,k_y=0,...) is not equal zero, we perturb all modes, as F0 in Fourier space "acts" like a nonlinearity,
-      // which couples modes together
-         	
+        // although only F0(x,k_y=0,...) is not equal zero, we perturb all modes, as F0 in Fourier space "acts" like a nonlinearity,
+        // which couples modes together
         const double pos[6] = { X[x], Z[z], V[v], M[m], species[s].n[x], species[s].T[x] };
 
-         f0[s][m][z][y_k][x][v]  =  f0_parser.Eval(pos); 
-/* 
-      // Initialized gyro-kinetic Maxwellian
-      if(species[s].doGyro == true) { 
-         f0[s][m][z][y_k][x][v]  =  n / pow( M_PI*T, 1.5) * exp(-pow2(V[v] - w*r + VOff)/T) * exp(- M[m]    * plasma->B0/T); 
-      } else {
-      // Initialized gyro-1 or drift-kinetic Maxwellian
-      // For gyro-1 or drift-kinetic we only fill one point in M, otherwise is zero. However, for hybrid simulations
-      // (e.g. Gyro/Gyro-1, we homegenous distribute the gyro-1 species over f(mu) (to enable hybrid simulations)
-         f0[s][m][z][y_k][x][v]  =  n / pow( M_PI*T, 1.5) * exp(-pow2(V[v] - w*r + VOff)/T) * T/(plasma->B0) /  ((double) Nm)  ;
-      }
- * */
+        f0[s][m][z][y_k][x][v]  =  f0_parser.Eval(pos); 
 
-   }
-        
-   }} }}
+      } } } } }
 
-   if(plasma->global == false)  f [NsLlD:NsLD][NmLlD:NmLD][NzLlB:NzLB][NkyLlD:NkyLD][NxLlB:NxLB][NvLlB:NvLB] = ((CComplex) 0.e0);
-   else                         f [NsLlD:NsLD][NmLlD:NmLD][NzLlB:NzLB][NkyLlD:NkyLD][NxLlB:NxLB][NvLlB:NvLB] =
-                                f0[NsLlD:NsLD][NmLlD:NmLD][NzLlB:NzLB][NkyLlD:NkyLD][NxLlB:NxLB][NvLlB:NvLB];
+   if(plasma->global == false)  f [NsLlD:NsLD][NmLlD:NmLD][NzLlB:NzLB][:][NxLlB:NxLB][NvLlB:NvLB] = ((CComplex) 0.e0);
+   else                         f [NsLlD:NsLD][NmLlD:NmLD][NzLlB:NzLB][:][NxLlB:NxLB][NvLlB:NvLB] =
+                                f0[NsLlD:NsLD][NmLlD:NmLD][NzLlB:NzLB][:][NxLlB:NxLB][NvLlB:NvLB];
    
   }
 }
@@ -217,80 +166,58 @@ void Init::initBackground(Setup *setup, Grid *grid,
 
 ///////////////////// functions for initial perturbation //////////////////////
 
-
-
-void Init::PerturbationHermitePolynomial(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                               CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB])
-{
-
-     int l = 0; // simple exponential function
-
-     const double a =  pow2(0.4); 
-     
-   for(int s = NsLlD; s <= NsLuD; s++)   { for(int m = NmLlD; m <= NmLuD; m++) { for(int z = NzLlD; z<=NzLuD; z++) {
-   for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) {
-
-     const double phi_x = Special::HermiteFunction(l, X[x]);
-     
-     for(int v = NvLlD; v<=NvLuD; v++) {
-      
-      f[s][m][z][y_k][x][v] += epsilon_0 * phi_x * f0[s][m][z][y_k][x][v];
-   }}}}}}
-  
-   return;
-}
-
-
-void Init::PerturbationPSFNoise(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                      CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB])
+void Init::PerturbationPSFNoise(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
+                                      CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB])
 { 
-    // add s to initialization of RNG due to fast iteration over s (which time is not resolved)
-    for(int s = NsLlD; s <= NsLuD; s++) { 
+  // add s to initialization of RNG due to fast iteration over s (which time is not resolved)
+  for(int s = NsLlD; s <= NsLuD; s++) { 
 
     std::srand(random_seed == 0 ? System::getTime() + System::getProcessID() + s : random_seed); 
       
-    for(int m   = NmLlD ; m   <= NmLuD ;   m++) { for(int z = NzLlD; z<=NzLuD; z++) {
-    for(int y_k = 1     ; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { for(int v = NvLlD; v<=NvLuD; v++) {
+    for(int m   = NmLlD ; m   <= NmLuD ;   m++) { for(int z = NzLlD; z <= NzLuD; z++) {
+    for(int y_k = 1     ; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { 
+    for(int v   = NvLlD ; v   <= NvLuD ;   v++) {
 
       const double random_number = static_cast<double>(std::rand()) / RAND_MAX; // get random number [0,1]
       f[s][m][z][y_k][x][v] += epsilon_0*(random_number-0.5e0) * f0[s][m][z][y_k][x][v];
 
-    }}}}}}
+    } } } } }
 
-   return;
+  }
+
+  return;
 }   
 
-void Init::PerturbationPSFExp(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                    CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB])
+void Init::PerturbationPSFExp(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
+                                    CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB])
 { 
-   const double isGlobal = plasma->global ? 1. : 0.; 
-
-   auto  Perturbation = [=] (int x, int z, const double epsilon_0, const double sigma) -> double {
-            return  epsilon_0*exp(-(  pow2(X[x]/Lx) + pow2(Z[z]/Lz - 0.5))/(2.*pow2(sigma))); 
-   };
-
-   // Note : Ignore species dependence
-
-
-   for(int s = NsLlD; s <= NsLuD; s++) { for(int m   = NmLlD; m   <= NmLuD ;   m++) { 
-   for(int z = NzLlD; z<=NzLuD; z++) {   for(int y_k = 1    ; y_k <= NkyLuD; y_k++) {
    
-   // Add shifted phase information for poloidal modes
+  const double isGlobal = plasma->global ? 1. : 0.; 
+  
+  auto Perturbation = [=] (int x, int z, double epsilon_0, double sigma) -> double {
+            return  epsilon_0*exp(-(  pow2(X[x]/Lx) + pow2(Z[z]/Lz - 0.5))/(2.*pow2(sigma))); 
+  };
 
-   const double dky = 2.* M_PI / Ly;
-   const CComplex phase  = cexp((CComplex (1.j)) * ((double) y_k) / Nky * 2. * M_PI);
+  // Note : Ignore species dependence
+  for(int s = NsLlD; s <= NsLuD; s++) { for(int m   = NmLlD; m   <= NmLuD ;   m++) { 
+  for(int z = NzLlD; z<=NzLuD; z++) {   for(int y_k = 1    ; y_k <= NkyLuD; y_k++) {
+   
+  // Add shifted phase information for poloidal modes
 
-   for(int x = NxLlD; x <= NxLuD; x++) {  simd_for(int v = NvLlD; v<=NvLuD; v++) {
+  const double dky = 2.* M_PI / Ly;
+  const CComplex phase  = cexp((CComplex (1.j)) * ((double) y_k) / Nky * 2. * M_PI);
+
+  for(int x = NxLlD; x <= NxLuD; x++) {  simd_for(int v = NvLlD; v<=NvLuD; v++) {
       
-      f[s][m][z][y_k][x][v] += f0[s][m][z][y_k][x][v] * (isGlobal + phase * Perturbation(x, z, epsilon_0, sigma) * exp(-y_k*abs(sigma)*dky));
+    f[s][m][z][y_k][x][v] += f0[s][m][z][y_k][x][v] * (isGlobal + phase * Perturbation(x, z, epsilon_0, sigma) * exp(-y_k*abs(sigma)*dky));
 
-   }} }} }}
+  } } } } } }
 
-   return;
+  return;
 }
 
-void Init::PerturbationPSFMode(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                     CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB])
+void Init::PerturbationPSFMode(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
+                                     CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB])
 {
    //  Callculates the phase (of what ??!)
    auto Phase = [=] (const int q, const int N)  -> double { return 2.*M_PI*((double) (q-1)/N); };
@@ -318,9 +245,8 @@ void Init::PerturbationPSFMode(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][
    return;
 }
 
-
     
 void Init::printOn(std::ostream &output) const 
 {
-         output << "Init       | " << PerturbationMethod << std::endl;
-};
+  output << "Init       | " << PerturbationMethod << std::endl;
+}

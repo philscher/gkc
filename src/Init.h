@@ -121,6 +121,9 @@ class Init   : public IfaceGKC
   /**
   *   @brief Initialization of f1 using exponetial
   *
+  *   @note only m => 1 (y_k >= 1) nodes are perturbed in order to ensure charge neutrality
+  *  
+  *
   *   
   **/
   void PerturbationPSFExp(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
@@ -134,18 +137,12 @@ class Init   : public IfaceGKC
   *   Init.RandomSeed
   *   Setup : "Init.Epsilon0", 1.e-14 (default) set perturbation factor
   *
+  *   @note only m => 1 (y_k >= 1) nodes are perturbed in order to ensure charge neutrality
+  *
   *
   **/
   void PerturbationPSFNoise(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
                                   CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB]);
-
-  /**
-  *   @brief document me please
-  *
-  *
-  **/
-  void PerturbationHermitePolynomial(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                           CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB]);
 
  protected:
 
