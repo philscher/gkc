@@ -11,16 +11,85 @@
  * =====================================================================================
  */
 
-
-
 #include "Setup.h"
 
 #include <sstream>
 #include <iostream>
 #include <cstdlib>
 
-#include "Plasma.h"
 
+Setup::Setup(int _argc, char **_argv, std::string setup_filename, std::string setup_decomposition, 
+            std::string setup_Xoptions, std::string setup_ExArgv, int _flags)
+
+  : flags(_flags)
+{
+  argc= _argc;
+  argv=_argv;
+  commandLineOptions = setup_Xoptions;
+  extraLineOptions   = setup_ExArgv;
+  setupFilename      = setup_filename;
+  
+  // Create alternativ argc/argv from -x to pass to libraries 
+  std::istringstream iss(setup_ExArgv);
+  std::string token;
+    
+  ExArgv.push_back("gkc");
+  
+  while(iss >> token) {
+
+    char *arg = new char[token.size() + 1];
+    copy(token.begin(), token.end(), arg);
+    arg[token.size()] = '\0';
+    ExArgv.push_back(arg);
+  }
+
+  ExArgv.push_back(0);
+
+  config["Parallel.Decomposition"] = setup_decomposition;
+     
+  //////////////////// parse Setup file /////////////////
+  
+  if(setupFilename == "") check(-1, DMESG("No config file provided. Start helios with : -c <config_file_name> option"));
+  
+  std::string line;
+  std::ifstream file;
+  
+  file.open(setupFilename.c_str(), std::ios::in);
+  check(file.is_open(), DMESG("Could open find file! Wrong path ?"));
+
+  // read file in as a string
+  std::stringstream buffer;
+  buffer << file.rdbuf();
+  configFileString = buffer.str();
+  
+  // Parse configuation file given per -c option
+  file.seekg (0, std::ios::beg);
+  // read setup file line per line
+  while(std::getline(file, line)) parseOption(line);
+  file.close();
+ 
+  // Read configuration from STDIN
+  if(flags & GKC_READ_STDIN) while(std::getline(file, line)) parseOption(line);
+  
+  // Parse options from command line input -o
+  if(setup_Xoptions.empty() == false)  {
+  
+    //std::vector<std::string> options_list = split(setup_Xoptions, ",");
+    //std::vector<std::string> options_list = split(setup_Xoptions, ";");
+    // need to use + as Intel MPI 4.1 does interpret : and ;, missing -- ?
+    std::vector<std::string> options_list = split(setup_Xoptions, "+");
+    
+    while(options_list.empty() == false) {
+
+      parseOption(options_list.back(), false);
+      options_list.pop_back();
+      
+  } }
+
+  // ToDo : check some values
+  parser_constants = eraseCharacter(get("Setup.Constants", ""), "[]");
+
+}
 
 // Debuging Helper function (still needed ?) depraced
 template<typename T> void PrintVector(const std::vector<T>& t)
@@ -40,18 +109,18 @@ template<typename T> void PrintVector(const std::vector<T>& t)
 std::string Setup::eraseCharacter(std::string str, std::string chars) 
 {
 
-   for(int p, s = 0; s < chars.length(); s++) { 
-      while((p = str.find(chars[s])) != std::string::npos) str.erase(p,1);
-   }
+  for(int p, s = 0; s < chars.length(); s++) {
 
-    return str;
-};
+      while((p = str.find(chars[s])) != std::string::npos) str.erase(p,1);
+  }
+
+  return str;
+}
 
 
 
 std::string Setup::trimLower(std::string str, bool lowerCase)  
 { 
-
    
   // Trim Both leading and trailing spaces  
   size_t startpos = str.find_first_not_of("\t "); // Find the first character position after excluding leading blank spaces  
@@ -65,115 +134,35 @@ std::string Setup::trimLower(std::string str, bool lowerCase)
   if(lowerCase == true) for(unsigned int i=0;i<str.length();i++) str[i] = std::tolower(str[i]);
        
   return str; 
-
 }    
 
 
 std::vector<std::string> Setup::split(std::string str, std::string delim) 
 {
     
-   std::vector<std::string> items;
-   std::size_t dlm_idx;
+  std::vector<std::string> items;
+  std::size_t dlm_idx;
    
-   if(str.npos == (dlm_idx = str.find_first_of(delim))) {
-     items.push_back(str.substr(0, dlm_idx));
-   }
-   
-   while(str.npos != (dlm_idx = str.find_first_of(delim))) {
-   
-     if(str.npos == str.find_first_not_of(delim)) break;
-     
-     items.push_back(str.substr(0, dlm_idx));
-     
-     dlm_idx++;
-     
-     str = str.erase(0, dlm_idx);
-     
-     if(str.npos == str.find_first_of(delim) && "" != str) {
-
-       items.push_back(str);
-       break;
-       
-     }
-     
-   }
-   
-   return items;
-}
-
- Setup::Setup(int _argc, char **_argv, std::string setup_filename, std::string setup_decomposition, std::string setup_Xoptions, std::string setup_ExArgv, int _flags) :
-   flags(_flags)
-
-{
-argc= _argc;
-argv=_argv;
-  commandLineOptions = setup_Xoptions;
-  extraLineOptions   = setup_ExArgv;
-  setupFilename      = setup_filename;
-  
-  // Create alternativ argc/argv from -x to pass to libraries 
-  std::istringstream iss(setup_ExArgv);
-  std::string token;
-    
-  ExArgv.push_back("gkc");
-  
-  while(iss >> token) {
-          char *arg = new char[token.size() + 1];
-          copy(token.begin(), token.end(), arg);
-          arg[token.size()] = '\0';
-          ExArgv.push_back(arg);
-  
+  if(str.npos == (dlm_idx = str.find_first_of(delim))) {
+    items.push_back(str.substr(0, dlm_idx));
   }
-  ExArgv.push_back(0);
-
-  config["Parallel.Decomposition"] = setup_decomposition;
+   
+  while(str.npos != (dlm_idx = str.find_first_of(delim))) {
+   
+    if(str.npos == str.find_first_not_of(delim)) break;
      
-  //////////////////// parse Setup file /////////////////
-  
-  if(setupFilename == "") check(-1, DMESG("No config file provided. Start helios with : -c <config_file_name> option"));
-  
-  std::string line;
-  std::ifstream file;
-  
-  file.open(setupFilename.c_str(), std::ios::in);
-  check(file.is_open(), DMESG("Could open find file! Wrong path ?"));
-
-  
-  // read file in as a string
-  std::stringstream buffer;
-  buffer << file.rdbuf();
-  configFileString = buffer.str();
-
-  
-  // Parse configuation file given per -c option
-  file.seekg (0, std::ios::beg);
-  // read setup file line per line
-  while(std::getline(file, line)) parseOption(line);
-  file.close();
- 
-  // Read configuration from STDIN
-  if(flags & GKC_READ_STDIN) while(std::getline(file, line)) parseOption(line);
-  
-  // Parse options from command line input -o
-  if(setup_Xoptions.empty() == false)  {
-  
-    //std::vector<std::string> options_list = split(setup_Xoptions, ",");
-    //std::vector<std::string> options_list = split(setup_Xoptions, ";");
-    // need to use + as Intel MPI 4.1 does interpret : and ;
-    std::vector<std::string> options_list = split(setup_Xoptions, "+");
+    items.push_back(str.substr(0, dlm_idx));
+    dlm_idx++;
+    str = str.erase(0, dlm_idx);
     
-    while(options_list.empty() == false) { 
-    
-      parseOption(options_list.back(), false);
-      options_list.pop_back();
-      
-    }
-    
-  }
+    if(str.npos == str.find_first_of(delim) && "" != str) {
 
-  // ToDo : check some values
-  parser_constants = eraseCharacter(get("Setup.Constants", ""), "[]");
-
+      items.push_back(str);
+      break;
+     
+  } }
+   
+  return items;
 }
 
 
@@ -211,33 +200,33 @@ void Setup::parseOption(std::string line, bool fromFile)
 FunctionParser Setup::getFParser() 
 {
 
-   FunctionParser parser;
+  FunctionParser parser;
 
-   parser.AddConstant("pi", M_PI);
-   parser.AddConstant("Lx", Lx); parser.AddConstant("Nx" , (double) Nx);
-   parser.AddConstant("Ly", Ly); parser.AddConstant("Nky", (double) Nky);
-   parser.AddConstant("Lz", Lz); parser.AddConstant("Nz" , (double) Nz);
-   parser.AddConstant("Lv", Lv); parser.AddConstant("Nv" , (double) Nv);
-   parser.AddConstant("Lm", Lm); parser.AddConstant("Nm" , (double) Nm);
+  parser.AddConstant("pi", M_PI);
+  parser.AddConstant("Lx", Lx); parser.AddConstant("Nx" , (double) Nx);
+  parser.AddConstant("Ly", Ly); parser.AddConstant("Nky", (double) Nky);
+  parser.AddConstant("Lz", Lz); parser.AddConstant("Nz" , (double) Nz);
+  parser.AddConstant("Lv", Lv); parser.AddConstant("Nv" , (double) Nv);
+  parser.AddConstant("Lm", Lm); parser.AddConstant("Nm" , (double) Nm);
    
-   parser.AddConstant("Ns", (double) Ns);
+  parser.AddConstant("Ns", (double) Ns);
     
-   //  BUG : Crashes if parser_constants is empty. Why ?
-   if (!parser_constants.empty()) {
+  //  BUG : Crashes if parser_constants is empty. Why ?
+  if (!parser_constants.empty()) {
 
-      std::vector<std::string> const_vec = split(parser_constants, ",");
+    std::vector<std::string> const_vec = split(parser_constants, ",");
       
-      for(int s = 0; s < const_vec.size(); s++) { 
-            std::vector<std::string> key_value = split(const_vec[s],"=");
-            parser.AddConstant(trimLower(key_value[0], false), std::stod(key_value[1]));
+    for(int s = 0; s < const_vec.size(); s++) { 
+       
+      std::vector<std::string> key_value = split(const_vec[s],"=");
+      parser.AddConstant(trimLower(key_value[0], false), std::stod(key_value[1]));
 
-      };
-   }
+      
+  } }
    
-   return parser;
+  return parser;
 
 }
-
 
 int Setup::getSecondsFromTimeString(std::string time_string) 
 {
@@ -248,12 +237,10 @@ int Setup::getSecondsFromTimeString(std::string time_string)
   for(unsigned int s = 0; s < const_vec.size(); s++) { 
             
     std::string token = const_vec[s];
-
     
     int c2sec = 1;
     char id   = token[token.length()-1];
             
-    
     switch(id) {
     
       case('s') : c2sec = 1       ; break;
@@ -266,32 +253,29 @@ int Setup::getSecondsFromTimeString(std::string time_string)
       
       default : check(-1, DMESG("No such token for time string"));
       
-    };
+    }
     
     seconds += c2sec*atoi(token.substr(0, token.length()-1).c_str());
     
-  };
+  }
     
-        return seconds;
-};
+  return seconds;
+}
    
 void Setup::check_config() 
 {
    
-   if(config_check.size() != 0) {
+  if(config_check.size() != 0) {
   
-     std::vector<std::string>::const_iterator mode;
+    for(auto mode = config_check.begin(); mode != config_check.end(); mode++) {
     
-      for(mode =  config_check.begin(); mode != config_check.end(); mode++) { 
-            std::cout << "Element not accessed : " << *mode << std::endl;
-      }
-      check(-1, DMESG("Parsing Error, Elements not accessed"));
-    
-   }
+      std::cout << "Element not accessed : " << *mode << std::endl;
+    }
+    check(-1, DMESG("Parsing Error : Elements not accessed"));
+  }
   
-   return;
-
-};
+  return;
+}
    
 void Setup::printOn(std::ostream &output) const 
 {
@@ -305,25 +289,38 @@ void Setup::printOn(std::ostream &output) const
 
 template<class T> T Setup::get(std::string key, const T default_Value)
 {
-   // In case type is a double, we replaced common math functions with
-   // value
-   if( config.count(key) == 1) {
-            std::string s = config[key];
-            std::istringstream stream (s);
-            T t;
-            stream >> t;
-           
-            // delete element in check
-            std::vector<std::string>::iterator f = find(config_check.begin(), config_check.end(), key);
-            if( f != config_check.end() ) config_check.erase(f);
-            
-            
-            return t;
-        }
-        else if(config.count(key) > 1) check(-1, DMESG("Parser Error elements occurse more than once"));
+  // Cast and return value correpsonding to key
+  // If ket is not found, return the default value
+  if( config.count(key) == 1) {
 
-        return default_Value;
-};
+    std::string value_str = config[key];
+
+    T value;
+
+    // As pi is often used, we replace the string value with the definition
+    // but that means I have to evalute the string !
+    if(typeid(T) == typeid(double)) {
+      
+      // Use function parser to evalute exporession
+      FunctionParser fp = getFParser();
+      fp.Parse(value_str, "");
+      value             = fp.Eval(NULL);
+    }
+    else {
+      // Cast value string to appropriate type
+      std::istringstream stream (value_str);
+      stream >> value;
+    }     
+    // Check if element was accessed at least once (the Kees method)
+    auto f = find(config_check.begin(), config_check.end(), key);
+    if( f != config_check.end() ) config_check.erase(f);
+            
+    return value;
+  }
+  else if(config.count(key) > 1) check(-1, DMESG("Parser Error : Element occur more than once"));
+
+  return default_Value;
+}
 
 // Most common types, need any more ?
 template double      Setup::get<double>     (std::string key, const double value     );

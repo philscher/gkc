@@ -45,14 +45,14 @@ void VlasovOptim::solve(std::string equation_type, Fields *fields, CComplex *_fs
                            
 
  void    VlasovOptim::Vlasov_2D(
-                           const cmplx16 fs        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           cmplx16 fss             [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const cmplx16 f0        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const cmplx16 f1        [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           cmplx16 ft              [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const cmplx16 Coll      [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                           const cmplx16 Fields[Nq][NsLD][NmLD][NzLB][NkyLD][NxLB+4]      ,
-                           cmplx16 nonLinearTerm               [NzLD][NkyLD][NxLD][NvLD]  ,
+                           const cmplx16 fs        [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           cmplx16 fss             [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const cmplx16 f0        [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const cmplx16 f1        [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           cmplx16 ft              [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const cmplx16 Coll      [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const cmplx16 Fields[Nq][NsLD][NmLD][NzLB][Nky][NxLB+4]      ,
+                           cmplx16 nonLinearTerm               [NzLD][Nky][NxLD][NvLD]  ,
                            const double X[NxGB], const double V[NvGB], const double M[NmGB],
                            const double dt, const int rk_step, const double rk[3])
 { 

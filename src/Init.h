@@ -58,8 +58,8 @@ class Init   : public IfaceGKC
   *
   **/
   void initBackground(Setup *setup, Grid *grid, 
-                      CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                      CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB]);
+                      CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
+                      CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB]);
 
  public :
 
@@ -115,8 +115,8 @@ class Init   : public IfaceGKC
   *  
   * \f]
   **/ 
-  void PerturbationPSFMode(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                 CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB]);
+  void PerturbationPSFMode(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
+                                 CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB]);
 
   /**
   *   @brief Initialization of f1 using exponetial
@@ -126,8 +126,8 @@ class Init   : public IfaceGKC
   *
   *   
   **/
-  void PerturbationPSFExp(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB]);
+  void PerturbationPSFExp(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
+                                CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB]);
 
   /**
   *   @brief Initialization of f1 using random noise
@@ -141,8 +141,8 @@ class Init   : public IfaceGKC
   *
   *
   **/
-  void PerturbationPSFNoise(const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                  CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB]);
+  void PerturbationPSFNoise(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
+                                  CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB]);
 
  protected:
 

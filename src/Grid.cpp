@@ -66,11 +66,13 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
   Lz  = setup->get("Grid.Lz", 2. * M_PI);
   Lv  = setup->get("Grid.Lv", 4.  );
   Lm  = setup->get("Grid.Lm", 7.  );
+  
+  const double x0  = setup->get("Grid.x0", Lx/2.);
+  //const double z0  = setup->get("Grid.z0", 0.   );
     
   int Ny = 2 * Nky - 2;
       
   check(((Nm == 1) && (Lm != 1.)) ? -1 : 0, DMESG("For Nm=1, set Lm = 1 !"));
-
   
   // Calculate some preknown values
   dx = (Nx > 1) ? Lx/((double) (Nx-1)) : Lx;
@@ -188,7 +190,8 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
   // Use  equidistant grid for X, Z and V
   bool includeX0Point = setup->get("Grid.IncludeX0Point", 0);
   for(int x = NxGlB-2; x <= NxGuB+2; x++) X[x] = -  Lx/2. + dx * ( x - NxGC - 1) + ((includeX0Point) ? dx/2. : 0.);
-  for(int z = NzGlB; z <= NzGuB; z++) Z[z] = dz * ( z - NzGC - 1);
+  //for(int z = NzGlB; z <= NzGuB; z++) Z[z] = dz * ( z - NzGC - 1);
+  for(int z = NzGlB; z <= NzGuB; z++) Z[z] = -  Lz/2. + dz * ( z - NzGC - 1) ;
   for(int v = NvGlB; v <= NvGuB; v++) V[v] = -  Lv + dv * ( v - NvGlD);
     
   // M For mu we can choose between linear and Gaussian integration

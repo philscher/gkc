@@ -12,8 +12,8 @@
  */
 
 
-#ifndef _GKC_LA_H_
-#define _GKC_LA_H_
+#ifndef __GKC_LA_H__
+#define __GKC_LA_H__
 
 #include "Global.h"
 
@@ -32,9 +32,6 @@
 */
 int solveCycCCSymTriDiagonal(const double *b, double *x, double cs_alpha, const int N);
 
-
-
-
-#endif // __GKC_LA_H
+#endif // __GKC_LA_H__
 
 

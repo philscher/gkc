@@ -11,8 +11,8 @@
  * =====================================================================================
  */
 
-#ifndef SETUP_H__
-#define SETUP_H__
+#ifndef __GKC_SETUP_H__
+#define __GKC_SETUP_H__
 
 
 // define to compile Fparser with complex number support
@@ -20,7 +20,6 @@
 
 #include "Global.h"
 #include "FunctionParser/fparser.hh"
-
 
 #include <string>
 #include <cctype>
@@ -218,4 +217,4 @@ class Setup : public IfaceGKC {
 };
 
 
-#endif // SETUP_H__
+#endif // __GKC_SETUP_H__

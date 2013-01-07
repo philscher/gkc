@@ -98,18 +98,7 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov 
    } ( (A6zz) vlasov->f0, (A6zz) vlasov->f, (A4zz) fields->Field0, (A6zz) fields->Field, (A4zz) fields->Q);
 
    ////////////////////////////////////////////////////////    Set Fixed Fields  phi, Ap, Bp //////////////////
-   // set fixed fields if requested,  initialize Fields, Ap
-/* 
-   if (setup->get("Init.FixedPhi", "0.").substr(0,4) == "File") setFieldFromDataFile(setup, fields->Field0, Field::phi, setup->get("Init.FixedPhi", "0."));
-   else if (Nq >= 1) setFieldFromFunction(setup, fields->Field0, Field::phi, setup->get("Init.FixedPhi", "0."));
 
-   if (setup->get("Init.FixedAp" , "0.").substr(0,4) == "File") setFieldFromDataFile(setup, fields->Field0, Field::Ap, setup->get("Init.FixedAp", "0."));
-   else if (Nq >= 2) setFieldFromFunction(setup, fields->Field0, Field::Ap, setup->get("Init.FixedAp", "0."));
-
-   if (setup->get("Init.FixedBp", "0.").substr(0,4) == "File") setFieldFromDataFile(setup, fields->Field0, Field::Bp, setup->get("Init.FixedBp", "0."));
-   else if (Nq >= 3) setFieldFromFunction(setup, fields->Field0, Field::Bp, setup->get("Init.FixedBp", "0."));
-
- * */
    }
    
    //////////////////////////////////////// Done ///////////////
@@ -250,3 +239,4 @@ void Init::printOn(std::ostream &output) const
 {
   output << "Init       | " << PerturbationMethod << std::endl;
 }
+

@@ -46,6 +46,13 @@
 *
 *    r_0 is the minor radius, R_0 the major radius 
 *
+*    For the parallel boundary condition, we have to connect the poloidal modes
+*    with the radial modes, thus we have to fullfill following quantization 
+*    
+*    \f[
+*          \mathcal{N}{} = frac{2\pi\hat{s} L_x}{L_y}
+*    \f]
+*
 **/
 class GeometrySA : public Geometry
 {
@@ -111,13 +118,13 @@ class GeometrySA : public Geometry
   **/
   ///@{
   /// \f$  B = 1 \f$
-  double get_B      (const int x, const int z) { return 1.;};
+  double get_B    (const int x, const int z) { return 1.;};
   /// \f$  \partial_x B = \frac{-\hat{B}}{R_0} \cos{(z)}  \f$
-  double get_dB_dx (const int x , const int z) { return - Bhat2 / R0 * cos(Z[z]);            };
+  double get_dB_dx(const int x , const int z) { return - Bhat2 / R0 * cos(Z[z]);            };
   /// \f$  \partial_y B = 0 \f$
-  double get_dB_dy (const int x, const int z) { return 0.;                                  };
+  double get_dB_dy(const int x, const int z) { return 0.;                                  };
   /// \f$  \partial_x B = -\hat{B} \frac{\epsilon}{q_0 R_0} \cos{(z)}  \f$
-  double get_dB_dz (const int x, const int z) { return - Bhat2 * eps/(q0 * R0) * cos(Z[z]); };
+  double get_dB_dz(const int x, const int z) { return - Bhat2 * eps/(q0 * R0) * cos(Z[z]); };
   ///@}
   
    
@@ -152,11 +159,14 @@ class GeometrySA : public Geometry
   *  \f[ 
   *       \nu = q_0 \left( 1 + \hat{s} \frac{x}{R_0} \right) 
   *  \f]
-  *
+  *  
+  *  as by first order Taylor approximation
+  *  \f[
+  *     q(x) \approx q_0 + x \partial_x q = q_0 \left( 1 + x/R_0 \hat{s} \right)
+  *  \f]
   *
   */  
-  //inline double nu (const int x) { return  q0 * (1. + shear * (X[x]/R0)); };
-  inline double nu (const int x) { return  -shear * X[x]; };
+  inline double nu (const int x) { return  q0 * (1. + shear * (X[x]/R0)); };
 
  protected:
 

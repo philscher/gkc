@@ -148,7 +148,7 @@ class GeometryShear : public Geometry
  
  
    // how to connect the field lines ?
-   double nu (const int x) { return 0.; };
+   double nu (const int x) { return shear * X[x]; };
    
 
 
@@ -170,9 +170,6 @@ class GeometryShear : public Geometry
 
    };
 
-
-  // virtual void writeData(Timing *timing) {};
-  // virtual void closeData() {};
 
 };
 

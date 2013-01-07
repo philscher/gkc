@@ -133,8 +133,8 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
     if(Nz > 1) {
     for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { 
 
-      const CComplex shift_l = (NzLlD == NzGlD) ? cexp(+_imag *  (2.* M_PI/Ly) * y_k * geo->nu(x)) : 1.;
-      const CComplex shift_u = (NzLuD == NzGuD) ? cexp(-_imag *  (2.* M_PI/Ly) * y_k * geo->nu(x)) : 1.;
+      const CComplex shift_l = (NzLlD == NzGlD) ? cexp(-_imag * 2.* M_PI * geo->nu(x)) : 1.;
+      const CComplex shift_u = (NzLuD == NzGuD) ? cexp(+_imag * 2.* M_PI * geo->nu(x)) : 1.;
             
       // NzLlD == NzGlD -> Connect only physcial boundaries after mode made one loop 
       SendZl[:][:][:][y_k][x-NxLlD][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD  :2][y_k][x][NvLlD:NvLD] * shift_l;

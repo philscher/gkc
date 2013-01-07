@@ -280,7 +280,7 @@ void VlasovCilk::Vlasov_EM(
             
     const CComplex ky      = _imag * fft->ky(y_k);
 
-    const double CoJB = 1.;///geo->get_J(x,z);
+    const double CoJB      = 1.;///geo->get_J(x,z);
     
     
   simd_for(int v = NvLlD; v <= NvLuD; v++) {
@@ -313,15 +313,15 @@ void VlasovCilk::Vlasov_EM(
         
     const CComplex dg_dt = 
             
-    + NonLinearTerm[y_k][x][v]                                                              // Non-linear ( array is zero for linear simulations) 
+    - NonLinearTerm[y_k][x][v]                                                              // Non-linear ( array is zero for linear simulations) 
     + Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - 3./2.)) * f0_ * Xi_ * ky          // Source Term
     - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0) *                                   
       (Kx[z][x] * dG_dx - Ky[z][x] * ky * G_)                                               // Magnetic curvature term
-    - alpha * pow2(V[v]) * plasma->beta * plasma->w_p * G_ * ky                             // Plasma pressure gradient
-    - CoJB * alpha * V[v]* dG_dz                                                            // Landau damping term
+    + alpha * pow2(V[v]) * plasma->beta * plasma->w_p * G_ * ky                             // Plasma pressure gradient
+    + CoJB * alpha * V[v]* dG_dz                                                            // Linear Landau damping term
     + alpha  / 2. * M[m] * dB_dz[z][x] * dg_dv                                              // Magnetic mirror term    
-    + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * Kx[z][x] * 
-    + ((w_n + w_T * (pow2(V[v]) + M[m] * B0)/Temp - 3./2.) * dG_dx + sigma * dphi_dx * f0_) // ??
+//    + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * Kx[z][x] * 
+//    + ((w_n + w_T * (pow2(V[v]) + M[m] * B0)/Temp - 3./2.) * dG_dx + sigma * dphi_dx * f0_) // ??
     + Coll[s][m][z][y_k][x][v];                                                             // Collision term
           
     //////////////////////////// Vlasov End ////////////////////////////

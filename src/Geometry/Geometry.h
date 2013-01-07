@@ -118,12 +118,12 @@ class Geometry : public IfaceGKC
   *   \f]
   * 
   *   see Goerler, PhD
+  *   see Lapillone, PhD Thesis, Eq.(2.135)
   *
   **/ 
   virtual  double get_Kx(const int x, const int z)  { 
     
-        return - 1./C * ( get_dB_dy(x,z) + g_2(x,z)/g_1(x,z) * get_dB_dz(x,z));
-        return - 1./C * ( get_dB_dy(x,z) + g_1(x,z)/g_2(x,z) * get_dB_dz(x,z));
+        return - 1./C * ( g_2(x,z)/g_1(x,z) * get_dB_dz(x,z));
   };
 
   /**
@@ -138,6 +138,7 @@ class Geometry : public IfaceGKC
   *   \f]
   * 
   *   see Goerler, PhD
+  *   see Lapillone, PhD Thesis, Eq.(2.135)
   *
   **/ 
   virtual double get_Ky(const int x, const int z)  
@@ -157,17 +158,19 @@ class Geometry : public IfaceGKC
    *
    *   \f[ \gamma_1 = g_{xx} g_{yy} - g_{xy} g_{yx} \f]
    */ 
-  inline  double g_1(const int x,  const int z) { return g_xx(x,z) * g_yy(x,z) - pow2(g_xy(x,z))          ; };
+  inline  double g_1(const int x, const int z) { return g_xx(x,z) * g_yy(x,z) - g_xy(x,z) * g_xy(x,z); };
+
   /**  Helper function
    *
    *   \f[ \gamma_2 = g_{xx} g_{yz} - g_{xy} g_{xz} \f]
    */ 
-  inline  double g_2(const int x, const int z) { return g_xx(x,z) * g_yz(x,z) - g_xy(x,z) * g_xz(x,z)  ; };
+  inline  double g_2(const int x, const int z) { return g_xx(x,z) * g_yz(x,z) - g_xy(x,z) * g_xz(x,z); };
+
   /**  Helper function
    *
    *   \f[ \gamma_3 = g_{xy} g_{yz} - g_{yy} g_{xz} \f]
    */ 
-  inline  double g_3(const int x, const int z) { return g_xy(x,z) * g_yz(x,z) - g_yy(x,z) * g_xz(x,z)  ; };
+  inline  double g_3(const int x, const int z) { return g_xy(x,z) * g_yz(x,z) - g_yy(x,z) * g_xz(x,z); };
   ///@}
   
   /**
@@ -203,19 +206,27 @@ class Geometry : public IfaceGKC
   **/ 
   ///@{
   /// Defined Magnetic field strength \f[ B_0(\vec{x}) \f] at position \f[ \vec{x} = (x,y,z) \f]
-  virtual  double get_B   (const int x, const int z   ) = 0;  
+  virtual  double get_B    (const int x, const int z) = 0;  
   
   ///  Defined Magnetic field strength \f[ \frac{\partial B_0}{\partial x}(\vec{x}) \f] at position \f[ \vec{x} = (x,y,z) \f]
-  virtual  double get_dB_dx  (const int x,  const int z) = 0;
+  virtual  double get_dB_dx(const int x, const int z) = 0;
 
   ///  Defined Magnetic field strength \f[\frac{\partial B_0}{\partial y}(\vec{x}) \f] at position \f[ \vec{x} = (x,y,z) \f]
-  virtual  double get_dB_dy  (const int x, const int z) = 0;
+  virtual  double get_dB_dy(const int x, const int z) = 0;
   
   ///  Defined Magnetic field strength \f[\frac{\partial B_0}{\partial z}(\vec{x}) \f] at position \f[ \vec{x} = (x,y,z) \f]
-  virtual  double get_dB_dz  (const int x, const int z) = 0;
+  virtual  double get_dB_dz(const int x, const int z) = 0;
   ///@}
   
   
+  /**
+  *   @brief factor to connect parallel field line at border
+  *
+  *   \f[
+  *        A(x,k_y,z) = f(x,k_y,z+2\pi) e^{i 2\pi \nu(x)} 
+  *   \f]
+  *
+  **/
   virtual  double nu (const int x) = 0;
 
   
