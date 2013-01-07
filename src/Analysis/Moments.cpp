@@ -20,8 +20,7 @@ Moments::Moments(Setup *setup, Vlasov *_vlasov, Fields *_fields, Grid *_grid, Pa
 
    doFieldCorrections = setup->get("Moments.FieldCorrections", 1);
 
-
-};
+}
 
 
 
@@ -48,8 +47,6 @@ void Moments::getMoments(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB  ]
   const double d_00 = rho_L_ref * plasma->n_ref * species[s].n0;
   const double d_20 = rho_L_ref * plasma->n_ref * species[s].n0 * pow2(plasma->c_ref * species[s].v_th);
   const double d_02 = rho_L_ref * plasma->n_ref * species[s].n0 * pow2(plasma->c_ref * species[s].v_th);
-  
-  
   
   // integrate over the first adiabat \mu
   for(int m = NmLlD; m <= NmLuD; m++) {

@@ -167,9 +167,9 @@ class Fields : public IfaceGKC {
   *  @param s  index for species
   *
   **/
-  void calculateChargeDensity(const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                              const CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                              CComplex Field0[Nq][NxLD][NkyLD][Nz]   ,
+  void calculateChargeDensity(const CComplex f0 [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
+                              const CComplex f  [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
+                              CComplex Field0           [Nq][NzLD][Nky][NxLD]      ,
                               const int m, const int s) ;
 
   /**
@@ -190,9 +190,9 @@ class Fields : public IfaceGKC {
   *  @param s  index for species
   *
   **/
-  void calculateParallelCurrentDensity(const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                       const CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                       CComplex Field0[Nq][NxLD][NkyLD][Nz],
+  void calculateParallelCurrentDensity(const CComplex f0 [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
+                                       const CComplex f  [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
+                                       CComplex Field0           [Nq][NzLD][Nky][NxLD]      ,
                                        const int m, const int s) ;
 
   /**
@@ -215,9 +215,9 @@ class Fields : public IfaceGKC {
   *  @param s  index for species
   *
   **/
-  virtual void  calculatePerpendicularCurrentDensity(const CComplex f0 [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                                     const CComplex f  [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                                     CComplex  Q[Nq][NxLD][NkyLD][Nz],
+  virtual void  calculatePerpendicularCurrentDensity(const CComplex f0 [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
+                                                     const CComplex f  [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
+                                                     CComplex Field0           [Nq][NzLD][Nky][NxLD]      ,
                                                      const int m, const int s); 
 
   /**
@@ -228,8 +228,8 @@ class Fields : public IfaceGKC {
   *  @note pure virtual function
   * 
   **/
-  virtual void solveFieldEquations(const CComplex Q     [Nq][NxLD][NkyLD][Nz],
-                                          CComplex Field0[Nq][NxLD][NkyLD][Nz]) = 0;
+  virtual void solveFieldEquations(const CComplex Q     [Nq][NzLD][Nky][NxLD],
+                                         CComplex Field0[Nq][NzLD][Nky][NxLD]) = 0;
 
   /**
   *    @brief calculate Field energy
@@ -281,8 +281,8 @@ class Fields : public IfaceGKC {
   *  @param gyroField true if forward transformation, false if backward transformation
   *
   **/
-  virtual void gyroAverage(const CComplex In [Nq][NzLD][NkyLD][NxLD], 
-                                 CComplex Out[Nq][NzLD][NkyLD][NxLD],
+  virtual void gyroAverage(const CComplex In [Nq][NzLD][Nky][NxLD], 
+                                 CComplex Out[Nq][NzLD][Nky][NxLD],
                            const int m, const int s, const bool forward, const bool stack=false) = 0;
   
    
@@ -299,8 +299,9 @@ class Fields : public IfaceGKC {
   *    @params s   Species index
   *
   **/
-  virtual void doubleGyroExp(const CComplex In [NzLD][NkyLD][NxLD], 
-                           CComplex Out[NzLD][NkyLD][NxLD], const int m, const int s) = 0;
+  virtual void doubleGyroExp(const CComplex In [NzLD][Nky][NxLD], 
+                                   CComplex Out[NzLD][Nky][NxLD], 
+                              const int m, const int s) = 0;
  
 
   /**
@@ -319,7 +320,7 @@ class Fields : public IfaceGKC {
   *
   *  Holds the (guiding center) field values. 
   *
-  *  with boundaries [NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD]
+  *  with boundaries [NzLlD:NzLD][0:Nky][NxLlD:NxLD]
   *
   *
   **/

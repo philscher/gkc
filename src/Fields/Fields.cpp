@@ -32,7 +32,7 @@ grid(_grid), parallel(_parallel), geo(_geo), solveEq(0)
   solveEq |=  ((Nq >= 2) && (setup->get("Init.FixedAp" , ".0") == ".0")) ? Field::IAp  : 0;
   solveEq |=  ((Nq >= 3) && (setup->get("Init.FixedBp" , ".0") == ".0")) ? Field::IBp  : 0;
 
-  // for phi terms
+  // Allocate variables for calculating source terms and field terms
   ArrayField  = nct::allocate(nct::Range(0,Nq), grid->RsLD, grid->RmLD , grid->RzLB, grid->RkyLD, nct::Range(NxLlD-4, NxLD+8))(&Field);
   ArrayField0 = nct::allocate(nct::Range(0,Nq), grid->RzLD, grid->RkyLD, grid->RxLD)(&Q, &Qm, &Field0);
 
@@ -40,7 +40,7 @@ grid(_grid), parallel(_parallel), geo(_geo), solveEq(0)
   ArrayBoundX = nct::allocate(nct::Range(0,    4 * Nky * NzLD * NmLD * NsLD * Nq))(&SendXl, &SendXu, &RecvXl, &RecvXu);
   ArrayBoundZ = nct::allocate(nct::Range(0, NxLD * Nky *    2 * NmLD * NsLD * Nq))(&SendZl, &SendZu, &RecvZl, &RecvZu);
        
-  //  brackets should be 1/2 but due to numerical errors, we should calculate it ourselves, see Dannert[2] 
+  // should equal 1/2. To avoid cancellation error due to numerical errors, calculate it numerically, see Dannert[2] 
   Yeb = (1./sqrt(M_PI) * __sec_reduce_add(pow2(V[NvLlD:NvLD]) * exp(-pow2(V[NvLlD:NvLD]))) * dv) * geo->eps_hat * plasma->beta; 
 
   initData(setup, fileIO);
@@ -96,7 +96,6 @@ void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
   if(parallel->Coord[DIR_V] == 0) {
 
     // integrate over mu-space and over species
-    // problems parallel->reduce(ArrayField0.data(Q), Op::sum, DIR_MS, ArrayField0.getNum(), false);
     #pragma omp single
     parallel->reduce(ArrayField0.data(Q), Op::sum, DIR_MS, ArrayField0.getNum(), false); 
 
@@ -112,7 +111,7 @@ void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
     // OPTIM : We can skip foward transform after first call
     for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) {
 
-      // Field has complicated stride, thus cannot be easily used in FFTSolver.
+      // Fields has a complicated stride, thus cannot be easily used in FFTSolver.
       // Use temporary Qm, and copy to Fields afterwards.
 
       // forward-transformation from drift-center -> gyro-center 
@@ -152,7 +151,6 @@ void Fields::calculateChargeDensity(const CComplex f0      [NsLD][NmLD][NzLB][Nk
 {
   
   // In case of a full-f simulation the Maxwellian is subtracted
-
   const double pqnB_dvdm = M_PI * species[s].q * species[s].n0 * plasma->B0 * dv * grid->dm[m] ;
 
   #pragma omp for collapse(2) nowait
@@ -160,7 +158,7 @@ void Fields::calculateChargeDensity(const CComplex f0      [NsLD][NmLD][NzLB][Nk
   for(int x = NxLlD; x <= NxLuD; x++) {
 
     Field0[Field::phi][z][y_k][x] = ( __sec_reduce_add(f [s][m][z][y_k][x][NvLlD:NvLD]) 
-                       - (plasma->global ? __sec_reduce_add(f0[s][m][z][y_k][x][NvLlD:NvLD]) : 0)) * pqnB_dvdm;
+                  - (plasma->global ? __sec_reduce_add(f0[s][m][z][y_k][x][NvLlD:NvLD]) : 0)) * pqnB_dvdm;
      
   } } } // z, y_k, x
    
@@ -234,8 +232,8 @@ void Fields::updateBoundary()
 
       // Z-Boundary (N z-we need to connect the magnetic field lines)
       // NzLlD == NzGlD -> Connect only physcial boundaries after mode made one loop 
-      const CComplex shift_l = (NzLlD == NzGlD) ? cexp(+_imag *  (2.* M_PI/Ly) * y_k * geo->nu(x)) : 1.;
-      const CComplex shift_u = (NzLuD == NzGuD) ? cexp(-_imag *  (2.* M_PI/Ly) * y_k * geo->nu(x)) : 1.;
+      const CComplex shift_l = (NzLlD == NzGlD) ? cexp(-_imag * 2.* M_PI * geo->nu(x)) : 1.;
+      const CComplex shift_u = (NzLuD == NzGuD) ? cexp(+_imag * 2.* M_PI * geo->nu(x)) : 1.;
       
       SendZl[:][:][:][:][y_k][x-NxLlD] = Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD  :2][y_k][x] * shift_l;
       SendZu[:][:][:][:][y_k][x-NxLlD] = Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLuD-1:2][y_k][x] * shift_u;
@@ -275,18 +273,18 @@ void Fields::initData(Setup *setup, FileIO *fileIO)
 {
     
   // Set sizes : Note, we use fortran ordering for field variables 
-  hsize_t field_dim[]       = { Nq, Nz     , Nky   , Nx     ,             1 };
-  hsize_t field_chunkBdim[] = { Nq, NzLB   , Nky   , NxLB+4 ,             1 };
-  hsize_t field_chunkdim[]  = { Nq, NzLD   , Nky   , NxLD   ,             1 };
-  hsize_t field_maxdim[]    = { Nq, Nz     , Nky   , Nx     , H5S_UNLIMITED };
-  hsize_t field_moffset[]   = { Nq, 2      , 0     , 4      ,             0 };
-  hsize_t field_offset[]    = { 0 , NzLlB-1, NkyLlB, NxLlB-1,             0 }; 
+  hsize_t field_dim[]    = { Nq, Nz     , Nky, Nx  ,             1 };
+  hsize_t field_maxdim[] = { Nq, Nz     , Nky, Nx  , H5S_UNLIMITED };
+  hsize_t field_cBdim[]  = { Nq, NzLD   , Nky, NxLD,             1 };
+  hsize_t field_cdim[]   = { Nq, NzLD   , Nky, NxLD,             1 };
+  hsize_t field_moff[]   = { 0 , 0      , 0  , 0   ,             0 };
+  hsize_t field_off[]    = { 0 , NzLlB-1, 0  , NxLlB-1,          0 }; 
      
   bool fieldsWrite = (parallel->Coord[DIR_VMS] == 0);
      
   hid_t fieldsGroup = check(H5Gcreate(fileIO->getFileID(), "/Fields", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
      
-  FA_fields      = new FileAttr("Phi" , fieldsGroup, fileIO->file, 5, field_dim, field_maxdim, field_chunkdim, field_moffset, field_chunkBdim, field_offset, fieldsWrite, fileIO->complex_tid);
+  FA_fields      = new FileAttr("Phi" , fieldsGroup, fileIO->file, 5, field_dim, field_maxdim, field_cdim, field_moff, field_cBdim, field_off, fieldsWrite, fileIO->complex_tid);
   FA_fieldsTime  = fileIO->newTiming(fieldsGroup);
         
   H5Gclose(fieldsGroup);
@@ -298,7 +296,7 @@ void Fields::initData(Setup *setup, FileIO *fileIO)
 void Fields::writeData(const Timing &timing, const double dt) 
 {
   if (timing.check(dataOutputFields, dt)       )   {
-    //FA_phi->write(&Field0[Fields::phi][NzLlD][NkyLlD][NzLlD]);
+    FA_fields->write(ArrayField0.data(Field0));
     FA_fieldsTime->write(&timing);
       
     parallel->print("Wrote fields data ... "); 

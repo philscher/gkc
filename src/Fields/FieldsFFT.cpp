@@ -91,9 +91,9 @@ void FieldsFFT::solvePoissonEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_
     // adiabatic term \adia ( \phi - <\phi>_{yz}), we shift flux averaging term <\phi>_{yz}
     // to rhs due to FFT normalization
     const double lhs    = plasma->debye2 * k2_p + sum_qqnT_1mG0(k2_p) + adiab;
-    const CComplex rhs  = (kXOut[Field::phi][z][y_k][x_k] + adiab*phi_yz[x_k])/fft->Norm_X; 
+    const CComplex rhs  = (kXOut[Field::phi][z][y_k][x_k] + adiab*phi_yz[x_k]); 
           
-    kXIn[Field::phi][z][y_k][x_k] = rhs/lhs;
+    kXIn[Field::phi][z][y_k][x_k] = rhs/(lhs * fft->Norm_X);
          
     // where to remove ? Here or @ gyroFull ? ... I guess better here ... !
     if(( (y_k == Nky-1) || (x_k == Nx/2)) && screenNyquist) kXIn[Field::phi][z][y_k][x_k]  = 0.;
@@ -121,9 +121,9 @@ void FieldsFFT::solveAmpereEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_N
     const double k2_p = fft->k2_p(x_k,y_k,z);
            
     const double lhs   =  - k2_p - Yeb * sum_sa2qG0(k2_p);
-    const CComplex rhs =  kXOut[Field::Ap][z][y_k][x_k]/fft->Norm_X; 
+    const CComplex rhs =  kXOut[Field::Ap][z][y_k][x_k]; 
      
-    kXIn[Field::Ap][z][y_k][x_k] = rhs/lhs;
+    kXIn[Field::Ap][z][y_k][x_k] = rhs/(lhs * fft->Norm_X);
 
   } } } // z, y_k, x_k
       
@@ -153,8 +153,8 @@ void FieldsFFT::solveBParallelEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::
     const CComplex M_00 = kXOut[Field::phi][z][y_k][x_k];
     const CComplex M_01 = kXOut[Field::Bp ][z][y_k][x_k];
 
-    kXIn[Field::phi][z][y_k][x_k] = (C_3 * M_00 - C_2 * M_01) / (C_1 * C_3 - pow2(C_2)) / fft->Norm_X;
-    kXIn[Field::Bp ][z][y_k][x_k] = (C_1 * M_01 - C_2 * M_00) / (C_1 * C_3 - pow2(C_2)) / fft->Norm_X;
+    kXIn[Field::phi][z][y_k][x_k] = (C_3 * M_00 - C_2 * M_01) / ((C_1 * C_3 - pow2(C_2)) * fft->Norm_X);
+    kXIn[Field::Bp ][z][y_k][x_k] = (C_1 * M_01 - C_2 * M_00) / ((C_1 * C_3 - pow2(C_2)) * fft->Norm_X);
 
   } } } // z, y_k, x_k
     
