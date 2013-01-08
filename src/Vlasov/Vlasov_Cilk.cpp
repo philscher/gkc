@@ -100,7 +100,7 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
   
 
   #pragma omp for
-  for(int v=NvLlD; v<=NvLuD; v++) { 
+  for(int v = NvLlD; v <= NvLuD; v++) { 
 
     // Transform Xi to real space  
         
@@ -135,8 +135,8 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
         
     }
 
-    if(electroMagnetic) xky_f1[:][:] = G      [z][NkyLlD:Nky][NxLlB:NxLB][v];
-    else                xky_f1[:][:] = f[s][m][z][NkyLlD:Nky][NxLlB:NxLB][v];
+    if(electroMagnetic) xky_f1[:][:] = G      [z][0:Nky][NxLlB:NxLB][v];
+    else                xky_f1[:][:] = f[s][m][z][0:Nky][NxLlB:NxLB][v];
 
     fft->solve(FFT_Type::Y_PSF, FFT_Sign::Backward, (CComplex *) xky_f1, &xy_f1[2][0]);
 
@@ -145,7 +145,7 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
     xy_f1[NyLD+2:2][:] =  xy_f1[2     :2][:];
 
     /////////////////   calculate cross terms using Morinishi scheme (Arakawa type) [Xi,G] (or [phi,F1])  /////////////////////
-    for(int y=2; y < NyLD+2; y++) { simd_for(int x=2; x < NxLD+2; x++) {
+    for(int y = 2; y < NyLD+2; y++) { simd_for(int x = 2; x < NxLD+2; x++) {
 
       const double dXi_dy__dG_dx =  ( 8. * ( (xy_dXi_dy[y][x] + xy_dXi_dy[y][x+1]) * xy_f1[y][x+1]
                                            - (xy_dXi_dy[y][x] + xy_dXi_dy[y][x-1]) * xy_f1[y][x-1])
@@ -168,7 +168,7 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
     fft->solve(FFT_Type::Y_NL, FFT_Sign::Forward, xy_ExB, (CComplex *) xky_ExB);
 
     // Done - store the non-linear term in ExB
-    ExB[NkyLlD:Nky][NxLlD:NxLD][v] = xky_ExB[:][:];
+    ExB[0:Nky][NxLlD:NxLD][v] = xky_ExB[:][:];
 
   }
     
@@ -191,7 +191,7 @@ void VlasovCilk::setupXiAndG(
   const double sigma = species[s].sigma;
   
   const double aeb   =  alpha * geo->eps_hat * plasma->beta; 
-  const double saeb  =  sigma * alpha * geo->eps_hat * plasma->beta;
+  const double saeb  =  sigma * aeb;
 
   const bool useAp   = (Nq >= 2);
   const bool useBp   = (Nq >= 3);

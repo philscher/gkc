@@ -97,13 +97,6 @@ class Collisions_LenardBernstein : public Collisions {
   **/ 
  ~Collisions_LenardBernstein();
  
-  /**
-  *   Set Data output parameters
-  *
-  *
-  **/
-  virtual void initData(hid_t fileID); 
-
   
   /**
   *   Calculate Collisional corrections
@@ -114,6 +107,12 @@ class Collisions_LenardBernstein : public Collisions {
 
  protected:
 
+  /**
+  *   Set Data output parameters
+  *
+  *
+  **/
+  virtual void initData(hid_t fileID); 
   
   /**
   * Program output

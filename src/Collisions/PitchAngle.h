@@ -104,7 +104,7 @@ public:
         // we need to calculate the pre-factors
         //
 
-//        for(int s=NsGlD; s <= NsGuD; s++)  pref_Cxy(s) += - vc * plasma->species(j).n * pow2(plasma->species(j).q)* plasma->species(j).T * pow(plasma->species[s].m, 3./2.) 
+//        for(int s=NsGlD; s <= NsGuD; s++)  pref_Cxy(s) += - vc * species(j).n * pow2(species(j).q)* species(j).T * pow(species[s].m, 3./2.) 
 
 
 
@@ -121,7 +121,7 @@ public:
       * */ 
 
 
-        // normalized velocity : double x = v/scale_v;
+        // normalized velocity : double x = v/v_th;
     };
 
 // will probably be moved to Vlasov soon, why not by multiderivative , so I don't have to mess
@@ -162,7 +162,7 @@ public:
       const double xc = 0.;
 
 
-       return pref_Cxy(s) * 1./pow5(V[v]) * ( V[v] * F1(xc) + 3. * plasma->B0 * M[m] * df_dp / plasma->species[s].m * F2(df_dp));
+       return pref_Cxy(s) * 1./pow5(V[v]) * ( V[v] * F1(xc) + 3. * plasma->B0 * M[m] * df_dp / species[s].m * F2(df_dp));
 
     };
 
@@ -174,10 +174,10 @@ public:
     inline double C_vm(const double df_dv, const double df_dm, const double f, const int x, const int y, const int z, const int v, const int m, const int s) {
   
       int j = s;
-       const double xc = plasma->species[s].scale_v / plasma->species(j).scale_v * V[v];
+       const double xc = species[s].v_th / species(j).v_th * V[v];
       
        // parallel velocity
-      const double C_v =    ((2. * plasma->B0 * M[m])/ plasma->species[s].m * F1(xc) + pow2(V[v]) * F3(x)) * df_dv + (6. * M[m] * pow2(V[v]) * F2(xc)) * df_dm - 2. * F3(xc)/pow3(V[v]) * V[v] * f;
+      const double C_v =    ((2. * plasma->B0 * M[m])/ species[s].m * F1(xc) + pow2(V[v]) * F3(x)) * df_dv + (6. * M[m] * pow2(V[v]) * F2(xc)) * df_dm - 2. * F3(xc)/pow3(V[v]) * V[v] * f;
       const double C_m =    ((6. * M[m] * V[v] * F2(xc)) * df_dv  + 4./plasma->B0 * pow2(V[v]) * M[m] * F1(xc)) * df_dv + (4. * pow2(M[m]) * F3(xc)) * df_dm - 2. * F3(xc)/pow3(V[v]) * 2. * M[m] * f;
         
        

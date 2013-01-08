@@ -51,7 +51,6 @@ void FFTSolver::setNormalizationConstants() {
     
   } ((A4zz) kXIn, (A4zz) kXOut); 
   
-  std::cout << "Norm_X_Backward : " << Norm_X_Forward << std::endl << std::flush;
   // broadcast normalization to all nodes
   //parallel->send(Norm_Y_Forward, parallel->Coord[DIR_ALL] == 0); parallel->send(Norm_Y_Backward, parallel->Coord[DIR_ALL] == 0);
   //parallel->send(Norm_X_Forward, parallel->Coord[DIR_ALL] == 0); parallel->send(Norm_X_Backward, parallel->Coord[DIR_ALL] == 0);
