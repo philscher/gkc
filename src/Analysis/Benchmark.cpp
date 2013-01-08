@@ -174,28 +174,33 @@ double Benchmark::stop(std::string id, int type)
     
 void Benchmark::initData(Setup *setup, FileIO *fileIO)
 {
-   // create HDF-5 table
-    
-   hid_t benchGroup = check(H5Gcreate(fileIO->getFileID(), "/Benchmark",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group for Geometry : H5Gcreate"));
+   
+  hid_t benchGroup = fileIO->newGroup("/Benchmark");
 
-   check(H5LTset_attribute_int   (benchGroup, ".", "NumberOfCounters",  &num_hwcntrs, 1), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_int   (benchGroup, ".", "NumberOfCounters",  &num_hwcntrs, 1), DMESG("H5LTset_attribute"));
 
          
-   //////////////////////// Set Table for species.
-   size_t counters_offset[]     = { HOFFSET(Counters , Cycles ), HOFFSET( Counters, Instructions ) };
-   size_t counters_sizes[]      = { sizeof(long long), sizeof(long long) };
-   hid_t counters_type[]        = { H5T_NATIVE_LLONG, H5T_NATIVE_LLONG };
-   const char *counters_names[]  = { "Cycles", "Intructions" };
+  //////////////////////// Set Table for species.
+  size_t counters_offset[]     = { HOFFSET(Counters , Cycles ), HOFFSET( Counters, Instructions ) };
+  size_t counters_sizes[]      = { sizeof(long long), sizeof(long long) };
+  hid_t counters_type[]        = { H5T_NATIVE_LLONG, H5T_NATIVE_LLONG };
+  const char *counters_names[]  = { "Cycles", "Intructions" };
 
-   Counters counters;
+  Counters counters;
 
-   check(H5TBmake_table("Counters", fileIO->getFileID(), "Counters", (hsize_t) 2, (hsize_t) 0, 
+  check(H5TBmake_table("Counters", fileIO->getFileID(), "Counters", (hsize_t) 2, (hsize_t) 0, 
                         sizeof(Counters), (const char**) counters_names, counters_offset, counters_type,
-                         32, NULL, 0, &counters ), DMESG("H5Tmake_table Counters"));
+                        32, NULL, 0, &counters ), DMESG("H5Tmake_table Counters"));
+
+  // create table for all included species
+  //H5TBappend_records (fileIO->getFileID(), "Species", 1, sizeof(Species), species_offset, species_sizes, &species[s]); 
+
+  // write parallel decomposition information
    
-   // create table for all included species
-   //H5TBappend_records (fileIO->getFileID(), "Species", 1, sizeof(Species), species_offset, species_sizes, &species[s]); 
-    H5Gclose(benchGroup);
+  check(H5LTset_attribute_int   (benchGroup, ".", "X",  &num_hwcntrs, 1), DMESG("H5LTset_attribute"));
+   
+
+  H5Gclose(benchGroup);
 
 };
 

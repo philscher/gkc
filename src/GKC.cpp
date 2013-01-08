@@ -63,7 +63,10 @@ GKC::GKC(Setup *_setup) : setup(_setup)
 
   fileIO    = new FileIO(parallel, setup);
   grid      = new Grid(setup, parallel, fileIO);
-    
+
+  // ugly here, however in parallel constructor fileIO is not defined yet
+  parallel->initData(setup, fileIO);
+
   if     (geometry_Type == "SA"  ) geometry  = new GeometrySA(setup, grid, fileIO);
   else if(geometry_Type == "2D"  ) geometry  = new Geometry2D(setup, grid, fileIO);
   else if(geometry_Type == "Slab") geometry  = new GeometrySlab(setup, grid, fileIO);

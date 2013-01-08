@@ -16,7 +16,7 @@
 
 #include "Global.h"
 #include "Parallel.h"
-
+#include "FileIO.h"
 #include "Tools/System.h"
 
 #include <array>
@@ -389,10 +389,25 @@ void Parallel::printOn(std::ostream &output) const
 
 void Parallel::initData(Setup *setup, FileIO *fileIO) 
 {
-  //  char mpi_lib_ver[MPI_MAX_LIBRARY_VERSION_STRING];
-  //  MPI_Get_library_version(mpi_lib_ver, &len);
-  //
-  // write Decomposition
+
+
+  hid_t parallelGroup = fileIO->newGroup("/Parallel");
+   
+  check(H5LTset_attribute_int(parallelGroup, ".", "X",  &decomposition[DIR_X], 1), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_int(parallelGroup, ".", "Y",  &decomposition[DIR_Y], 1), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_int(parallelGroup, ".", "Z",  &decomposition[DIR_Z], 1), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_int(parallelGroup, ".", "V",  &decomposition[DIR_V], 1), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_int(parallelGroup, ".", "M",  &decomposition[DIR_M], 1), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_int(parallelGroup, ".", "S",  &decomposition[DIR_S], 1), DMESG("H5LTset_attribute"));
+  
+  // save MPI library information
+  int version, subversion;
+  MPI_Get_version(&version, &subversion);
+  
+  H5LTset_attribute_string(parallelGroup, ".", "MPI Version",  (Setup::num2str(version) + "." + Setup::num2str(subversion)).c_str());
+  
+ 
+  H5Gclose(parallelGroup);
 };
 
 

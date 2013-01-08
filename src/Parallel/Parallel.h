@@ -296,10 +296,17 @@ struct NeighbourDir {
 
   virtual void printProcessID(); 
 
+  /**
+  *  @brief intializes data output
+  *
+  *  Writtes decomposition information, as well as version number
+  *  underlying libraries
+  *
+  **/
+  virtual void initData(Setup *setup, FileIO *fileIO);
  protected:
 
   virtual void printOn(std::ostream &output) const ;
-  virtual void initData(Setup *setup, FileIO *fileIO);
   virtual void writeData(Timing *timing) {};
   virtual void closeData() {};
 
