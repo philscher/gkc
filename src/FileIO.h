@@ -3,7 +3,7 @@
  *
  *       Filename: FileIO.h
  *
- *    Description: Data Input/Output using HDF-5 initialization routines
+ *    Description: Data Input/Output using HDF-5 (http://www.hdfgroup.org/HDF5/) 
  *
  *         Author: Paul P. Hilscher (2010-), 
  *
@@ -22,8 +22,6 @@
 
 #include "SHDF5/FileAttr.h"
 #include "SHDF5/TableAttr.h"
-
-
 
 
 /**
@@ -88,10 +86,20 @@ class FileIO : public IfaceGKC
 
   hid_t getFileID() const { return file; };
 
-  bool resumeFile   ; 
+  bool resumeFile; ///< true if simulation resumed from input file 
 
+  /**
+  *   @brief Created and returns a new group
+  *
+  *
+  **/
   hid_t  newGroup(std::string name, hid_t parentNode=-2);
         
+  /**
+  *   @brief Returns a timing indentifier
+  *
+  *
+  **/
   FileAttr *newTiming(hid_t group, hsize_t offset=0, bool write=1);
 
  protected:
