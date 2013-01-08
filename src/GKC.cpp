@@ -106,12 +106,12 @@ GKC::GKC(Setup *_setup) : setup(_setup)
 
 
   // Load some other general modules
-  analysis        = new Analysis(parallel, vlasov, fields, grid, setup, fftsolver, fileIO, geometry); 
+  diagnostics     = new Diagnostics(parallel, vlasov, fields, grid, setup, fftsolver, fileIO, geometry); 
   visual          = new Visualization_Data(grid, parallel, setup, fileIO, vlasov, fields);
   event           = new Event(setup, grid, parallel, fileIO, geometry);
   eigenvalue      = new Eigenvalue_SLEPc(fileIO, setup, grid, parallel); 
   init            = new Init(parallel, grid, setup, fileIO, vlasov, fields, geometry);
-  control         = new Control(setup, parallel, analysis);
+  control         = new Control(setup, parallel, diagnostics);
   particles       = new TestParticles(fileIO, setup, parallel);
    
   timeIntegration = new TimeIntegration(setup, grid, parallel, vlasov, fields, particles, eigenvalue, bench);
@@ -170,7 +170,7 @@ int GKC::mainLoop()
           fields->writeData(timing, dt);
           visual->writeData(timing, dt);
 
-          analysis->writeData(timing, dt);
+          diagnostics->writeData(timing, dt);
           event->checkEvent(timing, vlasov, fields);
           //fileIO->flush(timing, dt);  
              
@@ -210,7 +210,7 @@ GKC::~GKC()
   delete collisions; 
   delete geometry;
   delete grid;
-  delete analysis;
+  delete diagnostics;
   delete particles;
   delete eigenvalue;
   delete event;

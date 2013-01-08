@@ -32,7 +32,7 @@
 #include "TimeIntegration/TimeIntegration.h"
 #include "Geometry.h"
 #include "Collisions/Collisions.h"
-#include "Analysis/Analysis.h"
+#include "Analysis/Diagnostics.h"
 #include "Analysis/Benchmark.h"
 #include "Analysis/Event.h"
 #include "Analysis/TestParticle.h"
@@ -58,7 +58,7 @@ private:
     Grid            *grid;               ///< Grid initialization and boundaries
     Setup           *setup;              ///< Reads configuration files
     Parallel        *parallel;           ///< Parallel communication functions
-    Analysis        *analysis;           ///< Data Analysis
+    Diagnostics     *diagnostics;        ///< Data Diagnostic
     Fields          *fields;             ///< Source calculation and field solvers
     Control         *control;            ///< Program flow control
     FFTSolver       *fftsolver;          ///< FFTSolver used

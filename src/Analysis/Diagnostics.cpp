@@ -1,9 +1,9 @@
 /*
  * =====================================================================================
  *
- *       Filename: Analysis.cpp
+ *       Filename: Diagnostics.cpp
  *
- *    Description: Analysis functions for gkc
+ *    Description: Diagnostic functions for gkc
  *
  *         Author: Paul P. Hilscher (2010-), 
  *
@@ -11,12 +11,10 @@
  * =====================================================================================
  */
 
-#include "Analysis.h"
+#include "Diagnostics.h"
 
-#include <iomanip>
-#include <complex.h>
 
-Analysis::Analysis(Parallel *_parallel, Vlasov *_vlasov, Fields *_fields, Grid *_grid, Setup *_setup, FFTSolver *_fft, FileIO *fileIO, Geometry *_geo) : 
+Diagnostics::Diagnostics(Parallel *_parallel, Vlasov *_vlasov, Fields *_fields, Grid *_grid, Setup *_setup, FFTSolver *_fft, FileIO *fileIO, Geometry *_geo) : 
  
 parallel(_parallel),setup(_setup), vlasov(_vlasov), grid(_grid), fields(_fields), geo(_geo),  fft(_fft)
 
@@ -29,14 +27,14 @@ parallel(_parallel),setup(_setup), vlasov(_vlasov), grid(_grid), fields(_fields)
 
 
 
-Analysis::~Analysis() 
+Diagnostics::~Diagnostics() 
 {
   delete moments;
   closeData();
 }
 
 
-void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][Nky][FFTSolver::X_NkxL], 
+void Diagnostics::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][Nky][FFTSolver::X_NkxL], 
                                 CComplex  Field0 [Nq][NzLD][Nky][NxLD]      ,
                                 double    pSpecX [Nq][Nx/2+1], double pSpecY [Nq][Nky],
                                 double    pPhaseX[Nq][Nx/2+1], double pPhaseY[Nq][Nky])
@@ -98,7 +96,7 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][Nky][FFTSolver::X_Nk
 //////////////////////// Calculate scalar values ///////////////////////////
 
 
-void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB], 
+void Diagnostics::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB], 
                                      const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
                                      const CComplex Mom[8][NsLD][NzLD][Nky][NxLD], 
                                      double ParticleFlux[Nq][NsLD][Nky][NxLD], 
@@ -171,7 +169,7 @@ void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky][Nx
 }
 
 
-void Analysis::getParticleHeatFlux( 
+void Diagnostics::getParticleHeatFlux( 
                                    double ParticleFlux[Nq][NsLD][Nky][NxLD], 
                                    double HeatFlux[Nq][NsLD][Nky][NxLD],
                                    const CComplex  Field0[Nq][NzLD][Nky][NxLD],
@@ -209,7 +207,7 @@ void Analysis::getParticleHeatFlux(
 }
 
         
-void Analysis::initData(Setup *setup, FileIO *fileIO) 
+void Diagnostics::initData(Setup *setup, FileIO *fileIO) 
 {
         
   analysisGroup = fileIO->newGroup("Analysis");
@@ -339,7 +337,7 @@ void Analysis::initData(Setup *setup, FileIO *fileIO)
 }
 
 
-void Analysis::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEnergy)
+void Diagnostics::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEnergy)
 {
 
   fields->getFieldEnergy(phiEnergy, ApEnergy, BpEnergy);
@@ -347,7 +345,7 @@ void Analysis::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEne
   return;
 }
   
-void Analysis::writeData(const Timing &timing, const double dt)
+void Diagnostics::writeData(const Timing &timing, const double dt)
 
 {
 
@@ -491,7 +489,7 @@ void Analysis::writeData(const Timing &timing, const double dt)
 
         
 // separately we set MPI struct
-void Analysis::setMPIStruct()
+void Diagnostics::setMPIStruct()
 {
 /*  
    long long int 
@@ -518,7 +516,7 @@ void Analysis::setMPIStruct()
 
 
 
-void Analysis::closeData() 
+void Diagnostics::closeData() 
 {
 
   delete FA_heatKy; 
@@ -542,7 +540,7 @@ void Analysis::closeData()
   return;
 }
     
-void Analysis::printOn(std::ostream &output) const
+void Diagnostics::printOn(std::ostream &output) const
 { 
 
 

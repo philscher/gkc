@@ -5,7 +5,7 @@ bin_PROGRAMS = gkc
 gkc_SOURCES = main.cpp GKC.cpp FileIO.cpp Fields/Fields.cpp Fields/FieldsFFT.cpp Setup.cpp Grid.cpp  \
               Parallel/Parallel.cpp Vlasov/Vlasov.cpp Analysis/Event.cpp Vlasov/Vlasov_Island.cpp\
               Vlasov/Vlasov_Cilk.cpp Vlasov/Vlasov_Aux.cpp Vlasov/Vlasov_Optim.cpp \
-				  Analysis/Analysis.cpp  Init.cpp Control.cpp Analysis/Moments.cpp \
+				  Analysis/Diagnostics.cpp  Init.cpp Control.cpp Analysis/Moments.cpp \
               Plasma.cpp Special/LA.cpp TimeIntegration/Timing.cpp Analysis/TestParticle.cpp TimeIntegration/TimeIntegration.cpp \
               FFTSolver/FFTSolver.cpp Visualization/Visualization_Data.cpp Analysis/Benchmark.cpp \
 				  Collisions/LenardBernstein.cpp Tools/TermColor.cpp
@@ -17,7 +17,7 @@ gkc_SOURCES = main.cpp GKC.cpp FileIO.cpp Fields/Fields.cpp Fields/FieldsFFT.cpp
 gkc_SOURCES += GKC.h FileIO.h Fields/Fields.h Fields/FieldsFFT.h Setup.h Grid.h  \
                Parallel/Parallel.h Vlasov/Vlasov.h Analysis/Event.h Vlasov/Vlasov_Island.h\
                Vlasov/Vlasov_Cilk.h Vlasov/Vlasov_Aux.h Vlasov/Vlasov_Optim.h \
-    		      Analysis/Analysis.h Analysis/Moments.h Init.h Control.h \
+    		      Analysis/Diagnostics.h Analysis/Moments.h Init.h Control.h \
                Plasma.h Special/LA.h TimeIntegration/Timing.h Analysis/TestParticle.h TimeIntegration/TimeIntegration.h \
                FFTSolver/FFTSolver.h \
 			      Visualization/Visualization.h Visualization/Visualization_Data.h \

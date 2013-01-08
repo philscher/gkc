@@ -17,7 +17,7 @@
 #include "Global.h"
 #include "Setup.h"
 #include "Parallel/Parallel.h"
-#include "Analysis/Analysis.h"
+#include "Analysis/Diagnostics.h"
 
 
 extern int control_triggered_signal;
@@ -77,8 +77,8 @@ class Control : public IfaceGKC {
     
   };
 
-  Parallel *parallel;
-  Analysis *analysis;
+  Parallel    *parallel;
+  Diagnostics *diagnostics;
 
 
   CntrlID  cntrl;
@@ -114,7 +114,7 @@ class Control : public IfaceGKC {
   *
   *
   **/
-  Control(Setup *setup, Parallel *_parallel, Analysis *_analysis);
+  Control(Setup *setup, Parallel *_parallel, Diagnostics *_diagnotiscs);
 
   /**
   *    @brief constructors

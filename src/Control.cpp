@@ -98,7 +98,8 @@ void signal_handler(int sig)
 ///////////// Control class member function definitions //////////////////
 
 
-Control::Control(Setup *setup, Parallel *_parallel, Analysis *_analysis) : parallel(_parallel), analysis(_analysis) 
+Control::Control(Setup *setup, Parallel *_parallel, Diagnostics *_diagnostics) 
+: parallel(_parallel), diagnostics(_diagnostics) 
 {
   
   gl_parallel = parallel;

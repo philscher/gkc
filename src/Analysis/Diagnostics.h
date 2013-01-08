@@ -1,9 +1,9 @@
 /*
  * =====================================================================================
  *
- *       Filename: Analysis.h
+ *       Filename: Diagnostics.h
  *
- *    Description: Analysis functions for gkc
+ *    Description: Diagnostic functions for gkc
  *
  *         Author: Paul P. Hilscher (2010-), 
  *
@@ -11,8 +11,8 @@
  * =====================================================================================
  */
 
-#ifndef ANALYSIS_H__
-#define ANALYSIS_H__
+#ifndef __GKC_DIAGNOSTICS_H__
+#define __GKC_DIAGNOSTICS_H__
 
 #include "Global.h"
 
@@ -27,13 +27,8 @@
 #include "Analysis/Moments.h"
 
 /**
-*    @brief Data analysis and output
+*    @brief Data diagnostics and output
 *
-*
-*    @note This kitchen is a fucking mess [(c) Ramsay] !!! Clean up & polish
-*
-*
-*    Parallelization, 
 *
 *    @todo Writting operations are done step-by-step, is HDF-5 buffering them and
 *          perform all at once, do we have to set some options, or does it not
@@ -42,7 +37,7 @@
 *    @todo Write MPI reduce operations
 *
 **/
-class Analysis : public IfaceGKC {
+class Diagnostics : public IfaceGKC {
 
   hid_t analysisGroup; ///< HDF-5 id for group label
 
@@ -120,9 +115,9 @@ class Analysis : public IfaceGKC {
 
  public:
 
-  Analysis(Parallel *_parallel, Vlasov *vlasov, Fields *_fields, Grid *_grid, Setup *_setup, FFTSolver *fft, FileIO *fileIO, Geometry *geometry);
+  Diagnostics(Parallel *_parallel, Vlasov *vlasov, Fields *_fields, Grid *_grid, Setup *_setup, FFTSolver *fft, FileIO *fileIO, Geometry *geometry);
 
- ~Analysis() ;
+ ~Diagnostics();
 
 
   /** \brief Calculate the Power Spectrum of the Phi/B potential 
@@ -250,4 +245,4 @@ class Analysis : public IfaceGKC {
 
 
 
-#endif // ANALYSIS_H__
+#endif // __GKC_DIAGNOSTICS_H__
