@@ -14,15 +14,16 @@
 #ifndef __SYSTEM_H
 #define __SYSTEM_H
 
-
-
 #include <time.h>
 #include <ctime>
 #include <sys/types.h>
+#include <sys/resource.h>
 #include <unistd.h>
-#include <iostream>
-#include <sstream>
 #include <execinfo.h> // stack trace
+
+#include <iostream>
+#include <fstream>
+
 /**
 *
 *  @brief Class which provided some system functions which may be
@@ -36,6 +37,47 @@ class System
 {
  
  public:
+
+  /**
+  *   @brief Increase stack size limit
+  *  
+  *   Calculation of the non-linear ExB term and especially the
+  *   diagonostic module uses large static arrays. 
+  *   In order to avoid stack overflow, we increase the stack size
+  *   limit. 
+  *
+  *   @note On most supercomputers using a queue system (e.g. helios),
+  *         the available stack size is not limited.
+  *
+  *   @todo This feature is currently only supported under linux.
+  *         Possible to define it in class System ?
+  *
+  **/
+  static void set_min_stacksize(int size_Mbytes)
+  {
+    
+    const rlim_t kStackSize = size_Mbytes * 1024 * 1024; 
+
+    struct rlimit rl;
+
+    int result = getrlimit(RLIMIT_STACK, &rl);
+    
+    if (result == 0)
+    {
+      if (rl.rlim_cur < kStackSize)
+      {
+        rl.rlim_cur = kStackSize;
+        result = setrlimit(RLIMIT_STACK, &rl);
+        if (result != 0) std::cerr << "setrlimit returned : " << result << std::endl;
+      }
+    }
+    
+    result = getrlimit(RLIMIT_STACK, &rl);
+    //std::cout << " Stack size is : " << rl.rlim_cur/(1024*1024) << " MBytes" << std::endl;
+
+    return;
+  };
+
    
   /**
   *    @brief returns the process id
