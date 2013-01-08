@@ -186,9 +186,7 @@ class Analysis : public IfaceGKC {
   **/
   void calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
                                      const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                     const CComplex Mom00[NsLD][NzLD][NkyLD][NxLD], 
-                                     const CComplex Mom20[NsLD][NzLD][NkyLD][NxLD], 
-                                     const CComplex Mom02[NsLD][NzLD][NkyLD][NxLD], 
+                                     const CComplex Mom[8][NsLD][NzLD][NkyLD][NxLD], 
                                      double ParticleFlux[Nq][NsLD][NkyLD][NxLD], 
                                      double HeatFlux[Nq][NsLD][NkyLD][NxLD],
                                      ScalarValues &scalarValues) ;
@@ -224,9 +222,7 @@ class Analysis : public IfaceGKC {
                            double ParticleFlux[Nq][NsLD][NkyLD][NxLD], 
                            double HeatFlux[Nq][NsLD][NkyLD][NxLD],
                            const CComplex Field0[Nq][NzLD][NkyLD][NxLD],
-                           const CComplex Mom00[NsLD][NzLD][NkyLD][NxLD], 
-                           const CComplex Mom20[NsLD][NzLD][NkyLD][NxLD], 
-                           const CComplex Mom02[NsLD][NzLD][NkyLD][NxLD] 
+                           const CComplex Mom[8][NsLD][NzLD][NkyLD][NxLD] 
                           );
 
   /**

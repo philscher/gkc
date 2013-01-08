@@ -100,9 +100,7 @@ void Analysis::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][Nky][FFTSolver::X_Nk
 
 void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB], 
                                      const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
-                                     const CComplex Mom00[NsLD][NzLD][Nky][NxLD], 
-                                     const CComplex Mom20[NsLD][NzLD][Nky][NxLD], 
-                                     const CComplex Mom02[NsLD][NzLD][Nky][NxLD], 
+                                     const CComplex Mom[8][NsLD][NzLD][Nky][NxLD], 
                                      double ParticleFlux[Nq][NsLD][Nky][NxLD], 
                                      double HeatFlux[Nq][NsLD][Nky][NxLD],
                                      ScalarValues &scalarValues) 
@@ -123,14 +121,14 @@ void Analysis::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky][Nx
       
     ////////////////////////////// Calculate Particle Number /////////////////////////////
     
-    number =  creal(__sec_reduce_add(Mom00[s-NsLlD][0:NzLD][0][0:NxLD]));
+    number =  creal(__sec_reduce_add(Mom[0][s-NsLlD][0:NzLD][0][0:NxLD]));
     
     //////////// Calculate Kinetic Energy  //////////////////////////
     
-    kineticEnergy = (__sec_reduce_add(creal(Mom20[s-NsLlD][0:NzLD][0][0:NxLD])) +
-                     __sec_reduce_add(creal(Mom02[s-NsLlD][0:NzLD][0][0:NxLD])) ) * grid->dXYZ;
+    kineticEnergy = (__sec_reduce_add(creal(Mom[1][s-NsLlD][0:NzLD][0][0:NxLD])) +
+                     __sec_reduce_add(creal(Mom[2][s-NsLlD][0:NzLD][0][0:NxLD])) ) * grid->dXYZ;
     
-    kineticEnergy = 0.5 * species[s].m * (__sec_reduce_add(creal(Mom20[s-NsLlD][0:NzLD][0][0:NxLD]))) * grid->dXYZ;
+    kineticEnergy = 0.5 * species[s].m * (__sec_reduce_add(creal(Mom[1][s-NsLlD][0:NzLD][0][0:NxLD]))) * grid->dXYZ;
 
     ////////////////////////////// Calculate Entropy /////////////////////////////////////
     
@@ -177,9 +175,7 @@ void Analysis::getParticleHeatFlux(
                                    double ParticleFlux[Nq][NsLD][Nky][NxLD], 
                                    double HeatFlux[Nq][NsLD][Nky][NxLD],
                                    const CComplex  Field0[Nq][NzLD][Nky][NxLD],
-                                   const CComplex Mom00[NsLD][NzLD][Nky][NxLD], 
-                                   const CComplex Mom20[NsLD][NzLD][Nky][NxLD], 
-                                   const CComplex Mom02[NsLD][NzLD][Nky][NxLD] 
+                                   const CComplex Mom[8][NsLD][NzLD][Nky][NxLD] 
                                   )
 {
   // Triad condition. Heat/Particles are only transported by the y_k = 0, as the other y_k > 0 
@@ -187,25 +183,27 @@ void Analysis::getParticleHeatFlux(
   // where the complex conjugate values is used as physcial value is a real quantity.
   
   // We average over z here
+
+  // Iterate over moments
+  for(int q = 0    ; q <  Nq   ; q++) {
   
-  // Get electro-static heat/particle flux
   for(int s = NsLlD; s <= NsLuD; s++) { 
   for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
   for(int x = NxLlD; x <= NxLuD; x++) { 
       
-    // Do I have to include geometry terms ?!
-    const CComplex iky_phi  = _imag * fft->ky(y_k) * Field0[Field::phi][z][y_k][x];
+    // Do I have to include geometry terms ?! parital_y (phi,A_par,B_par)
+    const CComplex iky_field  = _imag * fft->ky(y_k) * Field0[q][z][y_k][x];
 
     // take only real part as it gives the radial direction ?!
-    ParticleFlux[Field::phi][s-NsLlD][y_k][x-NxLlD] = - creal( iky_phi * conj(Mom00[s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
-        HeatFlux[Field::phi][s-NsLlD][y_k][x-NxLlD] = - creal( iky_phi * conj(Mom20[s-NsLlD][z-NzLlD][y_k][x-NxLlD]
-                                                                             +Mom02[s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
+    ParticleFlux[Field::phi][s-NsLlD][y_k][x-NxLlD] = - creal( iky_field * conj(Mom[3*q+0][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
+        HeatFlux[Field::phi][s-NsLlD][y_k][x-NxLlD] = - creal( iky_field * conj(Mom[3*q+1][s-NsLlD][z-NzLlD][y_k][x-NxLlD]
+                                                                             +Mom[3*q+2][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
 
     } // x 
   } } // y_k, z
   }   // s
 
-  // Get heat/particle flux from magnetic flutter
+  }   // q
 
   return;
 }
@@ -358,27 +356,25 @@ void Analysis::writeData(const Timing &timing, const double dt)
       timing.check(dataOutputStatistics, dt)) 
   {
 
-      CComplex  Mom_Tp[NsLD][NzLD][Nky][NxLD], 
-                Mom_To[NsLD][NzLD][Nky][NxLD], 
-                Mom_n [NsLD][NzLD][Nky][NxLD]; 
+      CComplex  Mom[8][NsLD][NzLD][Nky][NxLD];
         
       double     HeatFlux[Nq][NsLD][Nky][NxLD],  // Heat flux   
              ParticleFlux[Nq][NsLD][Nky][NxLD];  // Particle flux
 
 
       // Get Moments of Vlasov equation
-      moments->getMoments((A6zz) vlasov->f, (A4zz) fields->Field0, Mom_n, Mom_Tp, Mom_To);
+      moments->getMoments((A6zz) vlasov->f, (A4zz) fields->Field0, Mom);
         
       // only electro-static flux is calculated
-      getParticleHeatFlux(ParticleFlux, HeatFlux, (A4zz) fields->Field0, Mom_n, Mom_Tp, Mom_To);
+      getParticleHeatFlux(ParticleFlux, HeatFlux, (A4zz) fields->Field0, Mom);
 
       ////////////////// Output Moments /////////////////////
 
       if (timing.check(dataOutputMoments, dt)       )   {
 
-        FA_Mom_Density->write((CComplex *) Mom_n );
-        FA_Mom_Tp     ->write((CComplex *) Mom_Tp);
-        FA_Mom_To     ->write((CComplex *) Mom_To);
+        FA_Mom_Density->write((CComplex *) Mom[0][0][0][0]);
+        FA_Mom_Tp     ->write((CComplex *) Mom[1][0][0][0]);
+        FA_Mom_To     ->write((CComplex *) Mom[2][0][0][0]);
         FA_Mom_Time->write(&timing);
 
         parallel->print("Data I/O : Moments output");
@@ -387,21 +383,18 @@ void Analysis::writeData(const Timing &timing, const double dt)
       ////////////////// Store X-dependent data /////////////
       if (timing.check(dataOutputXDep, dt)       )   {
       
-        double   A1_Tp[NsLD][NxLD], A1_To[NsLD][NxLD], 
-                 A1_n [NsLD][NxLD],  A1_p[NsLD][NxLD];
+        double   A1[8][NsLD][NxLD]; 
 
         // Reduce over y_k and z
         for(int s = NsLlD; s <= NsLuD; s++) {  for(int x = NxLlD;  x <= NxLuD; x++) {
 
-         A1_n [s-NsLlD][x-NxLlD] = __sec_reduce_add(creal(Mom_n [s-NsLlD][:][0][x-NxLlD]));
-         A1_Tp[s-NsLlD][x-NxLlD] = __sec_reduce_add(creal(Mom_Tp[s-NsLlD][:][0][x-NxLlD]));
-         A1_To[s-NsLlD][x-NxLlD] = __sec_reduce_add(creal(Mom_To[s-NsLlD][:][0][x-NxLlD]));
+         A1[:][s-NsLlD][x-NxLlD] = __sec_reduce_add(creal(Mom[:][s-NsLlD][:][0][x-NxLlD]));
 
         } } 
    
-        FA_XDep_Tp  ->write((double *) A1_Tp); 
-        FA_XDep_To  ->write((double *) A1_To); 
-        FA_XDep_n   ->write((double *) A1_n ); 
+        FA_XDep_Tp  ->write((double *) &A1[0][0][0]); 
+        FA_XDep_To  ->write((double *) &A1[1][0][0]); 
+        FA_XDep_n   ->write((double *) &A1[2][0][0] ); 
         FA_XDep_Time->write(&timing);
 
         parallel->print("Data I/O : X-Dep output");
@@ -437,7 +430,7 @@ void Analysis::writeData(const Timing &timing, const double dt)
     
       //  Get scalar Values for every species ( this is bad calculate them alltogether)
       calculateScalarValues((A6zz) vlasov->f, (A6zz) vlasov->f0,
-                             Mom_n, Mom_Tp, Mom_To, ParticleFlux, HeatFlux,
+                             Mom, ParticleFlux, HeatFlux,
                              scalarValues); 
 
       SVTable->append(&scalarValues);
