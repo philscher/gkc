@@ -299,8 +299,8 @@ class Fields : public IfaceGKC {
   *    @params s   Species index
   *
   **/
-  virtual void doubleGyroExp(const CComplex In [NzLD][Nky][NxLD], 
-                                   CComplex Out[NzLD][Nky][NxLD], 
+  virtual void doubleGyroExp(const CComplex In [Nq][NzLD][Nky][NxLD], 
+                                   CComplex Out[Nq][NzLD][Nky][NxLD], 
                               const int m, const int s) = 0;
  
 

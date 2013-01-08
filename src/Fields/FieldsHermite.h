@@ -107,8 +107,8 @@ protected:
   *
   *
   **/
-  void doubleGyroExp(const CComplex In [NzLD][NkyLD][NxLD], 
-                           CComplex Out[NzLD][NkyLD][NxLD], const int m, const int s) {};
+  void doubleGyroExp(const CComplex In [Nq][NzLD][NkyLD][NxLD], 
+                           CComplex Out[Nq][NzLD][NkyLD][NxLD], const int m, const int s) {};
  
     
 private:

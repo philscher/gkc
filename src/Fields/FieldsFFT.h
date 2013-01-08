@@ -74,7 +74,7 @@
 */ 
 class FieldsFFT : public Fields {
 
-  protected:
+ protected:
    
   FFTSolver *fft;
 
@@ -216,7 +216,7 @@ class FieldsFFT : public Fields {
   /**
   *   Destructor
   */ 
-  ~FieldsFFT();
+ ~FieldsFFT();
   
 
   /** 
@@ -318,8 +318,8 @@ class FieldsFFT : public Fields {
   *  for, first and second equation, see Callen.
   *
   **/  
-  void doubleGyroExp(const CComplex In [NzLD][NkyLD][NxLD], 
-                           CComplex Out[NzLD][NkyLD][NxLD], const int m, const int s);
+  void doubleGyroExp(const CComplex In [Nq][NzLD][NkyLD][NxLD], 
+                           CComplex Out[Nq][NzLD][NkyLD][NxLD], const int m, const int s);
   
   /**
   *    @brief calculates the field energy

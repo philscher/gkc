@@ -194,11 +194,11 @@ void FieldsFFT::calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_NkxL
 
 }
 
-void FieldsFFT::doubleGyroExp(const CComplex In [NzLD][Nky][NxLD], 
-                                    CComplex Out[NzLD][Nky][NxLD], const int m, const int s)
+void FieldsFFT::doubleGyroExp(const CComplex In [Nq][NzLD][Nky][NxLD], 
+                                    CComplex Out[Nq][NzLD][Nky][NxLD], const int m, const int s)
 {
        
-  fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, (void *) &In[0][0][0]);
+  fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, (void *) &In[0][0][0][0]);
 
   [=](CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_NkxL],
       CComplex kXIn [Nq][NzLD][Nky][FFTSolver::X_NkxL])
@@ -225,7 +225,7 @@ void FieldsFFT::doubleGyroExp(const CComplex In [NzLD][Nky][NxLD],
 
   } ((A4zz) fft->kXOut, (A4zz) fft->kXIn);
        
-  fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, &Out[0][0][0]);
+  fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, &Out[0][0][0][0]);
 
   return;
 
@@ -409,7 +409,7 @@ double FieldsFFT::sum_qqnT_1mG0(const double k2_p)
   }
   return g0;
 
-};
+}
   
 double FieldsFFT::sum_sa2qG0(const double kp_2) 
 {
@@ -429,7 +429,7 @@ double FieldsFFT::sum_sa2qG0(const double kp_2)
   }
   return g0;
 
-};
+}
 
 
 double FieldsFFT::sum_qnB_Delta(const double k2_p) 
@@ -446,7 +446,7 @@ double FieldsFFT::sum_qnB_Delta(const double k2_p)
   }
   return g0/plasma->B0;
 
-};
+}
 
 double FieldsFFT::sum_2TnBB_Delta(const double k2_p) 
 {
@@ -462,6 +462,6 @@ double FieldsFFT::sum_2TnBB_Delta(const double k2_p)
   }
 
   return 2. * g0 /pow2(plasma->B0) ;
-};
+}
 
 

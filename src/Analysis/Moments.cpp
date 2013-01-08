@@ -98,11 +98,11 @@ void Moments::getMoments(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB  ]
     const double d_FC_20 = d_20 * species[s].n0/species[s].T0 * Y_20;
     const double d_FC_02 = d_02 * species[s].n0/species[s].T0 * Y_02;
 
-    CComplex AAphi_m_0[NzLD][Nky][NxLD],  phi0[NzLD][Nky][NxLD],
-             AAphi_m_1[NzLD][Nky][NxLD];
+    CComplex AAphi_m_0[Nq][NzLD][Nky][NxLD],  phi0[Nq][NzLD][Nky][NxLD],
+             AAphi_m_1[Nq][NzLD][Nky][NxLD];
 
 
-    phi0[:][:][:] = Field0[Field::phi][NzLlD:NzLD][:][NxLlD:NxLD];
+    phi0[0][:][:][:] = Field0[Field::phi][NzLlD:NzLD][:][NxLlD:NxLD];
 
     // calculate double gyro-average 
     fields->doubleGyroExp(phi0, AAphi_m_0, 0, s);
@@ -187,8 +187,8 @@ void Moments::calculateMoment_Ap(const CComplex     f    [NsLD][NmLD][NzLB][Nky]
     phi0[:][:][:] = Field0[Field::phi][NzLlD:NzLD][NkyLlD:Nky][NxLlD:NxLD];
 
     // calculate double gyro-average 
-    fields->doubleGyroExp(phi0, AAphi_m_0, 0, s);
-    fields->doubleGyroExp(phi0, AAphi_m_1, 1, s);
+ //   fields->doubleGyroExp(phi0, AAphi_m_0, 0, s);
+ //   fields->doubleGyroExp(phi0, AAphi_m_1, 1, s);
 
     // add field corrections from gyro-kinetic effects
     Mom10[s-NsLlD][:][:][:] -= species[s].q *       (phi0[:][:][:] - AAphi_m_0[:][:][:]);
@@ -268,8 +268,8 @@ void Moments::calculateMoment_Bp(const CComplex     f    [NsLD][NmLD][NzLB][Nky]
     phi0[:][:][:] = Field0[Field::phi][NzLlD:NzLD][:][NxLlD:NxLD];
 
     // calculate double gyro-average 
-    fields->doubleGyroExp(phi0, AAphi_m_0, 0, s);
-    fields->doubleGyroExp(phi0, AAphi_m_1, 1, s);
+//    fields->doubleGyroExp(phi0, AAphi_m_0, 0, s);
+//    fields->doubleGyroExp(phi0, AAphi_m_1, 1, s);
 
     // add field corrections from gyro-kinetic effects
     Mom02[s-NsLlD][:][:][:] -= species[s].q *       (phi0[:][:][:] - AAphi_m_0[:][:][:]);
