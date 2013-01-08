@@ -97,7 +97,7 @@ VlasovIsland::VlasovIsland(Grid *_grid, Parallel *_parallel, Setup *_setup, File
     [=](CComplex Ap_mod[NzLB][Nky][NxLB+4]) {
 
       for(int z = NzLlD  ; z <= NzLuD  ; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
-      for(int x = NxLlB+2; x <= NxLuB-2; x++) {
+      for(int x = NxLlB-2; x <= NxLuB+2; x++) {
 
        Ap_mod[z][y_k][x] = - ((y_k == i ) ? 1. : 0.) * MagIs[x];
 
@@ -890,7 +890,7 @@ void VlasovIsland::Vlasov_2D_Island_EM(
                            const double dt, const int rk_step, const double rk[3])
 { 
 
-  // Add modified Ap from the Island to the field equations (gyro-Averagin neglected)
+  // Add modified Ap from the Island to the field equations (gyro-averaging neglected)
    for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { 
   
    Fields[Field::Ap][s][m][NzLlB:NzLB][0:Nky][NxLlB-2:NxLB+4] = Ap_mod[NzLlB:NzLB][0:Nky][NxLlB-2:NxLB+4];
