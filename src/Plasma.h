@@ -52,7 +52,7 @@ struct Species
   double n0;         ///< Density normalization
   bool   doGyro;     ///< Set if gyro-averaging is performed
    
-  double v_th;    ///< Velocity scale / Thermal velocity
+  double v_th;       ///< Velocity scale / Thermal velocity
   double sigma;      ///< sigma 
   double alpha;      ///< alpha
    

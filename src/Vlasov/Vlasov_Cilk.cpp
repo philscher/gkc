@@ -97,7 +97,6 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
   doubleAA    xy_dXi_dx[NyLD+4][NxLB  ];
   doubleAA    xy_f1    [NyLD+4][NxLB  ];
   doubleAA    xy_ExB   [NyLD  ][NxLD  ];
-  
 
   #pragma omp for
   for(int v = NvLlD; v <= NvLuD; v++) { 

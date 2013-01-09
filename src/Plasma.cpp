@@ -33,11 +33,11 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
   cs      = setup->get("Plasma.cs"    , 1. );
  
   // Set reference lengths
-    n_ref   = setup->get("Plasma.ReferenceDensity    ", 1.);
-    c_ref   = setup->get("Plasma.ReferenceC          ", 1.);
-    T_ref   = setup->get("Plasma.ReferenceTemperature", 1.);
-    L_ref   = setup->get("Plasma.ReferenceLength     ", 1.);
-  rho_ref   = setup->get("Plasma.ReferenceLength     ", 1.);
+     n_ref   = setup->get("Plasma.ReferenceDensity    ", 1.);
+     c_ref   = setup->get("Plasma.ReferenceC          ", 1.);
+     T_ref   = setup->get("Plasma.ReferenceTemperature", 1.);
+     L_ref   = setup->get("Plasma.ReferenceLength     ", 1.);
+   rho_ref   = setup->get("Plasma.ReferenceLength     ", 1.);
      
   nfields  = ((beta > 0.e0)  ? 2 : 1);
   nfields  = (setup->get("Plasma.Bp", 0 ) == 1) ? 3 : nfields;

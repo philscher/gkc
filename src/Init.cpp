@@ -139,7 +139,8 @@ void Init::initBackground(Setup *setup, Grid *grid,
       
         // although only F0(x,k_y=0,...) is not equal zero, we perturb all modes, as F0 in Fourier space "acts" like a nonlinearity,
         // which couples modes together
-        const double pos[6] = { X[x], Z[z], V[v], M[m], species[s].n[x], species[s].T[x] };
+        //const double pos[6] = { X[x], Z[z], V[v], M[m], species[s].n[x], species[s].T[x] };
+        const double pos[6] = { X[x], Z[z], V[v], M[m], 1., 1. };
 
         f0[s][m][z][y_k][x][v]  =  f0_parser.Eval(pos); 
 
@@ -189,16 +190,19 @@ void Init::PerturbationPSFExp(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvL
 
   // Note : Ignore species dependence
   for(int s = NsLlD; s <= NsLuD; s++) { for(int m   = NmLlD; m   <= NmLuD ;   m++) { 
-  for(int z = NzLlD; z<=NzLuD; z++) {   for(int y_k = 1    ; y_k <= NkyLuD; y_k++) {
+  for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = 1    ; y_k <= NkyLuD; y_k++) {
    
   // Add shifted phase information for poloidal modes
 
   const double dky = 2.* M_PI / Ly;
-  const CComplex phase  = cexp((CComplex (1.j)) * ((double) y_k) / Nky * 2. * M_PI);
+  const CComplex phase  = cexp(_imag * ((double) y_k) / Nky * 2. * M_PI);
 
-  for(int x = NxLlD; x <= NxLuD; x++) {  simd_for(int v = NvLlD; v<=NvLuD; v++) {
+  for(int x = NxLlD; x <= NxLuD; x++) {  simd_for(int v = NvLlD; v <= NvLuD; v++) {
       
-    f[s][m][z][y_k][x][v] += f0[s][m][z][y_k][x][v] * (isGlobal + phase * Perturbation(x, z, epsilon_0, sigma) * exp(-y_k*abs(sigma)*dky));
+    f[s][m][z][y_k][x][v] += f0[s][m][z][y_k][x][v] * 
+                         (isGlobal + species[s].n[x] * phase * Perturbation(x, z, epsilon_0, sigma)
+                         * exp(-y_k*abs(sigma)*dky));
+    
 
   } } } } } }
 
@@ -227,7 +231,7 @@ void Init::PerturbationPSFMode(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][Nv
         // for(int n = 1; n <= Nz/2; n++) pert_z +=  cos(n*(2.*M_PI*Z[z]/Lz)+Phase(n,Nz));
         // vlasov->f(x, y, z, RvLD, RmLD, s)  = (pre + (pert_x*pert_y*pert_z)) * vlasov->f0(x,y,z,RvLD, RmLD, s) / (Nx * Ny * Nz);
       
-        f[s][m][z][y_k][x][v] = epsilon_0 * (pert_x*pert_z) * f0[s][m][z][y_k][x][v] * (1./ (Nx * Nky * Nz));
+        f[s][m][z][y_k][x][v] = epsilon_0 * (pert_x*pert_z) * f0[s][m][z][y_k][x][v] * (1./ (Nx * Nz));
 
     }}} }}}
 
