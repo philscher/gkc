@@ -106,6 +106,8 @@ void FieldsFFT::solvePoissonEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_
 
 
 
+
+// Note : additional field corrections are missing ! see Lapillione
 void FieldsFFT::solveAmpereEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_NkxL],
                                     CComplex kXIn [Nq][NzLD][Nky][FFTSolver::X_NkxL])
 
@@ -120,7 +122,7 @@ void FieldsFFT::solveAmpereEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_N
           
     const double k2_p = fft->k2_p(x_k,y_k,z);
            
-    const double lhs   =  - k2_p - Yeb * sum_sa2qG0(k2_p);
+    const double   lhs =  - k2_p - Yeb * sum_sa2qG0(k2_p);
     const CComplex rhs =  kXOut[Field::Ap][z][y_k][x_k]; 
      
     kXIn[Field::Ap][z][y_k][x_k] = rhs/(lhs * fft->Norm_X);
@@ -197,7 +199,8 @@ void FieldsFFT::calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_NkxL
 void FieldsFFT::doubleGyroExp(const CComplex In [Nq][NzLD][Nky][NxLD], 
                                     CComplex Out[Nq][NzLD][Nky][NxLD], const int m, const int s)
 {
-       
+  check( (m >= 0) && (m <= 2) ? 0 : -1, DMESG("Range exceeded"));     
+ 
   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, (void *) &In[0][0][0][0]);
 
   [=](CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_NkxL],
@@ -206,7 +209,10 @@ void FieldsFFT::doubleGyroExp(const CComplex In [Nq][NzLD][Nky][NxLD],
        
     const double qqnT   = species[s].n0 * pow2(species[s].q)/species[s].T0;
     const double rho_t2 = species[s].T0  * species[s].m / pow2(species[s].q * plasma->B0);
-   
+ 
+    // create jump table between 0 <= m <= 2 for averaging function
+    double (*avrg_func[])(double) = { SFL::i0e, SpecialMath::Delta_1, SpecialMath::Delta_2 };
+
     for(int q = 0; q < Nq; q++) {
       
     //#pragma omp for collapse(2)
@@ -216,8 +222,7 @@ void FieldsFFT::doubleGyroExp(const CComplex In [Nq][NzLD][Nky][NxLD],
     
       const double k2_p = fft->k2_p(x_k,y_k,z);
           
-      kXIn[q][z][y_k][x_k] = kXOut[q][z][y_k][x_k]/fft->Norm_X * ((m == 0) ? SFL::i0e(rho_t2 * k2_p) 
-                                                                           : SpecialMath::Delta_1(rho_t2 * k2_p));
+      kXIn[q][z][y_k][x_k] = kXOut[q][z][y_k][x_k]/fft->Norm_X * avrg_func[m](rho_t2 * k2_p);
 
     } } } // z, y_k, x
    
@@ -244,6 +249,9 @@ void FieldsFFT::gyroFull(const CComplex In   [Nq][NzLD][Nky][NxLD             ],
   // get therma gyro-radius^2 of species and lambda =  2 x b 
   const double rho_t2  = species[s].T0 * species[s].m / (pow2(species[s].q) * plasma->B0); 
   const double lambda2 = 2. * M[m] * rho_t2;
+    
+  // create jump table between 0 <= q <= 2 for averaging function
+  double (*avrg_func[])(double) = { j0, j0, SFL::i1 };
 
   // solve for all fields at once
   for(int q = 0; q < Nq; q++) {
@@ -255,9 +263,7 @@ void FieldsFFT::gyroFull(const CComplex In   [Nq][NzLD][Nky][NxLD             ],
     
     const double k2_p = fft->k2_p(x_k,y_k,z);
           
-    kXIn[q][z][y_k][x_k] = kXOut[q][z][y_k][x_k]/fft->Norm_X * ((q != 3) ? j0(sqrt(lambda2 * k2_p)) 
-                                                                         : SFL::i1(sqrt(lambda2 * k2_p)));
-                                                                         //?: SFL::j1(sqrt(lambda2 * k2_p)));
+    kXIn[q][z][y_k][x_k] = kXOut[q][z][y_k][x_k]/fft->Norm_X * avrg_func[q](sqrt(lambda2 * k2_p));
 
   } } }
 

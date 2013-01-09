@@ -64,7 +64,7 @@ class Diagnostics : public IfaceGKC {
     double kinetic_energy [SPECIES_MAX  ]; ///< Total kinetic energy (per species)
     double entropy        [SPECIES_MAX  ]; ///< Total entropy (per species)
     double heat_flux      [SPECIES_MAX*3]; ///< Total heat flux (per species) for \f$ (\phi,A_\par, B_\par) \f$
-    double particle_flux  [SPECIES_MAX*3]; ///< Total particle flux (per species)
+    double particle_flux  [SPECIES_MAX*3]; ///< Total particle flux (per species) for \f$ (\phi,A_\par, B_\par) \f$
 
   } ScalarValues;
    
@@ -226,7 +226,7 @@ class Diagnostics : public IfaceGKC {
   /**
   *   @brief get the total field energy in domain
   *
-  *   @note this is merely a wrapper to called Field::getFieldEnergy
+  *   @note this is merely a wrapper to call Field::getFieldEnergy
   *
   *   @param phiEnergy electric field energy \f$ \phi \f$
   *   @param  ApEnergy magnetic field energy \f$ A_\parallel \f$

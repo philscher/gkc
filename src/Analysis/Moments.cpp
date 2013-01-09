@@ -39,8 +39,8 @@ void Moments::getMoments(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB  ]
   getMoment(f, Field0, Mom, 3, 0, 4); 
   getMoment(f, Field0, Mom, 1, 2, 5); 
   
-  //getMoment(f, Field0, Mom, 2, 2, 6); 
-  //getMoment(f, Field0, Mom, 0, 4, 7); 
+  getMoment(f, Field0, Mom, 2, 2, 6); 
+  getMoment(f, Field0, Mom, 0, 4, 7); 
 
   return;
 }
@@ -93,10 +93,10 @@ void Moments::getMoment(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB  ][
   if(doFieldCorrections) {
  
     // pre-factors for field corrections (note : x-dependence of T neglected)
-    const double d_FC = d_pre * species[s].n0/species[s].T0;
+    const double d_FC = d_pre;// * species[s].n0/species[s].T0;
     
     double bT_q_B2vth = plasma->beta * species[s].T0/pow2(plasma->B0) 
-                        / (species[s].q * species[s].v_th);
+                        / (species[s].q  * species[s].v_th);
 
     CComplex AAphi[Nq][NzLD][Nky][NxLD],  phi0[Nq][NzLD][Nky][NxLD],
                                             j0[Nq][NzLD][Nky][NxLD];

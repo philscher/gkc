@@ -173,7 +173,7 @@ void Fields::calculateParallelCurrentDensity(const CComplex f0    [NsLD][NmLD][N
                                                    CComplex Field0        [Nq][NzLD][Nky][NxLD]      ,
                                              const int m, const int s                                  ) 
 {
-  const double qa_dvdm = species[s].q * species[s].alpha  * plasma->B0 * M_PI * dv * grid->dm[m] ;
+  const double qa_dvdm = species[s].q * species[s].n0  * species[s].alpha * species[s].v_th * M_PI * dv * grid->dm[m] ;
    
   #pragma omp for collapse(2) nowait
   for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 

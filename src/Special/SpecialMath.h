@@ -168,7 +168,7 @@ class SpecialMath
    *  @brief Definition of \f$ \Delta_1 \f$  
    *   \f[   
    *       \int_0^\infty J_0^2(lambda) \mu  e^{-mu} d\mu = 
-   *       \Delta(b) =  I_0(b) e^{-b} + b \left( I_1(b) - I_0(b) \right) e^{-b} 
+   *       \Delta_1(b) =  I_0(b) e^{-b} + b \left( I_1(b) - I_0(b) \right) e^{-b} 
    *    \f]
    *  @image html GK_Delta_1.png
    *
@@ -178,12 +178,20 @@ class SpecialMath
      return b * SFL::i1e(b) + (1.-b) * SFL::i0e(b);
 
    }
-
-
-
-
-
-
+   
+   /**
+   *  @brief Definition of \f$ \Delta_2 \f$  
+   *   \f[   
+   *       \int_0^\infty J_0^2(lambda) \mu^2 e^{-mu} d\mu = 
+   *       \Delta_2(b) =  2 (b-1) I_0(b) e^{-b} - (3 - 2b) * b * I_1(b) e^{-b} 
+   *    \f]
+   *  @image html GK_Delta_1.png
+   *
+   **/
+   static inline double Delta_2(const double b) 
+   {
+     return  2.*(b-1.) * SFL::i0e(b) - (3.-2.*b) * b * SFL::i1e(b);
+   };
 
 };
 
