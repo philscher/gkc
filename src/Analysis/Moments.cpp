@@ -99,16 +99,20 @@ void Moments::getMoment(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB  ][
                         / (species[s].q  * species[s].v_th);
 
     CComplex AAphi[Nq][NzLD][Nky][NxLD],  phi0[Nq][NzLD][Nky][NxLD],
-                                            j0[Nq][NzLD][Nky][NxLD];
+                                        j0_par[NzLD][Nky][NxLD];
 
-    phi0[0][:][:][:] =          Field0[Field::phi][NzLlD:NzLD][:][NxLlD:NxLD];
-      j0[0][:][:][:] = Nq > 2 ? Field0[Field::Ap ][NzLlD:NzLD][:][NxLlD:NxLD] : 0.;
+    phi0[0][:][:][:] = Field0[Field::phi][NzLlD:NzLD][:][NxLlD:NxLD];
+
+    // The equilibrium current forms the equilibrium magnetic field.
+    // As this current is stationary and handles the background magnetic field,
+    // we can set it to zero. D. Told (PhD thesis, p.31) has some discussions about it
+    j0_par[:][:][:] = 0.;
 
     // calculate double gyro-average 
     fields->doubleGyroExp(phi0, AAphi, b/2, s);
     
     // add field corrections from gyro-kinetic effects 
-    Mom[idx][s-NsLlD][:][:][:] -= d_FC * (Y(a) + Y(a+1) * bT_q_B2vth * j0[0][:][:][:]) *
+    Mom[idx][s-NsLlD][:][:][:] -= d_FC * (Y(a) + Y(a+1) * bT_q_B2vth * j0_par[:][:][:]) *
                           (species[s].q * (phi0[0][:][:][:] -  AAphi[0][:][:][:]));
 
   } // doFieldCorrections
