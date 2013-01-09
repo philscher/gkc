@@ -111,8 +111,9 @@ void Diagnostics::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky]
     double number = 0.e0;
     double kineticEnergy=0.e0;
     double entropy = 0.;
-    double particle = 0.; 
-    double heat = 0.;
+    double particle[Nq];
+    double heat[Nq];
+    // ? Why not working ?? double heat[Nq] = { 0.};
     
     if((s >= NsLlD && s <= NsLuD) && (parallel->Coord[DIR_VM] == 0))  {
     
@@ -142,25 +143,28 @@ void Diagnostics::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky]
     } // m 
     
     /////////////////////////// Calculate Total Heat & Particle Flux ////////////////////////
-       
-    particle = __sec_reduce_add(ParticleFlux[Field::phi][s-NsLlD][:][:]);
-    heat     = __sec_reduce_add(    HeatFlux[Field::phi][s-NsLlD][:][:]);
-    
+      
+    for(int q = 0; q < Nq; q++) {
+       particle[q] = __sec_reduce_add(ParticleFlux[q][s-NsLlD][:][:]);
+       heat    [q] = __sec_reduce_add(    HeatFlux[q][s-NsLlD][:][:]);
+    }
     
     } // if(local s) 
 
     // Communicate with other groups (make reduce whole structre)
-    heat          = parallel->reduce(heat         , Op::sum);
-    particle      = parallel->reduce(particle     , Op::sum);
+    parallel->reduce(particle     , Op::sum, DIR_ALL, Nq);
+    parallel->reduce(heat         , Op::sum, DIR_ALL, Nq);
     kineticEnergy = parallel->reduce(kineticEnergy, Op::sum);
     number        = parallel->reduce(number       , Op::sum);
+
+    //parallel->reduce(&Mom[idx][s-NsLlD][0][0][0], Op::sum, DIR_M, NzLD * Nky * NxLD); 
 
     {
        scalarValues.particle_number[s-1]  = number        ;
        scalarValues.entropy        [s-1]  = entropy        ;
        scalarValues.kinetic_energy [s-1]  = kineticEnergy;
-       scalarValues.particle_flux  [s-1]  = particle;
-       scalarValues.heat_flux      [s-1]  = heat ;
+       scalarValues.particle_flux  [Nq*(s-1):Nq]  = particle[0:Nq];
+       scalarValues.heat_flux      [Nq*(s-1):Nq]  = heat[0:Nq] ;
     }  
 
     } // s
@@ -171,7 +175,7 @@ void Diagnostics::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky]
 
 void Diagnostics::getParticleHeatFlux( 
                                    double ParticleFlux[Nq][NsLD][Nky][NxLD], 
-                                   double HeatFlux[Nq][NsLD][Nky][NxLD],
+                                   double     HeatFlux[Nq][NsLD][Nky][NxLD],
                                    const CComplex  Field0[Nq][NzLD][Nky][NxLD],
                                    const CComplex Mom[8][NsLD][NzLD][Nky][NxLD] 
                                   )
@@ -179,13 +183,17 @@ void Diagnostics::getParticleHeatFlux(
   // Triad condition. Heat/Particles are only transported by the y_k = 0, as the other y_k > 0 
   // modes cancels out. Thus multiplying y_k = 0 = A(y_k)*B(-y_k) = A(y_k)*[cc : B(y_k)]
   // where the complex conjugate values is used as physcial value is a real quantity.
-  
   // We average over z here
+  
+  for(int s = NsLlD; s <= NsLuD; s++) { 
+  
+  double norm[3] = { 1., -species[s].v_th, species[s].T0 / (species[s].q * plasma->B0) };
 
+  norm[:] *= species[s].n0; // / C
+  
   // Iterate over moments
   for(int q = 0    ; q <  Nq   ; q++) {
   
-  for(int s = NsLlD; s <= NsLuD; s++) { 
   for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
   for(int x = NxLlD; x <= NxLuD; x++) { 
       
@@ -193,15 +201,15 @@ void Diagnostics::getParticleHeatFlux(
     const CComplex iky_field  = _imag * fft->ky(y_k) * Field0[q][z][y_k][x];
 
     // take only real part as it gives the radial direction ?!
-    ParticleFlux[Field::phi][s-NsLlD][y_k][x-NxLlD] = - creal( iky_field * conj(Mom[3*q+0][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
-        HeatFlux[Field::phi][s-NsLlD][y_k][x-NxLlD] = - creal( iky_field * conj(Mom[3*q+1][s-NsLlD][z-NzLlD][y_k][x-NxLlD]
-                                                                             +Mom[3*q+2][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
+    ParticleFlux[q][s-NsLlD][y_k][x-NxLlD] = - norm[q] * creal( iky_field * conj(Mom[3*q+0][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
+        HeatFlux[q][s-NsLlD][y_k][x-NxLlD] = - norm[q] * creal( iky_field * conj(Mom[3*q+1][s-NsLlD][z-NzLlD][y_k][x-NxLlD]
+                                                                                +Mom[3*q+2][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
 
     } // x 
   } } // y_k, z
-  }   // s
-
   }   // q
+
+  }   // s
 
   return;
 }
@@ -321,10 +329,10 @@ void Diagnostics::initData(Setup *setup, FileIO *fileIO)
   size_t SV_sizes[] = { sizeof(scalarValues.timestep), sizeof(scalarValues.time    ), sizeof(scalarValues.phiEnergy), 
                         sizeof(scalarValues.ApEnergy), sizeof(scalarValues.BpEnergy), Ns * sizeof(scalarValues.particle_number[0]), 
                         Ns * sizeof(scalarValues.kinetic_energy[0]), Ns * sizeof(scalarValues.entropy[0]), 
-                        Ns * sizeof(scalarValues.heat_flux[0]), Ns * sizeof(scalarValues.particle_flux[0])};
+                        Ns * Nq * sizeof(scalarValues.heat_flux[0]), Ns * Nq * sizeof(scalarValues.particle_flux[0])};
 
   hid_t SV_types[] = { H5T_NATIVE_INT, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, 
-                       fileIO->species_tid, fileIO->species_tid, fileIO->species_tid, fileIO->species_tid, fileIO->species_tid } ;
+                       fileIO->species_tid, fileIO->species_tid, fileIO->species_tid, fileIO->specfield_tid, fileIO->specfield_tid } ;
   
   const char *SV_names[] = { "Timestep", "Time", "phiEnergy", "ApEnergy", "BpEnergy", "ParticleNumber", "KineticEnergy", "Entropy", "HeatFlux", "ParticleFlux" };
 

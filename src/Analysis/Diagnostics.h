@@ -49,19 +49,22 @@ class Diagnostics : public IfaceGKC {
   *    Structure represents scalar values of quantities calculated over
   *    the whole simulation domain.
   *
+  *    Note that the particle & heat flux are stores per species and per
+  *    field. 
+  *
   **/ 
   typedef struct ScalarValues_t
   { 
-    int    timestep;                        ///< Current time step 
-    double time;                            ///< Current time
-    double phiEnergy;                       ///< Electric field energy
-    double ApEnergy;                        ///< Magnetic field energy (from \f$ A_\parallel \f$)
-    double BpEnergy;                        ///< Magnetic field energy (from \f$ B_\parallel \f$)
-    double particle_number[SPECIES_MAX];    ///< Total particle number (per species)
-    double kinetic_energy [SPECIES_MAX];    ///< Total kinetic energy (per species)
-    double entropy        [SPECIES_MAX];    ///< Total entropy (per species)
-    double heat_flux      [SPECIES_MAX];    ///< Total heat flux (per species)
-    double particle_flux  [SPECIES_MAX];    ///< Total particle flux (per species)
+    int    timestep;                       ///< Current time step 
+    double time;                           ///< Current time
+    double phiEnergy;                      ///< Electric field energy
+    double ApEnergy;                       ///< Magnetic field energy (from \f$ A_\parallel \f$)
+    double BpEnergy;                       ///< Magnetic field energy (from \f$ B_\parallel \f$)
+    double particle_number[SPECIES_MAX  ]; ///< Total particle number (per species)
+    double kinetic_energy [SPECIES_MAX  ]; ///< Total kinetic energy (per species)
+    double entropy        [SPECIES_MAX  ]; ///< Total entropy (per species)
+    double heat_flux      [SPECIES_MAX*3]; ///< Total heat flux (per species) for \f$ (\phi,A_\par, B_\par) \f$
+    double particle_flux  [SPECIES_MAX*3]; ///< Total particle flux (per species)
 
   } ScalarValues;
    

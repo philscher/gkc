@@ -74,15 +74,15 @@ class FileIO : public IfaceGKC
   **/
   void flush(Timing timing, double dt);
    
-  hid_t species_tid; ///< species HDF-5 type id (where is it used ?)
-   
-  hid_t s256_tid;   ///< string datatype
+  hid_t   complex_tid, ///< Complex Data type
+           timing_tid, ///< Type id for Timing 
+          species_tid, ///< species HDF-5 type id (where is it used ?)
+        specfield_tid, ///< [ Species, 3 ] type for heat/particle flux
+             s256_tid, ///< string datatype
+         vector3D_tid; ///< Vector (x,y,z) type
    
   hid_t file; ///< main data file id 
    
-  hid_t timing_tid  ,  ///< Type id for Timing 
-        complex_tid ,  ///< Complex Data type
-        vector3D_tid;  ///< Vector (x,y,z) type
 
   hid_t getFileID() const { return file; };
 
