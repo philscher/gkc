@@ -76,14 +76,15 @@ class Diagnostics : public IfaceGKC {
 
   ///@{
   ///@inb group HDF-5 Attributes 
-  FileAttr *FA_Mom_Density ,  ///< Density  
-           *FA_Mom_Tp      ,  ///< Temperature (parallel) 
-           *FA_Mom_To      ,  ///< Temperature (orthogonal)
+  FileAttr *FA_Mom_00      ,  ///< Density  
+           *FA_Mom_20      ,  ///< Temperature (parallel) 
+           *FA_Mom_02      ,  ///< Temperature (orthogonal)
            *FA_Mom_HeatFlux,  ///< Heat flux
+           *FA_Mom_PartFlux,  ///< Partcle flux
            *FA_Mom_Time    ;  ///< Time 
 
-  FileAttr  *FA_heatKy,     ///< Heat Flux as  Q(s,x,ky)
-            *FA_particleKy; ///< Particle Flux as X(s,x,ky)
+  FileAttr  *FA_HeatFluxKy, ///< Heat Flux as  Q(s,x,ky)
+            *FA_PartFluxKy; ///< Particle Flux as X(s,x,ky)
 
   FileAttr  *FA_grow_x,     ///< Mode-Power (kx)
             *FA_grow_y,     ///< Mode-Power (ky) 
@@ -94,9 +95,7 @@ class Diagnostics : public IfaceGKC {
             *FA_freq_t;     ///< Time
 
      
-  FileAttr *FA_XDep_Tp,     ///< X-Dependence (Temperature parallel)
-           *FA_XDep_To,     ///< X-Dependence (Temperature orthogonal)
-           *FA_XDep_n,      ///< X-Dependence (Density)
+  FileAttr *FA_XDep_Mom ,   ///< X-Dependence (Temperature parallel)
            *FA_XDep_Time;   ///< X-Depdndence (Time)
 
   TableAttr *SVTable;       ///< Table for scalar Values
