@@ -118,7 +118,7 @@ void VlasovIsland::solve(std::string equation_type, Fields *fields, CComplex *f_
     
       Vlasov_2D_Island((A6zz) f_in, (A6zz) f_out, (A6zz) f0, (A6zz) f, 
                        (A6zz) ft  , (A6zz) Coll, (A6zz) fields->Field, (A3zz) nonLinearTerm,
-                       MagIs, dMagIs_dx, X, V, M, dt, rk_step, rk);
+                       MagIs, dMagIs_dx, X, V, M, (A3zz) Ap_mod, (A4zz) fields->Field0, dt, rk_step, rk);
   
   else if(equation_type == "2D_Island_EM") 
     
@@ -162,11 +162,16 @@ void VlasovIsland::Vlasov_2D_Island(
                            CComplex nonLinearTerm                  [Nky][NxLD  ][NvLD],
                            const double MagIs[NxGB], const double dMagIs_dx[NxGB], 
                            const double X[NxGB+4], const double V[NvGB], const double M[NmGB],
+                           const CComplex Ap_mod                    [NzLB][Nky][NxLB+4]      ,
+                           CComplex Field0[Nq][NzLD][Nky][NxLD]   ,
                            const double dt, const int rk_step, const double rk[3])
 { 
 
-  
-    for(int s = NsLlD; s <= NsLuD; s++) {
+  if((Nq > 1)) {
+   Field0[Field::Ap][NzLlD:NzLD][:][NxLlD:NxLD] = 0. ;//Ap_mod[NzLlD:NzLD][:][NxLlD:NxLD];
+  }
+
+  for(int s = NsLlD; s <= NsLuD; s++) {
         
       // small abbrevations
       const double w_n   = species[s].w_n;
@@ -380,7 +385,6 @@ void VlasovIsland::Vlasov_2D_Island_Equi(
                            const double dt, const int rk_step, const double rk[3])
 { 
 
-//        for(int x=NxLlD; x<= NxLuD;x++) std::cout << "------1----> " << dMagIs_dx[x] << std::endl; 
 
 
     for(int s = NsLlD; s <= NsLuD; s++) {
@@ -957,8 +961,6 @@ void VlasovIsland::Vlasov_2D_Island_EM(
     +  nonLinearTerm[y_k][x][v]                                             // Non-linear ( array is zero for linear simulations) 
     -  ky* (w_n + w_T * ((V[v]*V[v]+ M[m])/Temp  - sub)) * f0_ * phi_    // Driving term (Temperature/Density gradient)
     -  alpha  * V[v]* kp  * ( g + sigma * phi_ * f0_)                        // Linear Landau damping
-    //-  ky* (w_n + w_T * (((V[v]*V[v])+ M[m])/Temp  - sub)) * F0 * Xi_     // Driving term (Temperature/Density gradient)
-    //-  alpha  * V[v]* kp  * G_                                              // Linear Landau damping
     +  Coll[s][m][z][y_k][x][v]  ;                                          // Collisional operator
          
         

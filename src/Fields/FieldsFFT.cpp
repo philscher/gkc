@@ -210,7 +210,7 @@ void FieldsFFT::doubleGyroExp(const CComplex In [Nq][NzLD][Nky][NxLD],
     const double qqnT   = species[s].n0 * pow2(species[s].q)/species[s].T0;
     const double rho_t2 = species[s].T0  * species[s].m / pow2(species[s].q * plasma->B0);
  
-    // create jump table between 0 <= m <= 2 for averaging function
+    // create jump table for averaging function
     double (*avrg_func[])(double) = { SFL::i0e, SpecialMath::Delta_1, SpecialMath::Delta_2 };
 
     for(int q = 0; q < Nq; q++) {

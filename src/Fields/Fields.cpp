@@ -123,7 +123,7 @@ void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
         #pragma omp for collapse(2)
         for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {
 
-          Field[0:Nq][s][m][z][y_k][NxLlD:NxLD] = Qm[0:Nq][z][y_k][NxLlD:NxLD];
+          Field[:][s][m][z][y_k][NxLlD:NxLD] = Qm[:][z][y_k][NxLlD:NxLD];
 
         } }
 
@@ -173,10 +173,10 @@ void Fields::calculateParallelCurrentDensity(const CComplex f0    [NsLD][NmLD][N
                                                    CComplex Field0        [Nq][NzLD][Nky][NxLD]      ,
                                              const int m, const int s                                  ) 
 {
-  const double qa_dvdm = species[s].q * species[s].n0  * species[s].alpha * species[s].v_th * M_PI * dv * grid->dm[m] ;
+  const double qa_dvdm = species[s].q * species[s].n0  * species[s].alpha * M_PI * dv * grid->dm[m] ;
    
   #pragma omp for collapse(2) nowait
-  for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
+  for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
   for(int x = NxLlD; x <= NxLuD; x++) {
 
     Field0[Field::Ap][z][y_k][x] = -__sec_reduce_add(V[NvLlD:NvLD] * f[s][m][z][y_k][x][NvLlD:NvLD]) * qa_dvdm;
@@ -212,7 +212,6 @@ void Fields::calculatePerpendicularCurrentDensity(const CComplex f0     [NsLD][N
 void Fields::updateBoundary()
 {
  
-  // call as lambda function due to CEAN
   [=](
          CComplex Field [Nq][NsLD][NmLD][NzLB][Nky][NxLB+4], 
          CComplex SendXl[Nq][NsLD][NmLD][NzLD][Nky][GC4   ], CComplex SendXu[Nq][NsLD][NmLD][NzLD][Nky][GC4 ],
@@ -222,7 +221,7 @@ void Fields::updateBoundary()
   {
    
     // X-Boundary (we have extended BC  - 4 ghost cells)
-    SendXl[:][:][:][:][:][:] = Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD  :4];
+    SendXl[:][:][:][:][:][:] = Field[:][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD  :4];
     SendXu[:][:][:][:][:][:] = Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLuD-3:4];
 
     // Boundaries not required in Y (as we use Fourier modes)
