@@ -55,6 +55,10 @@ void Moments::getMoment(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB  ][
   // temporary arrays for integration over \mu
   // Need Nq in order to let gyroaveraging work for Nq > 1
   CComplex Mom_m[Nq][NzLD][Nky][NxLD];
+  
+  // We have set to zero, because gyro-averaging operator courrently requires size [Nq][...].
+  // and surplus arrys may contain NaN
+  Mom_m[1:Nq-1][:][:][:] = 0.;
 
   for(int s = NsLlD; s <= NsLuD; s++) {
     
@@ -68,7 +72,7 @@ void Moments::getMoment(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB  ][
   const double d_DK = d_pre * M_PI * dv * grid->dm[m] * pow(plasma->B0, b/2);
   
   // calculate drift-kinetic moments (in gyro-coordinates) 
-  for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
+  for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
   for(int x = NxLlD; x <= NxLuD; x++) { 
      
     Mom_m[0][z-NzLlD][y_k][x-NxLlD] = __sec_reduce_add(pow(M[m], b/2) * pow(V[NvLlD:NvLD],a) 
@@ -99,13 +103,13 @@ void Moments::getMoment(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB  ][
                         / (species[s].q  * species[s].v_th);
 
     CComplex AAphi[Nq][NzLD][Nky][NxLD],  phi0[Nq][NzLD][Nky][NxLD],
-                                        j0_par[NzLD][Nky][NxLD];
+             j0_par[NzLD][Nky][NxLD];
 
     phi0[0][:][:][:] = Field0[Field::phi][NzLlD:NzLD][:][NxLlD:NxLD];
 
     // The equilibrium current forms the equilibrium magnetic field.
     // As this current is stationary and handles the background magnetic field,
-    // we can set it to zero. D. Told (PhD thesis, p.31) has some discussions about it
+    // we can set it to zero. D. Told (PhD thesis, p.31) has some discussions about it.
     j0_par[:][:][:] = 0.;
 
     // calculate double gyro-average 

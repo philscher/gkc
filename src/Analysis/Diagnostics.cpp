@@ -191,13 +191,13 @@ void Diagnostics::getParticleHeatFlux(
 
   norm[:] *= species[s].n0; // / C
   
-  // Iterate over moments
+  // Heat/Particle fluxes are calculates for each fields quantity
   for(int q = 0    ; q <  Nq   ; q++) {
   
   for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
   for(int x = NxLlD; x <= NxLuD; x++) { 
       
-    // Do I have to include geometry terms ?! parital_y (phi,A_par,B_par)
+    // Do I have to include geometry terms ?! partial_y (phi,A_par,B_par)
     const CComplex iky_field  = _imag * fft->ky(y_k) * Field0[q][z][y_k][x];
 
     // take only real part as it gives the radial direction ?!
@@ -205,7 +205,7 @@ void Diagnostics::getParticleHeatFlux(
         HeatFlux[q][s-NsLlD][y_k][x-NxLlD] = - norm[q] * creal( iky_field * conj(Mom[3*q+1][s-NsLlD][z-NzLlD][y_k][x-NxLlD]
                                                                                 +Mom[3*q+2][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
 
-    } // x 
+  }   // x 
   } } // y_k, z
   }   // q
 
@@ -235,13 +235,14 @@ void Diagnostics::initData(Setup *setup, FileIO *fileIO)
      
   bool momWrite = (parallel->Coord[DIR_VM] == 0);
      
-  FA_Mom_00        = new FileAttr("Mom00"   , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
-  FA_Mom_20        = new FileAttr("Mom20"   , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
-  FA_Mom_02        = new FileAttr("Mom02"   , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
+  FA_Mom_00       = new FileAttr("Mom00"   , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
+  FA_Mom_20       = new FileAttr("Mom20"   , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
+  FA_Mom_02       = new FileAttr("Mom02"   , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
 
   FA_Mom_HeatFlux = new FileAttr("HeatFlux", momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
   FA_Mom_PartFlux = new FileAttr("Density" , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
-  FA_Mom_Time  = fileIO->newTiming(momGroup);
+
+  FA_Mom_Time     = fileIO->newTiming(momGroup);
         
   H5Gclose(momGroup);
       
@@ -393,7 +394,7 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
 
       // Reduce moments over y_k and z
       for(int n = 0    ; n <      8; n++) {
-      for(int s = NsLlD; s <= NsLuD; s++) {  for(int x = NxLlD;  x <= NxLuD; x++) {
+      for(int s = NsLlD; s <= NsLuD; s++) {  for(int x = NxLlD; x <= NxLuD; x++) {
 
         Mom_XDep[n][s-NsLlD][x-NxLlD] = __sec_reduce_add(creal(Mom[n][s-NsLlD][:][0][x-NxLlD]));
 
@@ -405,7 +406,7 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
       parallel->print("Data I/O : X-Dep output");
 
       FA_PartFluxKy->write((double *) ParticleFlux);
-      FA_HeatFluxKy    ->write((double *)     HeatFlux);
+      FA_HeatFluxKy->write((double *)     HeatFlux);
     }  
 
       ////////////// Scalar Variables /////////////////
