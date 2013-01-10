@@ -97,11 +97,11 @@ void Diagnostics::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][Nky][FFTSolver::X
 
 
 void Diagnostics::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB], 
-                                     const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
-                                     const CComplex Mom[8][NsLD][NzLD][Nky][NxLD], 
-                                     double ParticleFlux[Nq][NsLD][Nky][NxLD], 
-                                     double HeatFlux[Nq][NsLD][Nky][NxLD],
-                                     ScalarValues &scalarValues) 
+                                        const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
+                                        const CComplex Mom[8][NsLD][NzLD][Nky][NxLD], 
+                                        double ParticleFlux[Nq][NsLD][Nky][NxLD], 
+                                        double     HeatFlux[Nq][NsLD][Nky][NxLD],
+                                        ScalarValues &scalarValues) 
 
 {
   
@@ -111,8 +111,8 @@ void Diagnostics::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky]
     double number = 0.e0;
     double kineticEnergy=0.e0;
     double entropy = 0.;
-    double particle[Nq];
-    double heat[Nq];
+    double particle[Nq]; particle[:] = 0.;
+    double heat[Nq];         heat[:] = 0.;
     // ? Why not working ?? double heat[Nq] = { 0.};
     
     if((s >= NsLlD && s <= NsLuD) && (parallel->Coord[DIR_VM] == 0))  {
@@ -203,7 +203,7 @@ void Diagnostics::getParticleHeatFlux(
     // take only real part as it gives the radial direction ?!
     ParticleFlux[q][s-NsLlD][y_k][x-NxLlD] = - norm[q] * creal( iky_field * conj(Mom[3*q+0][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
         HeatFlux[q][s-NsLlD][y_k][x-NxLlD] = - norm[q] * creal( iky_field * conj(Mom[3*q+1][s-NsLlD][z-NzLlD][y_k][x-NxLlD]
-                                                                                +Mom[3*q+2][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
+                                                                               + Mom[3*q+2][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
 
   }   // x 
   } } // y_k, z
@@ -257,12 +257,11 @@ void Diagnostics::initData(Setup *setup, FileIO *fileIO)
   hsize_t XDep_dmdim[] =  { 8, Ns     , Nx      , H5S_UNLIMITED};
   hsize_t XDep_cBdim[] =  { 8, NsLD   , NxLD    , 1            };
   hsize_t XDep_cDdim[] =  { 8, NsLD   , NxLD    , 1            };
-  hsize_t XDep_cmoff[] =  { 0, 0      , 0       , 0            };
   hsize_t XDep_cdoff[] =  { 0, NsLlB-1, NxLlD-3 , 0            };
      
   bool XDepWrite = ( (parallel->Coord[DIR_VM] == 0) && (parallel->Coord[DIR_Z] == 0));
      
-  FA_XDep_Mom  = new FileAttr("Mom", XDepGroup, fileIO->file, 4, XDep_dsdim, XDep_dmdim, XDep_cDdim, XDep_cmoff, XDep_cBdim, XDep_cdoff, XDepWrite);
+  FA_XDep_Mom  = new FileAttr("Mom", XDepGroup, fileIO->file, 4, XDep_dsdim, XDep_dmdim, XDep_cDdim, offset0, XDep_cBdim, XDep_cdoff, XDepWrite);
   FA_XDep_Time = fileIO->newTiming(XDepGroup);
         
   H5Gclose(XDepGroup);
@@ -278,12 +277,12 @@ void Diagnostics::initData(Setup *setup, FileIO *fileIO)
   hsize_t FSky_dmdim[] = { Nq, Ns     , Nky   , Nx     , H5S_UNLIMITED};
   hsize_t FSky_cDdim[] = { Nq, NsLD   , Nky   , NxLD   , 1            };
   hsize_t FSky_cBdim[] = { Nq, NsLD   , Nky   , NxLD   , 1            };
-  hsize_t FSky_cdoff[] = { 0,  NsLlB-1, NkyLlD, NxLlD-3, 0            };
+  hsize_t FSky_cdoff[] = { 0 , NsLlB-1, 0     , NxLlD-3, 0            };
 
   bool isXYZ = parallel->Coord[DIR_XYZ] == 0;
 
-  FA_HeatFluxKy      = new FileAttr("Heat"    , fluxGroup, fileIO->file, 5, FSky_dsdim, FSky_dmdim, FSky_cDdim, offset0,  FSky_cBdim, FSky_cdoff, isXYZ);
-  FA_PartFluxKy  = new FileAttr("Particle", fluxGroup, fileIO->file, 5, FSky_dsdim, FSky_dmdim, FSky_cDdim, offset0,  FSky_cBdim, FSky_cdoff, isXYZ);
+  FA_HeatFluxKy = new FileAttr("Heat"    , fluxGroup, fileIO->file, 5, FSky_dsdim, FSky_dmdim, FSky_cDdim, offset0,  FSky_cBdim, FSky_cdoff, isXYZ);
+  FA_PartFluxKy = new FileAttr("Particle", fluxGroup, fileIO->file, 5, FSky_dsdim, FSky_dmdim, FSky_cDdim, offset0,  FSky_cBdim, FSky_cdoff, isXYZ);
     
   H5Gclose(fluxGroup);
      
@@ -358,21 +357,19 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
 
 {
 
-
   if (timing.check(dataOutputMoments   , dt) || timing.check(dataOutputXDep, dt) ||
       timing.check(dataOutputStatistics, dt)) 
   {
 
     CComplex  Mom[8][NsLD][NzLD][Nky][NxLD];
         
-    double     HeatFlux[Nq][NsLD][Nky][NxLD],  // Heat flux   
+    double     HeatFlux[Nq][NsLD][Nky][NxLD],  // Heat     flux   
            ParticleFlux[Nq][NsLD][Nky][NxLD];  // Particle flux
 
 
     // Get Moments of Vlasov equation
     moments->getMoments((A6zz) vlasov->f, (A4zz) fields->Field0, Mom);
         
-    // only electro-static flux is calculated
     getParticleHeatFlux(ParticleFlux, HeatFlux, (A4zz) fields->Field0, Mom);
 
     ////////////////// Output Moments /////////////////////
@@ -389,8 +386,11 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
 
     ////////////////// Store X-dependent data /////////////
     if (timing.check(dataOutputXDep, dt)       )   {
+
+      FA_PartFluxKy->write((double *) ParticleFlux);
+      FA_HeatFluxKy->write((double *)     HeatFlux);
       
-      double   Mom_XDep[8][NsLD][NxLD]; 
+      double Mom_XDep[8][NsLD][NxLD]; 
 
       // Reduce moments over y_k and z
       for(int n = 0    ; n <      8; n++) {
@@ -405,8 +405,6 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
 
       parallel->print("Data I/O : X-Dep output");
 
-      FA_PartFluxKy->write((double *) ParticleFlux);
-      FA_HeatFluxKy->write((double *)     HeatFlux);
     }  
 
       ////////////// Scalar Variables /////////////////
@@ -469,7 +467,6 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
     if(vlasov->doNonLinearParallel) messageStream << "         | Total Energy Ratio : " <<  std::noshowpos << std::fixed << 100*abs((kinetic_energy+field_energy)/(field_energy == 0. ? 1.e-99 : field_energy)) << "%";
     if(Ns > 1                     ) messageStream << "    Total Charge = " << ((species[0].n0 != 0.) ? 0. : charge);
     messageStream << std::endl; 
-    messageStream << std::setprecision(5) << field_energy/(kinetic_energy == 0. ? 1.e-99 : kinetic_energy) << " " << kinetic_energy/(field_energy == 0. ? 1.e-99 : field_energy) << std::endl;
 
     parallel->print(messageStream.str());
     
