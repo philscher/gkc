@@ -157,8 +157,7 @@ void Fields::calculateChargeDensity(const CComplex f0      [NsLD][NmLD][NzLB][Nk
   for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
   for(int x = NxLlD; x <= NxLuD; x++) {
 
-    Field0[Field::phi][z][y_k][x] = ( __sec_reduce_add(f [s][m][z][y_k][x][NvLlD:NvLD]) 
-                  - (plasma->global ? __sec_reduce_add(f0[s][m][z][y_k][x][NvLlD:NvLD]) : 0)) * pqnB_dvdm;
+    Field0[Field::phi][z][y_k][x] = __sec_reduce_add(f [s][m][z][y_k][x][NvLlD:NvLD]) * pqnB_dvdm;
      
   } } } // z, y_k, x
    

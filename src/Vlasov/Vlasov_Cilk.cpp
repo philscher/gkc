@@ -248,8 +248,8 @@ void VlasovCilk::Vlasov_EM(
   for(int s = NsLlD; s <= NsLuD; s++) {
         
     // small abbrevations
-    const double w_n   = species[s].w_n;
-    const double w_T   = species[s].w_T;
+    const double *w_n   = species[s].w_n;
+    const double *w_T   = species[s].w_T;
     const double alpha = species[s].alpha;
     const double sigma = species[s].sigma;
     const double Temp  = species[s].T0;
@@ -313,7 +313,7 @@ void VlasovCilk::Vlasov_EM(
     const CComplex dg_dt = 
             
     - NonLinearTerm[y_k][x][v]                                                              // Non-linear ( array is zero for linear simulations) 
-    + Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - 3./2.)) * f0_ * Xi_ * ky          // Source Term
+    + Bpre * (w_n[x] + w_T[x] * ((pow2(V[v])+ M[m] * B0)/Temp - 3./2.)) * f0_ * Xi_ * ky          // Source Term
     - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0) *                                   
       (Kx[z][x] * dG_dx - Ky[z][x] * ky * G_)                                               // Magnetic curvature term
     + alpha * pow2(V[v]) * plasma->beta * plasma->w_p * G_ * ky                             // Plasma pressure gradient

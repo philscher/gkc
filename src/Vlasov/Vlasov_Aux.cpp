@@ -75,11 +75,10 @@ void VlasovAux::Vlasov_ES(
   for(int s = NsLlD; s <= NsLuD; s++) {
         
       // some abbrevations
-      const double w_n   = species[s].w_n;
-      const double w_T   = species[s].w_T;
+      const double *w_n  = species[s].w_n;
+      const double *w_T  = species[s].w_T;
       const double alpha = species[s].alpha;
       const double sigma = species[s].sigma;
-      const double kw_T  = 1./species[s].T0;
     
       const double sub = (species[s].doGyro) ? 3./2. : 1./2.;
         
@@ -105,6 +104,8 @@ void VlasovAux::Vlasov_ES(
          const CComplex ky = _imag  * fft->ky(y_k);
              
          for(int x=NxLlD; x<= NxLuD; x++) { 
+      
+           const double kw_T  = 1./species[s].T[x];
          
            const CComplex phi_   = Fields[Field::phi][s][m][z][y_k][x];
        
@@ -113,7 +114,7 @@ void VlasovAux::Vlasov_ES(
              const CComplex ddphi_dx_dx = (16. *(Fields[Field::phi][s][m][z][y_k][x+1] + Fields[Field::phi][s][m][z][y_k][x-1]) -
                                                 (Fields[Field::phi][s][m][z][y_k][x+2] + Fields[Field::phi][s][m][z][y_k][x-2]) 
                                          - 30.*phi_) * _kw_12_dx_dx;
-             half_eta_kperp2_phi     = rho_t2 * 0.5 * w_T  * ( (ky*ky) * phi_ + ddphi_dx_dx ) ; 
+             half_eta_kperp2_phi     = rho_t2 * 0.5 * w_T[x]  * ( (ky*ky) * phi_ + ddphi_dx_dx ) ; 
            }
              
            // Sign has no influence on result ...
@@ -137,7 +138,7 @@ void VlasovAux::Vlasov_ES(
             const CComplex dg_dt =
 
              -  nonLinearTerm[y_k][x][v]                                                   // Non-linear ( array is zero for linear simulations) 
-             +  ky* (-(w_n + w_T * (((V[v]*V[v])+ (doGyro ? M[m] : 0.))*kw_T  - sub)) * f0_ * phi_    // Driving term (Temperature/Density gradient)
+             +  ky* (-(w_n[x] + w_T[x] * (((V[v]*V[v])+ (doGyro ? M[m] : 0.))*kw_T  - sub)) * f0_ * phi_    // Driving term (Temperature/Density gradient)
              -  half_eta_kperp2_phi * f0_)                                            // Contributions from gyro-1 (0 if not neq Gyro-1)
              -  alpha  * V[v]* kp  * ( g + sigma * phi_ * f0_)                        // Linear Landau damping
              +  Coll[s][m][z][y_k][x][v]  ;                                           // Collisional operator
@@ -173,11 +174,10 @@ void VlasovAux::Vlasov_EM(
    for(int s = NsLlD; s <= NsLuD; s++) {
         
       // abbrevations
-      const double w_n   = species[s].w_n;
-      const double w_T   = species[s].w_T;
+      const double *w_n   = species[s].w_n;
+      const double *w_T   = species[s].w_T;
       const double alpha = species[s].alpha;
       const double sigma = species[s].sigma;
-      const double Temp  = species[s].T0;
     
       const double sub   = (species[s].doGyro) ? 3./2. : 1./2.;
       
@@ -193,6 +193,8 @@ void VlasovAux::Vlasov_EM(
           if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(G, Xi, nullptr, nullptr, z, m, s, nonLinearTerm, Xi_max, true); 
       
     for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { 
+      
+      const double _kw_T  = 1./species[s].T[x];
 
       const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];
                
@@ -215,24 +217,13 @@ void VlasovAux::Vlasov_EM(
       const CComplex G_   =  G[z][y_k][x][v];
       const CComplex Xi_  = Xi[z][y_k][x][v];
 
-      // calculate first order Average
-      CComplex half_eta_kperp2_Xi = 0;
-      if(isGyro1) { // first order approximation for gyro-kinetics
-
-         const CComplex ddXi_dx_dx = (16. *(Xi[z][y_k][x+1][v] + Xi[z][y_k][x-1][v])
-                                         - (Xi[z][y_k][x+2][v] + Xi[z][y_k][x-2][v]) - 30.*Xi_) * _kw_12_dx_dx;
-         half_eta_kperp2_Xi     = 0.5 * w_T  * ( (ky*ky) * Xi_ + ddXi_dx_dx ) ; 
-      }
-             
-    
     /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
    
             
     const CComplex dg_dt = 
     
     +  nonLinearTerm[y_k][x][v]                                             // Non-linear ( array is zero for linear simulations) 
-    +  ky* (-(w_n + w_T * (((V[v]*V[v])+ M[m])/Temp  - sub)) * F0 * Xi_     // Driving term (Temperature/Density gradient)
-    -  half_eta_kperp2_Xi * F0)                                             // Contributions from gyro-1 (0 if not neq Gyro-1)
+    -  ky* (w_n[x] + w_T[x] * (((V[v]*V[v])+ M[m]) * _kw_T  - sub)) * F0 * Xi_     // Driving term (Temperature/Density gradient)
     -  alpha  * V[v]* kp  * G_                                              // Linear Landau damping
     +  Coll[s][m][z][y_k][x][v]  ;                                          // Collisional operator
          

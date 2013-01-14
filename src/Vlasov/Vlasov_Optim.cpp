@@ -76,8 +76,8 @@ void VlasovOptim::solve(std::string equation_type, Fields *fields, CComplex *_fs
    for(int s = NsLlD; s <= NsLuD; s++) {
         
       // small abbrevations
-      const double w_n   = species[s].w_n;
-      const double w_T   = species[s].w_T;
+      const double *w_n  = species[s].w_n;
+      const double *w_T  = species[s].w_T;
       const double alpha = species[s].alpha;
       const double sigma = species[s].sigma;
       const double kw_T  = 1./species[s].T0;
@@ -133,7 +133,7 @@ void VlasovOptim::solve(std::string equation_type, Fields *fields, CComplex *_fs
        //
        // Note, we split here real and imaginary part to enhance vectorization
        const double dg_dt_re = 
-            ky_im* (-(w_n + w_T * (((V[vv]*V[vv])+ M[m])/kw_T  - 3./2.)) * f0 [s][m][z][y_k][xx][vv].re * phi_im )
+            ky_im* (-(w_n[x] + w_T[x] * (((V[vv]*V[vv])+ M[m])/kw_T  - 3./2.)) * f0 [s][m][z][y_k][xx][vv].re * phi_im )
              - alpha  * V[vv]* kp  * ( fs[s][m][z][y_k][xx][vv].im + sigma * phi_im * f0 [s][m][z][y_k][xx][vv].re)
              + Coll[s][m][z][y_k][xx][vv].re;
         
@@ -149,7 +149,7 @@ void VlasovOptim::solve(std::string equation_type, Fields *fields, CComplex *_fs
                                   * _kw_12_dv;
        
         const  double dg_dt_im = 
-            ky_im* (-(w_n + w_T * (((V[vv]*V[vv])+ M[m])/kw_T  - 3./2.)) * f0 [s][m][z][y_k][xx][vv].re * phi_re )
+            ky_im* (-(w_n[x] + w_T[x] * (((V[vv]*V[vv])+ M[m])/kw_T  - 3./2.)) * f0 [s][m][z][y_k][xx][vv].re * phi_re )
              - alpha  * V[vv]* kp  * ( fs[s][m][z][y_k][xx][vv].re + sigma * phi_re * f0 [s][m][z][y_k][xx][vv].re)
              + Coll[s][m][z][y_k][xx][vv].im;
         

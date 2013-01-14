@@ -35,30 +35,40 @@
 struct Species 
 {
 
-  Species() : q(0.), m(0.), w_n(0.), w_T(0.), doGyro(true), T0(0.), n0(0.) 
+  Species() : q(0.), m(0.), doGyro(true), T0(0.), n0(0.) 
   { 
     alpha     = 0.;
     sigma     = 0.;
     gyroModel = "";
       
-    ArrayProfiles = nct::allocate(nct::Range(NxLlB, NxLB))(&T, &n, &w_gT, &w_gn);
+//    ArrayProfiles = nct::allocate(nct::Range(NxGlB-2, NxGB+4))(&T, &n, &w_T, &w_n, &src, &krook);
   };
    
   double q;          ///< Charge 
   double m;          ///< Mass 
-  double w_n;        ///< Density gradient
-  double w_T;        ///< Temperature gradient
   double T0;         ///< Temperature normalization
   double n0;         ///< Density normalization
+
   bool   doGyro;     ///< Set if gyro-averaging is performed
    
   double v_th;       ///< Velocity scale / Thermal velocity
   double sigma;      ///< sigma 
   double alpha;      ///< alpha
-   
+
   char name[64];     ///< name of species
   char n_name[64];   ///< Density function string    , e.g  n(x) = "1"
   char T_name[64];   ///< Temperature function string, e.g. T(x) = "1/x"
+  
+  double T[1024]    , ///< Temperature profile
+         n[1024]    , ///< Density profile
+         w_T[1024]  , ///< Temperature scale length
+         w_n[1024]  , ///< Density scale length
+         src[1024]  , ///< (Energy source term)
+         krook[1024]; ///< Krook operator used for damping
+  
+  //std::string spec_name, ///< name of species
+  //            func_dens, ///< Density function string    , e.g  n(x) = "1"
+  //            func_Temp; ///< Temperature function string, e.g. T(x) = "1/x"
   
   /////////// Below non-POD types (and not saved [yet] in HDF-5 file) ////////////
   std::string gyroModel;
@@ -77,10 +87,6 @@ struct Species
   /// Calculate debye legnth
   double debye2(const int x) const { return T[x]/(4.*M_PI*n[x]*q*q); };
    
-  double *T  , ///< Temperature profile
-         *n  , ///< Density profile
-         *w_gT, ///< Temperature scale length
-         *w_gn; ///< Density scale length
 };
 
 /**
@@ -100,6 +106,8 @@ class Plasma : public IfaceGKC {
        rho_ref, ///< Gyro-radius reference length
          c_ref, ///< Sound speed reference
          T_ref; ///< Reference temperature
+         
+  double rho_star; ///< Sound speed reference
    
   double cs;  ///<  speed of sound of ions \f$ c_s = \sqrt{\frac{T_{e0}}{m_i}} \f$ 
 

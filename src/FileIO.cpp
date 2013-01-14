@@ -57,15 +57,20 @@ FileIO::FileIO(Parallel *_parallel, Setup *setup)  :  parallel(_parallel)
   H5Tinsert(vector3D_tid, "y", HOFFSET(Vector3D, y), H5T_NATIVE_DOUBLE);
   H5Tinsert(vector3D_tid, "z", HOFFSET(Vector3D, z), H5T_NATIVE_DOUBLE);
 
-  hsize_t species_dim[1]   = { setup->get("Grid.Ns", 1) }; 
+  hsize_t species_dim[1] = { setup->get("Grid.Ns", 1) }; 
   species_tid = H5Tarray_create(H5T_NATIVE_DOUBLE, 1, species_dim);
+  
+  hsize_t x_dim[1]       = { setup->get("Grid.Nx", 1) }; 
+  x_tid = H5Tarray_create(H5T_NATIVE_DOUBLE, 1, x_dim);
   
   hsize_t specfield_dim[2] = { setup->get("Grid.Ns", 1), setup->get("Plasma.Beta", 0.) == 0. ? 1 : 2 }; 
   specfield_tid = H5Tarray_create(H5T_NATIVE_DOUBLE, 2, specfield_dim);
     
   // used for species name
   // BUG : Somehow HDF-8 stores only up to 8 chars of 64 possible. The rest is truncated ! Why ?
-  s256_tid = H5Tcopy(H5T_C_S1); H5Tset_size(s256_tid, 64); H5Tset_strpad(s256_tid, H5T_STR_NULLTERM);
+  // not supported by HDF-5 parallel yet ....
+  // str_tid = H5Tcopy(H5T_C_S1); H5Tset_size(str_tid, H5T_VARIABLE); H5Tset_strpad(str_tid, H5T_STR_NULLTERM);
+  str_tid = H5Tcopy(H5T_C_S1); H5Tset_size(str_tid, 64); H5Tset_strpad(str_tid, H5T_STR_NULLTERM);
 
   // Create/Load HDF5 file
   if(resumeFile == false || (inputFileName != outputFileName)) create(setup, allowOverwrite);
@@ -165,7 +170,7 @@ FileIO::~FileIO()
    check( H5Tclose(complex_tid), DMESG("H5Tclose"));
    check( H5Tclose(timing_tid ), DMESG("H5Tclose"));
    check( H5Tclose(species_tid), DMESG("H5Tclose"));
-   check( H5Tclose(s256_tid   ), DMESG("H5Tclose"));
+   check( H5Tclose(str_tid   ), DMESG("H5Tclose"));
 
    // close file
    check( H5Fclose(file)    , DMESG("Unable to close file ..."));
