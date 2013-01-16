@@ -58,11 +58,10 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
     VecGetArrayRead(Vec_x, (const PetscScalar **) &x_F1);
     VecGetArray    (Vec_y, (      PetscScalar **) &y_F1);
 
-    // copy whole phase space function (waste but starting point) (important due to bounday conditions
-    // we can built wrapper around this and directly pass it
+    // copy f1 to vector (important due to bounday conditions, thus cannot pass directly)
     int n = 0;
     for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { for(int z = NzLlD; z <= NzLuD; z++) {
-    for(int y_k = (GL_includeZF ? 0 : 1); y_k <= NkyLuD-1; y_k++) {   // iterate from y_k=0 only Zonal Flow is included
+    for(int y_k = (GL_includeZF ? 0 : 1); y_k < Nky-1; y_k++) {
     for(int x = NxLlD; x <= NxLuD; x++) { for(int v = NvLlD; v <= NvLuD; v++) { 
       
       fs[s][m][z][y_k][x][v] = x_F1[n++];
@@ -80,7 +79,7 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
     //#pragma omp parallel for, collapse private(n) 
     n = 0;
     for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { for(int z = NzLlD; z <= NzLuD; z++) {
-    for(int y_k = (GL_includeZF ? 0 : 1); y_k <= NkyLuD-1; y_k++) {   // iterate from y_k=0 only if Zonal Flow is included
+    for(int y_k = (GL_includeZF ? 0 : 1); y_k < Nky-1; y_k++) {   // iterate from y_k=0 only if Zonal Flow is included
     for(int x = NxLlD; x <= NxLuD; x++) { for(int v = NvLlD; v <= NvLuD; v++) { 
 
       y_F1[n++] = fss[s][m][z][y_k][x][v];
