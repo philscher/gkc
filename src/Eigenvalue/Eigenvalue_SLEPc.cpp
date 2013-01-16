@@ -37,8 +37,8 @@ PetscErrorCode petsc_error_handler(MPI_Comm comm, int line, const char *fun, con
   System::printStackTrace();
 
   // PETSc errors are fatal
-  //exit(0);
   abort();
+  exit(0);
 };
 
 Eigenvalue_SLEPc::Eigenvalue_SLEPc(FileIO *fileIO, Setup *setup, Grid *grid, Parallel *_parallel) : Eigenvalue(fileIO, setup,grid,  _parallel)
@@ -51,12 +51,11 @@ Eigenvalue_SLEPc::Eigenvalue_SLEPc(FileIO *fileIO, Setup *setup, Grid *grid, Par
   PetscPushErrorHandler(petsc_error_handler, NULL);
 
   // create Matrix Operations
-  int subDiv=0;
+  int subDiv = 0;
 
-  // Note : We do not include Nyquist frequency , Zonal Flow (ZF) per switch
-  int local_size  = NxLD * (includeZF ? NkyLD-1 : NkyLD-2) * NzLD * NvLD * NmLD * NsLD;
-  int global_size = Nx   * (includeZF ? NkyLD-1 : NkyLD-2) * Nz   * Nv   * Nm   * Ns  ;
-
+  // Note : We do not include Nyquist frequency ( and optionally Zonal Flow (ZF) per switch)
+  int local_size  = NxLD * (includeZF ? Nky-1 : Nky-2) * NzLD * NvLD * NmLD * NsLD;
+  int global_size = Nx   * (includeZF ? Nky-1 : Nky-2) * Nz   * Nv   * Nm   * Ns  ;
 
   MatCreateShell(parallel->Comm[DIR_ALL], local_size, local_size, global_size, global_size, &subDiv, &A_F1);
   MatSetFromOptions(A_F1);
@@ -120,19 +119,20 @@ Complex Eigenvalue_SLEPc::getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields)
 void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visual, Control *control) 
 {
 
-
   //EPSSetWhichEigenpairs(EigvSolver, EPS_LARGEST_REAL);
     
   int n_eigv = Nx * (includeZF ? Nky-1 : Nky-2) * Nz * Nv * Nm * Ns;
-  EPSSetDimensions(EigvSolver, n_eigv, PETSC_DECIDE, PETSC_DECIDE); 
-  // init intial solution vector 
+  EPSSetDimensions(EigvSolver, n_eigv, PETSC_DECIDE, PETSC_DECIDE);
+  //EPSSetWhichEigenpairs(EigvSolver, EPS_ALL);
+
+  ////////////  Set intial solution vector  ////////////////////
   if(1 == 0) {
     
     Vec Vec_init;
     CComplex *init_x = PETScMatrixVector::getCreateVector(grid, Vec_init, includeZF ? 1 : 2);
     
     // Copy initial vector to PETSc vector
-    [=](const CComplex f[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB]) {
+    [=](const CComplex f[NsLD][NmLD][NzLB][Nky][NxLB][NvLB]) {
 
       // copy whole phase space function (waste but starting point) (important due to bounday conditions
       // we can built wrapper around this and directly pass it
@@ -170,8 +170,6 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
 
   EigenValue eigvTable;
 
-  //EPSPrintSolution(EigvSolver, PETSC_NULL);
-
   Vec Vec_F1, Vec_F1_dummy;   
 
   std::cout << "Number of Converged Eigenvalues : " << nconv << std::endl;
@@ -195,7 +193,7 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
     EVTable->append(&eigvTable);
           
     // Skip eigenvalue results if growthrates are smaller than minimum value
-    if(real(eigv) > 1.e-5) { // only write eigenvalues with larger growthrates otherwise ignore
+    if(real(eigv) > growth_min) { // only write eigenvalues with larger growthrates otherwise ignore
     
       // Get EigenVector (Phase Space function) and calculate corresponding potentials
       std::cout << "Saving eigenvector : " << eigv << std::endl;
@@ -204,7 +202,7 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
    
       
       // Copy back PETSc solution vector to array
-      [=](CComplex fs[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB]) {
+      [=](CComplex fs[NsLD][NmLD][NzLB][Nky][NxLB][NvLB]) {
 
       
         // copy whole phase space functio (important due to bounday conditions)

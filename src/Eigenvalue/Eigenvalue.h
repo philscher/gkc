@@ -42,6 +42,8 @@ class Eigenvalue : public IfaceGKC {
 
   Parallel *parallel;
   Grid     *grid;
+    
+  double growth_min;  ///< Minimum growthrate to save eigenstructure
 
   /**
   *  @brief structure to store the eigenvalue
@@ -64,7 +66,8 @@ class Eigenvalue : public IfaceGKC {
   **/
   Eigenvalue(FileIO *fileIO, Setup *setup, Grid *_grid, Parallel *_parallel) : parallel(_parallel), grid(_grid) 
   {
-    includeZF = setup->get("Eigenvalue.IncludeZF", 0);
+    includeZF  = setup->get("Eigenvalue.IncludeZF"    , 0);
+    growth_min = setup->get("Eigenvalue.MinGrowthrate", 0.);
   };
 
   /**
