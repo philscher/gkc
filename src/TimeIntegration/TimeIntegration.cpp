@@ -87,26 +87,26 @@ void TimeIntegration::solveTimeStepRK4(Timing timing, const double dt)
   const double rk_1[] = { 0., 1., 0.};
   fields->solve(vlasov->f0,vlasov->f, timing);
   vlasov->solve(fields, vlasov->f  , vlasov->fs ,  0.5*dt , 1, rk_1 );
-  particles->integrate(vlasov, fields, 1);
+  particles->integrate(vlasov, fields, 4);
         
   
   // Runge-Kutta step 2
   const double rk_2[] = { 1., 2., 0.};
   fields->solve(vlasov->f0,vlasov->fs, timing);
   vlasov->solve(fields, vlasov->fs , vlasov->fss,  0.5*dt, 2, rk_2);
-  particles->integrate(vlasov, fields, 2);
+  particles->integrate(vlasov, fields, 3);
 
   // Runge-Kutta step 3
   const double rk_3[] = { 1., 2., 0.};
   fields->solve(vlasov->f0,vlasov->fss, timing);
   vlasov->solve(fields, vlasov->fss, vlasov->fs,  dt      , 3, rk_3);
-  particles->integrate(vlasov, fields, 3);
+  particles->integrate(vlasov, fields, 2);
 
   // Runge-Kutta step 4
   const double rk_4[] = { 1., 0., 1.};
   fields->solve(vlasov->f0,vlasov->fs, timing);
   vlasov ->solve(fields, vlasov->fs , vlasov->f ,  dt/6., 4, rk_4);
-  particles->integrate(vlasov, fields, 4);
+  particles->integrate(vlasov, fields, 1);
 
   return;
 };
@@ -118,7 +118,7 @@ void TimeIntegration::solveTimeStepRK3(Timing timing, const double dt)
   // Runge-Kutta step 1
   const double rk_1[] = { 0., 1., 0.};
   fields->solve(vlasov->f0,vlasov->f, timing);
-  vlasov->solve(fields, vlasov->f  , vlasov->fs,  1./3. * dt , 1, rk_1);
+  vlasov->solve(fields, vlasov->f  , vlasov->fs,  1./3. * dt , 3, rk_1);
 
   // Runge-Kutta step 2
   const double rk_2[] = { 1./3., 0., 0.};
@@ -128,7 +128,7 @@ void TimeIntegration::solveTimeStepRK3(Timing timing, const double dt)
   // Runge-Kutta step 3
   const double rk_3[] = { 1., 0., 1.};
   fields->solve(vlasov->f0,vlasov->fss, timing);
-  vlasov->solve(fields, vlasov->fss, vlasov->f, 3./4. * dt , 3, rk_3);
+  vlasov->solve(fields, vlasov->fss, vlasov->f, 3./4. * dt , 1, rk_3);
         
   return;
 };
@@ -195,7 +195,7 @@ void TimeIntegration::writeTimeStep(Timing timing, Timing maxTiming, double dt)
                 << "  Time : " << timing.time  << "/" << maxTiming.time 
                 << std::setprecision(3) <<   " Δt : " << dt << std::flush; 
  
-    std::cout << "  Run. Time : " << Timing::TimeStringFromSeconds(std::time(0) - start_time);
+    std::cout << "  Wall Time : " << Timing::TimeStringFromSeconds(std::time(0) - start_time);
     std::cout << Timing::getRemainingTimeString(timing, maxTiming, start_time);
     std::cout << TermColor::cdefault;
 

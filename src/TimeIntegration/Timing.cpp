@@ -98,8 +98,8 @@ std::string Timing::getRemainingTimeString(Timing timing, Timing maxTiming, time
    
    }
 
-   if(remainingSeconds > 0) remainTimeString = "  Time left : ~ " + TimeStringFromSeconds(remainingSeconds);
-   else                     remainTimeString = "-d:-h:-m:-s";  
+   if(remainingSeconds > 0) remainTimeString = " ETA : ~ " + TimeStringFromSeconds(remainingSeconds);
+   else                     remainTimeString = " ETA :   -d:-h:-m:-s";  
 
    return remainTimeString;
 
