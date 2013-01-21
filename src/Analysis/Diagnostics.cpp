@@ -239,8 +239,8 @@ void Diagnostics::initData(Setup *setup, FileIO *fileIO)
   FA_Mom_20       = new FileAttr("Mom20"   , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
   FA_Mom_02       = new FileAttr("Mom02"   , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
 
-  FA_Mom_HeatFlux = new FileAttr("HeatFlux", momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
-  FA_Mom_PartFlux = new FileAttr("Density" , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
+  FA_Mom_HeatFlux = new FileAttr("HeatFlux", momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite);
+  FA_Mom_PartFlux = new FileAttr("Density" , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite);
 
   FA_Mom_Time     = fileIO->newTiming(momGroup);
         
@@ -364,21 +364,26 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
     CComplex  Mom[8][NsLD][NzLD][Nky][NxLD];
         
     double     HeatFlux[Nq][NsLD][Nky][NxLD],  // Heat     flux   
-           ParticleFlux[Nq][NsLD][Nky][NxLD];  // Particle flux
+               PartFlux[Nq][NsLD][Nky][NxLD];  // Particle flux
 
 
     // Get Moments of Vlasov equation
     moments->getMoments((A6zz) vlasov->f, (A4zz) fields->Field0, Mom);
         
-    getParticleHeatFlux(ParticleFlux, HeatFlux, (A4zz) fields->Field0, Mom);
+    getParticleHeatFlux(PartFlux, HeatFlux, (A4zz) fields->Field0, Mom);
 
     ////////////////// Output Moments /////////////////////
 
     if (timing.check(dataOutputMoments, dt)       )   {
+      
+      FA_Mom_HeatFlux->write((double *) &HeatFlux[0][0][0][0]);
+      FA_Mom_PartFlux->write((double *) &PartFlux[0][0][0][0]);
 
       FA_Mom_00->write((CComplex *) &Mom[0][0][0][0][0]);
       FA_Mom_20->write((CComplex *) &Mom[1][0][0][0][0]);
       FA_Mom_02->write((CComplex *) &Mom[2][0][0][0][0]);
+      
+      
       FA_Mom_Time->write(&timing);
 
       parallel->print("Data I/O : Moments output");
@@ -387,8 +392,8 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
     ////////////////// Store X-dependent data /////////////
     if (timing.check(dataOutputXDep, dt)       )   {
 
-      FA_PartFluxKy->write((double *) ParticleFlux);
-      FA_HeatFluxKy->write((double *)     HeatFlux);
+      FA_PartFluxKy->write((double *) PartFlux);
+      FA_HeatFluxKy->write((double *) HeatFlux);
       
       double Mom_XDep[8][NsLD][NxLD]; 
 
@@ -432,8 +437,7 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
     
     //  Get scalar Values for every species ( this is bad calculate them alltogether)
     calculateScalarValues((A6zz) vlasov->f, (A6zz) vlasov->f0,
-                           Mom, ParticleFlux, HeatFlux,
-                           scalarValues); 
+                           Mom, PartFlux, HeatFlux, scalarValues); 
 
     SVTable->append(&scalarValues);
     
