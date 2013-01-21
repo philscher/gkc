@@ -70,6 +70,21 @@ class VlasovIsland : public VlasovAux {
                            const CComplex Ap_mod                    [NzLB][Nky][NxLB+4]      ,
                            CComplex Field0[Nq][NzLD][Nky][NxLD]   ,
                            const double dt, const int rk_step, const double rk[3]);
+   
+   void  Vlasov_2D_Island_orig(
+                           CComplex fs       [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           CComplex fss      [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex f0 [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex f1 [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           CComplex ft       [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex Coll      [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex Fields[Nq][NsLD][NmLD][NzLB][Nky][NxLB+4]      ,
+                           CComplex nonLinear                  [Nky][NxLD  ][NvLD],
+                           const double MagIs[NxGB], const double dMagIs[NxGB], 
+                           const double X[NxGB+4], const double V[NvGB], const double M[NmGB],
+                           const CComplex Ap_mod                    [NzLB][Nky][NxLB+4]      ,
+                           CComplex Field0[Nq][NzLD][Nky][NxLD]   ,
+                           const double dt, const int rk_step, const double rk[3]);
 
    void  Vlasov_2D_Island_EM(
                            CComplex fs       [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
@@ -97,19 +112,6 @@ class VlasovIsland : public VlasovAux {
                            const int m, const int s);
 
    
-   
-   void  Vlasov_2D_Island_Rotation(
-                           CComplex fs       [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
-                           CComplex fss      [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
-                           const CComplex f0 [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
-                           const CComplex f1 [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
-                           CComplex ft       [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
-                           const CComplex Coll      [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
-                           const CComplex Fields[Nq][NsLD][NmLD][NzLB][Nky][NxLB+4]      ,
-                           CComplex nonLinear                  [Nky][NxLD  ][NvLD],
-                           const double MagIs[NxGB], const double dMagIs[NxGB], 
-                           const double X[NxGB+4], const double V[NvGB], const double M[NmGB],
-                           const double dt, const int rk_step, const double rk[3]);
    
    void  Vlasov_2D_Island_Equi(
                            CComplex fs       [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],

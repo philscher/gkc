@@ -11,8 +11,8 @@
  * =====================================================================================
  */
 
-#ifndef __VLASOV_H
-#define __VLASOV_H
+#ifndef __GKC_VLASOV_H__
+#define __GKC_VLASOV_H__
 
 #include "Global.h"
 #include "Parallel/Parallel.h"
@@ -101,14 +101,15 @@ class Vlasov : public IfaceGKC {
   *   Stabilize simulation by adding a small amount of hyper-viscosity.
   *   Especially needed in x-direction to avoid odd-even decoupling.
   *     
-  *   Is this similar effect as mentioned in 
+  *   Is this similar effect as mentioned in
+  *
   *    JJ. Quirk , A contribution to the great Riemann solver debate, 1994 ?
   *
-  *   Values between 1.e-5 - 1.e-3 are OK, otherwise it will have impact on
+  *   Values between 1.e-5 - 1.e-3 are OK, higher values will have impact on
   *   physical results.
   *
   **/
-  double hyper_visc[DIR_ALL];        
+  double hyp_visc[6];        
   
   /**
   *    @brief name of Vlasov equation to solve 
@@ -131,6 +132,10 @@ class Vlasov : public IfaceGKC {
   **/
   virtual void solve(std::string equation_type, Fields *fields, CComplex *fs, CComplex *fss, 
                      double dt, int rk_step, const double rk[3]) = 0;
+   
+  Timing dataOutputF1; ///< Timing to output whole phase distribution function
+
+
  public:
        
   bool doNonLinearParallel; ///< Calculate the parallel non-linearity
@@ -242,15 +247,6 @@ class Vlasov : public IfaceGKC {
 
    
   /**
-  *    for global f simulation we update f
-  *
-  *
-  *   ToDo : Skeleton, update new Naxwellian background
-  *   this is a dummy functions only
-  */ 
-  //int updateMaxwellian() { return GKC_SUCCESS;};
-
-  /**
   *   @brief get maximum non-linear time step 
   *
   *   Calculates the timestep according to a defined CFL number. For the Vlasov equation
@@ -263,8 +259,6 @@ class Vlasov : public IfaceGKC {
   **/
   double getMaxNLTimeStep(const double maxCFL);
 
-   
-   
   /**
   *    @brief Holds the non-linear terms from the ExB
   *
@@ -299,7 +293,6 @@ class Vlasov : public IfaceGKC {
   **/
    void loadData(FileIO *fileIO);
 
-   Timing dataOutputF1;
 
   /**
   *    Please Document Me !
@@ -316,5 +309,4 @@ class Vlasov : public IfaceGKC {
 };
 
 
-#endif //  __VLASOV_H
-
+#endif // __GKC_VLASOV_H__

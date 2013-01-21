@@ -50,13 +50,14 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
 
    const std::string dir_string[] = { "X", "Y", "Z", "V", "M", "S" };
    
-
-   for(int dir = DIR_X ; dir <= DIR_S ; dir++) hyper_visc[dir] = setup->get("Vlasov.HyperViscosity." + dir_string[dir], 0.0);
+   for(int dir = DIR_X; dir <= DIR_S; dir++) hyp_visc[dir] = setup->get("Vlasov.HyperViscosity." + dir_string[dir], 0.0);
    
    dataOutputF1      = Timing( setup->get("DataOutput.Vlasov.Step", -1),
                                setup->get("DataOutput.Vlasov.Time", -1.));
 
    Xi_max[:] = 0.;
+
+   initData(setup, fileIO);
 }
 
 
@@ -226,7 +227,10 @@ void Vlasov::initData(Setup *setup, FileIO *fileIO)
    
   //// Phasespace Group 
   hid_t psfGroup =  fileIO->newGroup("/Vlasov", fileIO->getFileID());
-  H5Gset_comment(psfGroup, "/Vlasov", "Stores the phase space function")  ; 
+  H5Gset_comment(psfGroup, "/Vlasov", "Stores the phase space function");
+
+  check(H5LTset_attribute_double(psfGroup, ".", "HyperViscosity", hyp_visc, 6), DMESG("Attribute"));
+  
   
   // Phase space dimensions
   hsize_t psf_dim[]       = { Ns , Nm, Nz, Nky, Nx, Nv,             1 };
@@ -236,11 +240,13 @@ void Vlasov::initData(Setup *setup, FileIO *fileIO)
   hsize_t psf_offset[]    = { NsLlB-1   , NmLlB-1   , NzLlB-1   , NkyLlB, NxLlB-1   , NvLlB-1   ,             0 };
   hsize_t psf_moffset[]   = { 0         , 0         , 2         , 0     , 2         , 2         , 0             };
      
+/*
   FA_f0       = new FileAttr("f0", psfGroup, fileIO->file, 7, psf_dim, psf_maxdim, psf_chunkdim, psf_moffset,  psf_chunkBdim, psf_offset, true, fileIO->complex_tid);
   FA_f1       = new FileAttr("f1", psfGroup, fileIO->file, 7, psf_dim, psf_maxdim, psf_chunkdim, psf_moffset,  psf_chunkBdim, psf_offset, true, fileIO->complex_tid);
   FA_psfTime  = fileIO->newTiming(psfGroup);
   // call additional routines
   //initData(vlasovGroup, fileIO);  
+ * */
 
   H5Gclose(psfGroup);
 
@@ -306,7 +312,7 @@ void Vlasov::printOn(std::ostream &output) const
 {
   output << "Vlasov     | Type : " << equation_type <<  " Non-Linear : " << (doNonLinear ? "yes" : "no") << std::endl ;
   output << "Vlasov     | Hyperviscosity [ " ;
-  for(int dir = DIR_X ; dir <= DIR_S ; dir++) output << hyper_visc[dir] << " ";
+  for(int dir = DIR_X; dir <= DIR_S; dir++) output << hyp_visc[dir] << " ";
   output << " ] " << std::endl;
 }
 
