@@ -20,7 +20,6 @@
 
 Setup::Setup(int _argc, char **_argv, std::string setup_filename, std::string setup_decomposition, 
             std::string setup_Xoptions, std::string setup_ExArgv, int _flags)
-
   : flags(_flags)
 {
   argc= _argc;
@@ -83,27 +82,12 @@ Setup::Setup(int _argc, char **_argv, std::string setup_filename, std::string se
 
       parseOption(options_list.back(), false);
       options_list.pop_back();
-      
   } }
 
   // ToDo : check some values
   parser_constants = eraseCharacter(get("Setup.Constants", ""), "[]");
 
 }
-
-// Debuging Helper function (still needed ?) depraced
-template<typename T> void PrintVector(const std::vector<T>& t)
-{
-   
-  std::cout << std::endl << "Printing vector contents" << std::endl;
-  
-  for(typename std::vector<T>::size_type i=0; i<t.size(); ++i){
-    std::cout << t[i] << '\t';
-  }
-  std::cout << std::endl << std::endl;
-}
-
-
 
 
 std::string Setup::eraseCharacter(std::string str, std::string chars) 
@@ -117,8 +101,6 @@ std::string Setup::eraseCharacter(std::string str, std::string chars)
   return str;
 }
 
-
-
 std::string Setup::trimLower(std::string str, bool lowerCase)  
 { 
    
@@ -127,7 +109,7 @@ std::string Setup::trimLower(std::string str, bool lowerCase)
   size_t endpos   = str.find_last_not_of("\t ");  // Find the first character position from reverse af  
      
   // if all spaces or empty return an empty string  
-  if(( std::string::npos == startpos ) || ( std::string::npos == endpos))   str = std::string("");  
+  if  (( std::string::npos == startpos ) || ( std::string::npos == endpos))   str = std::string("");  
   else  str = str.substr( startpos, endpos-startpos+1);  
     
   // Lower case
@@ -137,15 +119,15 @@ std::string Setup::trimLower(std::string str, bool lowerCase)
 }    
 
 
+
+// simplify !
 std::vector<std::string> Setup::split(std::string str, std::string delim) 
 {
     
   std::vector<std::string> items;
   std::size_t dlm_idx;
    
-  if(str.npos == (dlm_idx = str.find_first_of(delim))) {
-    items.push_back(str.substr(0, dlm_idx));
-  }
+  if(str.npos == (dlm_idx = str.find_first_of(delim))) items.push_back(str.substr(0, dlm_idx));
    
   while(str.npos != (dlm_idx = str.find_first_of(delim))) {
    
@@ -159,8 +141,8 @@ std::vector<std::string> Setup::split(std::string str, std::string delim)
 
       items.push_back(str);
       break;
-     
-  } }
+    } 
+  }
    
   return items;
 }
@@ -170,10 +152,14 @@ std::vector<std::string> Setup::split(std::string str, std::string delim)
 void Setup::parseOption(std::string line, bool fromFile) 
 {
 
+  // skip empty lines
+  if(line.empty() == true) return;
+  
   // Skip comments  
   if((line[0] == '#') || (line[0] == '!')) return;
-  // Skip empty file
-  if(line.empty() == true) return;
+  
+  // return if string only consists of spaces and tabs
+  if(line.find_first_not_of(" \t") == std::string::npos) return;
   
   int posEqual=line.find('=');
   
@@ -182,11 +168,7 @@ void Setup::parseOption(std::string line, bool fromFile)
 
   if(key.empty() || value.empty()) check(-1, DMESG("Input file has wrong format"));
   
-  std::map<std::string, std::string> :: const_iterator el;
-  
-  el = config.find(value);
-  
-  if((el != config.end()) && fromFile) { 
+  if((config.find(value) != config.end()) && fromFile) { 
     std::cout << "Parsing Error : Duplicated key in File " << key << std::endl; check(-1, DMESG("Duplicate key added"));
   }
  
@@ -220,13 +202,12 @@ FunctionParser Setup::getFParser()
        
       std::vector<std::string> key_value = split(const_vec[s],"=");
       parser.AddConstant(trimLower(key_value[0], false), std::stod(key_value[1]));
-
-      
-  } }
+    }
+  }
    
   return parser;
-
 }
+
 
 int Setup::getSecondsFromTimeString(std::string time_string) 
 {
@@ -256,7 +237,6 @@ int Setup::getSecondsFromTimeString(std::string time_string)
     }
     
     seconds += c2sec*atoi(token.substr(0, token.length()-1).c_str());
-    
   }
     
   return seconds;
@@ -294,7 +274,6 @@ template<class T> T Setup::get(std::string key, const T default_Value)
   if( config.count(key) == 1) {
 
     std::string value_str = config[key];
-
     T value;
 
     // As pi is often used, we replace the string value with the definition
@@ -310,8 +289,9 @@ template<class T> T Setup::get(std::string key, const T default_Value)
       // Cast value string to appropriate type
       std::istringstream stream (value_str);
       stream >> value;
-    }     
-    // Check if element was accessed at least once (the Kees method)
+    }    
+
+    // Check, if element was accessed at least once (aka Kees method)
     auto f = find(config_check.begin(), config_check.end(), key);
     if( f != config_check.end() ) config_check.erase(f);
             

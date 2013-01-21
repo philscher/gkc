@@ -78,7 +78,7 @@ class FileIO : public IfaceGKC
            timing_tid, ///< Type id for Timing 
           species_tid, ///< species HDF-5 type id (where is it used ?)
         specfield_tid, ///< [ Species, 3 ] type for heat/particle flux
-             s256_tid, ///< string datatype
+             str_tid, ///< string datatype
          vector3D_tid; ///< Vector (x,y,z) type
    
   hid_t file; ///< main data file id 

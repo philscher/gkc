@@ -41,7 +41,7 @@ struct Species
     sigma     = 0.;
     gyroModel = "";
       
-    ArrayProfiles = nct::allocate(nct::Range(NxLlB, NxLB))(&T, &n, &w_gT, &w_gn);
+    ArrayProfiles = nct::allocate(nct::Range(NxLlB, NxLB))(&T, &n, &w_gT, &w_gn, &src, &krook);
   };
    
   double q;          ///< Charge 
@@ -55,10 +55,14 @@ struct Species
   double v_th;       ///< Velocity scale / Thermal velocity
   double sigma;      ///< sigma 
   double alpha;      ///< alpha
-   
+
   char name[64];     ///< name of species
   char n_name[64];   ///< Density function string    , e.g  n(x) = "1"
   char T_name[64];   ///< Temperature function string, e.g. T(x) = "1/x"
+  
+  //std::string spec_name, ///< name of species
+  //            func_dens, ///< Density function string    , e.g  n(x) = "1"
+  //            func_Temp; ///< Temperature function string, e.g. T(x) = "1/x"
   
   /////////// Below non-POD types (and not saved [yet] in HDF-5 file) ////////////
   std::string gyroModel;
@@ -77,10 +81,12 @@ struct Species
   /// Calculate debye legnth
   double debye2(const int x) const { return T[x]/(4.*M_PI*n[x]*q*q); };
    
-  double *T  , ///< Temperature profile
-         *n  , ///< Density profile
-         *w_gT, ///< Temperature scale length
-         *w_gn; ///< Density scale length
+  double *T    , ///< Temperature profile
+         *n    , ///< Density profile
+         *w_gT , ///< Temperature scale length
+         *w_gn , ///< Density scale length
+         *src  , ///< (Energy source term)
+         *krook; ///< Krook operator used for damping
 };
 
 /**

@@ -65,7 +65,9 @@ FileIO::FileIO(Parallel *_parallel, Setup *setup)  :  parallel(_parallel)
     
   // used for species name
   // BUG : Somehow HDF-8 stores only up to 8 chars of 64 possible. The rest is truncated ! Why ?
-  s256_tid = H5Tcopy(H5T_C_S1); H5Tset_size(s256_tid, 64); H5Tset_strpad(s256_tid, H5T_STR_NULLTERM);
+  // not supported by HDF-5 parallel yet ....
+  // str_tid = H5Tcopy(H5T_C_S1); H5Tset_size(str_tid, H5T_VARIABLE); H5Tset_strpad(str_tid, H5T_STR_NULLTERM);
+  str_tid = H5Tcopy(H5T_C_S1); H5Tset_size(str_tid, 64); H5Tset_strpad(str_tid, H5T_STR_NULLTERM);
 
   // Create/Load HDF5 file
   if(resumeFile == false || (inputFileName != outputFileName)) create(setup, allowOverwrite);
@@ -111,7 +113,7 @@ void FileIO::create(Setup *setup, bool allowOverwrite)
         
   //////////////////////////////////////////////////////////////// Info Group ////////////////////////////////////////////////////////
    
-  hid_t infoGroup = check(H5Gcreate(file, "/Info",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phasespace : H5Gcreate"));
+  hid_t infoGroup = newGroup("/Info");
    
   check(H5LTset_attribute_string(infoGroup, ".", "Output" , outputFileName.c_str()), DMESG("H5LTset_attribute"));
   check(H5LTset_attribute_string(infoGroup, ".", "Input"  , inputFileName.c_str()) , DMESG("H5LTset_attribute"));
@@ -119,32 +121,30 @@ void FileIO::create(Setup *setup, bool allowOverwrite)
   check(H5LTset_attribute_string(infoGroup, ".", "Info"   , info.c_str())          , DMESG("H5LTset_attribute"));
 
   check(H5LTset_attribute_string(infoGroup, ".", "Config", setup->configFileString.c_str()), DMESG("H5LTset_attribute"));
-
    
-   H5Gclose(infoGroup);
+  H5Gclose(infoGroup);
          
-   /// Wrote setup constants, ugly here ////
-   hid_t constantsGroup = check(H5Gcreate(file, "/Constants",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phasespace : H5Gcreate"));
-   
+  ////////////// Wrote setup constants, ugly here /////////////////
+  hid_t constantsGroup = newGroup("/Constants");
 
-   // Should be in Setup (Store Setup Constants
-   if (!setup->parser_constants.empty()) { 
+  // Should be in Setup (Store Setup Constants
+  if (!setup->parser_constants.empty()) { 
    
-     std::vector<std::string> const_vec = Setup::split(setup->parser_constants, ",");
+    std::vector<std::string> const_vec = Setup::split(setup->parser_constants, ",");
 
-     for(int s = 0; s < const_vec.size(); s++) { 
+    // for(auto key_value : Setup::split(setup->parser_constants, ","))
+    for(int s = 0; s < const_vec.size(); s++) { 
      
        std::vector<std::string> key_value = Setup::split(const_vec[s],"=");
-       
+
        double value = std::stod(key_value[1]);
-       int dim[] = { 1 };
        
-       check(H5LTset_attribute_double(constantsGroup, ".", Setup::trimLower(key_value[0], false).c_str(), &value, 1), DMESG("H5LTset_attribute"));
-     };
+       check(H5LTset_attribute_double(constantsGroup, ".", key_value[0].c_str(), &value, 1), DMESG("H5LTset_attribute"));
+    }
          
-   }
+  }
    
-   H5Gclose(constantsGroup);
+  H5Gclose(constantsGroup);
 
 }
 
@@ -165,7 +165,7 @@ FileIO::~FileIO()
    check( H5Tclose(complex_tid), DMESG("H5Tclose"));
    check( H5Tclose(timing_tid ), DMESG("H5Tclose"));
    check( H5Tclose(species_tid), DMESG("H5Tclose"));
-   check( H5Tclose(s256_tid   ), DMESG("H5Tclose"));
+   check( H5Tclose(str_tid   ), DMESG("H5Tclose"));
 
    // close file
    check( H5Fclose(file)    , DMESG("Unable to close file ..."));

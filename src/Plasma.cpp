@@ -95,6 +95,8 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
         species[s].T[x]   = T_parser.Eval(&X[x]);
       //species[s].w_T[x] = T_parser.Eval(&X[x]);
       //species[s].w_n[x] = T_parser.Eval(&X[x]);
+      //species[s].w_n[x] = T_parser.Eval(&X[x]);
+      //species[s].w_n[x] = T_parser.Eval(&X[x]);
 
       } 
     } 
@@ -178,7 +180,7 @@ void Plasma::initData(FileIO *fileIO)
   size_t spec_offset[]  = { HOFFSET( Species, name ), HOFFSET( Species, q   ), HOFFSET( Species, m ), HOFFSET( Species, n ), 
                             HOFFSET( Species, w_T  ), HOFFSET( Species, w_n ) };
   size_t spec_sizes[]   = { sizeof(species[0].name ), sizeof(species[0].q ), sizeof(species[0].m ), sizeof(species[0].n ), sizeof(species[0].w_T ), sizeof(species[0].w_n ) };
-  hid_t spec_type[]     = { fileIO->s256_tid        , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE      , H5T_NATIVE_DOUBLE       };
+  hid_t spec_type[]     = { fileIO->str_tid        , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE      , H5T_NATIVE_DOUBLE       };
   const char *spec_names[] = { "Name"                  , "Charge"             , "Mass"               , "Density"            , "w_T"                  , "w_n"                      };
 
   // Note : +1 for adiabatic species

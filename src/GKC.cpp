@@ -240,7 +240,7 @@ void GKC::printSettings()
   
     << "Welcome from " << PACKAGE_NAME << " (" << PACKAGE_VERSION <<")  " << PACKAGE_BUGREPORT <<  "      Date :  " << std::ctime(&start_time)         
     << "-------------------------------------------------------------------------------" << std::endl
-    << *grid << *plasma << *fileIO << *setup << *vlasov  << *fields << *geometry << *init << *parallel << *fftsolver << *timeIntegration;
+    << *grid << *plasma << *fileIO << *setup << *vlasov  << *fields << *geometry << *init << *parallel << *fftsolver << *timeIntegration << *collisions;
     
   infoStream << *control << *bench << std::endl;
   infoStream << "-------------------------------------------------------------------------------" << std::endl << std::endl << std::flush;
