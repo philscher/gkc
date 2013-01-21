@@ -29,67 +29,36 @@ Parallel *gl_parallel; // need extern variables for signal handler
 *
 *   @brief Signal handler for gkc catched signals
 *
-*   Is the usage of std::cerr allowed ? (in C printf is not !)
+*   Is the usage of std::cerr allowed in the signal handler? 
+*   (in C printf is not !)
 *
 **/ 
 void signal_handler(int sig)
-
 {
   
-  // any method to give putput critical streams at once ?
-  std::cerr << "Signal : " << strsignal( sig ) << " received." << std::endl;
-  System::printStackTrace();
-  std::cerr << std::flush;
-  //abort();
-
   switch(sig) {
 
-    case(SIGFPE)  :
-                       
-      std::cerr << "Floating point exception occured. Exiting" << std::endl;
-      control_triggered_signal |= SIGFPE;
-                       
-      // we have to unmask the signal otherwie program will slow down
-      signal(SIGFPE, SIG_IGN);
-      // now we raise SIGUSR1 which is propagetaed by mpirun to other processes
-      //raise(SIGUSR2);
-      break;
-
-      // when SIGINT or SIGTERM appears, e.g. openmpi first propagates SIGTERM too all procecess, waits a couple
-      // of seconds and then exists, (we should take care that this time is enough to finish the job)
-      
-    case(SIGINT)   : std::cerr << "SIGINT received, raising SIGTERM" << std::endl;
-                       control_triggered_signal |= SIGINT;
-                 //      signal(SIGINT, SIG_IGN);
-                 //      raise(SIGTERM); 
-                       break;
-
-    case(SIGTERM)  : //helios->runningException(GKC_EXIT); 
-                       std::cout << "SIGTERM" << std::endl;
-                       control_triggered_signal |= SIGTERM;
-                       break;
-    
-    case(SIGSEGV)  : 
-                       gl_parallel->print("SEGV received (Memory violation). Stack large enough ?");
-                       control_triggered_signal |= SIGSEGV;
-                       // any change to emergeny close HDF-5 file ?
-                       abort();
-                       break;
-
-      // SIGUSR1 includes redirected low important stuff e.g. 
-      case(SIGUSR1) :  gl_parallel->print("SIGUSR1 received");
-                       control_triggered_signal |= SIGUSR1;
-                       break;
-
-      // SIGUSR2 includes redirected critical issues SIGFPE, SIGSEGV 
-      case(SIGUSR2) :  
-                       gl_parallel->print("SIGUSR2 received");
-                       control_triggered_signal |= SIGUSR2;
-                       abort();
-                       break;
-      default       :  std::cerr << "Unkown signal .... Ignoring\n";
+    case(SIGFPE ) :
+                std::cerr << "SIGFPE received. Exiting ..." << std::endl; 
+                // ignore subsequent signals (otherwise program may slow down) 
+                signal(sig, SIG_IGN);
+                System::printStackTrace();
+                control_triggered_signal |= sig;
+		break;
+    case(SIGSEGV) : 
+                std::cerr << "SIGSEGV received. Exiting ..." << std::endl; 
+                // ignore subsequent signals (otherwise program may slow down) 
+                signal(sig, SIG_IGN);
+                System::printStackTrace();
+		abort();
+                break;
+    default       :
+                std::cerr << strsignal(sig) << " received. Exiting ..." << std::endl; 
+                control_triggered_signal |= sig;
+			
+ 
     }
-
+  
     if(force_exit == true) check(-1, DMESG("Signal received and \"force exit\" set"));
 }
 
@@ -196,6 +165,7 @@ bool Control::checkOK(Timing timing, Timing maxTiming)
       cntrl.check(!(control_triggered_signal & SIGUSR1), "(3) Interrupted by SIGUSR1");
       cntrl.check(!(control_triggered_signal & SIGUSR2), "(3) Interrupted by SIGUSR2");
       cntrl.check(!(control_triggered_signal & SIGFPE ), "(3) Interrupted by SIGFPE" );
+      cntrl.check(!(control_triggered_signal & SIGCONT), "(3) Interrupted by SIGCONT" );
 
 
       isOK = cntrl.isOK(); 
