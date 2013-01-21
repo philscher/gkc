@@ -68,14 +68,14 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
 
     }}} }}}
 
-    GL_vlasov->setBoundary(GL_vlasov->fs); 
     GL_fields->solve(GL_vlasov->f0, GL_vlasov->fs); 
    
     // Set zero time integration coefficient so that fss = F_gy(fs) 
     const double rk_0[] = { 0., 0., 0.}; 
-    GL_vlasov->solve(GL_vlasov->getEquationType(), GL_fields, GL_vlasov->fs, GL_vlasov->fss, 1., 0, rk_0);
+    // Calculate the collision operator
+    GL_vlasov->solve(GL_fields, GL_vlasov->fs, GL_vlasov->fss, 1., 0, rk_0, false);
    
-    // copy whole phase space function (waste but starting point) (important due to bounday conditions
+    // copy whole phase space function to PETSc vector
     //#pragma omp parallel for, collapse private(n) 
     n = 0;
     for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { for(int z = NzLlD; z <= NzLuD; z++) {

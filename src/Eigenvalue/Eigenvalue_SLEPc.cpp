@@ -139,7 +139,7 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
       int n = 0;
       
       for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++  ) { for(int z = NzLlD; z <= NzLuD; z++) {
-      for(int y_k = (includeZF ? 0 : 1); y_k <= NkyLuD-1; y_k++) { 
+      for(int y_k = (includeZF ? 0 : 1); y_k < Nky-1; y_k++) { 
       for(int x = NxLlD; x <= NxLuD; x++) { for(int v = NvLlD; v <= NvLuD; v++) { 
 
         init_x[n++] = 1.e-5 * f[s][m][z][y_k][x][v];

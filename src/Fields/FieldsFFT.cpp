@@ -168,7 +168,8 @@ void FieldsFFT::solveBParallelEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::
 void FieldsFFT::calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_NkxL],
                                  CComplex phi_yz[Nx])
 {
-  const double _kw_NxNy = 1./((2.*Nky-2.)*Nx*Nz)  ; // Number of poloidal points in real space
+  //const double _kw_NxNy = 1./((2.*Nky-2.)*Nx*Nz)  ; // Number of poloidal points in real space
+  const double _kw_NxNy = 1./((2.*Nky-2.)*Nz)  ; // Number of poloidal points in real space
 
   // Note : In FFT the ky=0 components carries the offset over y (integrated value), thus
   //        by divinding through the number of points we get the averaged valued

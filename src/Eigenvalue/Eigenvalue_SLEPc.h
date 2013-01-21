@@ -34,14 +34,13 @@
 **/
 class Eigenvalue_SLEPc : public Eigenvalue {
 
+  EPS EigvSolver;     ///< The eigensolver context
+  Complex tolerance;  ///< Set Tolerence of the solution
+  Mat A_F1;           ///< The Matrix Context
+  TableAttr *EVTable; ///< Eigenvalue Table
+  hid_t eigvGroupID;  ///< HDF-5 reference to Eigenvalue group
 
-    EPS EigvSolver;     ///< The eigensolver context
-    Complex tolerance;  ///< Set Tolerence of the solution
-    Mat A_F1;           ///< The Matrix Context
-    TableAttr *EVTable; ///< Eigenvalue Table
-    hid_t eigvGroupID;  ///< HDF-5 reference to Eigenvalue group
-
-public:
+ public:
   /**
   *    Please Document Me !
   *
@@ -74,11 +73,13 @@ protected :
   **/
   void printOn(std::ostream &output) const;
 
-   /**
-   *    Please Document Me !
-   *
-   **/
-   void initData(Setup *setup, FileIO *fileIO);
+  /**
+  *    Please Document Me !
+  *
+  **/
+  void initData(Setup *setup, FileIO *fileIO);
+  
+  
 };
 
 
