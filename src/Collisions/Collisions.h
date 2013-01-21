@@ -32,7 +32,7 @@ class Vlasov;
  *
  *
  */
-class Collisions {
+class Collisions : public IfaceGKC {
   
 protected:
 
@@ -120,7 +120,9 @@ public:
      return (erf(x)- x* Derf(x))/(2.*pow2(x));
 
   }
-   
+
+  virtual void printOn(std::ostream &output) const {};
+
 };
 
 

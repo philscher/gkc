@@ -150,7 +150,8 @@ void Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const
  void Collisions_LenardBernstein::printOn(std::ostream &output) const 
 {
 
-  output   << "Collisions |  Model : Lenard-Bernstein    Beta = " << beta << std::endl;
+  output   << "Collisions |  Drift-Kinetic Lenard-Bernstein  β = " << beta 
+           << " Corrections : " << (consvMoment  ? "Yes" : "No") <<  std::endl;
   
 }
 
