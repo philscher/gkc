@@ -28,8 +28,6 @@ void Moments::getMoments(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB  ]
                          const CComplex Field0[Nq][NzLD][Nky][NxLD],
                                CComplex Mom[8][NsLD][NzLD][Nky][NxLD]) 
 {
-  
-  Mom[:][:][:][:][:] = 0.;
 
   getMoment(f, Field0, Mom, 0, 0, 0); 
   getMoment(f, Field0, Mom, 2, 0, 1); 
@@ -51,6 +49,7 @@ void Moments::getMoment(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB  ][
                         const CComplex Field0[Nq][NzLD][Nky][NxLD],
                         CComplex Mom[8][NsLD][NzLD][Nky][NxLD], const int a, const int b, const int idx)
 {
+  Mom[idx][:][:][:][:] = 0.;
  
   // temporary arrays for integration over \mu
   // Need Nq in order to let gyroaveraging work for Nq > 1
@@ -83,6 +82,7 @@ void Moments::getMoment(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB  ][
     // BUG : we may have decomposition in V
 
     // gyro-average moments (push back to drift-coordinates)
+    #pragma omp parallel
     fields->gyroAverage(Mom_m, Mom_m, m, s, false, true);
 
     Mom[idx][s-NsLlD][:][:][:] += Mom_m[0][:][:][:] * d_DK;

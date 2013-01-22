@@ -363,9 +363,8 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
 
     CComplex  Mom[8][NsLD][NzLD][Nky][NxLD];
         
-    double     HeatFlux[Nq][NsLD][Nky][NxLD],  // Heat     flux   
-               PartFlux[Nq][NsLD][Nky][NxLD];  // Particle flux
-
+    double  HeatFlux[Nq][NsLD][Nky][NxLD],  // Heat     flux   
+            PartFlux[Nq][NsLD][Nky][NxLD];  // Particle flux
 
     // Get Moments of Vlasov equation
     moments->getMoments((A6zz) vlasov->f, (A4zz) fields->Field0, Mom);
