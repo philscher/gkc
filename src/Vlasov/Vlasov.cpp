@@ -49,7 +49,6 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
    doNonLinearParallel = setup->get("Vlasov.doNonLinearParallel", 0);
 
    const std::string dir_string[] = { "X", "Y", "Z", "V", "M", "S" };
-   
    for(int dir = DIR_X; dir <= DIR_S; dir++) hyp_visc[dir] = setup->get("Vlasov.HyperViscosity." + dir_string[dir], 0.0);
    
    dataOutputF1      = Timing( setup->get("DataOutput.Vlasov.Step", -1),

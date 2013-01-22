@@ -23,7 +23,8 @@ int  GL_iter;
 
 extern int process_rank;
 
-int petc_signal_handler(int sig, void *ctx) 
+// PETSc signal handler routine.
+int petsc_signal_handler(int sig, void *ctx) 
 {
   // hard exit ( try to improve using control)
   check(-1, DMESG("PETSc signal received"));
@@ -46,6 +47,10 @@ PETScMatrixVector::PETScMatrixVector(Vlasov *vlasov, Fields *fields, bool includ
 PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_y) 
 
 {
+
+  // class Control catches signals and sets global variable, thus we have to re-check
+  if(control_triggered_signal) petsc_signal_handler(control_triggered_signal, nullptr);
+
 
   [=] (CComplex  fs [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],  
        CComplex  fss[NsLD][NmLD][NzLB][Nky][NxLB][NvLB])

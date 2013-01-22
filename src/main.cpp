@@ -87,11 +87,12 @@ int main(int argc, char **argv)
   Setup *setup    = new Setup(argc, argv, setup_filename, setup_decomposition, setup_Xoptions, setup_ExArgv, gkcFlags);
 
   //////////////////    Start gkc engine and main loop /////////////////////
-  GKC *gkc =  new GKC(setup);
+
+  // define static, as destructor is called @ exit() (see, § 3.6.3 of C++03) 
+  static GKC *gkc =  new GKC(setup);
    
   time(&start_sim_time);
     
-  //#pragma omp parallel reduction(+:GKC_status)
   int GKC_status = gkc->mainLoop();
        
   time(&end_sim_time);

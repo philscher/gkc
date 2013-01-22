@@ -132,6 +132,7 @@ extern double Lx, Ly, Lz, Lv, Lm;
 
 extern double *X, *Z, *V, *M, *Z;
 
+extern int control_triggered_signal;
 
 /****************************************************************************/
 

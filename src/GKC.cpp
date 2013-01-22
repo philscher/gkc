@@ -118,7 +118,7 @@ GKC::GKC(Setup *_setup) : setup(_setup)
   
   // Optimize values to speed up computation
   bench->bench(vlasov, fields);
-    
+  
   printSettings();   
   setup->check_config();
 
