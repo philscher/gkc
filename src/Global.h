@@ -169,5 +169,4 @@ typedef CComplex(*A2zz)[0];
 typedef Real(*A2rr)[0];
 typedef Real(*A3rr)[0][0];
 
-
 #endif // __GLOBAL_H

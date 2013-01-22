@@ -22,7 +22,8 @@
 #include <array>
 
 // global process rank needed for output
-extern int process_rank;
+int process_rank;
+int threadID;
 
 // MPI_Error handler so we can use check and backtrace
 void check_mpi(MPI_Comm *comm, int *err_code, ...) 
@@ -55,8 +56,7 @@ Parallel::Parallel(Setup *setup)
   // Number of threads is set through decomposition
   #pragma omp parallel
   {
-    numThreads = omp_get_num_threads();
-    threadID   = omp_get_thread_num();
+    if(omp_get_thread_num() == 0) numThreads = omp_get_num_threads();
   }
 #endif // GKC_PARALLEL_OPENMP
 
@@ -445,3 +445,12 @@ void Parallel::printProcessID()
 
 
 };
+
+void Parallel::setThreadID()
+{
+#ifndef GKC_PARALLEL_OPENMP
+  threadID = 0;
+#else 
+  threadID = omp_get_thread_num();
+#endif    
+}

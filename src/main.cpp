@@ -12,7 +12,7 @@
    
 #define MASTER_PROCESS 0
 
-int process_rank;
+extern int process_rank;
 
 
 

@@ -154,8 +154,9 @@ int GKC::mainLoop()
     //  we can decompose NkylD, NkyLuD, when set to private in omp parallel.
     //
     //#pragma omp parallel  private(NkyLlD, NkyLuD)
-    #pragma omp parallel 
-    { 
+    #pragma omp parallel private(threadID) 
+    {
+      parallel->setThreadID();
    
       do {
         

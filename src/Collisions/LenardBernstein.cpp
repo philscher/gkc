@@ -108,7 +108,7 @@ void Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const
     const double _kw_12_dv    = 1./(12. * dv )     ;
 
     
-    #pragma omp for collapse(3)
+    #pragma omp for collapse(3) nowait
     for(int   m = NmLlD ; m   <= NmLuD ; m++  ) { for(int z = NzLlD; z <= NzLuD; z++) {  
     for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) {
            

@@ -23,11 +23,14 @@
 #include <omp.h>
 #endif
 
-// use enum class !
-enum class Op {null = 0, sum=1, max=2, min=3, bor=4, band=5, land=6, lor=7};
 
 #include <mpi.h>
 
+// use enum class !
+enum class Op {null = 0, sum=1, max=2, min=3, bor=4, band=5, land=6, lor=7};
+
+
+extern int threadID;
 
 /**
 *  @brief Parallel Communication Interface
@@ -83,8 +86,8 @@ struct NeighbourDir {
   **/
   int Coord[DIR_SIZE];
    
-  int myRank,        ///< rank-id of process
-      threadID;      ///< Number/Id of (OpenMP) thread     
+  int myRank;        ///< rank-id of process
+  //    threadID;      ///< Number/Id of (OpenMP) thread  / possible to use extern thread_local ?! 
 
   int master_rank;   ///< rank-id of master process (usually 0)
    
@@ -295,6 +298,8 @@ struct NeighbourDir {
 
 
   virtual void printProcessID(); 
+  
+  virtual void setThreadID(); 
 
   /**
   *  @brief intializes data output

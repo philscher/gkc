@@ -65,32 +65,41 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
 
     // copy f1 to vector (important due to bounday conditions, thus cannot pass directly)
     int n = 0;
+    
+    const int NkyLlD_ = (GL_includeZF ? 0 : 1);
+
+    // how to copy this effiiently ?!#pragma omp for collapse(4) 
     for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { for(int z = NzLlD; z <= NzLuD; z++) {
-    for(int y_k = (GL_includeZF ? 0 : 1); y_k < Nky-1; y_k++) {
+    for(int y_k = NkyLlD_; y_k < Nky-1; y_k++) {
     for(int x = NxLlD; x <= NxLuD; x++) { for(int v = NvLlD; v <= NvLuD; v++) { 
       
       fs[s][m][z][y_k][x][v] = x_F1[n++];
 
     }}} }}}
 
-    GL_fields->solve(GL_vlasov->f0, GL_vlasov->fs); 
+    #pragma omp parallel
+    {
+
+      GL_fields->solve(GL_vlasov->f0, GL_vlasov->fs); 
    
-    // Set zero time integration coefficient so that fss = F_gy(fs) 
-    const double rk_0[] = { 0., 0., 0.}; 
-    // Calculate the collision operator
-    GL_vlasov->solve(GL_fields, GL_vlasov->fs, GL_vlasov->fss, 1., 0, rk_0, false);
+      // Set zero time integration coefficient so that fss = F_gy(fs) 
+      const double rk_0[] = { 0., 0., 0.}; 
+      // Calculate the collision operator
+      GL_vlasov->solve(GL_fields, GL_vlasov->fs, GL_vlasov->fss, 1., 0, rk_0, false);
    
+    }
+
     // copy whole phase space function to PETSc vector
     //#pragma omp parallel for, collapse private(n) 
     n = 0;
     for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { for(int z = NzLlD; z <= NzLuD; z++) {
-    for(int y_k = (GL_includeZF ? 0 : 1); y_k < Nky-1; y_k++) {   // iterate from y_k=0 only if Zonal Flow is included
+    for(int y_k = NkyLlD_; y_k < Nky-1; y_k++) {   // iterate from y_k=0 only if Zonal Flow is included
     for(int x = NxLlD; x <= NxLuD; x++) { for(int v = NvLlD; v <= NvLuD; v++) { 
 
       y_F1[n++] = fss[s][m][z][y_k][x][v];
 
     }}} }}}
- 
+
     VecRestoreArrayRead(Vec_x, (const PetscScalar **) &x_F1);
     VecRestoreArray    (Vec_y, (      PetscScalar **) &y_F1);
 
