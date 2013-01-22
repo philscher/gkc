@@ -87,10 +87,10 @@ void FFTSolver::parseSuppressMode(const std::string &value, std::vector<int> &su
                                                    if((*it).find("-") == std::string::npos) {
                                                    //if((*it).find("-") != -1) {
                                                     std::vector<std::string> res2 = Setup::split(*it, "-");
-                                                    for(int i = atoi(res2[0].c_str()); i < atoi(res2[1].c_str()); i++) {
+                                                    for(int i = std::stoi(res2[0]); i < std::stoi(res2[1]); i++) {
                                                         suppressMode.push_back(i);
                                                     }} else
-                                                    suppressMode.push_back(std::atoi((*it).c_str()));
+                                                    suppressMode.push_back(std::stoi((*it)));
                                                 }
               
               }

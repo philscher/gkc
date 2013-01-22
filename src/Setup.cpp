@@ -236,7 +236,7 @@ int Setup::getSecondsFromTimeString(std::string time_string)
       
     }
     
-    seconds += c2sec*atoi(token.substr(0, token.length()-1).c_str());
+    seconds += c2sec*std::stoi(token.substr(0, token.length()-1));
   }
     
   return seconds;

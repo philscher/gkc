@@ -85,7 +85,7 @@ Parallel::Parallel(Setup *setup)
   std::vector<std::string> decomp = Setup::split(setup->get("Parallel.Decomposition","Auto"), ":");
   // check also if decomp is not longer than N<=6
   if(decomp[0] == "Auto")  getAutoDecomposition(numProcesses);
-  else for(unsigned int dir=DIR_X; dir < decomp.size() && (dir <= DIR_S); dir++)  decomposition[dir] =  atoi(decomp[dir].c_str());
+  else for(int dir=DIR_X; dir < decomp.size() && (dir <= DIR_S); dir++) decomposition[dir] = std::stoi(decomp[dir]);
  
   // Note : if OpenMP is enabled OpenMP, we decompose in Y in OpenMP threads (not clean solution tough)
 #ifdef GKC_PARALLEL_OPENMP
