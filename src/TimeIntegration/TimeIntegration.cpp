@@ -28,8 +28,7 @@ TimeIntegration::TimeIntegration(Setup *setup, Grid *grid, Parallel *_parallel, 
     maxTiming.time        = setup->get("TimeIntegration.MaxTime"           , -1.           );
     maxTiming.step        = setup->get("TimeIntegration.MaxSteps"          , -1            );
 
-};
-
+}
 
 void TimeIntegration::setMaxLinearTimeStep(Eigenvalue *eigenvalue, Vlasov *vlasov, Fields *fields)
 {
@@ -52,9 +51,9 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(Vlasov *vlasov, Fields *fie
   else if (timeIntegrationScheme == "Explicit_RK3") max_scheme_eigv = 2.30;
   else    check(-1, DMESG("Config File Error : TimeIntegration.Scheme"));
        
-  return (max_scheme_eigv * linearSafetyFactor /  abs(max_abs_eigv));
+  return (max_scheme_eigv * linearSafetyFactor / abs(max_abs_eigv));
 
-};
+}
 
 double TimeIntegration::solveTimeStep(Vlasov *vlasov, Fields *fields, TestParticles *particles, Timing &timing) 
 {
@@ -77,7 +76,7 @@ double TimeIntegration::solveTimeStep(Vlasov *vlasov, Fields *fields, TestPartic
 
   return dt;
 
-};
+}
 
 // use const reference instead
 void TimeIntegration::solveTimeStepRK4(Timing timing, const double dt)
@@ -85,6 +84,10 @@ void TimeIntegration::solveTimeStepRK4(Timing timing, const double dt)
 
   // Runge-Kutta step 1
   const double rk_1[] = { 0., 1., 0.};
+  
+  // if(threadID == 0) fields->solve(vlasov->f0,vlasov->f, timing) 
+  //                   vlasov->solve(fields, vlasov->f  , vlasov->fs ,  0.5*dt , 1, rk_1 );
+
   fields->solve(vlasov->f0,vlasov->f, timing);
   vlasov->solve(fields, vlasov->f  , vlasov->fs ,  0.5*dt , 1, rk_1 );
   particles->integrate(vlasov, fields, 4);
@@ -109,8 +112,7 @@ void TimeIntegration::solveTimeStepRK4(Timing timing, const double dt)
   particles->integrate(vlasov, fields, 1);
 
   return;
-};
-
+}
 
 void TimeIntegration::solveTimeStepRK3(Timing timing, const double dt) 
 {
@@ -148,28 +150,21 @@ void TimeIntegration::solveTimeStepRK2(Timing timing, const double dt)
   vlasov ->solve(fields, vlasov->fs , vlasov->fss, 0.5e0*dt, 2);
 
  */ 
-
-
-};
-
-
+}
 
 void TimeIntegration::solveTimeStepHeun(Timing timing, const double dt) 
 {
-
  /*   
-        // Runge-Kutta step 1
-        fields->solve(vlasov->f0,vlasov->f, timing);
-        vlasov ->solve(fields, vlasov->f  , vlasov->fs, 2./3.*dt , 1);
+   // Runge-Kutta step 1
+   fields->solve(vlasov->f0,vlasov->f, timing);
+   vlasov ->solve(fields, vlasov->f  , vlasov->fs, 2./3.*dt , 1);
 
-
-        // Runge-Kutta step 2
-        fields->solve(vlasov->f0,vlasov->fs, timing);
-        vlasov ->solve(fields, vlasov->fs , vlasov->f, 1./4.*dt, 2);
+   // Runge-Kutta step 2
+   fields->solve(vlasov->f0,vlasov->fs, timing);
+   vlasov ->solve(fields, vlasov->fs , vlasov->f, 1./4.*dt, 2);
   * */ 
 
-};
-
+}
 
 void TimeIntegration::solveTimeStepEigen(Timing timing, const double dt) 
 {
@@ -179,9 +174,8 @@ void TimeIntegration::solveTimeStepEigen(Timing timing, const double dt)
   fields->solve(vlasov->f0,vlasov->f, timing);
   vlasov->solve(fields, vlasov->f  , vlasov->fs,  1. , 0, rk_0);
 
-};
+}
        
-
 void TimeIntegration::writeTimeStep(Timing timing, Timing maxTiming, double dt)
 {
         
@@ -190,24 +184,19 @@ void TimeIntegration::writeTimeStep(Timing timing, Timing maxTiming, double dt)
   // should I use flush ? For many CPU maybe not good.
   if(parallel->myRank == 0 && !(timing.step % outputRatio)) {
   
-    std::cout   << TermColor::bright << TermColor::lyellow   
-                << "\r" << "Steps  : " << timing.step  << "/" << maxTiming.step 
+    std::cout   << TermColor::lyellow   << "\r"
+                << "Steps  : " << timing.step  << "/" << maxTiming.step 
                 << "  Time : " << timing.time  << "/" << maxTiming.time 
-                << std::setprecision(3) <<   " Δt : " << dt << std::flush; 
+                << std::setprecision(3) << " Δt : "   << dt << std::flush; 
  
     std::cout << "  Wall Time : " << Timing::TimeStringFromSeconds(std::time(0) - start_time);
     std::cout << Timing::getRemainingTimeString(timing, maxTiming, start_time);
     std::cout << TermColor::cdefault;
 
-  
   }
-
   
   return;
-
-};
-
- 
+}
 
 void TimeIntegration::printOn(std::ostream &output) const 
 {

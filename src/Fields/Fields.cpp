@@ -89,7 +89,7 @@ void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
       } ((A4zz) Q, (A4zz) Qm);
     }
       
-  }  } // for m, s
+  } } // for m, s
 
   /////////////////////////////// Solve for the corresponding fields ////////////////////////////////
   // Note :  Fields are only solved by root nodes  (X=0, V=0, S=0), Gyro-averaging is done for (V=0)

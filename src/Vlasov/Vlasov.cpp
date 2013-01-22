@@ -75,22 +75,24 @@ void Vlasov::solve(Fields *fields, CComplex  *_fs, CComplex  *_fss,
    useNonBlockingBoundary =  false;
 
    // Need boundary_isclean to avoid deadlock at first iteration
-   #pragma omp single
+   #pragma omp single nowait
    {
    if((f_boundary != nullptr) && useNonBlockingBoundary) setBoundary(f_boundary, Boundary::RECV);
    }
 
    Xi_max[:] = 0.; // Needed to calculate CFL time step 
-   
+  
    // Calculate the collision operator
+   // BUG : how to deal with velocity space decomposition ?!
    coll->solve(fields, _fs, f0, Coll, dt, rk_step);
-        
+       
    // Calculate the Vlasov equation
+   #pragma omp barrier
    solve(equation_type, fields, _fs, _fss, dt, rk_step, rk);
 
 
    // Note : we have non-blocking boundaries as Poisson solver does not require ghosts
-   // Set nowait, as field solver does not require boundaries
+   // Set nowait, as field solver does not require boundaries & analysis too ... ?! 
    #pragma omp single nowait
    {
    (useNonBlockingBoundary) ? setBoundary(_fss, Boundary::SEND) :  setBoundary(_fss, Boundary::SENDRECV); 
@@ -195,7 +197,7 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
 double Vlasov::getMaxNLTimeStep(const double maxCFL) 
 {
   double dt_NL = 0.;
-  
+ 
   #pragma omp single copyprivate(dt_NL)
   {
     // from non-linear ExB Term
@@ -221,12 +223,10 @@ double Vlasov::getMaxNLTimeStep(const double maxCFL)
 
 void Vlasov::initData(Setup *setup, FileIO *fileIO) 
 {
-  // ignore, as HDF-5 automatically (?) allocated data for it
-  return;
    
   //// Phasespace Group 
   hid_t psfGroup =  fileIO->newGroup("/Vlasov", fileIO->getFileID());
-  H5Gset_comment(psfGroup, "/Vlasov", "Stores the phase space function");
+  //H5Gset_comment(psfGroup, "/Vlasov", "Stores the phase space function");
 
   check(H5LTset_attribute_double(psfGroup, ".", "HyperViscosity", hyp_visc, 6), DMESG("Attribute"));
   
@@ -239,6 +239,7 @@ void Vlasov::initData(Setup *setup, FileIO *fileIO)
   hsize_t psf_offset[]    = { NsLlB-1   , NmLlB-1   , NzLlB-1   , NkyLlB, NxLlB-1   , NvLlB-1   ,             0 };
   hsize_t psf_moffset[]   = { 0         , 0         , 2         , 0     , 2         , 2         , 0             };
      
+  // ignore, as HDF-5 automatically (?) allocated data for it
 /*
   FA_f0       = new FileAttr("f0", psfGroup, fileIO->file, 7, psf_dim, psf_maxdim, psf_chunkdim, psf_moffset,  psf_chunkBdim, psf_offset, true, fileIO->complex_tid);
   FA_f1       = new FileAttr("f1", psfGroup, fileIO->file, 7, psf_dim, psf_maxdim, psf_chunkdim, psf_moffset,  psf_chunkBdim, psf_offset, true, fileIO->complex_tid);

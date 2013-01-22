@@ -30,7 +30,6 @@ FieldsFFT::~FieldsFFT()
 {
 
 }
-
    
 void FieldsFFT::solveFieldEquations(const CComplex Q     [Nq][NzLD][Nky][NxLD],
                                           CComplex Field0[Nq][NzLD][Nky][NxLD]) 
@@ -69,7 +68,7 @@ void FieldsFFT::solvePoissonEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_
   // OpenMP how to set this variable to be shared ? copyprivate(phi_yz)
   CComplex phi_yz[Nx]; phi_yz[:] = 0.;
 
-  #pragma omp single
+  #pragma omp single copyprivate(phi_yz)
   {
     if(species[0].doGyro) calcFluxSurfAvrg(kXOut, phi_yz);
   }
@@ -438,7 +437,6 @@ double FieldsFFT::sum_sa2qG0(const double kp_2)
 
 }
 
-
 double FieldsFFT::sum_qnB_Delta(const double k2_p) 
 {
 
@@ -470,5 +468,4 @@ double FieldsFFT::sum_2TnBB_Delta(const double k2_p)
 
   return 2. * g0 /pow2(plasma->B0) ;
 }
-
 
