@@ -20,7 +20,6 @@ VlasovCilk::VlasovCilk(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *
 : Vlasov(_grid, _parallel, _setup, fileIO, _geo, fft, _bench, _coll)
 {
 
-
 }
 
 

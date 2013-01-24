@@ -104,7 +104,6 @@ GKC::GKC(Setup *_setup) : setup(_setup)
   else if(vlasov_type == "Optim"  ) vlasov  = new VlasovOptim (grid, parallel, setup, fileIO, geometry, fftsolver, bench, collisions);
   else   check(-1, DMESG("No such Fields Solver"));
 
-
   // Load some other general modules
   diagnostics     = new Diagnostics(parallel, vlasov, fields, grid, setup, fftsolver, fileIO, geometry); 
   visual          = new Visualization_Data(grid, parallel, setup, fileIO, vlasov, fields);
@@ -227,7 +226,6 @@ GKC::~GKC()
   delete bench;
 
 }
-
 
 
 void GKC::printSettings() 

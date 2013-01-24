@@ -11,11 +11,10 @@
  * =====================================================================================
  */
 
-
 #include "Plasma.h"
 
 // plasma defined global
-Plasma *plasma;
+Plasma  *plasma;
 Species *species;
 
 Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) : nfields(_nfields) 
@@ -33,44 +32,47 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
   cs      = setup->get("Plasma.cs"    , 1. );
  
   // Set reference lengths
-     n_ref   = setup->get("Plasma.ReferenceDensity    ", 1.);
-     c_ref   = setup->get("Plasma.ReferenceC          ", 1.);
-     T_ref   = setup->get("Plasma.ReferenceTemperature", 1.);
-     L_ref   = setup->get("Plasma.ReferenceLength     ", 1.);
-   rho_ref   = setup->get("Plasma.ReferenceLength     ", 1.);
+    n_ref = setup->get("Plasma.ReferenceDensity    ", 1.);
+    c_ref = setup->get("Plasma.ReferenceC          ", 1.);
+    T_ref = setup->get("Plasma.ReferenceTemperature", 1.);
+    L_ref = setup->get("Plasma.ReferenceLength     ", 1.);
+  rho_ref = setup->get("Plasma.ReferenceLength     ", 1.);
      
-  nfields  = ((beta > 0.e0)  ? 2 : 1);
-  nfields  = (setup->get("Plasma.Bp", 0 ) == 1) ? 3 : nfields;
+  nfields = ((beta > 0.e0)  ? 2 : 1);
+  nfields = (setup->get("Plasma.Bp", 0 ) == 1) ? 3 : nfields;
       
-  ///////////////// set adiabatic species ///////////////////////////
-  std::string species_name = setup->get("Plasma.Species0.Name"  , "Unnamed") + " (adiab.)";
+  ///////////////// set adiabatic species //////////////////////////////////////////////////////
+  
+  std::string species_name = setup->get("Plasma.Species0.Name", "Unnamed") + "(ad.)";
   snprintf(species[0].name, sizeof(species_name.c_str()), "%s", species_name.c_str());
       
-  species[0].n0   = setup->get("Plasma.Species0.Density" , 0. );
-  species[0].T0   = setup->get("Plasma.Species0.Temperature" , 1. );
-  species[0].q    = setup->get("Plasma.Species0.Charge" , 1. );
-  species[0].m    = 0.;
+  species[0].n0     = setup->get("Plasma.Species0.Density" , 0. );
+  species[0].T0     = setup->get("Plasma.Species0.Temperature" , 1. );
+  species[0].q      = setup->get("Plasma.Species0.Charge" , 1. );
+  species[0].m      = 0.;
+
   // this is dummy for flux average
-  species[0].doGyro  = setup->get("Plasma.Species0.FluxAverage", 0 );
-  species[0].w_n     = setup->get("Plasma.Species0.Phase"      , 0.0 );
-  species[0].w_T     = 0.;
+  species[0].doGyro = setup->get("Plasma.Species0.FluxAverage", 0 );
+  species[0].w_n    = setup->get("Plasma.Species0.Phase"      , 0.0 );
+  species[0].w_T    = 0.;
       
-  ////////////////////////  set kinetic species   //////////////////
+  //////////////////////////  set kinetic species   ////////////////////////////////////////////
+  
   for(int s = 1; s <= SPECIES_MAX; s++) { 
 
     std::string key          = "Plasma.Species" + Setup::num2str(s);
 
     std::string species_name = setup->get(key + ".Name"  , "Unnamed");
     snprintf(species[s].name, sizeof(species_name.c_str()), "%s", species_name.c_str());
+
     species[s].m         = setup->get(key + ".Mass"       , 1. );
     species[s].n0        = setup->get(key + ".Density"    , 0. );
     species[s].T0        = setup->get(key + ".Temperature", 1. );
     species[s].q         = setup->get(key + ".Charge"     , 1. );
-    species[s].gyroModel = setup->get(key + ".gyroModel", (Nm > 1) ? "Gyro" : "Gyro-1" );
+    species[s].gyroModel = setup->get(key + ".gyroModel"  , (Nm > 1) ? "Gyro" : "Gyro-1" );
 
     if  (species[s].doGyro)  species[s].f0_str = setup->get(key + ".F0"      , "n/(pi*T)^1.5*exp(-v^2/T)*exp(-m/T)" );
     else          species[s].f0_str = setup->get(key + ".F0"      , "n/(pi*T)^1.5*exp(-v^2/T)*T/Nm" );
-    //species[s].f1_str = setup->get(key + ".F1"      , "0.");
         
     species[s].doGyro = (species[s].gyroModel == "Gyro") ? 1 : 0;
 
@@ -108,11 +110,9 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
       species[s].T[NxLlB:NxLB] = species[s].T0;
       snprintf(species[s].n_name, 64, "%f", species[s].n0);
       snprintf(species[s].T_name, 64, "%f", species[s].n0);
-      
     }
 
     species[s].update(geo, cs);
-
   }   
 
   ////////////////////////   // make some simple checks
@@ -126,43 +126,45 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
 
   initData(fileIO);
    
-};
+}
+
 
 Plasma::~Plasma()
 {
 
    delete[] species;
-};
+}
 
 
 void Plasma::printOn(std::ostream &output) const 
 {
          
   output << "Type       | " << (global ? " Global" : "Local") << " Cs   : " << cs << std::endl 
-         << "Species    | ";
+         << "Species  0 | ";
 
   // print adiabatic species
-  if(species[0].n0 != 0.) { 
-    output << "0. " << species[0].name << "  Density : " << species[0].n0 << 
-       " Charge : " << species[0].q <<    " Temp : " << species[0].T0 << " FluxAvrg : " 
-         << (species[0].doGyro ? "Yes" : "No") <<  " Phase : " << (species[0].w_n) <<  " (adiabatic) " <<  std::endl;  
-  } else output << "0. -- No adiabatic species -- " << std::endl;
+  if(species[0].n0 != 0.) {
+
+    output << species[0].name 
+           <<        " n : " << species[0].n0  << " q : " << species[0].q 
+           <<        " T : " << species[0].T0 
+           << " FluxAvrg : " << (species[0].doGyro ? "Yes" : "No") 
+           <<    " Phase : " << species[0].w_n << " (adiabatic)" << std::endl; 
+
+  } else output << "-- no adiabatic species --" << std::endl;
             
-  std::cout << std::setprecision(2);
   // print kinetic species
   for(int s = 1; s <= Ns; s++) {
 
-  output << "          +| " << s << ". " << species[s].name << "  Charge : " << species[s].q << "     Mass : " << species[s].m;
-  
-  if(global) {
-    output << " T : " << species[s].T_name << " n0 : " << species[s].n_name  <<  std::endl;
-  } else {
-    output << " T0 : " << species[s].T0 << " n0 : " << species[s].n0 <<
-      "  w_n : " << species[s].w_n << "  w_T : " << species[s].w_T << " Model : " << species[s].gyroModel << " "  << std::endl;
-  } }
+    output << "      " << s    << " |  "        << std::setw(12) << species[s].name  
+           <<                    std::setprecision(2) 
+           <<        "  q : " << species[s].q   << "  m : " << species[s].m   
+           <<        "  T : " << species[s].T0  << "  n : " << species[s].n0  
+           <<        " ωn : " << species[s].w_n << " ωT : " << species[s].w_T 
+           <<     " Model : " << species[s].gyroModel       << std::endl;
+  } 
      
 }
-
 
 
 void Plasma::initData(FileIO *fileIO) 
@@ -177,10 +179,10 @@ void Plasma::initData(FileIO *fileIO)
   //////////////////////// Set Table for species.
          
   
-  size_t spec_offset[]  = { HOFFSET( Species, name ), HOFFSET( Species, q   ), HOFFSET( Species, m ), HOFFSET( Species, n ), 
+  size_t spec_offset[] = { HOFFSET( Species, name ), HOFFSET( Species, q   ), HOFFSET( Species, m ), HOFFSET( Species, n ), 
                             HOFFSET( Species, w_T  ), HOFFSET( Species, w_n ) };
-  size_t spec_sizes[]   = { sizeof(species[0].name ), sizeof(species[0].q ), sizeof(species[0].m ), sizeof(species[0].n ), sizeof(species[0].w_T ), sizeof(species[0].w_n ) };
-  hid_t spec_type[]     = { fileIO->str_tid        , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE      , H5T_NATIVE_DOUBLE       };
+  size_t spec_sizes[]  = { sizeof(species[0].name ), sizeof(species[0].q ), sizeof(species[0].m ), sizeof(species[0].n ), sizeof(species[0].w_T ), sizeof(species[0].w_n ) };
+  hid_t spec_type[]    = { fileIO->str_tid        , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE      , H5T_NATIVE_DOUBLE       };
   const char *spec_names[] = { "Name"                  , "Charge"             , "Mass"               , "Density"            , "w_T"                  , "w_n"                      };
 
   // Note : +1 for adiabatic species
@@ -190,5 +192,5 @@ void Plasma::initData(FileIO *fileIO)
   /////////////////////
          
   H5Gclose(plasmaGroup);
-};
+}
 

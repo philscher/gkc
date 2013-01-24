@@ -260,8 +260,6 @@ void Grid::initData(FileIO *fileIO)
   check(H5LTset_attribute_int(gridGroup, ".", "Nm", &Nm , 1), DMESG("Attribute"));
   check(H5LTset_attribute_int(gridGroup, ".", "Ns", &Ns , 1), DMESG("Attribute"));
          
-
-  
   // set Lengths
   check(H5LTset_attribute_double(gridGroup, ".", "X", &X[NxGlD], Nx), DMESG("Attribute"));
   check(H5LTset_attribute_double(gridGroup, ".", "Z", &Z[NzGlD], Nz), DMESG("Attribute"));
