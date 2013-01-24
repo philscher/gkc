@@ -198,8 +198,8 @@ void FileIO::flush(Timing timing, double dt)
 void FileIO::printOn(std::ostream &output) const 
 {
    output << "            -------------------------------------------------------------------" << std::endl
-          << "Data       |  Input     : " << (inputFileName == "" ? "---None---" : inputFileName)   
-          <<              " Output    : " <<  outputFileName        << " Resume : " << ((resumeFile)?"yes":"no") << std::endl;
+          << "Data       |  Input : " << (inputFileName == "" ? "---None---" : inputFileName)  << std::endl 
+          << "           | Output : " <<  outputFileName  << " Resume : " << (resumeFile ? "yes" : "no") << std::endl;
 };
 
 FileAttr* FileIO::newTiming(hid_t group, hsize_t offset, bool write)

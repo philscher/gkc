@@ -143,13 +143,19 @@ class Timing;
 
 class IfaceGKC {
    
-    protected:
-      virtual void printOn(std::ostream &output) const = 0;
-      virtual ~IfaceGKC() { };
-    public:
-    friend std::ostream& operator<<(std::ostream& output, const IfaceGKC& ih) { ih.printOn(output); return output; };
+ protected:
+      
+  virtual void printOn(std::ostream &output) const = 0;
+  virtual ~IfaceGKC() { };
+ 
+ public:
+  friend std::ostream& operator<<(std::ostream& output, const IfaceGKC& ih) 
+  {
 
-    // Data Output Operation
+    ih.printOn(output); 
+    return output; 
+  };
+
 };
    
 // Forward declaration
@@ -158,7 +164,6 @@ extern Plasma *plasma;
 
 class Species;
 extern Species *species;
-
 
 typedef CComplex(*A6zz)[0][0][0][0][0];
 typedef CComplex(*A5zz)[0][0][0][0];
