@@ -121,7 +121,15 @@ void FileIO::create(Setup *setup, bool allowOverwrite)
   check(H5LTset_attribute_string(infoGroup, ".", "Info"   , info.c_str())          , DMESG("H5LTset_attribute"));
 
   check(H5LTset_attribute_string(infoGroup, ".", "Config", setup->configFileString.c_str()), DMESG("H5LTset_attribute"));
-   
+ 
+  // get & save HDF-5 version
+  std::stringstream version;
+  unsigned int majnum, minnum, relnum;
+  H5get_libversion(&majnum, &minnum, &relnum);
+  version << majnum << "." << minnum << "." << relnum << std::endl;
+  
+  check(H5LTset_attribute_string(infoGroup, ".", "Config", version.str().c_str()), DMESG("H5LTset_attribute"));
+  
   H5Gclose(infoGroup);
          
   ////////////// Wrote setup constants, ugly here /////////////////
@@ -151,24 +159,24 @@ void FileIO::create(Setup *setup, bool allowOverwrite)
 
 void FileIO::initData(Setup *setup)
 {
-   // herr_t H5get_libversion( unsigned *majnum, unsigned *minnum, unsigned *relnum )
-};
+
+}
 
 
 // Destructor
 FileIO::~FileIO()  
 {
    
-   // Free all HDF5 resources
+  // Free all HDF5 resources
 
-   // close some extra stuff
-   check( H5Tclose(complex_tid), DMESG("H5Tclose"));
-   check( H5Tclose(timing_tid ), DMESG("H5Tclose"));
-   check( H5Tclose(species_tid), DMESG("H5Tclose"));
-   check( H5Tclose(str_tid   ), DMESG("H5Tclose"));
+  // close some extra stuff
+  check( H5Tclose(complex_tid), DMESG("H5Tclose"));
+  check( H5Tclose(timing_tid ), DMESG("H5Tclose"));
+  check( H5Tclose(species_tid), DMESG("H5Tclose"));
+  check( H5Tclose(str_tid   ), DMESG("H5Tclose"));
 
-   // close file
-   check( H5Fclose(file)    , DMESG("Unable to close file ..."));
+  // close file
+  check( H5Fclose(file)    , DMESG("Unable to close file ..."));
 
 }
 
