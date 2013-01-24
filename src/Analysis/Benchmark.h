@@ -1,23 +1,19 @@
 /*
  * =====================================================================================
  *
- *       Filename:  Benchmark.h
+ *       Filename: Benchmark.h
  *
- *    Description:  
+ *    Description: PAPI Benchmark class definition. Used for optimizing
+ *                 Vlasov equation runtime.
  *
- *        Version:  1.0
- *        Created:  07/25/2012 01:50:25 PM
- *       Revision:  none
- *       Compiler:  gcc
+ *         Author: Paul P. Hilscher (2012-), 
  *
- *         Author:  YOUR NAME (), 
- *        Company:  
- *
+ *        License: GPLv3+
  * =====================================================================================
  */
 
-#ifndef __GKC_BENCHMARK_H
-#define __GKC_BENCHMARK_H
+#ifndef __GKC_BENCHMARK_H__
+#define __GKC_BENCHMARK_H__
 
 #include "Global.h"
 
@@ -29,7 +25,6 @@
 
 #include <sys/time.h>
 #include <papi.h> 
-
 
 class Vlasov;
 class Fields;
@@ -54,23 +49,22 @@ class Fields;
 **/
 class Benchmark : public IfaceGKC
 {
+  
   int num_hwcntrs; ///< Number of available Hardware counters
 
   
-   
   struct Counters
   {
-   long long Cycles; ///< Total Cycles
-   long long Instructions   ; ///< Total Instructions
+    long long Cycles;       ///< Total Cycles
+    long long Instructions; ///< Total Instructions
   };
 
-
   struct Measure {
-   float      rtime;  ///< Real time
-   float      ptime;  ///< Processor time
-   long long flpops;  ///< Total floating point operations
-   float     mflops;  ///< Million Floating Operations Per Second
-   } M;
+    float      rtime;  ///< Real time
+    float      ptime;  ///< Processor time
+    long long flpops;  ///< Total floating point operations
+    float     mflops;  ///< Million Floating Operations Per Second
+  } M;
     
   timespec ts_start, ts_end;
   
@@ -84,31 +78,34 @@ class Benchmark : public IfaceGKC
   static std::string getPAPIErrorString(int error_val);
 
   double simMaxGFLOPS;
-  public:
+ 
+ public:
   
-  int BlockSize_X, BlockSize_V;
+  int BlockSize_X, ///< Blocksize in X to use in Vlasov equation 
+      BlockSize_V; ///< Blocksize in Y to use in Vlasov equation
 
+  /**
+  *   @brief constructor which initialized PAPI
+  *
+  **/
+  Benchmark(Setup *setup, Parallel *_parallel);
+
+ ~Benchmark();
+
+  void start(std::string id, int type=0);
+
+  double stop(std::string id, int type=0);
  
-   /**
-   *   @brief constructor which initialized PAPI
-   *
-   **/
-   Benchmark(Setup *setup, Parallel *_parallel);
+  void bench(Vlasov *vlasov, Fields *fields) ;
 
-   ~Benchmark();
+ protected:
 
-   void start(std::string id, int type=0);
+  virtual void writeData(const Timing &timing, const double dt);
+  void initData(Setup *setup, FileIO *fileIO);
+  void closeData();
+  virtual void printOn(std::ostream &output) const ;
 
-   double stop(std::string id, int type=0);
- 
-   void bench(Vlasov *vlasov, Fields *fields) ;
-
-protected:
-   virtual void writeData(const Timing &timing, const double dt);
-   void initData(Setup *setup, FileIO *fileIO);
-   void closeData();
-   virtual void printOn(std::ostream &output) const ;
 };
 
 
-#endif // __GKC_BENCHMARK_H
+#endif // __GKC_BENCHMARK_H__

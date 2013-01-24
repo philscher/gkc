@@ -92,8 +92,23 @@ void Diagnostics::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][Nky][FFTSolver::X
   return;
 }
 
-
 //////////////////////// Calculate scalar values ///////////////////////////
+
+/* 
+void Diagnostics::calculateZFTurbEnergy()
+                                CComplex  Field0 [Nq][NzLD][Nky][NxLD]      ,
+{
+
+     double ddphi_dx2[Nky]; 
+
+     for(int y_k = 0; y_k < Nky; y_k++) {
+
+     // use CD-4
+     for(int x = NxLlD; x <= NxLuD; x++) {
+       ddphi_dx2[y_k] = Field[:][NzLD][y_k][NxLD] -
+     }
+}
+ * */
 
 
 void Diagnostics::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB], 
@@ -246,7 +261,7 @@ void Diagnostics::initData(Setup *setup, FileIO *fileIO)
         
   H5Gclose(momGroup);
       
-  dataOutputMoments   = Timing(setup->get("DataOutput.Moments.Step", -1)       , setup->get("DataOutput.Moments.Time", -1.));
+  dataOutputMoments   = Timing(setup->get("DataOutput.Moments.Step", -1), setup->get("DataOutput.Moments.Time", -1.));
 
 
   ////////////////////////////////////// X-Dependent Moments data /////////////////////
@@ -259,7 +274,7 @@ void Diagnostics::initData(Setup *setup, FileIO *fileIO)
   hsize_t XDep_cDdim[] =  { 8, NsLD   , NxLD    , 1            };
   hsize_t XDep_cdoff[] =  { 0, NsLlB-1, NxLlD-3 , 0            };
      
-  bool XDepWrite = ( (parallel->Coord[DIR_VM] == 0) && (parallel->Coord[DIR_Z] == 0));
+  bool XDepWrite = (parallel->Coord[DIR_VM] == 0) && (parallel->Coord[DIR_Z] == 0);
      
   FA_XDep_Mom  = new FileAttr("Mom", XDepGroup, fileIO->file, 4, XDep_dsdim, XDep_dmdim, XDep_cDdim, offset0, XDep_cBdim, XDep_cdoff, XDepWrite);
   FA_XDep_Time = fileIO->newTiming(XDepGroup);
@@ -363,8 +378,8 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
 
     CComplex  Mom[8][NsLD][NzLD][Nky][NxLD];
         
-    double  HeatFlux[Nq][NsLD][Nky][NxLD],  // Heat     flux   
-            PartFlux[Nq][NsLD][Nky][NxLD];  // Particle flux
+    double HeatFlux[Nq][NsLD][Nky][NxLD],  // Heat     flux   
+           PartFlux[Nq][NsLD][Nky][NxLD];  // Particle flux
 
     // Get Moments of Vlasov equation
     moments->getMoments((A6zz) vlasov->f, (A4zz) fields->Field0, Mom);
@@ -373,7 +388,7 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
 
     ////////////////// Output Moments /////////////////////
 
-    if (timing.check(dataOutputMoments, dt)       )   {
+    if (timing.check(dataOutputMoments, dt) )   {
       
       FA_Mom_HeatFlux->write((double *) &HeatFlux[0][0][0][0]);
       FA_Mom_PartFlux->write((double *) &PartFlux[0][0][0][0]);
@@ -389,7 +404,7 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
     }
 
     ////////////////// Store X-dependent data /////////////
-    if (timing.check(dataOutputXDep, dt)       )   {
+    if (timing.check(dataOutputXDep, dt) )   {
 
       FA_PartFluxKy->write((double *) PartFlux);
       FA_HeatFluxKy->write((double *) HeatFlux);
@@ -412,7 +427,7 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
     }  
 
       ////////////// Scalar Variables /////////////////
-    if (timing.check(dataOutputStatistics, dt)       )   {
+    if (timing.check(dataOutputStatistics, dt) )   {
     { 
       // calculate mode spectrum of fields (phi, Ap, Bp)
 
@@ -434,7 +449,7 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
     
     fields->getFieldEnergy(scalarValues.phiEnergy, scalarValues.ApEnergy, scalarValues.BpEnergy);
     
-    //  Get scalar Values for every species ( this is bad calculate them alltogether)
+    //  Get scalar values for every species ( this is bad, should calculate them alltogether)
     calculateScalarValues((A6zz) vlasov->f, (A6zz) vlasov->f0,
                            Mom, PartFlux, HeatFlux, scalarValues); 
 
@@ -443,12 +458,16 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
     ////////////////// print out some statistics /////////////////////////////
     
     std::stringstream messageStream;
-    messageStream << std::endl << std::endl << "Analysis | " << std::setprecision(3) << "Time : " << timing.time << " Step : " << timing.step << "   ";
+
+    messageStream << std::endl << std::endl << "Analysis | " << std::setprecision(3) 
+                  << "Time : " << timing.time << " Step : " << timing.step << "   ";
+
     messageStream << std::setprecision(2) << std::scientific << 
                      "Field Energy : (φ) " << scalarValues.phiEnergy  << 
                      "  (A∥) " << ((Nq >= 2) ? Setup::num2str(scalarValues.ApEnergy) : "off") << 
                      "  (B∥) " << ((Nq >= 3) ? Setup::num2str(scalarValues.BpEnergy) : "off") << std::endl; 
-    double charge = 0., kinetic_energy=0.;
+
+    double total_charge = 0., kinetic_energy = 0.;
     
     for(int s = NsGlD; s <= NsGuD; s++) {
     
@@ -458,17 +477,24 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
                     << " Kinetic Energy: " << scalarValues.kinetic_energy[s-1] 
                     << " Particle Flux : " << scalarValues.particle_flux[s-1]  
                     << " Heat Flux : "     << scalarValues.heat_flux[s-1] << std::endl;
-      charge += species[s].q  * scalarValues.particle_number[s-1];
+
+      // calculate charge/kin energy for validification of the run
+      total_charge   += species[s].q  * scalarValues.particle_number[s-1];
       kinetic_energy += scalarValues.kinetic_energy[s-1];
 
     }
       
     /////////////   Output some non-mandatory values  //////////////////////////
-    const double field_energy = scalarValues.phiEnergy + scalarValues.ApEnergy + scalarValues.BpEnergy;
    
     messageStream << std::setprecision(4);
-    if(vlasov->doNonLinearParallel) messageStream << "         | Total Energy Ratio : " <<  std::noshowpos << std::fixed << 100*abs((kinetic_energy+field_energy)/(field_energy == 0. ? 1.e-99 : field_energy)) << "%";
-    if(Ns > 1                     ) messageStream << "    Total Charge = " << ((species[0].n0 != 0.) ? 0. : charge);
+    if(vlasov->doNonLinearParallel) {
+
+      double field_energy     = scalarValues.phiEnergy + scalarValues.ApEnergy + scalarValues.BpEnergy;
+      double rel_energy_consv = 100*abs((kinetic_energy+field_energy)/(field_energy == 0. ? 1.e-99 : field_energy));
+      messageStream << "         | Total Energy Ratio : " <<  std::noshowpos << std::fixed << rel_energy_consv << "%";
+    }
+
+    if(Ns > 1) messageStream << "    Total Charge = " << ((species[0].n0 != 0.) ? 0. : total_charge);
     messageStream << std::endl; 
 
     parallel->print(messageStream.str());
@@ -481,18 +507,6 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
   
 }
 
-     //###################################### Spectrum  ################################################
-/*
-     // XY-Spectrum
-     hsize_t spec_xy_dsdim[]      = { Nx/2+1, Ny/2+1, 1};
-     hsize_t spec_xy_dmdim[]   = { Nx/2+1, Ny/2+1, H5S_UNLIMITED};
-     hsize_t spec_xy_cDdim[] = { kNxL, kNyL, 1};
-
-     FA_spec_xy  = new FileAttr("Unnamed",3, spec_xy_dsdim, spec_xy_dmdim, spec_xy_cDdim, offset0,  spec_xy_cDdim, parallel->isFFTGroup);
-     
-*/
-
-        
 // separately we set MPI struct
 void Diagnostics::setMPIStruct()
 {

@@ -15,8 +15,6 @@
 #ifndef __GKC_INTEGRATE_H__
 #define __GKC_INTEGRATE_H__
 
-#include "Global.h"
-
 #include "GaussLegendreWeights.h"
 #include "GaussLaguerreWeights.h"
 #include "GaussRadauWeights.h"
@@ -45,9 +43,9 @@
 **/
 class Integrate {
 
- //template<class T, class R> static T integrate(int n, T (*f)(R), R a, R b)
- //template<class T> static T integrate(int n, T (*func)(double), double a, double b)
- //template<class T> static T integrate(int n, std::function func, double a, double b)
+  //template<class T, class R> static T integrate(int n, T (*f)(R), R a, R b)
+  //template<class T> static T integrate(int n, T (*func)(double), double a, double b)
+  //template<class T> static T integrate(int n, std::function func, double a, double b)
 
  private:
 
@@ -58,43 +56,42 @@ class Integrate {
     const double B = 0.5*(b+a);
 
     C s = 0. ;
-    for (int i = 0 ; i <= n; i++) s += w[i] *  func(A*x[i] + B );
+    for (int i = 0; i <= n; i++) s += w[i] * func(A*x[i] + B);
 
     return A*s;
   };
 
-  double *weights;
-  double *nodes;
+  double *weights, ///< Weights of nodes
+         *nodes  ; ///< Postion of nodes
 
-
-  const int order;
+  const int order; ///< Number of points to use
 
  public:
 
-  Integrate(std::string type, int _order = 11, double a=0., double b=1.) : order(_order) {
-       
-    auto setupNodesAndWeights = [=] (double *x, double *w, bool rescale) { 
-            
-    const double A = (rescale) ? 0.5*(b-a) : 1.;
-    const double B = (rescale) ? 0.5*(b+a) : 0.;
+  Integrate(std::string type, int _order = 11, double a=0., double b=1.) : order(_order) 
+  {
 
-    nodes   = new double[order];
-    weights = new double[order];
+    // Initialize nodes and weights
+    auto initNaW = [=] (double *x, double *w, bool rescale) { 
+            
+      const double A = (rescale) ? 0.5*(b-a) : 1.;
+      const double B = (rescale) ? 0.5*(b+a) : 0.;
+
+      nodes   = new double[order];
+      weights = new double[order];
     
-    // Rescale
-    for(int n = 0; n < order; n++)  {
+      // Rescale
+      for(int n = 0; n < order; n++)  {
       
-      nodes[n]   = A * x[n] + B;
-      weights[n] = A * w[n];
-      
-    }
+        nodes  [n] = A * x[n] + B;
+        weights[n] = A * w[n];
+      }
 
     };
 
-  
-    if     (type == "Gauss-Legendre") { setupNodesAndWeights(gauss_weights[order].points   , gauss_weights[order].weights,   true); }
-    else if(type == "Gauss-Laguerre") { setupNodesAndWeights(Laguerre_weights[order].points, Laguerre_weights[order].weights, false); }
-    else if(type == "Gauss-Radau"   ) { setupNodesAndWeights(Radau_weights[order].points   , Radau_weights[order].weights,   true); }
+    if     (type == "Gauss-Legendre") initNaW(gauss_weights   [order].points, gauss_weights   [order].weights,  true); 
+    else if(type == "Gauss-Laguerre") initNaW(Laguerre_weights[order].points, Laguerre_weights[order].weights, false); 
+    else if(type == "Gauss-Radau"   ) initNaW(Radau_weights   [order].points, Radau_weights   [order].weights,  true); 
     else   check(-1, DMESG("No such quadrature rule"));
 
   };
@@ -106,7 +103,7 @@ class Integrate {
   };
 
   // return nan else
-  double x(const int n) const { return (n < order) ? nodes[n] : 0. ; };
+  double x(const int n) const { return (n < order) ? nodes[n]   : 0.; };
   // return nan else
   double w(const int n) const { return (n < order) ? weights[n] : 0.; };
 
@@ -133,15 +130,16 @@ class Integrate {
    return A*s;
   }
   */
+
   static Complex GaussLegendre(std::function<Complex (double)> func, double a, double b, int n=9) {
 
-        return integrate(func, a, b, n, gauss_weights[n].points, gauss_weights[n].weights);
+    return integrate(func, a, b, n, gauss_weights[n].points, gauss_weights[n].weights);
 
   }
   
   static Complex GaussRadau(std::function<Complex (double)> func, double a, double b, int n=9) {
 
-        return integrate(func, a, b, n, Radau_weights[n].points, Radau_weights[n].weights);
+    return integrate(func, a, b, n, Radau_weights[n].points, Radau_weights[n].weights);
   }
    
   /**
@@ -173,8 +171,9 @@ class Integrate {
     double x[n], w[n];
 
     for(int k = 0; k < n; k++) {
-         x[k] =  tanh(0.5 * M_PI * sinh(k * h)) ; 
-         w[k] =  0.5 * h  * M_PI * cosh(k * h) / pow2(cosh(0.5 * M_PI * sinh( k *h))) ;
+
+      x[k] = tanh(0.5 * M_PI * sinh(k * h)) ; 
+      w[k] = 0.5 * h  * M_PI * cosh(k * h) / pow2(cosh(0.5 * M_PI * sinh( k *h))) ;
     }
 
     return integrate(func, a, b, n, x, w);

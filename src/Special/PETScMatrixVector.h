@@ -13,21 +13,19 @@
  */
 
 
-#include "config.h"
-#include "Global.h"
-
 
 #ifndef __GKC_PETSC_MATRIX_VECTOR__H_
 #define __GKC_PETSC_MATRIX_VECTOR__H_
 
+#include "Global.h"
+
 #include "Vlasov/Vlasov.h"
 #include "Fields/Fields.h"
-#include "Grid.h"
 
 #include "petsc.h"
 
-PetscErrorCode MatrixVectorProduct(Mat A, Vec x, Vec y);
 
+PetscErrorCode MatrixVectorProduct(Mat A, Vec x, Vec y);
 
 int petc_signal_handler(int sig, void *ctx);
 
@@ -39,7 +37,7 @@ int petc_signal_handler(int sig, void *ctx);
 class PETScMatrixVector
 {
 
-public:
+ public:
     
   /** 
   *    Note : Needs to be called to initlized global variables
@@ -70,7 +68,6 @@ public:
   static CComplex* getCreateVector(Grid *grid, Vec &Vec_x, int NkyRed=0);
 
 };
-
 
 #endif // __GKC_PETSC_MATRIX_VECTOR__H_
 

@@ -40,7 +40,7 @@ class TanhSinh {
      *
 	*/
   static cmplxd integrate(std::function<cmplxd (double)> func, double a, double b, int n=9)
-    {
+  {
 
       const double h = 2./n;
 
@@ -55,10 +55,7 @@ class TanhSinh {
       for (int i=-n ; i<=n; i++) s += w(i) *  func(A*x(i) + B );
 
 	  return A*s;
-}
-
-
-
+  }
 
 };
 

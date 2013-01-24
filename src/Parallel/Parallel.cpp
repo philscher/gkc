@@ -194,9 +194,9 @@ Parallel::~Parallel()
   // free MPI communicators (Comm[] was initialized with MPI_COMM_NULL)
   for(int n=DIR_X; n<DIR_SIZE; n++) if(Comm[n] != MPI_COMM_NULL) MPI_Comm_free(&Comm[n]);
 
-    check(MPI_Finalize(), DMESG("MPI_Finalize"));
+  check(MPI_Finalize(), DMESG("MPI Error"));
  
-    return;
+  return;
 }
 
 

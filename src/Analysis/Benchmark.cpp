@@ -1,3 +1,16 @@
+/*
+ * =====================================================================================
+ *
+ *       Filename: Benchmark.cpp
+ *
+ *    Description: PAPI Benchmark class implementation.
+ *
+ *         Author: Paul P. Hilscher (2012-), 
+ *
+ *        License: GPLv3+
+ * =====================================================================================
+ */
+
 #include <functional>
 
 #include "Benchmark.h"
@@ -7,15 +20,14 @@
 Benchmark::Benchmark(Setup *setup, Parallel *_parallel) : parallel(_parallel)
 {
       
-   int EventSet = PAPI_NULL;
-   int retval;
+  int EventSet = PAPI_NULL;
+  int retval;
   
+  BlockSize_X=1, BlockSize_V=1;
 
-   BlockSize_X=1, BlockSize_V=1;
+  useBenchmark = setup->get("Benchmark.usePAPI", 0);
 
-   useBenchmark = setup->get("Benchmark.usePAPI", 0);
-
-   if(useBenchmark) {
+  if(useBenchmark) {
    //int Events[2] = { PAPI_TOT_CYC, PAPI_TOT_INS };
 /*  
    // Initialize the PAPI library 
@@ -30,73 +42,69 @@ Benchmark::Benchmark(Setup *setup, Parallel *_parallel) : parallel(_parallel)
    check(PAPI_add_event(EventSet, PAPI_TOT_INS) != PAPI_OK, DMESG("Could not add Event"));
 */
 // reset counters PAPIF_stop_counters(NULL, array_length, check)
-   }
+  }
   
-   simMaxGFLOPS = 0.;
-};
+  simMaxGFLOPS = 0.;
+}
    
 Benchmark::~Benchmark()
-   {
-      if(useBenchmark) PAPI_shutdown();
-   };
+{
+  if(useBenchmark) PAPI_shutdown();
+}
 
 
 void Benchmark::bench(Vlasov *vlasov, Fields *fields) 
 {
-      if(!useBenchmark) return;
+  if(!useBenchmark) return;
       
-     // Set difference optimization options
-     for(BlockSize_X=1; BlockSize_X<Nx/8; BlockSize_X+=4) {
-     for(BlockSize_V=1; BlockSize_V<Nv/8; BlockSize_V+=4) {
+    // Set difference optimization options
+    for(BlockSize_X = 1; BlockSize_X < Nx/8; BlockSize_X += 4) {
+    for(BlockSize_V = 1; BlockSize_V < Nv/8; BlockSize_V += 4) {
         
-
-         auto benchtest = [=] (std::function<void ()> func) -> double { 
+      auto benchtest = [=] (std::function<void ()> func) -> double { 
         
-            double gflops = 0.;
-            const int niter=16;
+        double gflops   = 0.;
+        const int niter = 16;
 
-       start("Vlasov"); 
-       for(int i=0;i<niter;i++) func() ; 
-       gflops = stop("Vlasov"); //((double) niter);
+        start("Vlasov"); 
+        for(int i=0;i<niter;i++) func() ; 
+        gflops = stop("Vlasov"); //((double) niter);
       
-            return gflops;
+        return gflops;
     };
 
-     auto vlasov_plain = [=] (void) { 
-             const double rk[] = { 1., 2., 0.};
-      vlasov->solve(vlasov->getEquationType(), fields, vlasov->fss , vlasov->f, 1.e-3 , 2, rk); 
-     };
-     
-          auto vlasov_full = [=] (void) { 
-             const double rk[] = { 1., 2., 0.};
-      vlasov->solve(fields, vlasov->fss , vlasov->f , 1.e-3 , 2, rk); 
-     };
-          
-     auto poisson = [=] (void) { 
-           fields->solve(vlasov->f0,vlasov->fs);
-     };
+    auto vlasov_plain = [=] (void) {
 
-     auto full_step = [=] (void) {
+      const double rk[] = { 1., 2., 0.};
+      vlasov->solve(vlasov->getEquationType(), fields, vlasov->fss , vlasov->f, 1.e-3 , 2, rk); 
+    };
+     
+    auto vlasov_full = [=] (void) { 
+
+      const double rk[] = { 1., 2., 0.};
+      vlasov->solve(fields, vlasov->fss , vlasov->f , 1.e-3 , 2, rk); 
+    };
+          
+    auto poisson = [=] (void) { 
+
+           fields->solve(vlasov->f0,vlasov->fs);
+    };
+
+    auto full_step = [=] (void) {
              vlasov_full(); poisson(); 
     };
                
-    // auto full_step = [=] (void) {
-         //   double dt = timeIntegration->solveTimeStep(vlasov, fields, particles, timing);        
-    //};
-
-
-          std::cout << "Vlasov plain " << benchtest(vlasov_plain) << std::endl;
-          std::cout << "Vlasov full  " << benchtest(vlasov_full ) << std::endl;
-          std::cout << "Poisson      " << benchtest(poisson     ) << std::endl;
-          double ggflops = benchtest(full_step  );
-          simMaxGFLOPS   = std::max(simMaxGFLOPS, ggflops);
-          std::cout << "One Step     " << ggflops << std::endl;
+    std::cout << "Vlasov plain " << benchtest(vlasov_plain) << std::endl;
+    std::cout << "Vlasov full  " << benchtest(vlasov_full ) << std::endl;
+    std::cout << "Poisson      " << benchtest(poisson     ) << std::endl;
+    double ggflops = benchtest(full_step  );
+    simMaxGFLOPS   = std::max(simMaxGFLOPS, ggflops);
+    std::cout << "One Step     " << ggflops << std::endl;
    
-       }
-   }
+   } } // BlockSize_V, BlockSize_X
    
 
-};
+}
 
  
 void Benchmark::writeData(const Timing &timing, const double dt) 
@@ -111,67 +119,70 @@ void Benchmark::closeData()
 
 }
 
+
 void Benchmark::printOn(std::ostream &output) const
  {
 
-  double totalFLOPS = parallel->reduce(simMaxGFLOPS, Op::sum) * parallel->numThreads;
-  //output << "Benchmark  | using PAPI  " << PAPI_VERSION_MAJOR << "." << PAPI_VERSION_MINOR <<  "   Available Counters : " << num_hwcntrs << std::endl;
-  output << "           | Total GFLOPS : " << std::setprecision(3) << totalFLOPS    << "   " <<
-                        " Average GFLOPS/CPU : "  << totalFLOPS/(parallel->numProcesses * parallel->numThreads) << std::endl;
-                          
+  double totalFLOPS    = parallel->reduce(simMaxGFLOPS, Op::sum) * parallel->numThreads;
+  double flops_per_cpu = totalFLOPS/(parallel->numProcesses * parallel->numThreads) ;
+
+  output << "           | Total GFLOPS : " << std::setprecision(3) << totalFLOPS 
+         <<     "   Average GFLOPS/CPU : " << flops_per_cpu        << std::endl;
 
 }
 
-
   
 std::string Benchmark::getPAPIErrorString(int error_val)
-  {
-     const int max_str_len = 128;
-     char error_str[max_str_len];
+{
+
+  const int max_str_len = 128;
+  char error_str[max_str_len];
      //PAPI_perror(error_val, error_str, max_str_len);
-     return std::string(error_str);
-  };
+  return std::string(error_str);
+
+}
 
    
 void Benchmark::start(std::string id, int type)
 
 { 
-      if(!useBenchmark) return; 
-      int ret;
-      // Setup PAPI library and begin collecting data from the counters
-      if((ret = PAPI_flops( &M.rtime, &M.ptime, &M.flpops, &M.mflops)) < PAPI_OK)
-      ;//   check(-1, DMESG(getPAPIErrorString(ret))); 
-    clock_gettime(CLOCK_REALTIME, &ts_start); 
-
-};
+  if(!useBenchmark) return; 
+  
+  int ret;
+  // Setup PAPI library and begin collecting data from the counters
+  if((ret = PAPI_flops( &M.rtime, &M.ptime, &M.flpops, &M.mflops)) < PAPI_OK);
+  clock_gettime(CLOCK_REALTIME, &ts_start); 
+}
 
 double Benchmark::stop(std::string id, int type)
-   {
-      if(!useBenchmark) return 0.; 
+{
 
-      int ret;
-      // Setup PAPI library and begin collecting data from the counters
-      if((ret = PAPI_flops( &M.rtime, &M.ptime, &M.flpops, &M.mflops)) < PAPI_OK)
-      ;//   check(-1, DMESG(getPAPIErrorString(ret)));
+  if(!useBenchmark) return 0.; 
+
+  int ret;
+  
+  // Setup PAPI library and begin collecting data from the counters
+  
+  if((ret = PAPI_flops( &M.rtime, &M.ptime, &M.flpops, &M.mflops)) < PAPI_OK);
+
+  clock_gettime(CLOCK_REALTIME, &ts_end); 
     
-      clock_gettime(CLOCK_REALTIME, &ts_end); 
+  
+  
+  double secs  = (ts_end.tv_sec - ts_start.tv_sec);
+  double nsecs = (ts_end.tv_nsec - ts_start.tv_nsec);
     
-       double secs  = (ts_end.tv_sec - ts_start.tv_sec);
-       double nsecs = (ts_end.tv_nsec - ts_start.tv_nsec);
-    
-       double time = secs + nsecs * 1.e-9;
+  double time  = secs + nsecs * 1.e-9;
 
-       long long flop = M.flpops;//parallel->reduce(M.flpops);
+  long long flop = M.flpops;//parallel->reduce(M.flpops);
 
-       const double gflops = M.mflops/1.e3;
+  const double gflops = M.mflops/1.e3;
 
-       return gflops;
-   //  std::cout << std::endl << id << " @ GFLOP/s : " << std::setprecision(2) << std::setiosflags(ios::fixed) << setw(5) << (M.mflops/1.e3) << std::endl;
-  //   std::cout << std::endl << id << "M@ GFLOP/s : " << std::setprecision(2) << std::setiosflags(ios::fixed) << setw(5) << (flop/1.e9/time) << std::endl;
-   };
+  return gflops;
+
+}
 
 
-    
 void Benchmark::initData(Setup *setup, FileIO *fileIO)
 {
    
@@ -202,5 +213,5 @@ void Benchmark::initData(Setup *setup, FileIO *fileIO)
 
   H5Gclose(benchGroup);
 
-};
+}
 

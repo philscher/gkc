@@ -156,12 +156,12 @@ void Plasma::printOn(std::ostream &output) const
   // print kinetic species
   for(int s = 1; s <= Ns; s++) {
 
-    output << "      " << s    << " |  "        << std::setw(12) << species[s].name  
+    output << "         " << s << " | "        << std::setw(12) << species[s].name  
            <<                    std::setprecision(2) 
-           <<        "  q : " << species[s].q   << "  m : " << species[s].m   
-           <<        "  T : " << species[s].T0  << "  n : " << species[s].n0  
-           <<        " ωn : " << species[s].w_n << " ωT : " << species[s].w_T 
-           <<     " Model : " << species[s].gyroModel       << std::endl;
+           << "  n : " << species[s].n0  << "  q : " << species[s].q   
+           << "  m : " << species[s].m   << "  T : " << species[s].T0  
+           << " ωn : " << species[s].w_n << " ωT : " << species[s].w_T 
+           << " Model : " << species[s].gyroModel       << std::endl;
   } 
      
 }

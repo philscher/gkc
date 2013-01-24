@@ -145,7 +145,6 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
   NzGB = Nz + 2*NxGC  ; NvGB = Nv + 2*NxGC;
   NmGB = Nm           ; NsGB = Ns;
 
-  
   // Set Ranges of Local Domain (LD)
   RxLD.setRange(NxLlD,NxLD);
   RzLD.setRange(NzLlD,NzLD);
@@ -161,7 +160,6 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
   RmLB.setRange(NmLlB,NmLB);
   RsLB.setRange(NsLlB,NsLB);
     
-  
   RxLB4.setRange(NxLlB-2,NxLB+4);
   
   // Set Ranges of Global Boundary (LB)
@@ -180,7 +178,6 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
  
   ///////////////  Set Grid  Domain ////////////
 
-  
   // X (Note : For gyro-averaged fields we have extended boubdaries
   ArrayX = nct::allocate(nct::Range(NxGlB-2, NxGB+4))(&X);
   ArrayZ = nct::allocate(RzGB)(&Z);
@@ -189,17 +186,20 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
 
   // Use  equidistant grid for X, Z and V
   bool includeX0Point = setup->get("Grid.IncludeX0Point", 0);
-  for(int x = NxGlB-2; x <= NxGuB+2; x++) X[x] = -  Lx/2. + dx * ( x - NxGC - 1) + ((includeX0Point) ? dx/2. : 0.);
-  //for(int z = NzGlB; z <= NzGuB; z++) Z[z] = dz * ( z - NzGC - 1);
-  for(int z = NzGlB; z <= NzGuB; z++) Z[z] = -  Lz/2. + dz * ( z - NzGC - 1) ;
-  for(int v = NvGlB; v <= NvGuB; v++) V[v] = -  Lv + dv * ( v - NvGlD);
+  for(int x = NxGlB-2; x <= NxGuB+2; x++) X[x] = -Lx/2. + dx * (x - NxGC - 1) + ((includeX0Point) ? dx/2. : 0.);
+  for(int z = NzGlB; z <= NzGuB; z++) Z[z] = -Lz/2. + dz * (z - NzGC - 1) ;
+  for(int v = NvGlB; v <= NvGuB; v++) V[v] = -Lv + dv * (v - NvGlD);
     
-  // M For mu we can choose between linear and Gaussian integration
-  // In case of Nm=1 (drift-kinetic, gyro-1st), dm = 1, and M = 0. ! should it be automatic ?
+  // M For mu we can choose between various integration type e.g. rectangle or Gaussian
+  // @todo use setup to define integration method
   Integrate integrate("Gauss-Legendre", Nm, 0., Lm);
-  for(int m=NmGlD, n=0; m <= NmGuD; m++, n++) { M[m] = (Nm == 1) ? 0. : integrate.x(n) ; dm[m] = (Nm ==1) ? 1. : integrate.w(n); }
 
-  
+  for(int m = NmGlD, n = 0; m <= NmGuD; m++, n++) {
+
+    M [m] = (Nm == 1) ? 0. : integrate.x(n) ; 
+    dm[m] = (Nm == 1) ? 1. : integrate.w(n); 
+  }
+
   // Set local jacobian (better use geometry module ?)
   dXYZ  = dx * dy * dz;
   dXYZV = dx * dy * dz * dv;
@@ -213,37 +213,24 @@ Grid::~Grid ()
 
 }
 
-
-
-
 void Grid::printOn(std::ostream &output) const 
 {
-  bool do_gyro = Nm > 1 ? true : false;
+
+  bool doGyro = Nm > 1 ? true : false;
   
-  output   << "Domain     |  Lx : " << Lx << "  Ly : " << Ly << "  Lz : " << Lz << "  Lv : " << Lv << ((do_gyro) ? std::string("  Lm : ") + Setup::num2str(Lm) : "") << std::endl
-                  << "Grid       |  Nx : " << Nx << "  Nky : " << Nky << "  Nz : " << Nz << "  Nv : " << Nv << ((do_gyro) ? std::string("  Nμ : ") + Setup::num2str(Nm) : "") << std::endl;
+  output << "Domain     |  Lx : " << std::setw(4) << Lx << "   Ly : " << std::setw(4) << Ly 
+         <<             "  Lz : " << std::setw(4) << Lz <<  "  Lv : " << std::setw(4) << Lv 
+         << std::setw(4)          << (doGyro ? std::string( "  Lm : ") + Setup::num2str(Lm) : "") << std::endl
+         << "Grid       |  Nx : " << std::setw(4) << Nx << "  Nky : " << std::setw(4) << Nky 
+                     << "  Nz : " << std::setw(4) << Nz <<  "  Nv : " << std::setw(4) << Nv 
+         << std::setw(4)          << (doGyro ? std::string( "  Nμ : ") + Setup::num2str(Nm) : "") << std::endl;
      
-            
- #ifdef _DEBUG
-            output << 
-              "Domain     | " <<
-            
-                        "X(" << Nx << " " << NxGlD << "-" << NxGuD << ") "  
-                        "Y(" << Ny << " " << NyGlD << "-" << NyGuD << ") "  
-                        "Z(" << Nz << " " << NzGlD << "-" << NzGuD << ") "  
-                        "V(" << Nv << " " << NvGlD << "-" << NvGuD << ") "  
-                        "M(" << Nm << " " << NmGlD << "-" << NmGuD << ") "  
-                        "S(" << Ns << " " << NsGlD << "-" << NsGuD << ") "  
-                                                                            << std::endl
-                        << "          | " << std::endl ;
-#endif
-           
-    }
+}
     
 void Grid::initData(FileIO *fileIO) 
 {
 
-  hid_t gridGroup = fileIO->newGroup("/Grid", fileIO->getFileID());
+  hid_t gridGroup = fileIO->newGroup("/Grid");
           
   // Length scale
   check(H5LTset_attribute_double(gridGroup, ".", "Lx", &Lx, 1), DMESG("Attribute"));
@@ -270,3 +257,4 @@ void Grid::initData(FileIO *fileIO)
 
   return;
 }
+
