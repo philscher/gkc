@@ -195,14 +195,6 @@ public:
        Collisions(Setup *setup, Geometry *geometry) {};
   
        void initData(hid_t fileID) {
-  //######################################################################################
-     // For electric and magnetic potential
-     hid_t collisionGroup = check(H5Gcreate(fileID, "/Collisions",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
-     
-     check(H5LTset_attribute_double(collisionGroup, ".", "Nu", &nu, 1), DMESG("H5LTset_attribute"));
-     
-     H5Gclose(collisionGroup);
-
   }   
      
 protected:

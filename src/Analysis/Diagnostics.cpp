@@ -224,7 +224,7 @@ void Diagnostics::initData(Setup *setup, FileIO *fileIO)
     
   //----------------  Moments - Heat fluxes ------------------
      
-  hid_t momGroup = check(H5Gcreate(fileIO->getFileID(), "/Moments", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
+  hid_t momGroup = fileIO->newGroup("Moments");
 
   hsize_t mom_dsdim[] =  { Ns     , Nz     , Nky, Nx     , 1             };
   hsize_t mom_dmdim[] =  { Ns     , Nz     , Nky, Nx     , H5S_UNLIMITED };

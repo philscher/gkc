@@ -112,7 +112,7 @@ class Collisions_LenardBernstein : public Collisions {
   *
   *
   **/
-  virtual void initData(hid_t fileID); 
+  virtual void initData(Setup *setup, FileIO *fileIO);
   
   /**
   * Program output

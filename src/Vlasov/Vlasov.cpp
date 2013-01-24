@@ -225,8 +225,8 @@ void Vlasov::initData(Setup *setup, FileIO *fileIO)
 {
    
   //// Phasespace Group 
-  hid_t psfGroup =  fileIO->newGroup("/Vlasov", fileIO->getFileID());
-  //H5Gset_comment(psfGroup, "/Vlasov", "Stores the phase space function");
+  hid_t psfGroup = fileIO->newGroup("/Vlasov", fileIO->getFileID());
+  //set object attributes "Stores the phase space function");
 
   check(H5LTset_attribute_double(psfGroup, ".", "HyperViscosity", hyp_visc, 6), DMESG("Attribute"));
   
@@ -315,5 +315,4 @@ void Vlasov::printOn(std::ostream &output) const
   for(int dir = DIR_X; dir <= DIR_S; dir++) output << hyp_visc[dir] << " ";
   output << " ] " << std::endl;
 }
-
 

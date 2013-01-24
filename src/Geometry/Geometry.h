@@ -237,17 +237,19 @@ class Geometry : public IfaceGKC
   **/ 
   void initData(FileIO *fileIO) {
 
-        hid_t geometryGroup = check(H5Gcreate(fileIO->getFileID(), "/Geometry",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group for Geometry : H5Gcreate"));
-        initData(geometryGroup); 
-        H5Gclose(geometryGroup);
-   } ;
+    hid_t geometryGroup = fileIO->newGroup("Geometry");
+
+    initData(geometryGroup); 
+    H5Gclose(geometryGroup);
+
+   };
         
    
   virtual void initData(hid_t geometryGroup) = 0;
 
-     // is it necessary for later timesteps to 
-     virtual void writeData(Timing *timing) {};
-     virtual void closeData() {};
+  // is it necessary for later timesteps to 
+  virtual void writeData(Timing *timing) {};
+  virtual void closeData() {};
 
 
 };

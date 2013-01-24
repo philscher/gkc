@@ -147,7 +147,7 @@ void Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const
 };
 
 
- void Collisions_LenardBernstein::printOn(std::ostream &output) const 
+void Collisions_LenardBernstein::printOn(std::ostream &output) const 
 {
 
   output   << "Collisions |  Drift-Kinetic Lenard-Bernstein  β = " << beta 
@@ -155,9 +155,9 @@ void Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const
   
 }
 
-void Collisions_LenardBernstein::initData(hid_t fileID) 
+void Collisions_LenardBernstein::initData(Setup *setup, FileIO *fileIO)
 {
-  hid_t collisionGroup = check(H5Gcreate(fileID, "/Collisions",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Collision : H5Gcreate"));
+  hid_t collisionGroup = fileIO->newGroup("Collisions");
      
   check(H5LTset_attribute_string(collisionGroup, ".", "Model", "Lenard-Bernstein"), DMESG("H5LTset_attribute"));
   check(H5LTset_attribute_double(collisionGroup, ".", "Beta" , &beta, 1), DMESG("H5LTset_attribute"));

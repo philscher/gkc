@@ -168,7 +168,7 @@ void Plasma::printOn(std::ostream &output) const
 void Plasma::initData(FileIO *fileIO) 
 {
   
-  hid_t plasmaGroup = check(H5Gcreate(fileIO->getFileID(), "/Plasma",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group for Geometry : H5Gcreate"));
+  hid_t plasmaGroup = fileIO->newGroup("Plasma");
 
   check(H5LTset_attribute_double(plasmaGroup, ".", "Debye2",  &debye2, 1), DMESG("H5LTset_attribute"));
   check(H5LTset_attribute_double(plasmaGroup, ".", "beta"  ,  &beta  , 1), DMESG("H5LTset_attribute"));

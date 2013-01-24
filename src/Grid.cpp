@@ -242,7 +242,8 @@ void Grid::printOn(std::ostream &output) const
     
 void Grid::initData(FileIO *fileIO) 
 {
-  hid_t gridGroup = check(H5Gcreate(fileIO->getFileID(), "/Grid",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phasespace : H5Gcreate"));
+
+  hid_t gridGroup = fileIO->newGroup("/Grid", fileIO->getFileID());
           
   // Length scale
   check(H5LTset_attribute_double(gridGroup, ".", "Lx", &Lx, 1), DMESG("Attribute"));

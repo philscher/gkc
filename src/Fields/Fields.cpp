@@ -281,7 +281,7 @@ void Fields::initData(Setup *setup, FileIO *fileIO)
      
   bool fieldsWrite = (parallel->Coord[DIR_VMS] == 0);
      
-  hid_t fieldsGroup = check(H5Gcreate(fileIO->getFileID(), "/Fields", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Phi : H5Gcreate"));
+  hid_t fieldsGroup = fileIO->newGroup("Fields");
      
   FA_fields      = new FileAttr("Phi" , fieldsGroup, fileIO->file, 5, field_dim, field_maxdim, field_cdim, field_moff, field_cBdim, field_off, fieldsWrite, fileIO->complex_tid);
   FA_fieldsTime  = fileIO->newTiming(fieldsGroup);

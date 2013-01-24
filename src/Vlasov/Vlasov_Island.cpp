@@ -320,7 +320,7 @@ void VlasovIsland::Vlasov_2D_Island(
 void VlasovIsland::initDataOutput(Setup *setup, FileIO *fileIO) 
 {
     
-   hid_t islandGroup = check(H5Gcreate(fileIO->getFileID(), "/Islands",H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("H5Gcreate"));
+   hid_t islandGroup = fileIO->newGroup("Islands");
           
    // Length scale
    check(H5LTset_attribute_double(islandGroup, ".", "MagIs"    , &MagIs[NxGlD]    , Nx), DMESG("Attribute"));

@@ -123,6 +123,8 @@ public:
 
   virtual void printOn(std::ostream &output) const {};
 
+  virtual void initData(Setup *setup, FileIO *fileIO) {};
+
 };
 
 

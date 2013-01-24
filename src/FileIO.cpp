@@ -22,9 +22,9 @@
 #include "Special/Vector3D.h"
 
 typedef struct ComplexSplit_t {
-      double r;   // real part
-      double i;   // imaginary part
-}  ComplexSplit;
+  double r;   ///< real part
+  double i;   ///< imaginary part
+} ComplexSplit;
 
 
 FileIO::FileIO(Parallel *_parallel, Setup *setup)  :  parallel(_parallel)
@@ -115,7 +115,7 @@ void FileIO::create(Setup *setup, bool allowOverwrite)
    
   hid_t infoGroup = newGroup("/Info");
    
-  check(H5LTset_attribute_string(infoGroup, ".", "Output" , outputFileName.c_str()), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_string(infoGroup, ".", "Output" , outputFileName.c_str()), DMESG("HDF-5 Error"));
   check(H5LTset_attribute_string(infoGroup, ".", "Input"  , inputFileName.c_str()) , DMESG("H5LTset_attribute"));
   check(H5LTset_attribute_string(infoGroup, ".", "Version", PACKAGE_VERSION)       , DMESG("H5LTset_attribute"));
   check(H5LTset_attribute_string(infoGroup, ".", "Info"   , info.c_str())          , DMESG("H5LTset_attribute"));
