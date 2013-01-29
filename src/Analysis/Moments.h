@@ -138,7 +138,8 @@ class Moments
   **/
   void getMoment(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
                  const CComplex Field0[Nq][NzLD][Nky][NxLD],
-                 CComplex Mom[8][NsLD][NzLD][Nky][NxLD], const int a, const int b, const int idx);
+                 CComplex Mom[8][NsLD][NzLD][Nky][NxLD], 
+                 const int a, const int b, const int idx);
 
   /**
   *   @brief Calculates moments of the phase-space function
@@ -147,7 +148,7 @@ class Moments
   *
   **/
   void getMoments(const CComplex     f    [NsLD][NmLD][NzLB][NkyLD][NxLB  ][NvLB],
-                  const CComplex Field0[Nq][NzLD][NkyLD][NxLD],
+                  const CComplex   Field0[Nq][NzLD][Nky][NxLD],
                         CComplex Mom[8][NsLD][NzLD][Nky][NxLD]); 
 
 };

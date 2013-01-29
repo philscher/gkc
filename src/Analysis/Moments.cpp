@@ -18,7 +18,7 @@ Moments::Moments(Setup *setup, Vlasov *_vlasov, Fields *_fields, Grid *_grid, Pa
 : vlasov(_vlasov), fields(_fields), grid(_grid), parallel(_parallel) 
 {
 
-   doFieldCorrections = setup->get("Moments.FieldCorrections", 1);
+  doFieldCorrections = setup->get("Moments.FieldCorrections", 1);
 
 }
 
@@ -45,8 +45,8 @@ void Moments::getMoments(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB  ]
 
 
 
-void Moments::getMoment(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
-                        const CComplex Field0[Nq][NzLD][Nky][NxLD],
+void Moments::getMoment(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
+                        const CComplex  Field0[Nq][NzLD][Nky][NxLD],
                         CComplex Mom[8][NsLD][NzLD][Nky][NxLD], const int a, const int b, const int idx)
 {
   Mom[idx][:][:][:][:] = 0.;
@@ -57,7 +57,7 @@ void Moments::getMoment(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB  ][
   
   // We have set to zero, because gyro-averaging operator courrently requires size [Nq][...].
   // and surplus arrys may contain NaN
-  Mom_m[1:Nq-1][:][:][:] = 0.;
+  if(Nq > 1) Mom_m[1:Nq-1][:][:][:] = 0.;
 
   for(int s = NsLlD; s <= NsLuD; s++) {
     

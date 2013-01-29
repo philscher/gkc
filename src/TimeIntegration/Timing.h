@@ -11,11 +11,11 @@
  * =====================================================================================
  */
 
-#ifndef __TIMING_H
-#define __TIMING_H
+#ifndef __GKC_TIMING_H__
+#define __GKC_TIMING_H__
+
 
 #include "Global.h"
-
 
 #include<ctime>
 
@@ -36,7 +36,7 @@ struct Timing {
   *    Please Document Me !
   *
   **/
-  Timing(int _step=-1, double _time=-1.) : step(_step), time(_time) {};
+  Timing(int _step = -1, double _time = -1.) : step(_step), time(_time) {};
 
   /**
   *    Please Document Me !
@@ -107,7 +107,4 @@ struct Timing {
 
 };
 
-
-
-
-#endif // __TIMING_H
+#endif // __GKC_TIMING_H__

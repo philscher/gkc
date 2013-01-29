@@ -26,7 +26,7 @@
 **/
 class Vector3D {
 
-  public:
+ public:
 
   double x, ///< x-component
          y, ///< y-component

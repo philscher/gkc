@@ -19,7 +19,7 @@
 class TanhSinh {
 
   public:
-	/**
+ /**
      *      Extracted from wikipedia article 
      *
      *      \int_{-1}^1 f(x) dx \approx \sum_k={-\infty}^\infty \omega_k f(x_k)
@@ -38,7 +38,7 @@ class TanhSinh {
      *
      *
      *
-	*/
+ */
   static cmplxd integrate(std::function<cmplxd (double)> func, double a, double b, int n=9)
   {
 
@@ -48,13 +48,13 @@ class TanhSinh {
       auto x =  [=] (int k) -> double { return tanh(0.5 * M_PI * sinh(k * h)) ; };
       auto w =  [=] (int k) -> double { return 0.5 * h  * M_PI * cosh(k * h) / pow2(cosh(0.5 * M_PI * sinh( k *h))) ;};
 
-	  const double A = 0.5*(b-a);
-	  const double B = 0.5*(b+a);
+   const double A = 0.5*(b-a);
+   const double B = 0.5*(b+a);
 
       cmplxd s = 0. ;
       for (int i=-n ; i<=n; i++) s += w(i) *  func(A*x(i) + B );
 
-	  return A*s;
+   return A*s;
   }
 
 };

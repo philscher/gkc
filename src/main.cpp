@@ -104,11 +104,13 @@ int main(int argc, char **argv)
   delete setup;
     
   time(&end_all_time);
-  if(process_rank == MASTER_PROCESS) 
-     std::cout << "Running Time : Total : " <<  end_all_time - start_all_time 
-               << "s   Loop Time :  "       << end_sim_time - start_sim_time << "s" <<std::endl;
+
+  if(process_rank == MASTER_PROCESS) {
+
+    std::cout << "Total Time : " << end_all_time - start_all_time << "s" 
+              << " Loop Time : " << end_sim_time - start_sim_time << "s" <<std::endl;
+  }
 
   return 0;
-
 }
 

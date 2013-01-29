@@ -44,18 +44,18 @@ void signal_handler(int sig)
                 signal(sig, SIG_IGN);
                 System::printStackTrace();
                 control_triggered_signal |= sig;
-		break;
+    break;
     case(SIGSEGV) : 
                 std::cerr << "SIGSEGV received. Exiting ..." << std::endl; 
                 // ignore subsequent signals (otherwise program may slow down) 
                 signal(sig, SIG_IGN);
                 System::printStackTrace();
-		abort();
+    abort();
                 break;
     default       :
                 std::cerr << strsignal(sig) << " received. Exiting ..." << std::endl; 
                 control_triggered_signal |= sig;
-			
+      
  
     }
   
@@ -140,7 +140,6 @@ bool Control::checkOK(Timing timing, Timing maxTiming)
 
 {
    int isOK = true;
-   
   // #pragma omp single 
   // {
 
@@ -171,7 +170,7 @@ bool Control::checkOK(Timing timing, Timing maxTiming)
       isOK = cntrl.isOK(); 
       // Check if stopping signal was triggered on other processes
       //cntrl.check(parallel->collect(cntrl.isOK(), Op::LAND, DIR_ALL) == true, "(4) Interupted by other processor"); 
-//      cntrl.check(parallel->reduce(isOK, Op::LAND, DIR_ALL) == true, "(4) Interupted by other processor"); 
+      cntrl.check(parallel->reduce(isOK, Op::land, DIR_ALL) == true, "(4) Interupted by other processor"); 
    //}
   // #pragma omp flush
       return isOK;

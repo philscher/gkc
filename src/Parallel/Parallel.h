@@ -242,9 +242,10 @@ struct NeighbourDir {
   *
   *
   **/
-  template<class T>  void  reduce(T *A, Op op, int dir, int Num, bool allreduce=true)
+  template<class T>  void  reduce(T *A, Op op, int dir, int num, bool allreduce=true)
   {
-    // No need to reduce if not decomposed (should be handled by MPI library if in-place or ?
+    // No need to reduce if not decomposed in corresponding direction 
+    // (should be handled by MPI library if in-place or ?
     if( (dir <= DIR_S) && (decomposition[dir] == 1)) return;
 
     // make range check for debugging
@@ -254,9 +255,9 @@ struct NeighbourDir {
 
 #ifdef GKC_PARALLEL_MPI
     if(allreduce == true)
-        check(MPI_Allreduce(MPI_IN_PLACE, A, Num, mpi_type, getMPIOp(op), Comm[dir]), DMESG("MPI_AllReduce")); 
+        check(MPI_Allreduce(MPI_IN_PLACE, A, num, mpi_type, getMPIOp(op), Comm[dir]), DMESG("MPI_AllReduce")); 
     else 
-        check(MPI_Reduce((Coord[dir] == 0) ? MPI_IN_PLACE : A, A, Num, mpi_type, getMPIOp(op), dirMaster[dir], Comm[dir]), DMESG("MPI_Reduce"   )); 
+        check(MPI_Reduce((Coord[dir] == 0) ? MPI_IN_PLACE : A, A, num, mpi_type, getMPIOp(op), dirMaster[dir], Comm[dir]), DMESG("MPI_Reduce"   )); 
 #endif
     return;
   }

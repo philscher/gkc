@@ -14,8 +14,8 @@
 // ToDO : Use Fields instead of phi , Ap, Bp
 
 
-#ifndef VISUALIZATION_DATA_H_
-#define VISUALIZATION_DATA_H_
+#ifndef __GKC_VISUALIZATION_DATA_H__
+#define __GKC_VISUALIZATION_DATA_H__
 
 
 #include "Visualization.h"
@@ -36,19 +36,18 @@
 **/
 class Visualization_Data : public Visualization {
 
-   FileAttr *FA_slphi, *FA_slAp, *FA_slBp, *FA_sldn, *FA_sln, *FA_slT, *FA_slphiTime, *FA_slF1, *FA_slF1Time, *FA_XV ;
+  FileAttr *FA_slphi, *FA_slAp, *FA_slBp, *FA_sldn, *FA_sln, *FA_slT, *FA_slTime, *FA_slF1, *FA_slF1Time, *FA_XV ;
   
-   bool visXV;
+  bool visXV;
 
-  public:
+ public:
 
-   Visualization_Data(Grid *grid, Parallel *parallel, Setup *setup, FileIO *fileIO, Vlasov *_vlasov, Fields *_fields);
+  Visualization_Data(Grid *grid, Parallel *parallel, Setup *setup, FileIO *fileIO, Vlasov *_vlasov, Fields *_fields);
     
-   ~Visualization_Data();
+ ~Visualization_Data();
 
-   void writeData(const Timing &timing, const double dt, const bool force=false) ;
+  void writeData(const Timing &timing, const double dt, const bool force=false) ;
 
 };
 
-
-#endif // VISUALIZATION_DATA_H_
+#endif // __GKC_VISUALIZATION_DATA_H__

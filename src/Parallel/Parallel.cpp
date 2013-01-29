@@ -29,7 +29,9 @@ int threadID;
 void check_mpi(MPI_Comm *comm, int *err_code, ...) 
 {
 
-  char string[MPI_MAX_ERROR_STRING]; int len;
+  char string[MPI_MAX_ERROR_STRING]; 
+  int len;
+  
   MPI_Error_string(*err_code, string, &len);
 
   std::cerr << "MPI Error : " << string << std::endl;  
@@ -52,19 +54,17 @@ Parallel::Parallel(Setup *setup)
 
 #ifdef GKC_PARALLEL_OPENMP
   useOpenMP = true;
-  // if OpenMP is enabled, we decompose over y direction
-  // Number of threads is set through decomposition
   #pragma omp parallel
-  {
-    if(omp_get_thread_num() == 0) numThreads = omp_get_num_threads();
-  }
+  if(omp_get_thread_num() == 0) numThreads = omp_get_num_threads();
+
 #endif // GKC_PARALLEL_OPENMP
 
-  for(int d=DIR_X;d<DIR_SIZE;d++) Comm[d] = MPI_COMM_NULL;
+  for(int d = DIR_X; d < DIR_SIZE; d++) Comm[d] = MPI_COMM_NULL;
 
   //////////////////////// Set Message tags, enumerate through ////////////////////////
-  int i = 14665; // some random number to not to interfere with other
-  // do its in one loop ?
+  
+  int i = 14665; // a unique (random) number 
+  
   for(int dir = DIR_X; dir <= DIR_S; dir++) {
 
     Talk[dir].psf_msg_tag[0] = ++i; Talk[dir].psf_msg_tag[1] = ++i;
@@ -73,26 +73,23 @@ Parallel::Parallel(Setup *setup)
    
   // Initialize MPI
   int provided = 0; 
-  int required = numThreads == 1 ? MPI_THREAD_SINGLE : MPI_THREAD_FUNNELED;
-  //MPI_Init_thread(&setup->argc, &setup->argv, required, &provided);
-  MPI_Init_thread(NULL, NULL, required, &provided);
+  int required = numThreads == 1 ? MPI_THREAD_SINGLE : MPI_THREAD_SERIALIZED;
+  
+  MPI_Init_thread(&setup->argc, &setup->argv, required, &provided);
   //check(provided < required ? -1 : 1, DMESG("MPI : Thread level support not available (use only one thread)"));
 
   MPI_Comm_size(MPI_COMM_WORLD, &numProcesses); 
   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 
-  // set automatic decomposition
+  //////////////////////// Set decomposition //////////////////////////////////
+  
   std::vector<std::string> decomp = Setup::split(setup->get("Parallel.Decomposition","Auto"), ":");
-  // check also if decomp is not longer than N<=6
-  if(decomp[0] == "Auto")  getAutoDecomposition(numProcesses);
-  else for(int dir=DIR_X; dir < decomp.size() && (dir <= DIR_S); dir++) decomposition[dir] = std::stoi(decomp[dir]);
- 
-  // Note : if OpenMP is enabled OpenMP, we decompose in Y in OpenMP threads (not clean solution tough)
-#ifdef GKC_PARALLEL_OPENMP
-  #pragma omp parallel
-  omp_set_num_threads(numThreads);
-#endif
 
+  if(decomp.size() > 6) check(-1, DMESG("Decomposition only up to six dimensions"));
+
+  if(decomp[0] == "Auto")  getAutoDecomposition(numProcesses);
+  else for(int dir = DIR_X; dir < decomp.size() && (dir <= DIR_S); dir++) decomposition[dir] = std::stoi(decomp[dir]);
+ 
   checkValidDecomposition(setup);
    
   /////////////////// Create 6-D Cartesian Grid ////////////////////
@@ -126,13 +123,14 @@ Parallel::Parallel(Setup *setup)
   //  communicators. 
   //  better use intializer list
   //
+  
+  auto setSubCommunicator = [=](int dir, int remain_dims[6]) 
+  {
+    int coord_master[6] = { 0, 0, 0, 0, 0, 0 };
+    MPI_Cart_sub (Comm[DIR_ALL], remain_dims, &Comm[dir]);
+    MPI_Cart_rank(Comm[dir    ], coord_master, &dirMaster[dir]);
+  };
   /*
-    auto setSubCommunicator = [=](int dir, std::array<int,6> remain_dims) 
-    {
-      int coord_master[6] = { 0, 0, 0, 0, 0, 0 };
-      MPI_Cart_sub (Comm[DIR_ALL], remain_dims.data(), &Comm[dir]);
-      MPI_Cart_rank(Comm[dir    ], coord_master, &dirMaster[dir]);
-    };
     setSubCommunicator(DIR_X  , { true , false, false, false, false, false } );
     setSubCommunicator(DIR_Z  , { false, false, true , false, false, false } );         
     setSubCommunicator(DIR_V  , { false, false, false, true , false, false } );
@@ -142,12 +140,6 @@ Parallel::Parallel(Setup *setup)
     setSubCommunicator(DIR_VM , { false, false, false, true , true , false } );
     setSubCommunicator(DIR_VMS, { false, false, false, true , true , true  } );
   */
-  auto setSubCommunicator = [=](int dir, int remain_dims[6]) 
-  {
-    int coord_master[6] = { 0, 0, 0, 0, 0, 0 };
-    MPI_Cart_sub (Comm[DIR_ALL], remain_dims, &Comm[dir]);
-    MPI_Cart_rank(Comm[dir    ], coord_master, &dirMaster[dir]);
-  };
   
   // Communicator for X
   int remain_dim_X  [6] = { true , false, false, false, false, false }; setSubCommunicator(DIR_X  , remain_dim_X  );      
@@ -176,7 +168,7 @@ Parallel::Parallel(Setup *setup)
     MPI_Cart_shift(Comm[DIR_ALL], dir, 1, &rank, &Talk[dir].rank_u);
     MPI_Cart_shift(Comm[DIR_ALL], dir,-1, &rank, &Talk[dir].rank_l);
   };
-  //for(int dir: {DIR_X, DIR_Z, DIR_V, DIR_M, DIR_S}) setNeighbourRank(dir);
+  //for(int dir: { DIR_X, DIR_Z, DIR_V, DIR_M, DIR_S }) setNeighbourRank(dir);
   int dirs[] = { DIR_X, DIR_Z, DIR_V, DIR_M, DIR_S };
   for(int i = 0; i < 5; i++) setNeighbourRank(dirs[i]);
   
@@ -187,8 +179,6 @@ Parallel::Parallel(Setup *setup)
 
 }
 
-
-
 Parallel::~Parallel() 
 {
   // free MPI communicators (Comm[] was initialized with MPI_COMM_NULL)
@@ -198,7 +188,6 @@ Parallel::~Parallel()
  
   return;
 }
-
 
 
 void Parallel::updateBoundaryVlasov(CComplex *Sendu, CComplex *Sendl, CComplex *Recvu, CComplex  *Recvl, int num, int dir)
@@ -231,14 +220,11 @@ void Parallel::updateBoundaryVlasov(CComplex *Sendu, CComplex *Sendl, CComplex *
     int tag[2] = { 123123, 123135 }; 
     MPI_Sendrecv(Recvl, num, mpi_type, Talk[dir].rank_u, tag[0], Recvl, num, mpi_type, Talk[dir].rank_l, tag[0], Comm[DIR_ALL], &status[0]);
     MPI_Sendrecv(Recvu, num, mpi_type, Talk[dir].rank_l, tag[1], Recvu, num, mpi_type, Talk[dir].rank_u, tag[1], Comm[DIR_ALL], &status[1]);
-     
   }
 
 #endif // GKC_PARALLEL_MPI
   
   return;
-
-
 }
 
 
@@ -332,8 +318,7 @@ void Parallel::getAutoDecomposition(int numCPU)
   else check(-1, DMESG("Not implemented"));
 
   return;
-
-};
+}
   
 
 void Parallel::checkValidDecomposition(Setup *setup) 
@@ -347,7 +332,7 @@ void Parallel::checkValidDecomposition(Setup *setup)
   if( decomposition[DIR_S] > setup->get("Grid.Ns", 1)) check(-1, DMESG("Decomposition in s bigger than Ns"));
   
   // check if OpenMP threads are equal decompositon
-  if( decomposition[DIR_Y] != numThreads             ) check(-1, DMESG("Failed to set threads. Decomposition[Y] != numThreads. Check OpenMP settings"));
+  if( decomposition[DIR_Y] != numThreads             ) check(-1, DMESG("Failed to set threads. Decomposition[Y] != numThreads. Check OMP_NUM_THREADS"));
    
   // Simple Check if reasonable values are provided for decomposition (only MPI proceeses)
   const int pNs = setup->get("Grid.Ns", 1 );
@@ -356,16 +341,14 @@ void Parallel::checkValidDecomposition(Setup *setup)
   if(((pNs %   decomposition[DIR_S]) != 0    ) && (myRank == 0)) check(-1, DMESG("Decomposition in s have to be modulo of the total number"));
 
    return;
-};
+}
 
 
 void Parallel::print(std::string message)
 {
 
   if(myRank == 0) std::cout << message << std::endl;
-
 }
-
 
 void Parallel::printOn(std::ostream &output) const 
 {
@@ -383,13 +366,11 @@ void Parallel::printOn(std::ostream &output) const
          << "M(" << decomposition[DIR_M] << ")  S(" << decomposition[DIR_S] << ") " << std::endl;
    
   } else output << std::endl;
-
 } 
 
 
 void Parallel::initData(Setup *setup, FileIO *fileIO) 
 {
-
 
   hid_t parallelGroup = fileIO->newGroup("/Parallel");
    
@@ -406,9 +387,8 @@ void Parallel::initData(Setup *setup, FileIO *fileIO)
   
   H5LTset_attribute_string(parallelGroup, ".", "MPI Version",  (Setup::num2str(version) + "." + Setup::num2str(subversion)).c_str());
   
- 
   H5Gclose(parallelGroup);
-};
+}
 
 
 int Parallel::getNumberOfWorkers(int dir) 
@@ -416,8 +396,7 @@ int Parallel::getNumberOfWorkers(int dir)
   int numWorkers = 0;
   MPI_Comm_size(Comm[dir],&numWorkers);
   return numWorkers;
-   
-};
+}
     
    
 int Parallel::getWorkerID(int dir) 
@@ -425,12 +404,12 @@ int Parallel::getWorkerID(int dir)
   int rankWorker = 0;
   MPI_Comm_rank(Comm[dir],&rankWorker);
   return rankWorker;
-};
+}
 
 void Parallel::barrier(int dir) 
 {
   MPI_Barrier(Comm[dir]);
-};
+}
 
 
 void Parallel::printProcessID()
@@ -444,7 +423,7 @@ void Parallel::printProcessID()
          << std::endl << std::flush;
 
 
-};
+}
 
 void Parallel::setThreadID()
 {

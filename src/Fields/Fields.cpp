@@ -14,14 +14,10 @@
 
 #include "Fields.h"
 
-
-
 // global parameters defined in Global.h
 int GC2, GC4, Nq;
 
-
 Fields::Fields(Setup *setup, Grid *_grid, Parallel *_parallel, FileIO *fileIO, Geometry *_geo)  : 
-
 grid(_grid), parallel(_parallel), geo(_geo), solveEq(0)
 
 {
@@ -272,18 +268,18 @@ void Fields::initData(Setup *setup, FileIO *fileIO)
 {
     
   // Set sizes : Note, we use fortran ordering for field variables 
-  hsize_t field_dim[]    = { Nq, Nz     , Nky, Nx  ,             1 };
-  hsize_t field_maxdim[] = { Nq, Nz     , Nky, Nx  , H5S_UNLIMITED };
-  hsize_t field_cBdim[]  = { Nq, NzLD   , Nky, NxLD,             1 };
-  hsize_t field_cdim[]   = { Nq, NzLD   , Nky, NxLD,             1 };
-  hsize_t field_moff[]   = { 0 , 0      , 0  , 0   ,             0 };
-  hsize_t field_off[]    = { 0 , NzLlB-1, 0  , NxLlB-1,          0 }; 
+  hsize_t dim  [] = { Nq, Nz     , Nky, Nx     ,             1 };
+  hsize_t mdim [] = { Nq, Nz     , Nky, Nx     , H5S_UNLIMITED };
+  hsize_t cBdim[] = { Nq, NzLD   , Nky, NxLD   ,             1 };
+  hsize_t cdim [] = { Nq, NzLD   , Nky, NxLD   ,             1 };
+  hsize_t moff [] = { 0 , 0      , 0  , 0      ,             0 };
+  hsize_t off  [] = { 0 , NzLlB-1, 0  , NxLlB-1,             0 }; 
      
-  bool fieldsWrite = (parallel->Coord[DIR_VMS] == 0);
+  bool write = (parallel->Coord[DIR_VMS] == 0);
      
   hid_t fieldsGroup = fileIO->newGroup("Fields");
      
-  FA_fields      = new FileAttr("Phi" , fieldsGroup, fileIO->file, 5, field_dim, field_maxdim, field_cdim, field_moff, field_cBdim, field_off, fieldsWrite, fileIO->complex_tid);
+  FA_fields      = new FileAttr("Phi" , fieldsGroup, fileIO->file, 5, dim, mdim, cdim, moff, cBdim, off, write, fileIO->complex_tid);
   FA_fieldsTime  = fileIO->newTiming(fieldsGroup);
         
   H5Gclose(fieldsGroup);

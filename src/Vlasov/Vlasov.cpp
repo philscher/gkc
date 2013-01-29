@@ -232,21 +232,19 @@ void Vlasov::initData(Setup *setup, FileIO *fileIO)
   
   
   // Phase space dimensions
-  hsize_t psf_dim[]       = { Ns , Nm, Nz, Nky, Nx, Nv,             1 };
-  hsize_t psf_maxdim[]    = { Ns , Nm, Nz, Nky, Nx, Nv, H5S_UNLIMITED };
-  hsize_t psf_chunkBdim[] = { NsLB      , NmLB      , NzLB      , Nky , NxLB      , NvLB      ,             1 };
-  hsize_t psf_chunkdim[]  = { NsLD      , NmLD      , NzLD      , Nky , NxLD      , NvLD      ,             1 };
-  hsize_t psf_offset[]    = { NsLlB-1   , NmLlB-1   , NzLlB-1   , NkyLlB, NxLlB-1   , NvLlB-1   ,             0 };
-  hsize_t psf_moffset[]   = { 0         , 0         , 2         , 0     , 2         , 2         , 0             };
+  hsize_t dim[]       = { Ns , Nm, Nz, Nky, Nx, Nv,             1 };
+  hsize_t maxdim[]    = { Ns , Nm, Nz, Nky, Nx, Nv, H5S_UNLIMITED };
+  hsize_t chunkBdim[] = { NsLB      , NmLB      , NzLB      , Nky , NxLB      , NvLB      ,             1 };
+  hsize_t chunkdim[]  = { NsLD      , NmLD      , NzLD      , Nky , NxLD      , NvLD      ,             1 };
+  hsize_t offset[]    = { NsLlB-1   , NmLlB-1   , NzLlB-1   , NkyLlB, NxLlB-1   , NvLlB-1   ,             0 };
+  hsize_t moffset[]   = { 0         , 0         , 2         , 0     , 2         , 2         , 0             };
      
   // ignore, as HDF-5 automatically (?) allocated data for it
-/*
-  FA_f0       = new FileAttr("f0", psfGroup, fileIO->file, 7, psf_dim, psf_maxdim, psf_chunkdim, psf_moffset,  psf_chunkBdim, psf_offset, true, fileIO->complex_tid);
-  FA_f1       = new FileAttr("f1", psfGroup, fileIO->file, 7, psf_dim, psf_maxdim, psf_chunkdim, psf_moffset,  psf_chunkBdim, psf_offset, true, fileIO->complex_tid);
-  FA_psfTime  = fileIO->newTiming(psfGroup);
+  //FA_f0       = new FileAttr("f0", psfGroup, fileIO->file, 7, dim, maxdim, chunkdim, moffset,  chunkBdim, offset, true, fileIO->complex_tid);
+  //FA_f1       = new FileAttr("f1", psfGroup, fileIO->file, 7, dim, maxdim, chunkdim, moffset,  chunkBdim, offset, true, fileIO->complex_tid);
+  //FA_psfTime  = fileIO->newTiming(psfGroup);
   // call additional routines
   //initData(vlasovGroup, fileIO);  
- * */
 
   H5Gclose(psfGroup);
 
@@ -256,8 +254,8 @@ void Vlasov::initData(Setup *setup, FileIO *fileIO)
     hid_t file_in = check(H5Fopen (fileIO->inputFileName.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT), DMESG("H5Fopen"));
 
     // have to read from new file 
-    FileAttr *FA_in_f0 = new FileAttr("/Vlasov/f0", file_in, fileIO->file, 7, psf_dim, psf_maxdim, psf_chunkdim, psf_moffset,  psf_chunkBdim, psf_offset, true, fileIO->complex_tid, false);
-    FileAttr *FA_in_f1 = new FileAttr("/Vlasov/f1", file_in, fileIO->file, 7, psf_dim, psf_maxdim, psf_chunkdim, psf_moffset,  psf_chunkBdim, psf_offset, true, fileIO->complex_tid, false);
+    FileAttr *FA_in_f0 = new FileAttr("/Vlasov/f0", file_in, fileIO->file, 7, dim, maxdim, chunkdim, moffset,  chunkBdim, offset, true, fileIO->complex_tid, false);
+    FileAttr *FA_in_f1 = new FileAttr("/Vlasov/f1", file_in, fileIO->file, 7, dim, maxdim, chunkdim, moffset,  chunkBdim, offset, true, fileIO->complex_tid, false);
 
     FA_in_f0->read(ArrayPhase.data(f0));
     FA_in_f1->read(ArrayPhase.data(f ));

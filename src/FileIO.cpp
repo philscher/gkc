@@ -173,7 +173,7 @@ FileIO::~FileIO()
   check( H5Tclose(complex_tid), DMESG("H5Tclose"));
   check( H5Tclose(timing_tid ), DMESG("H5Tclose"));
   check( H5Tclose(species_tid), DMESG("H5Tclose"));
-  check( H5Tclose(str_tid   ), DMESG("H5Tclose"));
+  check( H5Tclose(str_tid    ), DMESG("H5Tclose"));
 
   // close file
   check( H5Fclose(file)    , DMESG("Unable to close file ..."));
