@@ -55,7 +55,7 @@ GKC::GKC(Setup *_setup) : setup(_setup)
 
 
   ///////////////////////////////   Load subsystems   /////////////////////////////
-    
+
   parallel  = new Parallel(setup);
   bench     = new Benchmark(setup, parallel); 
 
@@ -74,15 +74,13 @@ GKC::GKC(Setup *_setup) : setup(_setup)
 
   plasma    = new Plasma(setup, fileIO, geometry);
 
-
   // Load fft-solver 
   if(fft_solver_name == "") check(-1, DMESG("No FFT Solver Name given"));
 #ifdef FFTW3
-  else if(fft_solver_name == "fftw3") fftsolver = new FFTSolver_fftw3    (setup, parallel, geometry);
+  else if(fft_solver_name == "fftw3") fftsolver = new FFTSolver_fftw3(setup, parallel, geometry);
 #endif
   else check(-1, DMESG("No such FFTSolver name"));
  
-
   // Load field solver
   if     (psolver_type == "DFT"    ) fields   = new FieldsFFT(setup, grid, parallel, fileIO, geometry, fftsolver);
 #ifdef GKC_HYPRE
@@ -90,7 +88,7 @@ GKC::GKC(Setup *_setup) : setup(_setup)
 #endif
   else if(psolver_type == "Hermite") fields   = new FieldsHermite(setup, grid, parallel, fileIO,geometry);
   else    check(-1, DMESG("No such Fields Solver"));
-
+  
   // Load Collisonal Operator
   if     (collision_type == "None" ) collisions = new Collisions                (grid, parallel, setup, fileIO, geometry); 
   else if(collision_type == "LB"   ) collisions = new Collisions_LenardBernstein(grid, parallel, setup, fileIO, geometry); 
@@ -103,7 +101,7 @@ GKC::GKC(Setup *_setup) : setup(_setup)
   else if(vlasov_type == "Island" ) vlasov  = new VlasovIsland(grid, parallel, setup, fileIO, geometry, fftsolver, bench, collisions);
   else if(vlasov_type == "Optim"  ) vlasov  = new VlasovOptim (grid, parallel, setup, fileIO, geometry, fftsolver, bench, collisions);
   else   check(-1, DMESG("No such Fields Solver"));
-
+  
   // Load some other general modules
   diagnostics     = new Diagnostics(parallel, vlasov, fields, grid, setup, fftsolver, fileIO, geometry); 
   visual          = new Visualization_Data(grid, parallel, setup, fileIO, vlasov, fields);
@@ -112,7 +110,7 @@ GKC::GKC(Setup *_setup) : setup(_setup)
   init            = new Init(parallel, grid, setup, fileIO, vlasov, fields, geometry);
   control         = new Control(setup, parallel, diagnostics);
   particles       = new TestParticles(fileIO, setup, parallel);
-   
+  
   timeIntegration = new TimeIntegration(setup, grid, parallel, vlasov, fields, particles, eigenvalue, bench);
   
   // Optimize values to speed up computation
@@ -140,17 +138,17 @@ int GKC::mainLoop()
          
     ////////////////////////  Starting OpenMP global threads   /////////////////////////
     //
-    //  Create OpenMP threads. These threads exists throughout the system.
-    //  Synchronization occurs during implicit barriers (e.g. #pragma omp for).
-    //  Especially, take care that everything which is defined prior to this point
-    //  (e.g. classes, arrays) are shared variables (race conditions!). Variable defined 
-    //  after this point, like stack variables, are private ! Thus extra care needs
-    //  to be taken.
+    //  OpenMP threads exists throughout the main iteration loop.
+    //  Synchronization occurs e.g. during implicit barriers (e.g. #pragma omp for)
     //
-    //  Note : Take care of OpenMP statements inside "omp single" may cause deadlocks
+    //  We need to take care as every variable which is defined prior to this point
+    //  (e.g. classes, arrays) are shared variables which may lead to race conditions or
+    //  false sharing if not used properly. 
+    //  After this point, stack variables are private, thus if a domain is decomposed
+    //  reductions clauses are required.
     //
-    //  @todo benchmark SPMD (Single-Program Multiple Data) code. Inside parallel region
-    //  we can decompose NkylD, NkyLuD, when set to private in omp parallel.
+    //  @todo Inside parallel region we can decompose NkylD, NkyLuD, when set to private 
+    //        in omp parallel. Test if more efficient.
     //
     //#pragma omp parallel  private(NkyLlD, NkyLuD)
     #pragma omp parallel private(threadID) 
@@ -172,13 +170,15 @@ int GKC::mainLoop()
 
           diagnostics->writeData(timing, dt);
           event->checkEvent(timing, vlasov, fields);
-          //fileIO->flush(timing, dt);  
+
+          // flush in regular intervals in order to minimize HDF-5 file 
+          // corruption in case of an abnormal program termination
+          fileIO->flush(timing, dt);  
              
           isOK =  control->checkOK(timing, timeIntegration->maxTiming);
 
         }
         #pragma omp barrier
-        #pragma omp flush
     
       } while(isOK);
 
@@ -214,9 +214,9 @@ GKC::~GKC()
   delete particles;
   delete eigenvalue;
   delete event;
-  delete fileIO;
-  // no need to delete table ?! Anyway SLEPc/PETSc seems to crash
-  // some times FFT crashes, be sude that it is below fileIO (hdf-5 is closed)
+  delete fileIO; // once this is successful, file cannot
+                 // be corrupted anymore.
+  
   delete plasma;
   delete fftsolver;
   delete control;

@@ -74,26 +74,26 @@ void VlasovAux::Vlasov_ES(
   //#pragma ivdep 
   for(int s = NsLlD; s <= NsLuD; s++) {
         
-      // some abbrevations
-      const double w_n   = species[s].w_n;
-      const double w_T   = species[s].w_T;
-      const double alpha = species[s].alpha;
-      const double sigma = species[s].sigma;
-      const double kw_T  = 1./species[s].T0;
+    // some abbrevations
+    const double w_n   = species[s].w_n;
+    const double w_T   = species[s].w_T;
+    const double alpha = species[s].alpha;
+    const double sigma = species[s].sigma;
+    const double kw_T  = 1./species[s].T0;
     
-      const double sub = (species[s].doGyro) ? 3./2. : 1./2.;
+    const double sub = (species[s].doGyro) ? 3./2. : 1./2.;
         
-      const bool doGyro  = (species[s].doGyro);
-      const bool isGyro1 = (species[s].gyroModel == "Gyro-1");
-    
-      const double rho_t2 = species[s].T0 * species[s].m / (pow2(species[s].q) * plasma->B0); 
+    const bool doGyro  = (species[s].doGyro);
+    const bool isGyro1 = (species[s].gyroModel == "Gyro-1");
+   
+    const double rho_t2 = species[s].T0 * species[s].m / (pow2(species[s].q) * plasma->B0); 
      
-      // Cannot do omp parallelization here (due to nonlinear term ..)
-      for(int m = NmLlD; m <= NmLuD; m++) { for(int z = NzLlD; z <= NzLuD; z++) { 
+    // Cannot do omp parallelization here (due to nonlinear term ..)
+    for(int m = NmLlD; m <= NmLuD; m++) { for(int z = NzLlD; z <= NzLuD; z++) { 
       
-      // calculate non-linear term (rk_step == 0 for eigenvalue calculations)
-     // #pragma omp single
-     //   {
+      /// calculate non-linear term (rk_step == 0 for eigenvalue calculations)
+      // #pragma omp single
+      //   {
       if(doNonLinear         && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
       if(doNonLinearParallel && (rk_step != 0)) calculateParallelNonLinearity2(fs, Fields, z, m, s, nonLinearTerm);
       //  }
@@ -102,57 +102,55 @@ void VlasovAux::Vlasov_ES(
       #pragma omp for
       for(int y_k=NkyLlD; y_k <= NkyLuD; y_k++) { 
              
-         const CComplex ky = _imag  * fft->ky(y_k);
+        const CComplex ky = _imag  * fft->ky(y_k);
              
-         for(int x=NxLlD; x<= NxLuD; x++) { 
+      for(int x = NxLlD; x <= NxLuD; x++) { 
          
-           const CComplex phi_   = Fields[Field::phi][s][m][z][y_k][x];
+        const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];
        
-           CComplex half_eta_kperp2_phi = 0;
-           if(isGyro1) { // first order approximation for gyro-kinetics
+        CComplex half_eta_kperp2_phi = 0;
+        
+        if(isGyro1) { // first order approximation for gyro-kinetics
              const CComplex ddphi_dx_dx = (16. *(Fields[Field::phi][s][m][z][y_k][x+1] + Fields[Field::phi][s][m][z][y_k][x-1]) -
                                                 (Fields[Field::phi][s][m][z][y_k][x+2] + Fields[Field::phi][s][m][z][y_k][x-2]) 
                                          - 30.*phi_) * _kw_12_dx_dx;
              half_eta_kperp2_phi     = rho_t2 * 0.5 * w_T  * ( (ky*ky) * phi_ + ddphi_dx_dx ) ; 
-           }
+         }
              
-           // Sign has no influence on result ...
-           const CComplex kp = geo->get_kp(x, ky, z);
+         // Sign has no influence on result ...
+         const CComplex kp = geo->get_kp(x, ky, z);
 
          //#pragma unroll(8)
          //#pragma unroll
          //#pragma vector aligned 
          //#pragma vector nontemporal(fss)
-         simd_for(int v=NvLlD; v<= NvLuD; v++) { 
+  simd_for(int v = NvLlD; v <= NvLuD; v++) { 
            
-            const CComplex   dg_dv = (8.*(fs[s][m][z][y_k][x][v+1] - fs[s][m][z][y_k][x][v-1]) 
-                                       - (fs[s][m][z][y_k][x][v+2] - fs[s][m][z][y_k][x][v-2]))/(12.*dv);
+    const  CComplex f0_    = f0 [s][m][z][y_k][x][v];
 
-            const  CComplex f0_    = f0 [s][m][z][y_k][x][v];
-
-            const  CComplex g      = fs [s][m][z][y_k][x][v];
-        
-            ///////////////   The time derivative of the Vlasov equation      //////////////////////
+    const  CComplex g      = fs [s][m][z][y_k][x][v];
        
-            const CComplex dg_dt =
+    ///////////////   The time derivative of the Vlasov equation      //////////////////////
+       
+    const CComplex dg_dt =
 
-             -  nonLinearTerm[y_k][x][v]                                                   // Non-linear ( array is zero for linear simulations) 
-             +  ky* (-(w_n + w_T * (((V[v]*V[v])+ (doGyro ? M[m] : 0.))*kw_T  - sub)) * f0_ * phi_    // Driving term (Temperature/Density gradient)
-             -  half_eta_kperp2_phi * f0_)                                            // Contributions from gyro-1 (0 if not neq Gyro-1)
-             -  alpha  * V[v]* kp  * ( g + sigma * phi_ * f0_)                        // Linear Landau damping
-             +  Coll[s][m][z][y_k][x][v]  ;                                           // Collisional operator
+      -  nonLinearTerm[y_k][x][v]                                                   // Non-linear ( array is zero for linear simulations) 
+      -  ky* ((w_n + w_T * (((V[v]*V[v])+ (doGyro ? M[m] : 0.))*kw_T  - sub)) * f0_ * phi_    // Driving term (Temperature/Density gradient)
+      +  half_eta_kperp2_phi * f0_)                                            // Contributions from gyro-1 (0 if not neq Gyro-1)
+      -  alpha  * V[v]* kp  * ( g + sigma * phi_ * f0_)                        // Linear Landau damping
+      +  Coll[s][m][z][y_k][x][v]  ;                                           // Collisional operator
          
-        //////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
         
-        ft [s][m][z][y_k][x][v] = rk[0] * ft[s][m][z][y_k][x][v] + rk[1] * dg_dt                                ;
-        fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v]         + (rk[2] * ft[s][m][z][y_k][x][v] + dg_dt) * dt;
+    ft [s][m][z][y_k][x][v] = rk[0] * ft[s][m][z][y_k][x][v] + rk[1] * dg_dt                                ;
+    fss[s][m][z][y_k][x][v] = f1[s][m][z][y_k][x][v]         + (rk[2] * ft[s][m][z][y_k][x][v] + dg_dt) * dt;
      
-       }
+  }
          
-         }} }
+  } } }
       
-      }
-   }
+  }
+  }
 }
 
 

@@ -35,48 +35,37 @@ gkc_SOURCES += \
    Special/Integrate/GaussRadauWeights.h          Special/Integrate/GaussWeights.h \
    Special/Integrate/GaussWeights.py              Special/Integrate/Integrate.h
 
-
 # Interpolation sub-module
 gkc_SOURCES += Special/HermiteInterpolation.h 
 
-#gkc_SOURCES += external/SHDF5/FileAttr.h external/SHDF5/TableAttr.h
-#gkc_SOURCES += external/allocate.h external/Array.h 
-
+# Matrix module
 gkc_SOURCES += Matrix/Matrix.h Matrix/MatrixPETSc.h Matrix/MatrixSolver.h \
-     Matrix/SpecialMatrix.h Matrix/MatrixPETSc.cpp
+               Matrix/SpecialMatrix.h Matrix/MatrixPETSc.cpp
 
 EXTRA_DIST =   gkc.doxygen external
 
 gkc_SOURCES += external/FunctionParser/fparser.cc external/SFL/SFL.cpp 
 
-#gkc_SOURCES += external/FunctionParser/fparser.cc external/FunctionParser/fp_identifier_parser.inc 
-#     external/FunctionParser/fparser.hh external/SFL/SFL.cpp external/SFL/SFL.h 
-#     external/FunctionParser/fpconfig.hh external/FunctionParser/fptypes.hh
-
-
-
-
+# Object files are created in subdirectories
 AUTOMAKE_OPTIONS = subdir-objects
 
-
-AM_CPPFLAGS  = -ggdb -fno-alias -align -O3 -Wall -Wno-unknown-pragmas -I./external  -I./FFTSolver -I./Geometry -I./Special -I./TimeIntegration -I./Fields
+AM_CPPFLAGS  = -ggdb -fno-alias -align -fast -Wall -Wno-unknown-pragmas -I./external \
+					-I./FFTSolver -I./Geometry -I./Special -I./TimeIntegration -I./Fields
  
-
-#Vlasov/Vlasov_Cilk.h Vlasov/Vlasov_Aux.h Vlasov/Vlasov_Optim.h Vlasov/Vlasov_Island.h Vlasov/Vlasov.
-
 
 #### Link 3rd party libraries
 
+##gkc_LDADD    = -lstdc++
 
 # HDF-5
 
 # Add for HDF-5 file
-gkc_LDFLAGS  =   -L$(DIR_HDF5)/lib/
-gkc_LDADD    =   $(DIR_HDF5)/lib/libhdf5_hl.a $(DIR_HDF5)/lib/libhdf5.a  -lz 
+gkc_LDADD = $(DIR_HDF5)/lib/libhdf5_hl.a $(DIR_HDF5)/lib/libhdf5.a  -lz 
+gkc_LDFLAGS  = -L$(DIR_HDF5)/lib/
 AM_CPPFLAGS += -I$(DIR_HDF5)/include/
 
 if SHARED
-gkc_LDADD +=  -lhdf5_hl -lhdf5 -lz 
+gkc_LDADD += -lhdf5_hl -lhdf5 -lz 
 endif
 
 if STATIC
@@ -87,7 +76,6 @@ if PAPI
 AM_CPPFLAGS += -I$(DIR_PAPI)/include
 gkc_LDADD   += -L$(DIR_PAPI)/lib/ -lpapi -lrt
 endif
-
 
 if MPI
 
@@ -103,37 +91,47 @@ endif
 
 ##################### FFTW3 setup ################
 if FFTW3
+
 AM_CPPFLAGS  += -I$(DIR_FFTW3)/include
 gkc_SOURCES  +=  FFTSolver/FFTSolver_fftw3.h FFTSolver/FFTSolver_fftw3.cpp 
-gkc_LDADD    += -L$(DIR_FFTW3)/lib -lfftw3 -lfftw3_omp
 
+
+#if STATIC
 if MPI
-gkc_LDADD    += -L$(DIR_FFTW3MPI)/lib -lfftw3_mpi
+   gkc_LDADD += $(DIR_FFTW3)/lib/libfftw3_mpi.a
 endif
 if OPENMP
-gkc_LDADD    += -lfftw3_omp
+   gkc_LDADD += $(DIR_FFTW3)/lib/libfftw3_omp.a
 endif
-endif
+   gkc_LDADD += $(DIR_FFTW3)/lib/libfftw3.a
 
+#else
+#   gkc_LDADD += -L$(DIR_FFTW3)/lib/ -lfftw3
+#if MPI
+#   gkc_LDADD += -lfftw3_mpi
+#endif
+#if OPENMP
+#   gkc_LDADD += -lfftw3_omp
+#endif
+
+#endif
+endif
 
 ################# SELPc (for Eigenvalue calculations) #######
 
 if SLEPC
-AM_CPPFLAGS +=  -I$(DIR_SLEPC)/include
-gkc_SOURCES +=  Eigenvalue/Eigenvalue_SLEPc.cpp Eigenvalue/Eigenvalue_SLEPc.h Eigenvalue/Eigenvalue.h
-
+AM_CPPFLAGS += -I$(DIR_SLEPC)/include
+gkc_SOURCES += Eigenvalue/Eigenvalue_SLEPc.cpp Eigenvalue/Eigenvalue_SLEPc.h Eigenvalue/Eigenvalue.h
 gkc_LDADD   += -L$(DIR_SLEPC)/lib  -lslepc 
 endif
 
 if PETSC                 
-AM_CPPFLAGS +=  -I$(DIR_PETSC)/include
+AM_CPPFLAGS += -I$(DIR_PETSC)/include
 gkc_SOURCES += TimeIntegration/TimeIntegration_PETSc.h TimeIntegration/TimeIntegration_PETSc.cpp\
      Special/PETScMatrixVector.h Special/PETScMatrixVector.cpp \
      Fields/FieldsHermite.h Fields/FieldsHermite.cpp 
 
 gkc_LDADD   += -L$(DIR_PETSC)/lib -lpetsc 
-# Use static linkage
-#gkc_LDADD +=$(DIR_PETSC)/lib/libpetsc.a
 
 endif
 

@@ -35,7 +35,7 @@ FileIO::FileIO(Parallel *_parallel, Setup *setup)  :  parallel(_parallel)
   outputFileName        = setup->get("DataOutput.OutputFileName", "default.h5");
   info                  = setup->get("DataOutput.Info", "No information provided");
    
-  dataFileFlushTiming  = Timing(setup->get("DataOutput.Flush.Step", -1)       , setup->get("DataOutput.Flush.Time", 100.)); 
+  dataFileFlushTiming  = Timing(setup->get("DataOutput.Flush.Step", -1)       , setup->get("DataOutput.Flush.Time", 5.)); 
     
   resumeFile            = inputFileName != "";
   
@@ -79,26 +79,45 @@ void FileIO::create(Setup *setup, bool allowOverwrite)
 {
 
   hid_t file_apl = H5Pcreate(H5P_FILE_ACCESS);
-#ifdef GKC_PARALLEL_MPI
+
+  // from http://mail.hdfgroup.org/pipermail/hdf-forum_hdfgroup.org/2010-June/012076.html
+  // to prevent corruption of HDF-5 file (requires regular calls to this->flush() ] 
+  {
+    H5AC_cache_config_t mdc_config;
+
+    mdc_config.version = H5AC__CURR_CACHE_CONFIG_VERSION;
+    H5Pget_mdc_config(file_apl, &mdc_config);
+  
+    mdc_config.evictions_enabled = false;
+    mdc_config.incr_mode         = H5C_incr__off;
+    mdc_config.decr_mode         = H5C_decr__off;
+
+    H5Pset_mdc_config(file_apl, &mdc_config);
+  }
+  
   // pass some information onto the underlying MPI_File_open call 
-  MPI_Info file_info;
-  check(MPI_Info_create(&file_info), DMESG("File info"));
-
-  /* 
-     H5Pset_sieve_buf_size(file_plist, 262144); 
-     H5Pset_alignment(file_plist, 524288, 262144);
+  // to optimize file access
+  {
+#ifdef GKC_PARALLEL_MPI
+    //MPI_Info file_info;
+    //check(MPI_Info_create(&file_info), DMESG("File info"));
      
-     MPI_Info_set(file_info, (char *) "access_style"        , (char *) "write_once");
-     MPI_Info_set(file_info, (char *) "collective_buffering", (char *) "true");
-     MPI_Info_set(file_info, (char *) "cb_block_size"       , (char *) "1048576");
-     MPI_Info_set(file_info, (char *) "cb_buffer_size"      , (char *) "4194304");
-  */
+    //H5Pset_sieve_buf_size(file_plist, 262144); 
+    // H5Pset_alignment(file_plist, 524288, 262144);
+     
+    // MPI_Info_set(file_info, (char *) "access_style"        , (char *) "write_once");
+    // MPI_Info_set(file_info, (char *) "collective_buffering", (char *) "true");
+    // MPI_Info_set(file_info, (char *) "cb_block_size"       , (char *) "1048576");
+    // MPI_Info_set(file_info, (char *) "cb_buffer_size"      , (char *) "4194304");
 
-  check( H5Pset_fapl_mpio(file_apl, parallel->Comm[DIR_ALL], file_info), DMESG("Set MPI Property"));
+    //check( H5Pset_fapl_mpio(file_apl, parallel->Comm[DIR_ALL], file_info), DMESG("Set MPI Property"));
+
+    // shouldn't be freed before H5Pclose(file_apl)
+    //MPI_Info_free(&file_info);
 #endif
+  }
 
-  // Note, still close file if some objects are oben
-  // This should not happen thus give a warning
+  // Close file even if some objects are still open (should generate warning as this is not correct
   H5Pset_fclose_degree(file_apl, H5F_CLOSE_STRONG);
  
   // Create new output file
@@ -107,9 +126,6 @@ void FileIO::create(Setup *setup, bool allowOverwrite)
      
   check( H5Pclose(file_apl),   DMESG("H5Pclose"));
 
-#ifdef GKC_PARALLEL_MPI
-  MPI_Info_free(&file_info);
-#endif
         
   //////////////////////////////////////////////////////////////// Info Group ////////////////////////////////////////////////////////
    

@@ -2,8 +2,8 @@
  * =====================================================================================
  *
  *       Filename:  FFTSolver_fftw3.cpp
- *    Description:  Fourier Solver implementation for fftw3-mpi 
- *                  see www.fftw.org
+ *    Description:  Fourier Solver implementation supporting MPI domain
+ *                  decomposition using FFTW-3 (see www.fftw.org)
  *         Author:  Paul P. Hilscher (2009, 2011), 
  *
  * =====================================================================================
@@ -31,29 +31,26 @@ fftw_plan plan_AA_YForward, plan_AA_YBackward;
 fftw_plan plan_transpose(char storage_type, int rows, int cols, double *in, double *out);
 
 FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo) 
-
 : FFTSolver(setup, parallel, geo, Nx*(2*Nky-2)*Nz, Nx*(2*Nky-2), Nx,  (2*Nky-2)) 
-
 {
 
   // @todo include "fftw_flops"
   // @todo include "fftw_print_plan"
-
 
   if(parallel->Coord[DIR_V] == 0) {          // Fourier solver not needed in velocity space
 
     // Setup plans
     int perf_flag = FFTW_ESTIMATE;
     
-    plan   = setup->get("FFTW3.Plan", "Patient");
+    plan   = setup->get("FFTSolver.FFTW3.Plan", "Patient");
     if      (plan == "Estimate"   ) perf_flag = FFTW_ESTIMATE;
     else if (plan == "Measure"    ) perf_flag = FFTW_MEASURE;
     else if (plan == "Patient"    ) perf_flag = FFTW_PATIENT;
     else if (plan == "Exhaustive" ) perf_flag = FFTW_EXHAUSTIVE;
-    else    (-1, DMESG("No such FFTW3.Plan"));
+    else    (-1, DMESG("Config file : FFTSolver.FFTW3.Plan"));
 
     // Setup wisedom
-    wisdom = setup->get("FFTW3.Wisdom", "");
+    wisdom = setup->get("FFTSolver.FFTW3.Wisdom", "");
     if     (wisdom == "System") fftw_import_system_wisdom();
     else if(wisdom != ""      ) fftw_import_wisdom_from_filename(wisdom.c_str());
 
@@ -83,10 +80,9 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
       
     // Prefactor of 2 for safety (is required otherwise we get crash, but why ?)
     int numAlloc = 2 * X_numElements * NkyLD * NzLD * nfields;
-
     // allocate arrays 
-    data_kXIn       = (CComplex *) fftw_alloc_complex(numAlloc);
-    data_kXOut      = (CComplex *) fftw_alloc_complex(numAlloc);
+    data_X_kIn      = (CComplex *) fftw_alloc_complex(numAlloc);
+    data_X_kOut     = (CComplex *) fftw_alloc_complex(numAlloc);
     data_X_rOut     = (CComplex *) fftw_alloc_complex(numAlloc);
     data_X_rIn      = (CComplex *) fftw_alloc_complex(numAlloc);
     data_X_Transp_1 = (CComplex *) fftw_alloc_complex(numAlloc);
@@ -101,17 +97,17 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
     nct::allocate Array_kX = nct::allocate(nct::Range(0,plasma->nfields), nct::Range(NzLlD,NzLD), nct::Range(NkyLlD, NkyLD), nct::Range(X_NkxLlD, X_NkxL));
       
     // Calculated shifted pointer for CEAN
-    kXIn  = Array_kX.zero(data_kXIn );
-    kXOut = Array_kX.zero(data_kXOut);
+    kXIn  = Array_kX.zero(data_X_kIn );
+    kXOut = Array_kX.zero(data_X_kOut);
 
     // fftw_plan fftw_mpi_plan_many_dft(int rnk, const ptrdiff_t *n, 
     //     ptrdiff_t howmany, ptrdiff_t block, ptrdiff_t tblock, fftw_complex *in, fftw_complex *out,
     //           MPI_Comm comm, int sign, unsigned flags);
     
     long numTrans = NkyLD * NzLD * nfields;
-      
-    plan_XForward_Fields  = fftw_mpi_plan_many_dft(1, &X_Nx, numTrans, NxLD, X_NkxL, (fftw_complex *) data_X_rIn, (fftw_complex *) data_kXOut , parallel->Comm[DIR_X], FFTW_FORWARD , perf_flag);
-    plan_XBackward_Fields = fftw_mpi_plan_many_dft(1, &X_Nx, numTrans, NxLD, X_NkxL, (fftw_complex *) data_kXIn , (fftw_complex *) data_X_rOut, parallel->Comm[DIR_X], FFTW_BACKWARD, perf_flag);
+     
+    plan_XForward_Fields  = fftw_mpi_plan_many_dft(1, &X_Nx, numTrans, NxLD, X_NkxL, (fftw_complex *) data_X_rIn, (fftw_complex *) data_X_kOut , parallel->Comm[DIR_X], FFTW_FORWARD , perf_flag);
+    plan_XBackward_Fields = fftw_mpi_plan_many_dft(1, &X_Nx, numTrans, NxLD, X_NkxL, (fftw_complex *) data_X_kIn, (fftw_complex *) data_X_rOut, parallel->Comm[DIR_X], FFTW_BACKWARD, perf_flag);
 
     // check plans (maybe null if linked e.g. to MKL)
     if(plan_XForward_Fields  == NULL) check(-1, DMESG("Plan not supported"));
@@ -147,58 +143,53 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
     //       fftw_plan fftw_plan_many_dft(int rank, const int *n, int howmany,
     //                                    fftw_complex *in, const int *inembed,
     //                                    int istride, int idist,
-      //                                    fftw_complex *out, const int *onembed,
+    //                                    fftw_complex *out, const int *onembed,
     //                                    int ostride, int odist,
-      //                                    int sign, unsigned flags);
-      //
-      //      location of input : in + k * idist
-      //      The stride parameters indicate that the j-th element of the input or output arrays is
-      //      located at j*istride 
-      //
-      //
-      //   Thus :
-      //           X is on fast dimension, thus our fourier mode is the stride NxLD+BD
-      //           Distance for the next mode is thus 1          
-      //
+    //                                    int sign, unsigned flags);
+    //
+    //      location of input : in + k * idist
+    //      The stride parameters indicate that the j-th element of the input or output arrays is
+    //      located at j*istride 
+    //
+    //
+    //   Thus :
+    //           X is on fast dimension, thus our fourier mode is the stride NxLD+BD
+    //           Distance for the next mode is thus 1          
+    //
+    
+    //perf_flag |= FFTW_UNALIGNED;
+    // Orginal
+    //
+    // Note from the fftw manual, Sec. 4.3.2
+    //
+    // FFTW_PRESERVE_INPUT specifies that an out-of-place transform must not change its input array.
+    // This is ordinarily the default, except for c2r and hc2r (i.e. complex-to-real) transforms for 
+    // which FFTW_DESTROY_INPUT is the default. In the latter cases, passing FFTW_PRESERVE_INPUT will attempt 
+    // to use algorithms that do not destroy the input, at the expense of worse performance; for multi-dimensional
+    // c2r transforms, however, no input-preserving algorithms are implemented and the planner will return NULL if one is requested.
+    
+    doubleAA   rY_BD4[NyLD ][NxLB+4]; CComplexAA kY_BD4[NkyLD][NxLB+4];
+    plan_YBackward_Field = fftw_plan_many_dft_c2r(1, &NyLD, NxLB+4, (fftw_complex *) kY_BD4, NULL, NxLB+4, 1, (double *) rY_BD4, NULL, NxLB+4, 1, perf_flag);
+    
+    doubleAA   rY_BD2[NyLD ][NxLB]; CComplexAA kY_BD2[NkyLD][NxLB];
+    plan_YBackward_PSF   = fftw_plan_many_dft_c2r(1, &NyLD, NxLB  , (fftw_complex *) kY_BD2, NULL, NxLB  , 1, (double *) rY_BD2, NULL, NxLB  , 1, perf_flag);
       
-      //perf_flag |= FFTW_UNALIGNED;
+    doubleAA   rY_BD0[NyLD ][NxLD]; CComplexAA kY_BD0[NkyLD][NxLD];
+    
+    plan_YForward_NL     = fftw_plan_many_dft_r2c(1, &NyLD, NxLD, (double *     ) rY_BD0, NULL, NxLD, 1, (fftw_complex *) kY_BD0, NULL, NxLD , 1, perf_flag);
+    plan_YBackward_NL    = fftw_plan_many_dft_c2r(1, &NyLD, NxLD, (fftw_complex*) kY_BD0, NULL, NxLD, 1, (double       *) rY_BD0, NULL, NxLD , 1, perf_flag);
+    
+    ////////////////////////   Define Anti-Aliased Arrays /////////////////////////////////////
+    AA_NkyLD  = 3 * (Nky+1)   / 2   ; 
+    AA_NyLD  = 2 * AA_NkyLD - 2     ;
+   
+    double   rY_AA[AA_NyLD][NxLD]; CComplex kY_AA[AA_NkyLD][NxLD];
+    
+    //plan_AA_YForward  = fftw_plan_many_dft_r2c(1, &AA_NyLD, NxLD, (double      *) rY_AA, NULL, 1, AA_NyLD ,  (fftw_complex*) kY_AA, NULL, 1, AA_NkyLD, perf_flag);
+    //plan_AA_YBackward = fftw_plan_many_dft_c2r(1, &AA_NyLD, NxLD, (fftw_complex*) kY_AA, NULL, 1, AA_NkyLD,  (double      *) rY_AA, NULL, 1, AA_NyLD , perf_flag);
       
-      // Orginal
-      //
-      // Note from the fftw manual, Sec. 4.3.2
-      //
-      // FFTW_PRESERVE_INPUT specifies that an out-of-place transform must not change its input array.
-      // This is ordinarily the default, except for c2r and hc2r (i.e. complex-to-real) transforms for 
-      // which FFTW_DESTROY_INPUT is the default. In the latter cases, passing FFTW_PRESERVE_INPUT will attempt 
-      // to use algorithms that do not destroy the input, at the expense of worse performance; for multi-dimensional
-      // c2r transforms, however, no input-preserving algorithms are implemented and the planner will return NULL if one is requested.
-      
-      doubleAA   rY_BD4[NyLD ][NxLB+4]; CComplexAA kY_BD4[NkyLD][NxLB+4];
-      plan_YBackward_Field = fftw_plan_many_dft_c2r(1, &NyLD, NxLB+4, (fftw_complex *) kY_BD4, NULL, NxLB+4, 1, (double *) rY_BD4, NULL, NxLB+4, 1, perf_flag);
-      
-      
-      doubleAA   rY_BD2[NyLD ][NxLB]; CComplexAA kY_BD2[NkyLD][NxLB];
-      plan_YBackward_PSF   = fftw_plan_many_dft_c2r(1, &NyLD, NxLB  , (fftw_complex *) kY_BD2, NULL, NxLB  , 1, (double *) rY_BD2, NULL, NxLB  , 1, perf_flag);
-      
-      
-      doubleAA   rY_BD0[NyLD ][NxLD]; CComplexAA kY_BD0[NkyLD][NxLD];
-      plan_YForward_NL     = fftw_plan_many_dft_r2c(1, &NyLD, NxLD, (double *     ) rY_BD0, NULL, NxLD, 1, (fftw_complex *) kY_BD0, NULL, NxLD , 1, perf_flag);
-      plan_YBackward_NL    = fftw_plan_many_dft_c2r(1, &NyLD, NxLD, (fftw_complex*) kY_BD0, NULL, NxLD, 1, (double       *) rY_BD0, NULL, NxLD , 1, perf_flag);
-               
-      
-      ////////////////////////   Define Anti-Aliased Arrays /////////////////////////////////////
-          
-      
-      AA_NkyLD  = 3 * (Nky+1)   / 2   ; 
-      AA_NyLD  = 2 * AA_NkyLD - 2     ;
-      
-      double   rY_AA[AA_NyLD][NxLD]; CComplex kY_AA[AA_NkyLD][NxLD];
-      
-      //plan_AA_YForward  = fftw_plan_many_dft_r2c(1, &AA_NyLD, NxLD, (double      *) rY_AA, NULL, 1, AA_NyLD ,  (fftw_complex*) kY_AA, NULL, 1, AA_NkyLD, perf_flag);
-      //plan_AA_YBackward = fftw_plan_many_dft_c2r(1, &AA_NyLD, NxLD, (fftw_complex*) kY_AA, NULL, 1, AA_NkyLD,  (double      *) rY_AA, NULL, 1, AA_NyLD , perf_flag);
-      
-      plan_AA_YForward  = fftw_plan_many_dft_r2c(1, &AA_NyLD, NxLD, (double      *) rY_AA, NULL, NxLD ,  1, (fftw_complex*) kY_AA, NULL, NxLD, 1, perf_flag);
-      plan_AA_YBackward = fftw_plan_many_dft_c2r(1, &AA_NyLD, NxLD, (fftw_complex*) kY_AA, NULL, NxLD ,  1, (double      *) rY_AA, NULL, NxLD, 1, perf_flag);
+    plan_AA_YForward  = fftw_plan_many_dft_r2c(1, &AA_NyLD, NxLD, (double      *) rY_AA, NULL, NxLD ,  1, (fftw_complex*) kY_AA, NULL, NxLD, 1, perf_flag);
+    plan_AA_YBackward = fftw_plan_many_dft_c2r(1, &AA_NyLD, NxLD, (fftw_complex*) kY_AA, NULL, NxLD ,  1, (double      *) rY_AA, NULL, NxLD, 1, perf_flag);
 
     setNormalizationConstants();
    
@@ -221,13 +212,13 @@ void FFTSolver_fftw3::solve(const FFT_Type type, const FFT_Sign direction, void 
       // fftw3-mpi many transform requires specific input (thus we have to transpose our data)
       transpose(NxLD, NkyLD, NzLD, plasma->nfields, (A4zz) ((CComplex *) in), (A4zz) ((CComplex *) data_X_Transp_1));                
       fftw_mpi_execute_dft(plan_XForward_Fields , (fftw_complex *) data_X_Transp_1 , (fftw_complex *) data_X_Transp_2); 
-      transpose_rev(X_NkxL, NkyLD, NzLD, plasma->nfields, (A4zz) ((CComplex *) data_X_Transp_2), (A4zz) ((CComplex *) data_kXOut));               
+      transpose_rev(X_NkxL, NkyLD, NzLD, plasma->nfields, (A4zz) ((CComplex *) data_X_Transp_2), (A4zz) ((CComplex *) data_X_kOut));               
     }
     
     else if(direction == FFT_Sign::Backward) {
                   
       // fftw3-mpi many transform requires specific input (thus we have to transpose our data and backtransform)
-      transpose(X_NkxL, NkyLD, NzLD, plasma->nfields, (A4zz) ((CComplex *) data_kXIn), (A4zz) ((CComplex *) data_X_Transp_1));                
+      transpose(X_NkxL, NkyLD, NzLD, plasma->nfields, (A4zz) ((CComplex *) data_X_kIn), (A4zz) ((CComplex *) data_X_Transp_1));                
       fftw_mpi_execute_dft(plan_XBackward_Fields, (fftw_complex *) data_X_Transp_1, (fftw_complex *) data_X_Transp_2 ); 
       transpose_rev(NxLD, NkyLD, NzLD, plasma->nfields, (A4zz) ((CComplex *) data_X_Transp_2), (A4zz) ((CComplex *) in));                
     }
@@ -298,8 +289,8 @@ FFTSolver_fftw3::~FFTSolver_fftw3()
 
     fftw_free(data_X_rOut);
     fftw_free(data_X_rIn );
-    fftw_free(data_kXOut );
-    fftw_free(data_kXIn  );
+    fftw_free(data_X_kOut );
+    fftw_free(data_X_kIn  );
     
     fftw_free(data_X_Transp_1);
     fftw_free(data_X_Transp_2);

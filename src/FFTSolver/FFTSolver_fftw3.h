@@ -42,7 +42,7 @@ class FFTSolver_fftw3 : public FFTSolver
    CComplex *data_X_rIn ,     *data_X_rOut;  
    CComplex *data_X_Transp_1, *data_X_Transp_2; 
 
-   CComplex *data_kXOut, *data_kXIn;
+   CComplex *data_X_kOut, *data_X_kIn;
 
    int AA_NkyLD,    ///< use for anti-alias multiplication
        AA_NyLD;     ///< use for anti-alias multiplication

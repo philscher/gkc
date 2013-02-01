@@ -307,9 +307,11 @@ void Fields::closeData()
 
 void Fields::printOn(std::ostream &output) const 
 {
-  output   << "Poisson    |  " << "Debye length : " << sqrt(plasma->debye2) << std::endl;
-  output   << "Ampere     |  " << ((Nq >= 2) ? "beta :  " + Setup::num2str(plasma->beta) : " --- no electromagnetic effects ---") << std::endl;
-  output   << "B_parallel |  " << ((Nq >= 3) ? "beta :  " + Setup::num2str(plasma->beta) : " --- no electromagnetic effects ---") << std::endl;
-}
+  output   << "Fields     |  λD : "  << sqrt(plasma->debye2) 
+                       << "   β : "  << Setup::num2str(plasma->beta)  
+                       << "  A∥ : " << (Nq >= 2 ? "-on-" : "-off-")
+                       << "  B∥ : " << (Nq >= 3 ? "-on-" : "-off-")
+                       << std::endl;
 
+}
 

@@ -41,7 +41,7 @@ void TimeIntegration::setMaxLinearTimeStep(Eigenvalue *eigenvalue, Vlasov *vlaso
 
 double TimeIntegration::getMaxTimeStepFromEigenvalue(Vlasov *vlasov, Fields *fields, Eigenvalue *eigenvalue)
 {
-  parallel->print("Using maximum absolute eigenvaue for timestep calulcations");
+  parallel->print("Using maximum absolute eigenvalue to estimate linear time step limit.");
   
   Complex max_abs_eigv = eigenvalue->getMaxAbsEigenvalue(vlasov, fields);
   

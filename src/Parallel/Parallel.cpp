@@ -170,7 +170,7 @@ Parallel::Parallel(Setup *setup)
   };
   //for(int dir: { DIR_X, DIR_Z, DIR_V, DIR_M, DIR_S }) setNeighbourRank(dir);
   int dirs[] = { DIR_X, DIR_Z, DIR_V, DIR_M, DIR_S };
-  for(int i = 0; i < 5; i++) setNeighbourRank(dirs[i]);
+  for(int i = 0; i < 6; i++) setNeighbourRank(dirs[i]);
   
   /////////////////// Setup own error handle,  this needed to enable backtracing when debugging
   MPI_Errhandler my_errhandler;

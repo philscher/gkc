@@ -68,11 +68,10 @@ class Integrate {
 
  public:
 
-  Integrate(std::string type, int _order = 11, double a=0., double b=1.) : order(_order) 
-  {
-
-    // Initialize nodes and weights
-    auto initNaW = [=] (double *x, double *w, bool rescale) { 
+  Integrate(std::string type, int _order = 11, double a=0., double b=1.) : order(_order)
+ {
+       
+    auto setupNodesAndWeights = [=] (double *x, double *w, bool rescale) { 
             
       const double A = (rescale) ? 0.5*(b-a) : 1.;
       const double B = (rescale) ? 0.5*(b+a) : 0.;
@@ -89,9 +88,10 @@ class Integrate {
 
     };
 
-    if     (type == "Gauss-Legendre") initNaW(gauss_weights   [order].points, gauss_weights   [order].weights,  true); 
-    else if(type == "Gauss-Laguerre") initNaW(Laguerre_weights[order].points, Laguerre_weights[order].weights, false); 
-    else if(type == "Gauss-Radau"   ) initNaW(Radau_weights   [order].points, Radau_weights   [order].weights,  true); 
+  
+    if     (type == "Gauss-Legendre") { setupNodesAndWeights(gauss_weights[order].points   , gauss_weights[order].weights,   true); }
+    else if(type == "Gauss-Laguerre") { setupNodesAndWeights(Laguerre_weights[order].points, Laguerre_weights[order].weights, false); }
+    else if(type == "Gauss-Radau"   ) { setupNodesAndWeights(Radau_weights[order].points   , Radau_weights[order].weights,   true); }
     else   check(-1, DMESG("No such quadrature rule"));
 
   };

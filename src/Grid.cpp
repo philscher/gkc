@@ -231,7 +231,9 @@ void Grid::initData(FileIO *fileIO)
 {
 
   hid_t gridGroup = fileIO->newGroup("/Grid");
-          
+  
+  //fileIO->setAttribute(gridGroup, "Lv", Lv);
+
   // Length scale
   check(H5LTset_attribute_double(gridGroup, ".", "Lx", &Lx, 1), DMESG("Attribute"));
   check(H5LTset_attribute_double(gridGroup, ".", "Ly", &Ly, 1), DMESG("Attribute"));
