@@ -234,8 +234,7 @@ struct NeighbourDir {
 #endif
     return x; 
   }
-   
-   
+  
   /**
   *   @brief Allreduce over direction dir
   *

@@ -31,15 +31,15 @@ FileIO::FileIO(Parallel *_parallel, Setup *setup)  :  parallel(_parallel)
 {
 
   // Set Initial values
-  inputFileName         = setup->get("DataOutput.InputFileName", "");
-  outputFileName        = setup->get("DataOutput.OutputFileName", "default.h5");
-  info                  = setup->get("DataOutput.Info", "No information provided");
-   
+  inputFileName        = setup->get("DataOutput.InputFileName" , "");
+  outputFileName       = setup->get("DataOutput.OutputFileName", "default.h5");
+  info                 = setup->get("DataOutput.Info"          , "No information provided");
+
   dataFileFlushTiming  = Timing(setup->get("DataOutput.Flush.Step", -1)       , setup->get("DataOutput.Flush.Time", 5.)); 
     
-  resumeFile            = inputFileName != "";
+  resumeFile           = inputFileName != "";
   
-  bool allowOverwrite   = setup->get("DataOutput.Overwrite", 0) || (setup->flags & Setup::GKC_OVERWRITE);
+  bool allowOverwrite  = setup->get("DataOutput.Overwrite", 0) || (setup->flags & Setup::GKC_OVERWRITE);
     
 
   ///////// Define Timing Datatype
@@ -83,26 +83,26 @@ void FileIO::create(Setup *setup, bool allowOverwrite)
   // from http://mail.hdfgroup.org/pipermail/hdf-forum_hdfgroup.org/2010-June/012076.html
   // to prevent corruption of HDF-5 file (requires regular calls to this->flush() ] 
   {
-    H5AC_cache_config_t mdc_config;
+//    H5AC_cache_config_t mdc_config;
 
-    mdc_config.version = H5AC__CURR_CACHE_CONFIG_VERSION;
-    H5Pget_mdc_config(file_apl, &mdc_config);
+//    mdc_config.version = H5AC__CURR_CACHE_CONFIG_VERSION;
+//    H5Pget_mdc_config(file_apl, &mdc_config);
   
-    mdc_config.evictions_enabled = false;
-    mdc_config.incr_mode         = H5C_incr__off;
-    mdc_config.decr_mode         = H5C_decr__off;
+//    mdc_config.evictions_enabled = false;
+//    mdc_config.incr_mode         = H5C_incr__off;
+//    mdc_config.decr_mode         = H5C_decr__off;
 
-    H5Pset_mdc_config(file_apl, &mdc_config);
+//    H5Pset_mdc_config(file_apl, &mdc_config);
   }
   
   // pass some information onto the underlying MPI_File_open call 
   // to optimize file access
   {
 #ifdef GKC_PARALLEL_MPI
-    //MPI_Info file_info;
-    //check(MPI_Info_create(&file_info), DMESG("File info"));
+    MPI_Info file_info;
+    check(MPI_Info_create(&file_info), DMESG("File info"));
      
-    //H5Pset_sieve_buf_size(file_plist, 262144); 
+    // H5Pset_sieve_buf_size(file_plist, 262144); 
     // H5Pset_alignment(file_plist, 524288, 262144);
      
     // MPI_Info_set(file_info, (char *) "access_style"        , (char *) "write_once");
@@ -110,10 +110,10 @@ void FileIO::create(Setup *setup, bool allowOverwrite)
     // MPI_Info_set(file_info, (char *) "cb_block_size"       , (char *) "1048576");
     // MPI_Info_set(file_info, (char *) "cb_buffer_size"      , (char *) "4194304");
 
-    //check( H5Pset_fapl_mpio(file_apl, parallel->Comm[DIR_ALL], file_info), DMESG("Set MPI Property"));
+    check( H5Pset_fapl_mpio(file_apl, parallel->Comm[DIR_ALL], file_info), DMESG("Critical HDF-5 Error"));
 
     // shouldn't be freed before H5Pclose(file_apl)
-    //MPI_Info_free(&file_info);
+    MPI_Info_free(&file_info);
 #endif
   }
 
@@ -139,13 +139,15 @@ void FileIO::create(Setup *setup, bool allowOverwrite)
   check(H5LTset_attribute_string(infoGroup, ".", "Config", setup->configFileString.c_str()), DMESG("H5LTset_attribute"));
  
   // get & save HDF-5 version
-  std::stringstream version;
-  unsigned int majnum, minnum, relnum;
-  H5get_libversion(&majnum, &minnum, &relnum);
-  version << majnum << "." << minnum << "." << relnum << std::endl;
+  { 
+    std::stringstream version;
+    unsigned int majnum, minnum, relnum;
+    H5get_libversion(&majnum, &minnum, &relnum);
+    version << majnum << "." << minnum << "." << relnum << std::endl;
   
-  check(H5LTset_attribute_string(infoGroup, ".", "Config", version.str().c_str()), DMESG("H5LTset_attribute"));
-  
+    check(H5LTset_attribute_string(infoGroup, ".", "HDF5version", version.str().c_str()), DMESG("H5LTset_attribute"));
+  }
+
   H5Gclose(infoGroup);
          
   ////////////// Wrote setup constants, ugly here /////////////////

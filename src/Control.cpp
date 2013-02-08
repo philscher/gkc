@@ -50,7 +50,7 @@ void signal_handler(int sig)
                 // ignore subsequent signals (otherwise program may slow down) 
                 signal(sig, SIG_IGN);
                 System::printStackTrace();
-                exit();
+                exit(1);
                 break;
     default       :
                 std::cerr << strsignal(sig) << " received. Exiting ..." << std::endl; 
@@ -130,12 +130,11 @@ void Control::setSignalHandler()
 
 bool Control::checkOK(Timing timing, Timing maxTiming) 
 {
-   int isOK = true;
   // #pragma omp single 
   // {
 
-      cntrl.check(timing <= maxTiming, "(1) : Time Limit for simulation reached");
-      if(cntrl_file_name != "") cntrl.check(std::ifstream(cntrl_file_name.c_str()) == NULL, "(1) : Manual stop bu using file.stop trigger");
+  cntrl.check(timing <= maxTiming, "(1) : Time Limit for simulation reached");
+  if(cntrl_file_name != "") cntrl.check(std::ifstream(cntrl_file_name.c_str()) == NULL, "(1) : Manual stop bu using file.stop trigger");
       
   cntrl.check(((time(NULL)-startTime) < maxRunningTime) || (maxRunningTime == 0), "(1) : Running Time Limit Reached");
   

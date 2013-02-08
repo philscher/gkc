@@ -107,7 +107,7 @@ class Setup : public IfaceGKC {
   int argc; char **argv;
 
   std::string setupFilename   ,  ///< filename of configuration file
-              configFileString;  ///< document me
+              configFileString;  ///< Configuration file as string
 
   std::string parser_constants;  ///< Constants for function parser 
 

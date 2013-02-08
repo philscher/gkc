@@ -30,9 +30,9 @@ VlasovIsland::VlasovIsland(Grid *_grid, Parallel *_parallel, Setup *_setup, File
   ArrayX = nct::allocate(nct::Range(NxGlB-2, Nx+8))(&MagIs, &dMagIs_dx);
   ArrayY = nct::allocate(nct::Range(NkyLlD, Nky))(&ky_filter);
     
-  const double ky0   = setup->get("Island.Filter.ky0", 1.2); 
-  const double filter_gradient = setup->get("Island.Filter.Gradient  ", 10.); 
-  const double signf = setup->get("Island.Filter.Sign", 0.5); 
+  const double ky0             = setup->get("Island.Filter.ky0"     , 1.2); 
+  const double filter_gradient = setup->get("Island.Filter.Gradient", 10.); 
+  const double signf           = setup->get("Island.Filter.Sign"    , 0.5); 
     
   for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  
       
@@ -204,14 +204,14 @@ void VlasovIsland::Vlasov_2D_Island(
   for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {
 
     // Note : for negative modes we need to use complex conjugate value
-    const CComplex ky     = _imag * fft->ky(y_k);
+    const CComplex iky     = _imag * fft->ky(y_k);
         
-    // We need to take care of boundaries. For poloidal numbers y_k > N_k-1, we  use zero.
-    // For y_k < 0, the corresponding complex conjugate value is used.
-    // is ky_p1 = ky or not ?!
-    const CComplex ky_1   = _imag * fft->ky(1);
-    const CComplex ky_p1  = ((y_k+1) >= Nky-1) ? 0.    : _imag * fft->ky(y_k+1);
-    const CComplex ky_m1  = _imag * fft->ky(y_k-1); 
+    // We need to take care of boundaries :
+    //  if y_k > Nky -1 : ky = 0.
+    //  if y_k < 0      : ky = - ky(y_k)
+    const CComplex iky_1   = _imag * fft->ky(1);
+    const CComplex iky_p1  = ((y_k+1) >= Nky-1) ? 0.    : _imag * fft->ky(y_k+1);
+    const CComplex iky_m1  = _imag * fft->ky(y_k-1); 
     
     const double ky_4     = pow4(fft->ky(1));
 
@@ -222,18 +222,17 @@ void VlasovIsland::Vlasov_2D_Island(
   /////////////////////////////////////////////////// Magnetic Island Contribution    /////////////////////////////////////////
         
   
-  // NOTE :  at the Nyquist frequency we have no coupling with higher frequencies (actually phi(m=Ny) = 0. anyway)
-  
+    // Note : if y_k is at Nyquist or above, we have no coupling with higher frequencies (=0)
     const CComplex phi_p1 = ((y_k+1) >= Nky-1) ? 0.                                          : Fields[Field::phi][s][m][z][y_k+1][x] ;
     const CComplex phi_m1 = ((y_k-1) <  0    ) ? conj(Fields[Field::phi][s][m][z][1-y_k][x]) : Fields[Field::phi][s][m][z][y_k-1][x] ;
 
-    // X-derivative (First Derivative with Central Difference 4th) of phi for poloidal mode +1, take care of Nyquist frequency
+    // X-derivative (first derivative with CD-4) of phi for poloidal mode +1, take care of Nyquist frequency
     const CComplex dphi_dx_p1 = ( (y_k+1) >= Nky-1) 
         ? 0.
         : (8.*(Fields[Field::phi][s][m][z][y_k+1][x+1] - Fields[Field::phi][s][m][z][y_k+1][x-1]) 
             - (Fields[Field::phi][s][m][z][y_k+1][x+2] - Fields[Field::phi][s][m][z][y_k+1][x-2])) * _kw_12_dx  ;
 
-    // X-derivative (1st deriv. CD-4 )of phi for poloidal mode -1, take care of complex conjugate relation for y_k=-1
+    // X-derivative (first derivative CD-4 )of phi for poloidal mode -1, take care of complex conjugate relation for y_k=-1
     const CComplex dphi_dx_m1 = ( (y_k-1) < 0 ) 
     
         ?  conj(8.*(Fields[Field::phi][s][m][z][1-y_k][x+1] - Fields[Field::phi][s][m][z][1-y_k][x-1]) 
@@ -247,11 +246,11 @@ void VlasovIsland::Vlasov_2D_Island(
     //  remember the island structure is 
     //  \partial_y (e^{imx} + e^{-imx}) = (i m) * ( e^{imx} - e^{-imx} )
     //
-    const CComplex Island_phi =  -dMagIs_dx[x] * ( ky_m1 * phi_m1 + ky_p1 * phi_p1) + MagIs[x] *  ky_1 * ( dphi_dx_p1 -  dphi_dx_m1);
+    const CComplex Island_phi =  -dMagIs_dx[x] * ( iky_m1 * phi_m1 + iky_p1 * phi_p1) + MagIs[x] *  iky_1 * ( dphi_dx_p1 -  dphi_dx_m1);
         
     ///////////////////////////////////////////////////////////////////////////////
             
-    const CComplex kp = geo->get_kp(x, ky, z);
+    const CComplex ikp = geo->get_kp(x, iky, z);
    
     // velocity space magic
     simd_for(int v = NvLlD; v <= NvLuD; v++) {
@@ -264,27 +263,27 @@ void VlasovIsland::Vlasov_2D_Island(
       // X-derivative of f1 (1-CD4) for poloidal mode +1, take care of Nyquist frequency
       const CComplex dfs_dx_p1  =  ((y_k+1) >= Nky-1)
         ? 0.
-        : (8. *(fs[s][m][z][y_k+1][x+1][v] - fs[s][m][z][y_k+1][x-1][v])  
-             - (fs[s][m][z][y_k+1][x+2][v] - fs[s][m][z][y_k+1][x-2][v])) * _kw_12_dx;
+        : (8.*(fs[s][m][z][y_k+1][x+1][v] - fs[s][m][z][y_k+1][x-1][v])  
+            - (fs[s][m][z][y_k+1][x+2][v] - fs[s][m][z][y_k+1][x-2][v])) * _kw_12_dx;
 
       // X-derivative of f1 (1-CD4) for poloidal mode -1, take care of complex conjugate relation for y_k=-1 
       const CComplex dfs_dx_m1  =  ( (y_k-1) < 0  )
 
-         ? conj(8. *(fs[s][m][z][1-y_k][x+1][v] - fs[s][m][z][1-y_k][x-1][v])  
-                  - (fs[s][m][z][1-y_k][x+2][v] - fs[s][m][z][1-y_k][x-2][v])) * _kw_12_dx 
-         :     (8. *(fs[s][m][z][y_k-1][x+1][v] - fs[s][m][z][y_k-1][x-1][v])  
-                  - (fs[s][m][z][y_k-1][x+2][v] - fs[s][m][z][y_k-1][x-2][v])) * _kw_12_dx;
+         ? conj(8.*(fs[s][m][z][1-y_k][x+1][v] - fs[s][m][z][1-y_k][x-1][v])  
+                 - (fs[s][m][z][1-y_k][x+2][v] - fs[s][m][z][1-y_k][x-2][v])) * _kw_12_dx 
+         :     (8.*(fs[s][m][z][y_k-1][x+1][v] - fs[s][m][z][y_k-1][x-1][v])  
+                 - (fs[s][m][z][y_k-1][x+2][v] - fs[s][m][z][y_k-1][x-2][v])) * _kw_12_dx;
 
       // Note Nky-1 is the maximum mode number Nky = 6 i-> [ 0, 1, 2, 3, 4, 5] 
       const CComplex fs_p1 = ((y_k+1) >= Nky-1) ? 0.                             : fs[s][m][z][y_k+1][x][v] ;
       const CComplex fs_m1 = ((y_k-1) <  0    ) ? conj(fs[s][m][z][1-y_k][x][v]) : fs[s][m][z][y_k-1][x][v] ;
          
       // Coupling of phase-space with Island mode-mode coupling
-      const CComplex Island_g =  -dMagIs_dx[x] * (ky_m1 * fs_m1  + ky_p1 * fs_p1 ) +  MagIs[x]  * ky_1 *  (dfs_dx_p1  - dfs_dx_m1 )  ;
+      const CComplex Island_g =  -dMagIs_dx[x] * (iky_m1 * fs_m1  + iky_p1 * fs_p1 ) +  MagIs[x]  * iky_1 *  (dfs_dx_p1  - dfs_dx_m1 )  ;
 
-      const CComplex d4_dx_fs     = (-39. * (fs[s][m][z][y_k][x+1][v] - fs[s][m][z][y_k][x-1][v])  
-                                    + 12. * (fs[s][m][z][y_k][x+2][v] - fs[s][m][z][y_k][x-2][v]) 
-                                    + 56. *  fs[s][m][z][y_k][x  ][v]) * _kw_16_dx4;
+      const CComplex d4_dx_fs = (-39. * (fs[s][m][z][y_k][x+1][v] - fs[s][m][z][y_k][x-1][v])  
+                                + 12. * (fs[s][m][z][y_k][x+2][v] - fs[s][m][z][y_k][x-2][v]) 
+                                + 56. *  fs[s][m][z][y_k][x  ][v]) * _kw_16_dx4;
       
       const CComplex hypvisc_xy = hyp_visc[DIR_X] *  d4_dx_fs + hyp_visc[DIR_Y] * ky_4 * g;
 
@@ -294,16 +293,17 @@ void VlasovIsland::Vlasov_2D_Island(
       //-  IslandPhase * alpha ... 
        -  alpha * V[v] * (Island_g + sigma * Island_phi * f0_) +          // Island term
        +  nonLinearTerm[y_k][x][v]                                        // Non-linear ( array is zero for linear simulations) 
-       -  ky* (w_n + w_T * (((V[v]*V[v])+ M[m])*kw_T  - sub)) * f0_ * 
-    //  (phi_ - (y_k == 1 ? V[v] * MagIs[x] : 0.  )  ) )                  // Source term (Temperature/Density gradient)
+       -  iky* (w_n + w_T * (((V[v]*V[v])+ M[m])*kw_T  - sub)) * f0_ * 
+//      (phi_ - (y_k == 1 ? V[v] * MagIs[x] : 0.  )  )                   // Source term (Temperature/Density gradient)
           phi_                                                           // Source term (Temperature/Density gradient)
-       -  alpha  * V[v]* kp  * ( g + sigma * phi_ * f0_)                  // Linear Landau damping
+       -  alpha  * V[v]* ikp  * ( g + sigma * phi_ * f0_)                  // Linear Landau damping
        +  Coll[s][m][z][y_k][x][v]                                        // Collisional operator
        +  hypvisc_xy        ;                                             // Hyperviscosity for stabilizing the scheme
          
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         
-    if(y_k == 0) dg_dt = creal(dg_dt);
+    if(y_k == 0    ) dg_dt = creal(dg_dt);
+    if(y_k >  Nky-3) dg_dt = 1.e-99;
 
     //////////////////////////// Vlasov End ////////////////////////////
     //  time-integrate the distribution function    
@@ -381,24 +381,17 @@ void VlasovIsland::Vlasov_2D_Island_Equi(
         
         for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
 
-        
         // Note : for negative modes we need to use complex conjugate value
-        const CComplex ky     = _imag * fft->ky(y_k) ;
-        
-        
-
+        const CComplex ky = _imag * fft->ky(y_k) ;
         
         for(int x=NxLlD; x<= NxLuD;x++) {  
-
           
           const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];
           
           const CComplex dphi_dx  = (8.*(Fields[Field::phi][s][m][z][y_k][x+1] - Fields[Field::phi][s][m][z][y_k][x-1])
                                       - (Fields[Field::phi][s][m][z][y_k][x+2] - Fields[Field::phi][s][m][z][y_k][x-2])) * _kw_12_dx  ;  
 
-        //  std::cout << "------1----> " << dMagIs_dx[x] << std::endl;  
         const CComplex kp = geo->get_kp(x, ky, z) - dMagIs_dx[x] * ky;
-        //  std::cout << "------2----> " << kp << std::endl;  
            
         CComplex half_eta_kperp2_phi = 0;
 

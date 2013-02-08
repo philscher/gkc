@@ -92,12 +92,8 @@ void VlasovAux::Vlasov_ES(
     for(int m = NmLlD; m <= NmLuD; m++) { for(int z = NzLlD; z <= NzLuD; z++) { 
       
       /// calculate non-linear term (rk_step == 0 for eigenvalue calculations)
-      // #pragma omp single
-      //   {
       if(doNonLinear         && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
       if(doNonLinearParallel && (rk_step != 0)) calculateParallelNonLinearity2(fs, Fields, z, m, s, nonLinearTerm);
-      //  }
-      //#pragma omp flush
 
       #pragma omp for
       for(int y_k=NkyLlD; y_k <= NkyLuD; y_k++) { 
