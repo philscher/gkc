@@ -55,7 +55,7 @@ void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
   // calculate source terms  Q (Q is overwritten in the first iteration )
   for(int s = NsLlD, loop=0; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++, loop++) {
 
-    // calculate drift-kinetic terms
+    // calculate drift-kinetic terms (use OpenMP schedule(static) to allow cache fusion)
     if(solveEq & Field::Iphi) calculateChargeDensity               ((A6zz) f0, (A6zz) f, (A4zz) Field0, m, s);
     if(solveEq & Field::IAp ) calculateParallelCurrentDensity      ((A6zz) f0, (A6zz) f, (A4zz) Field0, m, s);
     if(solveEq & Field::IBp ) calculatePerpendicularCurrentDensity ((A6zz) f0, (A6zz) f, (A4zz) Field0, m, s);
@@ -149,7 +149,7 @@ void Fields::calculateChargeDensity(const CComplex f0      [NsLD][NmLD][NzLB][Nk
   // In case of a full-f simulation the Maxwellian is subtracted
   const double pqnB_dvdm = M_PI * species[s].q * species[s].n0 * plasma->B0 * dv * grid->dm[m] ;
 
-  #pragma omp for collapse(2) nowait
+  #pragma omp for collapse(2) nowait, schedule(static)
   for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
   for(int x = NxLlD; x <= NxLuD; x++) {
 
@@ -171,7 +171,7 @@ void Fields::calculateParallelCurrentDensity(const CComplex f0    [NsLD][NmLD][N
 {
   const double qa_dvdm = species[s].q * species[s].n0  * species[s].alpha * M_PI * dv * grid->dm[m] ;
    
-  #pragma omp for collapse(2) nowait
+  #pragma omp for collapse(2) nowait, schedule(static)
   for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
   for(int x = NxLlD; x <= NxLuD; x++) {
 
@@ -193,7 +193,7 @@ void Fields::calculatePerpendicularCurrentDensity(const CComplex f0     [NsLD][N
    
   const double qan_dvdm = - species[s].q * species[s].alpha * plasma->B0 * M_PI * dv * grid->dm[m] ;
    
-  #pragma omp for collapse(2) nowait
+  #pragma omp for collapse(2) nowait, schedule(static)
   for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
   for(int x = NxLlD; x <= NxLuD; x++) {
 
@@ -208,7 +208,7 @@ void Fields::calculatePerpendicularCurrentDensity(const CComplex f0     [NsLD][N
 void Fields::updateBoundary()
 {
  
-  [=](
+  [&](
          CComplex Field [Nq][NsLD][NmLD][NzLB][Nky][NxLB+4], 
          CComplex SendXl[Nq][NsLD][NmLD][NzLD][Nky][GC4   ], CComplex SendXu[Nq][NsLD][NmLD][NzLD][Nky][GC4 ],
          CComplex RecvXl[Nq][NsLD][NmLD][NzLD][Nky][GC4   ], CComplex RecvXu[Nq][NsLD][NmLD][NzLD][Nky][GC4 ],
