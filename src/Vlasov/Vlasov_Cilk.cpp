@@ -97,6 +97,9 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
   doubleAA    xy_f1    [NyLD+4][NxLB  ];
   doubleAA    xy_ExB   [NyLD  ][NxLD  ];
 
+  bool have_xy_dXi = false; // need for OpenMP parallelization over v
+                            //  as all variables are on stack and thread local
+
   #pragma omp for
   for(int v = NvLlD; v <= NvLuD; v++) { 
 
@@ -104,7 +107,7 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
         
     // In case of electro-static simulations Xi[x][k_y] and no v-dependence
     // for electro-static field this has to be calculated only once
-    if(electroMagnetic || (v == NvLlD)) {
+    if(electroMagnetic || !have_xy_dXi) {
 
       if(electroMagnetic) xky_Xi[:][:] =     Xi                  [z][:][NxLlB-2:NxLB+4][v];
       else                xky_Xi[:][:] = Fields[Field::phi][s][m][z][:][NxLlB-2:NxLB+4]   ;
@@ -130,7 +133,8 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
       // get maximum value to calculate CFL condition 
       Xi_max[DIR_Y] = std::max(Xi_max[DIR_Y], __sec_reduce_max(cabs(xy_dXi_dy[:][:])));
       Xi_max[DIR_X] = std::max(Xi_max[DIR_X], __sec_reduce_max(cabs(xy_dXi_dx[:][:])));
-        
+       
+      have_xy_dXi = true; 
     }
 
     if(electroMagnetic) xky_f1[:][:] = G      [z][0:Nky][NxLlB:NxLB][v];
