@@ -44,7 +44,7 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
   ///////////////// set adiabatic species //////////////////////////////////////////////////////
   
   std::string species_name = setup->get("Plasma.Species0.Name", "Unnamed") + "(ad.)";
-  snprintf(species[0].name, sizeof(species_name.c_str()), "%s", species_name.c_str());
+  snprintf(species[0].name, sizeof(char) * std::min((size_t) 64, species_name.length()), "%s", species_name.c_str());
       
   species[0].n0     = setup->get("Plasma.Species0.Density" , 0. );
   species[0].T0     = setup->get("Plasma.Species0.Temperature" , 1. );
@@ -63,7 +63,7 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
     std::string key          = "Plasma.Species" + Setup::num2str(s);
 
     std::string species_name = setup->get(key + ".Name"  , "Unnamed");
-    snprintf(species[s].name, sizeof(species_name.c_str()), "%s", species_name.c_str());
+    snprintf(species[s].name, sizeof(char) * std::min((size_t) 64, species_name.length()), "%s", species_name.c_str());
 
     species[s].m         = setup->get(key + ".Mass"       , 1. );
     species[s].n0        = setup->get(key + ".Density"    , 0. );
@@ -71,8 +71,8 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
     species[s].q         = setup->get(key + ".Charge"     , 1. );
     species[s].gyroModel = setup->get(key + ".gyroModel"  , (Nm > 1) ? "Gyro" : "Gyro-1" );
 
-    if  (species[s].doGyro)  species[s].f0_str = setup->get(key + ".F0"      , "n/(pi*T)^1.5*exp(-v^2/T)*exp(-m/T)" );
-    else          species[s].f0_str = setup->get(key + ".F0"      , "n/(pi*T)^1.5*exp(-v^2/T)*T/Nm" );
+    if  (species[s].doGyro) species[s].f0_str = setup->get(key + ".F0"      , "n/(pi*T)^1.5*exp(-v^2/T)*exp(-m/T)" );
+    else                    species[s].f0_str = setup->get(key + ".F0"      , "n/(pi*T)^1.5*exp(-v^2/T)*T/Nm" );
         
     species[s].doGyro = (species[s].gyroModel == "Gyro") ? 1 : 0;
 
@@ -81,7 +81,7 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
         
     if(global) { 
     
-      snprintf(species[s].n_name, 64, "%s", setup->get(key + ".Density", "0." ).c_str());
+      snprintf(species[s].n_name, 64, "%s", setup->get(key + ".Density"    , "0." ).c_str());
       snprintf(species[s].T_name, 64, "%s", setup->get(key + ".Temperature", "1." ).c_str());
         
       // Set Temperature and Density Gradient
@@ -108,8 +108,8 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
       species[s].w_n = setup->get(key + ".w_n", 0.0 );
       species[s].n[NxLlB:NxLB] = species[s].n0;
       species[s].T[NxLlB:NxLB] = species[s].T0;
-      snprintf(species[s].n_name, 64, "%f", species[s].n0);
-      snprintf(species[s].T_name, 64, "%f", species[s].n0);
+      //snprintf(species[s].n_name, 64, "%f", species[s].n0);
+      //snprintf(species[s].T_name, 64, "%f", species[s].n0);
     }
 
     species[s].update(geo, cs);
