@@ -35,7 +35,7 @@ FileIO::FileIO(Parallel *_parallel, Setup *setup)  :  parallel(_parallel)
   outputFileName       = setup->get("DataOutput.OutputFileName", "default.h5");
   info                 = setup->get("DataOutput.Info"          , "No information provided");
 
-  dataFileFlushTiming  = Timing(setup->get("DataOutput.Flush.Step", -1)       , setup->get("DataOutput.Flush.Time", 5.)); 
+  dataFileFlushTiming  = Timing(setup->get("DataOutput.Flush.Step", -1)       , setup->get("DataOutput.Flush.Time", 100.)); 
     
   resumeFile           = inputFileName != "";
   
@@ -137,7 +137,11 @@ void FileIO::create(Setup *setup, bool allowOverwrite)
   check(H5LTset_attribute_string(infoGroup, ".", "Info"   , info.c_str())          , DMESG("H5LTset_attribute"));
 
   check(H5LTset_attribute_string(infoGroup, ".", "Config", setup->configFileString.c_str()), DMESG("H5LTset_attribute"));
- 
+
+//  aid = H5Acreate(gid, "bar", H5T_NATIVE_DOUBLE, sid, H5P_DEFAULT, H5P_DEFAULT);
+//  status = H5Awrite(aid, H5T_NATIVE_DOUBLE, buf);
+
+
   // get & save HDF-5 version
   { 
     std::stringstream version;

@@ -87,11 +87,12 @@ class System
   *
   *    @return process id of this proccess     
   */
-  static unsigned int getProcessID() 
+  static int getProcessID() 
   {
-      return getpid();
+      // getpid returns unsigned int (take care of casting)
+      // casting as we do not want to define new datatype in MPI
+      return (int) getpid();
   };
-
 
   /**
   *    @brief returns the process id

@@ -175,7 +175,7 @@ int GKC::mainLoop()
           // corruption in case of an abnormal program termination
           fileIO->flush(timing, dt);  
              
-          isOK =  control->checkOK(timing, timeIntegration->maxTiming);
+          isOK = control->checkOK(timing, timeIntegration->maxTiming);
 
         }
         #pragma omp barrier
