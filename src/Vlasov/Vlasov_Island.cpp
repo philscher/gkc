@@ -13,7 +13,7 @@
  */
 
 #include "Vlasov/Vlasov_Island.h"
-
+#include "Special/RootFinding.h"
   
 VlasovIsland::VlasovIsland(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
                            Geometry *_geo, FFTSolver *fft, Benchmark *_bench, Collisions *_coll)    
@@ -35,61 +35,64 @@ VlasovIsland::VlasovIsland(Grid *_grid, Parallel *_parallel, Setup *_setup, File
   const double signf           = setup->get("Island.Filter.Sign"    , 0.5); 
     
   for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  
-      
     ky_filter[y_k] = 0.5 + signf*tanh(filter_gradient*(fft->ky(y_k)-ky0));
-
   }  
 
-  for(int x = NxGlD-4; x <= NxGuD+4; x++) {  
-
-    const double zeta      = 2.*M_PI/Ly;
-       
-    // Island cos(k_T y) = 0.5 [ exp(-i m) + exp( i m ) ]
-    // The poloidal island term is direclty included per 
-    // mode-mode coupling
+  /////////////////////////////////////////////////////////////////////////////////////////////////
+  // Corresponding fit function to find scaling of psi_1 for corresponding island width
     
-    // we used simple fitting model to get least square coefficient
-    const double p[] = { 0.13828847,  0.70216594, -0.01033686 };
-
-    const double xx   = pow2(X[x]);
-    const double psi  = (1. + p[0]*pow(xx,p[1])) * exp( p[2] * xx);
-    const double dpsi = (X[x] == 0.) ? 0. :  (p[0] * 2. * X[x] * p[1]*pow(xx, p[1]-1.) + (1. + p[0] * pow(xx,p[1])) * p[2] * 2. * X[x]) * exp(p[2]*xx);
-
-    // Corresponding fit function to translate from sparatrix island width to
-    
+  const double p[] = { 0.13828847,  0.70216594, -0.01033686 };
+  auto psi         = [=](double x) -> double { return (1. + p[0]*pow(pow2(x),p[1])) * exp( p[2] * pow2(x)); };
    
-    // using Horner's rule for polynomial evaluation
-    auto evalPoly = [=](int N, const double *polyConst, double x) -> double 
-    {
-      double res = 0.;
-      for(int n=0; n < N-1; n++) res += (res + polyConst[n])*x;
-      return res + polyConst[N-1];
+  // Calculates the island width for given scale factor
+  // We integrate from the separatrix until Ly/2, which gives
+  // us half the size of the island.
+  auto IslandWidth = [=](double scale) -> double {
 
+    if(scale == 0.) return 0.;
+
+    // \partial f(x,y) / \partial y
+    auto IslandForm = [=](double x, double y) -> double {
+      return scale * psi(x) * sin(2.*M_PI/Ly * y) * (2.*M_PI/Ly);
     };
+
+    double x_np1 = 0., x_n = 0.   , ///< Start integration at y=0 
+           y_np1 = 0., y_n = 1.e-2; ///< Use small offset at  x 0
+
+    int nSteps =  1024;              ///< Number of integration steps
+    double ds  = Ly/2. / nSteps;    ///< Step size
+
+    // Use Trapezoidal rule to integrate over line
+    // Note that the role of (x,y) is switched
+    for(int step = 0; step < nSteps; step++) {
+
+        x_np1 = x_n + ds;
+        //y_np1 = y_n + ds * (IslandForm(y_n, x_n));
+        y_np1 = y_n + 0.5 * ds * (IslandForm(y_n, x_n) + IslandForm(y_n, x_np1));
+
+        // Update
+        y_n = y_np1;
+        x_n = x_np1;
+    }
+    return 2. * y_n; /// We measure the full-width of the island
+  };
     
-    const double polyIsland[] = 
-    { -6.28828806e-13, 1.60965096e-10, -1.77107115e-08, 1.09512432e-06,
-      -4.17566040e-05, 1.01434574e-03, -1.56855609e-02, 1.50685821e-01,
-      -8.66414053e-01, 3.18134960e+00,  6.27800358e-01 };
+  double width_scale = RootFinding::BiSection([=](double w)-> double { return IslandWidth(w) - width; }, 0., 100.);
+    
+  // helper function to calculate first order derivative using second order central differences 
+  auto CD2 = [](std::function<double (double)> func, double x)-> double {
+         const double eps = 1.e-8 * x; // "most accurate" sqrt(dp) * x
+         return (func(x + eps) - func(x - eps)) / (2.*eps);  
+  };
 
-    const double width_scale = (width == 0.) ? 0. : evalPoly(11, polyIsland, abs(width));
+  // setup magnetic island arrays
+  for(int x = NxGlD-4; x <= NxGuD+4; x++) { 
 
-    auto sign = [=](double a) { return a >= 0. ? 1. : -1.;} ;
-
-    // we need to translate island width size to translation size. 
-     MagIs   [x] = 0.5 * sign(width) * pow2(width_scale) * shear/16. * psi ;//cos(zeta * X[x]);
-  }
-  
-  for(int x = NxGlD-2; x <= NxGuD+2; x++) {  
-    dMagIs_dx[x] = (8. * (MagIs[x+1] - MagIs[x-1])
-                       - (MagIs[x+2] - MagIs[x-2])) * _kw_12_dx;
+    // The poloidal island term is direclty included per mode-mode coupling
+    // multiply 0.5 as : cos(y) = 0.5 * [exp(-ky y) - exp(ky y)]
+    MagIs    [x] = 0.5 * width_scale * psi(X[x]);
+    dMagIs_dx[x] = 0.5 * width_scale * CD2(psi, X[x]);
   }    
- //   dMagIs_dx[x] = 0.5 * sign(width) * pow2(width_scale) * shear/16. * dpsi;// - sin(zeta * X[x]) * zeta;
-    
-    //MagIs[x]     = 0.5 * width*width*shear/16.  * cos(zeta * X[x]);
-    //dMagIs_dx[x] = 0.5 * width*width*shear/16. *  (-sin(zeta * X[x])) * zeta;
- 
-        
    
   // if electro-magnetic version is used intialize fields
   if(Nq >= 2) {
