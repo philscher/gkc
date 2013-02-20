@@ -33,7 +33,7 @@
 **/ 
 class Init   : public IfaceGKC 
 {
-
+  friend class ScanLinearModes;
   Geometry *geo;
    
   double epsilon_0, ///< Strengh of perturbation

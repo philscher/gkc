@@ -20,6 +20,7 @@
 #include "FileIO.h"
 #include "Plasma.h"
 #include "Special/Vector3D.h"
+#include "Tools/System.h"
 
 typedef struct ComplexSplit_t {
   double r;   ///< real part
@@ -137,10 +138,8 @@ void FileIO::create(Setup *setup, bool allowOverwrite)
   check(H5LTset_attribute_string(infoGroup, ".", "Info"   , info.c_str())          , DMESG("H5LTset_attribute"));
 
   check(H5LTset_attribute_string(infoGroup, ".", "Config", setup->configFileString.c_str()), DMESG("H5LTset_attribute"));
-
-//  aid = H5Acreate(gid, "bar", H5T_NATIVE_DOUBLE, sid, H5P_DEFAULT, H5P_DEFAULT);
-//  status = H5Awrite(aid, H5T_NATIVE_DOUBLE, buf);
-
+  
+  check(H5LTset_attribute_string(file, ".", "StartTime", System::getTimeString().c_str()), DMESG("H5LTset_attribute"));
 
   // get & save HDF-5 version
   { 
@@ -189,6 +188,7 @@ void FileIO::initData(Setup *setup)
 FileIO::~FileIO()  
 {
    
+  check(H5LTset_attribute_string(file, ".", "StopTime", System::getTimeString().c_str()), DMESG("H5LTset_attribute"));
   // Free all HDF5 resources
 
   // close some extra stuff

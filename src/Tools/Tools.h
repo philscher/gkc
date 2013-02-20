@@ -15,6 +15,9 @@
 #ifndef __TOOLS_H_
 #define __TOOLS_H_
 
+#include<cmath>
+#include<assert.h>
+
 /**
 *
 *   @brief collection of various helper functions
@@ -82,6 +85,34 @@ class Tools
     return loop;
   };
 
+  
+  static std::vector<double> linspace(double start, double stop, int N)
+  {
+    assert(N >= 2);
+    
+    std::vector<double> linsp;
+
+    const double dx = (stop - start) / (N-1);
+    for(int n = 0; n < N; n++) linsp.push_back(start + n * dx);
+
+    return linsp;
+
+  };
+
+  static std::vector<double> logspace(double start, double stop, int N)
+  {
+
+    assert(N >= 2);
+
+    std::vector<double> logsp;
+
+    const double dx = (stop - start) / (N-1);
+
+    for(int n = 0; n < N; n++)  logsp.push_back(std::pow(10., start + n * dx));
+  
+    return logsp;
+  };
+ 
 };
 
 #endif // __GKC_TOOLS_H__

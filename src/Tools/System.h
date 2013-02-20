@@ -121,7 +121,7 @@ class System
   *
   *    @return Current time as string e.g. "1st January 1996"
   */
-  std::string getTimeString()
+  static std::string getTimeString()
   {
 
       time_t start_time = std::time(0); 

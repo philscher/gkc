@@ -9,7 +9,7 @@ gkc_SOURCES = \
    Analysis/Diagnostics.cpp  Init.cpp Control.cpp Analysis/Moments.cpp \
    Plasma.cpp Special/LA.cpp TimeIntegration/Timing.cpp Analysis/TestParticle.cpp TimeIntegration/TimeIntegration.cpp \
    FFTSolver/FFTSolver.cpp Visualization/Visualization_Data.cpp Analysis/Benchmark.cpp \
-   Collisions/LenardBernstein.cpp Tools/TermColor.cpp
+   Collisions/LenardBernstein.cpp Tools/TermColor.cpp TimeIntegration/ScanLinearModes.cpp
 
 ## Include corresponding header files
 

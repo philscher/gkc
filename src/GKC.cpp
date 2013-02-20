@@ -112,7 +112,7 @@ GKC::GKC(Setup *_setup) : setup(_setup)
   particles       = new TestParticles(fileIO, setup, parallel);
   
   timeIntegration = new TimeIntegration(setup, grid, parallel, vlasov, fields, particles, eigenvalue, bench);
-  
+  scanModes       = new ScanLinearModes(setup, grid, parallel, vlasov, fields, fileIO);
   // Optimize values to speed up computation
   bench->bench(vlasov, fields);
   
@@ -191,7 +191,12 @@ int GKC::mainLoop()
    
     eigenvalue->solve(vlasov, fields, visual, control);
 
+
   } 
+  else if(gkc_SolType == "Scan") {
+
+    scanModes->solve(vlasov, fields, timeIntegration, eigenvalue, init, visual); 
+  }
   else  check(-1, DMESG("No Such gkc.Type Solver"));
 
   parallel->print("Simulation finished normally ... ");
@@ -214,6 +219,7 @@ GKC::~GKC()
   delete particles;
   delete eigenvalue;
   delete event;
+  delete scanModes;
   delete fileIO; // once this is successful, file cannot
                  // be corrupted anymore.
   
@@ -237,7 +243,7 @@ void GKC::printSettings()
   
   infoStream 
   
-    << "Welcome from " << PACKAGE_NAME << " (" << PACKAGE_VERSION <<")  " << PACKAGE_BUGREPORT <<  "      Date :  " << std::ctime(&start_time)         
+    << "Welcome to " << PACKAGE_NAME << " (" << PACKAGE_VERSION <<")  " << PACKAGE_BUGREPORT <<  "      Date :  " << std::ctime(&start_time)         
     << "-------------------------------------------------------------------------------" << std::endl
     << *grid << *plasma << *fileIO << *setup << *vlasov  << *fields << *geometry << *init << *parallel << *fftsolver << *timeIntegration << *collisions;
     
