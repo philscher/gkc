@@ -83,19 +83,17 @@ void FieldsFFT::solvePoissonEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_
 
     // Set kx=0/ky=0 component to zero (gauge freedom)
     if((x_k == 0) && (y_k == 0)) { kXIn[Field::phi][z][y_k][x_k] = 0.e0 ; continue; }
-         
+   
     // BUG (Optimize) : need to vectorize this one 
     const double k2_p = fft->k2_p(x_k,y_k,z);
          
     // adiabatic term \adia ( \phi - <\phi>_{yz}), we shift flux averaging term <\phi>_{yz}
-    // to rhs due to FFT normalization
+    // to rhs due to FFT normalization, flux-surface averaging only affects zonal flow itself.
     const double lhs    = plasma->debye2 * k2_p + sum_qqnT_1mG0(k2_p) + adiab;
-    const CComplex rhs  = (kXOut[Field::phi][z][y_k][x_k] + adiab*phi_yz[x_k]); 
+    const CComplex rhs  = kXOut[Field::phi][z][y_k][x_k] + (y_k == 0 ? adiab*phi_yz[x_k]: 0.); 
           
     kXIn[Field::phi][z][y_k][x_k] = rhs/(lhs * fft->Norm_X);
          
-    // where to remove ? Here or @ gyroFull ? ... I guess better here ... !
-    if(( (y_k == Nky-1) || (x_k == Nx/2)) && screenNyquist) kXIn[Field::phi][z][y_k][x_k]  = 0.;
     
   } } } // z, y_k, x_k
         
@@ -167,8 +165,8 @@ void FieldsFFT::solveBParallelEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::
 void FieldsFFT::calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_NkxL],
                                  CComplex phi_yz[Nx])
 {
-  //const double _kw_NxNy = 1./((2.*Nky-2.)*Nx*Nz)  ; // Number of poloidal points in real space
-  const double _kw_NxNy = 1./((2.*Nky-2.)*Nz)  ; // Number of poloidal points in real space
+  //const double _kw_NxNy = 1./((2.*Nky-2.)*Nz)  ; // Number of poloidal points in real space
+  const double _kw_NxNy = 1./(Nz)  ; // Number of poloidal points in real space
 
   // Note : In FFT the ky=0 components carries the offset over y (integrated value), thus
   //        by divinding through the number of points we get the averaged valued
@@ -201,6 +199,7 @@ void FieldsFFT::doubleGyroExp(const CComplex In [Nq][NzLD][Nky][NxLD],
 {
   check( (m >= 0) && (m <= 2) ? 0 : -1, DMESG("Range exceeded"));     
  
+  //#pragma omp single
   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, (void *) &In[0][0][0][0]);
 
   [=](CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_NkxL],
@@ -230,6 +229,7 @@ void FieldsFFT::doubleGyroExp(const CComplex In [Nq][NzLD][Nky][NxLD],
 
   } ((A4zz) fft->kXOut, (A4zz) fft->kXIn);
        
+  //#pragma omp single
   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, &Out[0][0][0][0]);
 
   return;
@@ -262,8 +262,12 @@ void FieldsFFT::gyroFull(const CComplex In   [Nq][NzLD][Nky][NxLD             ],
   for(int x_k = fft->K1xLlD; x_k <= fft->K1xLuD; x_k++) {
     
     const double k2_p = fft->k2_p(x_k,y_k,z);
+    
+    // Remove Nyuiest frequency as it may leads to numerical errors (from stencils)
+    if(( (y_k == Nky-1) || (x_k == Nx/2)) && screenNyquist) { kXIn[Field::phi][z][y_k][x_k]  = 0.; continue; }
           
     kXIn[q][z][y_k][x_k] = kXOut[q][z][y_k][x_k]/fft->Norm_X * avrg_func[q](sqrt(lambda2 * k2_p));
+   
 
   } } }
 
@@ -288,7 +292,8 @@ void FieldsFFT::gyroFirst(const CComplex In   [Nq][NzLD][Nky][NxLD],
      Out[0:Nq][NzLlD:NzLD][NkyLlD:Nky][NxLlD:NxLD] = In[0:Nq][NzLlD:NzLD][NkyLlD:NkyLD][NxLlD:NxLD];
      return; 
   };
-   
+  
+  #pragma omp single
   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, (void *) &In[0][NzLlD][NkyLlD][NxLlD]);
            
   // solve for all fields at once
@@ -311,7 +316,7 @@ void FieldsFFT::gyroFirst(const CComplex In   [Nq][NzLD][Nky][NxLD],
    
   }
 
-
+  #pragma omp single
   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, &Out[0][NzLlD][NkyLlD][NxLlD]);
   
   return;

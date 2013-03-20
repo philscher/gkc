@@ -13,13 +13,12 @@
  */
 
 
-#include "config.h"
-#include "Global.h"
-
 
 #ifndef FIELDS_HERMITE_H
 #define FIELDS_HERMITE_H
 
+#include "config.h"
+#include "Global.h"
 
 #include <petscksp.h>
 
@@ -27,10 +26,6 @@
 #include "external/Array.h"
 #include "Matrix/MatrixSolver.h"
 #include "Matrix/MatrixPETSc.h"
-
-
-
-
 
 /**
 *
@@ -64,7 +59,6 @@
 *    & Lapillone.
 *
 *
-*
 **/
 class FieldsHermite : public Fields {
 
@@ -87,30 +81,29 @@ protected:
   *    Please Document Me !
   *
   **/
-  void solveFieldEquations(const CComplex Q     [Nq][NxLD][NkyLD][Nz],
-                                 CComplex Field0[Nq][NxLD][NkyLD][Nz]);
+  void solveFieldEquations(const CComplex Q     [Nq][NzLD][Nky][NxLD],
+                                 CComplex Field0[Nq][NzLD][Nky][NxLD]);
   /**
   *    Please Document Me !
   *
   **/
-  void solvePoissonEquation(const CComplex Q     [Nq][NxLD][NkyLD][Nz],
-                                  CComplex Field0[Nq][NxLD][NkyLD][Nz]);
+  void solvePoissonEquation(const CComplex Q     [Nq][NzLD][Nky][NxLD],
+                                  CComplex Field0[Nq][NzLD][Nky][NxLD]);
   /**
   *    Please Document Me !
   *
   **/
-  void gyroAverage(const CComplex In [Nq][NzLD][NkyLD][NxLD], 
-                         CComplex Out[Nq][NzLD][NkyLD][NxLD],
+  void gyroAverage(const CComplex In [Nq][NzLD][Nky][NxLD], 
+                         CComplex Out[Nq][NzLD][Nky][NxLD],
                    const int m, const int s, const bool forward, const bool stack=false);
    
   /**
   *
   *
   **/
-  void doubleGyroExp(const CComplex In [Nq][NzLD][NkyLD][NxLD], 
-                           CComplex Out[Nq][NzLD][NkyLD][NxLD], const int m, const int s) {};
+  void doubleGyroExp(const CComplex In [Nq][NzLD][Nky][NxLD], 
+                           CComplex Out[Nq][NzLD][Nky][NxLD], const int m, const int s) {};
  
-    
 private:
   /**
   *    Please Document Me !
@@ -128,13 +121,13 @@ private:
   *    Please Document Me !
   *
   **/
-  CComplex getElements(const int i, const int n, const double r, const int y_k, const int z);
+  CComplex getElements(const int x, const int x_, const double r, const int y_k, const int z);
 
   /**
   *    Please Document Me !
   *
   **/
-  double Lambda(const double x, const int n);
+  double Lambda(const double x, const int x_);
 
  public:
 

@@ -63,8 +63,8 @@ FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileI
 }
 
 
-void FieldsHermite::gyroAverage(const CComplex In [Nq][NzLD][NkyLD][NxLD], 
-                                      CComplex Out[Nq][NzLD][NkyLD][NxLD],
+void FieldsHermite::gyroAverage(const CComplex In [Nq][NzLD][Nky][NxLD], 
+                                      CComplex Out[Nq][NzLD][Nky][NxLD],
                                 const int m, const int s, const bool forward, const bool stack)
 {
   
@@ -91,15 +91,15 @@ void FieldsHermite::gyroAverage(const CComplex In [Nq][NzLD][NkyLD][NxLD],
 
   return;
 
-};
+}
 
 
-CComplex FieldsHermite::getElements(const int x, const int n, const double r, int y_k, const int z) 
+CComplex FieldsHermite::getElements(const int x, const int x_, const double r, int y_k, const int z) 
 {
   
   const double ky = (2. * M_PI/Ly) * y_k;
   // Assign the lambda expression that adds two numbers to an auto variable.
-  auto Integrand = [=] (double alpha) -> Complex { 
+  auto Integrand = [=] (double alpha) -> CComplex { 
            
   
     /////////////////////////////////////////////////////////////////////////////////////
@@ -112,29 +112,30 @@ CComplex FieldsHermite::getElements(const int x, const int n, const double r, in
     //  rho_y   = frac{g_{xy}}{\sqrt{g_{xx}}} rho \cos{(\alpha}} 
     //              + \frac{g}{\sqrt{g_{xx}} \rho sin{(\alpha)}
     //
-    const double g = sqrt( geo->g_xx(x,z) * geo->g_yy(x,z) - pow2(geo->g_xy(x,z)) );
+    const double g   = sqrt( geo->g_xx(x,z) * geo->g_yy(x,z) - pow2(geo->g_xy(x,z)) );
   
     const double r_x = sqrt(geo->g_xx(x, z)) * r * cos(alpha);
 
     const double r_y = (geo->g_xy(x, z) / geo->g_xx(x,z)) * r * cos(alpha) +
-                               g / geo->g_xx(x,z) * r * sin(alpha);
+                                      g / geo->g_xx(x,z)  * r * sin(alpha);
            
     // Is this correct ? (Matrix is still not singular ?)
     //     if( ( i <= (NxGlD+1)) || ( i  >= (NxGuD-1))) return 0.;
     //     if( ( n <= (NxGlD+1)) || ( n  >= (NxGuD-1))) return 0.;
     if( ((X[x] - r_x) <= X[NxGlD]) || ((X[x] - r_x) >= X[NxGuD])) return 0.;
 
-    return Lambda(X[x] - r_x, n) * exp(Complex(0.,1.) * ky * r_y);
+    return Lambda(X[x] - r_x, x_) * cexp(_imag * ky * r_y);
 
     
   };
         
   
   // Integration is very sensitif on order ( why ? some bug ?? )
+  //return 1./(2.*M_PI) * Integrate::GaussLegendre(Integrand, 0., 2.*M_PI, 128);
   return 1./(2.*M_PI) * *(reinterpret_cast<CComplex*> (&(Integrate::GaussLegendre(Integrand, 0., 2.*M_PI, 128))));
         
 
-};
+}
 
 FieldsHermite::~FieldsHermite()
 {
@@ -142,10 +143,8 @@ FieldsHermite::~FieldsHermite()
 }
 
 
-
-//Array4C FieldsHermite::solveFieldEquations(Array4C Qn, Timing timing) 
-void FieldsHermite::solveFieldEquations(const CComplex Q     [Nq][NxLD][NkyLD][Nz],
-                                              CComplex Field0[Nq][NxLD][NkyLD][Nz])
+void FieldsHermite::solveFieldEquations(const CComplex Q     [Nq][NzLD][Nky][NxLD],
+                                              CComplex Field0[Nq][NzLD][Nky][NxLD])
 {
    
   // for 3 fields phi and B_perp are coupled and need to be solved differently
@@ -214,7 +213,7 @@ double FieldsHermite::Lambda(const double x, const int n)
   }
   // 7th order interpolation
   else if      (interpolationOrder == 7) {
-            check(-1, DMESG("Interpolation order not implemented"));
+            check(-1, DMESG("7th order interpolation not implemented"));
   }
   else check(-1, DMESG("Interpolation order not implemented"));
         
@@ -230,8 +229,8 @@ void FieldsHermite::printOn(std::ostream &output) const
 }
  
 
-void FieldsHermite::solvePoissonEquation(const CComplex Q     [Nq][NxLD][NkyLD][Nz],
-                                               CComplex Field0[Nq][NxLD][NkyLD][Nz])
+void FieldsHermite::solvePoissonEquation(const CComplex Q     [Nq][NzLD][Nky][NxLD],
+                                               CComplex Field0[Nq][NzLD][Nky][NxLD])
 {
 
   CComplex *vec_Q, *vec_Field;
@@ -251,8 +250,7 @@ void FieldsHermite::solvePoissonEquation(const CComplex Q     [Nq][NxLD][NkyLD][
   } }
 
   return;
-
-};
+}
            
          
 Matrix* FieldsHermite::getGyroAveragingMatrix(const double mu, const int y_k, const int z, const int s)
@@ -261,15 +259,15 @@ Matrix* FieldsHermite::getGyroAveragingMatrix(const double mu, const int y_k, co
   Matrix *M = new Matrix(NxLD, Nx, DIR_X, parallel);         
            
   // fill martrix
-  for(int x = NxLlD; x <= NxLuD; x++) { for(int n = NxLlD; n <= NxLuD; n++) {
+  for(int x = NxLlD; x <= NxLuD; x++) { for(int x_ = NxLlD; x_ <= NxLuD; x_++) {
         
     const double rho_t2  = species[s].T0 * species[s].m / (pow2(species[s].q) * plasma->B0); 
     const double lambda2 = 2. * mu * rho_t2;
                 
-    const CComplex value  = getElements(x, n, sqrt(lambda2), y_k, z);
+    const CComplex value  = getElements(x, x_, sqrt(lambda2), y_k, z);
 
     // Note that our domain starts at NxGlD, while PETSc col/row @ 0
-    M->setValue(x - NxGlD, n - NxGlD, value);
+    M->setValue(x - NxGlD, x_ - NxGlD, value);
         
   } }
 
@@ -285,7 +283,7 @@ void FieldsHermite::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& 
    phiEnergy = 0.; ApEnergy = 0.; BpEnergy = 0.;
 
    return ;
-};
+}
         
 
 void FieldsHermite::setDoubleGyroAverageMatrix(Setup *setup)
@@ -297,7 +295,7 @@ void FieldsHermite::setDoubleGyroAverageMatrix(Setup *setup)
   Matrix Matrix_Gamma0    (NxLD, Nx, DIR_X, parallel);
   Matrix Matrix_PoissonLHS(NxLD, Nx, DIR_X, parallel);
 
-  int integrationOrder = setup->get("Fields.Hermite.DoubleGyroIntegrationOrder", 32);
+  int integrationOrder = setup->get("Fields.Hermite.DoubleGyroIntegrationOrder", 8);
         
   Integrate GRQuad("Gauss-Laguerre", integrationOrder);
 
@@ -305,7 +303,7 @@ void FieldsHermite::setDoubleGyroAverageMatrix(Setup *setup)
         
   for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
               
-    // Is out matrix hermitian (propably epends on the geometry) ?!
+    // Is out matrix hermitian (propably depends on the geometry) ?!
     Matrix_PoissonLHS.setZero();
            
     // Create 1-\Gamma for each species s
@@ -355,12 +353,13 @@ void FieldsHermite::setDoubleGyroAverageMatrix(Setup *setup)
     const double adiab = species[0].n0 * pow2(species[0].q)/species[0].T0;
     Matrix_PoissonLHS.addDiagonal(adiab);
            
-    MatrixPoissonSolverLHS(y_k, z) = new MatrixSolver(parallel, Matrix_PoissonLHS.getMat(), DIR_X, true, "SuperLU");
+    MatrixPoissonSolverLHS(y_k, z) = new MatrixSolver(parallel, Matrix_PoissonLHS.getMat(), DIR_X, true, "PETSc");
 
     // Poisson Matrix (lambda_D2 ) $ g^{xx} D_x^2  + 2 i g^{xy} k_y D_x - g^{yy} k_y^2$
-    // ignore now, only do quasi neutrality.
+    // ignore for now, only do quasi neutrality.
     
   } } // y_k, z
 
-          
+  return;
 }
+

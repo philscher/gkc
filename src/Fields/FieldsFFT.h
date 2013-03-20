@@ -95,7 +95,7 @@ class FieldsFFT : public Fields {
   * Nx/2+1 ,  we do not know the exact size in advance thus have to
   * included whole size and set to zero.
   **/
-  void calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+  void calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_NkxL],
                         CComplex phi_yz[Nx]);
 
   /**
@@ -117,8 +117,8 @@ class FieldsFFT : public Fields {
   *   solve Eq. in Fourier space, using periodic boundary conditions in X and Y
   *
   **/
-  void solveFieldEquations(const CComplex Q     [Nq][NxLD][NkyLD][Nz],
-                                 CComplex Field0[Nq][NxLD][NkyLD][Nz]);
+  void solveFieldEquations(const CComplex Q     [Nq][NzLD][Nky][NxLD],
+                                 CComplex Field0[Nq][NzLD][Nky][NxLD]);
 
   /**
   *
@@ -138,8 +138,8 @@ class FieldsFFT : public Fields {
   *  @warning We need to normalize the FFT transform here.
   *
   */
-  virtual void solvePoissonEquation(CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][Nq],
-                                    CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][Nq]);
+  virtual void solvePoissonEquation(CComplex kXOut[FFTSolver::X_NkxL][Nky][NzLD][Nq],
+                                    CComplex kXIn [FFTSolver::X_NkxL][Nky][NzLD][Nq]);
   
   /**
   *
@@ -159,8 +159,8 @@ class FieldsFFT : public Fields {
   *  @warning We need to normalize the FFT transform here.
   *
   **/
-  void solveAmpereEquation(CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][Nq],
-                           CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][Nq]);
+  void solveAmpereEquation(CComplex kXOut[FFTSolver::X_NkxL][Nky][NzLD][Nq],
+                           CComplex kXIn [FFTSolver::X_NkxL][Nky][NzLD][Nq]);
 
   /**
   *
@@ -204,8 +204,8 @@ class FieldsFFT : public Fields {
   *  @warning We need to normalize the FFT transform here.
   *
   */
-  void solveBParallelEquation(CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][Nq],
-                              CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][Nq]);
+  void solveBParallelEquation(CComplex kXOut[FFTSolver::X_NkxL][Nky][NzLD][Nq],
+                              CComplex kXIn [FFTSolver::X_NkxL][Nky][NzLD][Nq]);
 
  public:
   
@@ -233,8 +233,8 @@ class FieldsFFT : public Fields {
   *   @todo link to function.
   *
   */
-   virtual void gyroAverage(const CComplex In [Nq][NzLD][NkyLD][NxLD], 
-                                  CComplex Out[Nq][NzLD][NkyLD][NxLD],
+   virtual void gyroAverage(const CComplex In [Nq][NzLD][Nky][NxLD], 
+                                  CComplex Out[Nq][NzLD][Nky][NxLD],
                             const int m, const int s, const bool forward, const bool stack=false);
     
   /**
@@ -263,10 +263,10 @@ class FieldsFFT : public Fields {
   *  @param gyroField forward- or backward transformation
   *
   */
-  void gyroFirst(const CComplex   In [Nq][NzLD][NkyLD][NxLD], 
-                       CComplex   Out[Nq][NzLD][NkyLD][NxLD],
-                       CComplex kXOut[Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
-                       CComplex kXIn [Nq][NzLD][NkyLD][FFTSolver::X_NkxL],
+  void gyroFirst(const CComplex   In [Nq][NzLD][Nky][NxLD], 
+                       CComplex   Out[Nq][NzLD][Nky][NxLD],
+                       CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_NkxL],
+                       CComplex kXIn [Nq][NzLD][Nky][FFTSolver::X_NkxL],
                  const int s, const bool gyroField=false) ; 
   
   /**
@@ -291,10 +291,10 @@ class FieldsFFT : public Fields {
   *  @param gyroField forward- or backward transformation
   *
   */
-  void gyroFull(const CComplex In [Nq][NzLD][NkyLD][NxLD], 
-                      CComplex Out[Nq][NzLD][NkyLD][NxLD],
-                      CComplex kXOut[FFTSolver::X_NkxL][NkyLD][NzLD][Nq],
-                      CComplex kXIn [FFTSolver::X_NkxL][NkyLD][NzLD][Nq],
+  void gyroFull(const CComplex In [Nq][NzLD][Nky][NxLD], 
+                      CComplex Out[Nq][NzLD][Nky][NxLD],
+                      CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_NkxL],
+                      CComplex kXIn [Nq][NzLD][Nky][FFTSolver::X_NkxL],
                 const int m, const int s, bool stack=false);  
 
   /**
@@ -318,8 +318,8 @@ class FieldsFFT : public Fields {
   *  for, first and second equation, see Callen.
   *
   **/  
-  void doubleGyroExp(const CComplex In [Nq][NzLD][NkyLD][NxLD], 
-                           CComplex Out[Nq][NzLD][NkyLD][NxLD], const int m, const int s);
+  void doubleGyroExp(const CComplex In [Nq][NzLD][Nky][NxLD], 
+                           CComplex Out[Nq][NzLD][Nky][NxLD], const int m, const int s);
   
   /**
   *    @brief calculates the field energy
