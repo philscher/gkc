@@ -48,7 +48,7 @@ class Collisions_LenardBernstein : public Collisions {
     
  protected:   
     
-  double beta;         ///< Collisionality 
+  double beta[SPECIES_MAX+1];         ///< Collisionality 
   bool   consvMoment;  ///< Set if 0-2 Moments are conserved
 
   double *nu,   ///<            \f$ \nu = \left( v_\parallel^2 + 2 \mu \right) / v_{th}^2       \f$

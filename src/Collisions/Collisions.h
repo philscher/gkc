@@ -121,9 +121,24 @@ public:
 
   }
 
+  /**
+  *     Document me please
+  *
+  **/ 
   virtual void printOn(std::ostream &output) const {};
+  
+  /**
+  *     Document me please
+  *
+  **/ 
+  virtual void initData(Setup *setup, FileIO *fileIO) {
+  
+    hid_t collisionGroup = fileIO->newGroup("Collisions");
+     
+    check(H5LTset_attribute_string(collisionGroup, ".", "Model", "Collisionless"), DMESG("H5LTset_attribute"));
+            
+    H5Gclose(collisionGroup);
 
-  virtual void initData(Setup *setup, FileIO *fileIO) {};
 
 };
 

@@ -21,8 +21,10 @@ Collisions_LenardBernstein::Collisions_LenardBernstein(Grid *grid, Parallel *par
 
 {
   
-  beta        = setup->get("Collisions.Beta", 0.e0);
   consvMoment = setup->get("Collisions.ConserveMoments", 0);
+  
+  // Get beta_C for each species
+  for(int s = 0; s <= NsGuD; s++) beta[s] = setup->get("Collisions.Species" + Setup::num2str(s) + ".Beta", 0.e0);
    
   // allocate arrays
   ArrayPreFactors     = nct::allocate(grid->RsLD, grid->RmLD , grid->RvLD)(&a , &b , &c , &nu);
@@ -31,6 +33,7 @@ Collisions_LenardBernstein::Collisions_LenardBernstein(Grid *grid, Parallel *par
   // as some terms include complicated functions we pre-calculate them 
   calculatePreTerms((A3rr) a, (A3rr) b, (A3rr) c, (A3rr) nu);
 
+  initData(setup, fileIO);
 }
 
  
@@ -67,7 +70,7 @@ void Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const
 {
 
   // Don't calculate collisions if collisionality is set to zero
-  if (beta == 0.) return;
+  if (__sec_reduce_add(std::abs(beta[NsGlD:Ns])) == 0.) return;
 
   [=](const CComplex f   [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],  // Phase-space function for current timestep
       const CComplex f0  [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],  // Background Maxwellian
@@ -125,7 +128,7 @@ void Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const
         
       Coll[s][m][z][y_k][x][v] =
                  
-        beta  * (f_  + V[v] * df_dv + v2_rms * ddf_dvv)           ///< Lennard-Bernstein Collision term
+        beta[s]  * (f_  + V[v] * df_dv + v2_rms * ddf_dvv)           ///< Lennard-Bernstein Collision term
         // add conservation terms 
         + (consvMoment ?
           (a[s][m][v] * dn[z][y_k][x] +                           ///< Density  correction   
@@ -150,7 +153,19 @@ void Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const
 void Collisions_LenardBernstein::printOn(std::ostream &output) const 
 {
 
-  output   << "Collisions |  Drift-Kinetic Lenard-Bernstein  β = " << beta 
+  auto arr2str = [=](const double *val, const int len) -> std::string {
+
+    int prec = 2;
+    std::ostringstream ss;
+    ss << std::setprecision(prec) << std::scientific;
+
+    // only add " / "  between two numbers
+    for(int n = 0; n < len; n++) ss << val[n] << ( n == len-1 ? "" : " / ");
+
+    return ss.str();
+  };
+
+  output   << "Collisions |  Drift-Kinetic Lenard-Bernstein  β = " << arr2str(&beta[1], Ns)
            << " Corrections : " << (consvMoment  ? "Yes" : "No") <<  std::endl;
   
 }
@@ -160,7 +175,8 @@ void Collisions_LenardBernstein::initData(Setup *setup, FileIO *fileIO)
   hid_t collisionGroup = fileIO->newGroup("Collisions");
      
   check(H5LTset_attribute_string(collisionGroup, ".", "Model", "Lenard-Bernstein"), DMESG("H5LTset_attribute"));
-  check(H5LTset_attribute_double(collisionGroup, ".", "Beta" , &beta, 1), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_string(collisionGroup, ".", "MomentConservation", consvMoment ? "Yes" : "No"), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_double(collisionGroup, ".", "Beta" ,  beta, Ns), DMESG("H5LTset_attribute"));
             
   H5Gclose(collisionGroup);
 

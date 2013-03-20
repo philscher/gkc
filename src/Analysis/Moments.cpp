@@ -56,7 +56,7 @@ void Moments::getMoment(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB][Nv
   CComplex Mom_m[Nq][NzLD][Nky][NxLD];
   
   // We have set to zero, because gyro-averaging operator courrently requires size [Nq][...].
-  // and surplus arrys may contain NaN
+  // and surplus arrays may contain NaN
   if(Nq > 1) Mom_m[1:Nq-1][:][:][:] = 0.;
 
   for(int s = NsLlD; s <= NsLuD; s++) {
@@ -74,7 +74,7 @@ void Moments::getMoment(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB][Nv
   for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
   for(int x = NxLlD; x <= NxLuD; x++) { 
      
-    Mom_m[0][z-NzLlD][y_k][x-NxLlD] = __sec_reduce_add(pow(M[m], b/2) * pow(V[NvLlD:NvLD],a) 
+    Mom_m[0][z-NzLlD][y_k][x-NxLlD] = __sec_reduce_add(pow(M[m], b/2.) * pow(V[NvLlD:NvLD],a) 
                                                        * f[s][m][z][y_k][x][NvLlD:NvLD]);
       
   } } } // z, y_k, x
