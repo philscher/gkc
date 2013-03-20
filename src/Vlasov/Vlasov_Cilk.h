@@ -69,6 +69,9 @@ class VlasovCilk : public Vlasov {
    *
    *  @depracated This is not done direclty in the non-linear term
    *
+   *  Conserved the L2 norm (L1 ? ), thus guarantees energy conservation.
+   *  [ Proparbly particle conservation too .... !]
+   *
    *
    **/
    void calculatePoissonBracket(const CComplex  G              [NzLB][Nky][NxLB  ][NvLB],   // in case of e-m
@@ -125,10 +128,14 @@ class VlasovCilk : public Vlasov {
    *
    *   Reference : @cite Note from Goerles PhD Thesis (Eq. 2.32)
    *
-   *   @note note calculation of \f$ f_{1\sigma} \f$ is not implemented
+   *  Note : In [ Xi, G] in electro-static simulations reduces to [ phi, f1 + sigma phi f_0 ],
+   *        equals [phi, f1] + [phi, sigma phi f_0], as f_0 does not depend on y or x 
+   *        [ Here, we do not use local assumption with partial_x f_0 = eta ... 
+   *          but indeed use only numerically value ]. This changes of course once we go 
+   *          to global version 
    *
    **/
-   void setupXiAndG(
+   virtual void setupXiAndG(
                            const CComplex g          [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
                            const CComplex f0         [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
                            const CComplex Fields [Nq][NsLD][NmLD][NzLB][Nky][NxLB+4],
