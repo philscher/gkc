@@ -48,13 +48,13 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov 
     if(Nq >= 2) {
       
       FunctionParser  Ap_parser = setup->getFParser();
-     FunctionParser phi_parser = setup->getFParser();
+      FunctionParser phi_parser = setup->getFParser();
 
-     check(((phi_parser.Parse(setup->get("Init.phi", "0."), "x,y_k,z") == -1) ? 1 : -1), DMESG("Parsing error"));
-     check((( Ap_parser.Parse(setup->get("Init.Ap ", "0."), "x,y_k,z") == -1) ? 1 : -1), DMESG("Parsing error"));
+      check(((phi_parser.Parse(setup->get("Init.phi", "0."), "x,y_k,z") == -1) ? 1 : -1), DMESG("Parsing error"));
+      check((( Ap_parser.Parse(setup->get("Init.Ap ", "0."), "x,y_k,z") == -1) ? 1 : -1), DMESG("Parsing error"));
 
-     for(int s = NsLlD; s <= NsLuB; s++) { for(int m   = NmLlD ; m   <= NmLuD ;   m++) {
-       for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  
+      for(int s = NsLlD; s <= NsLuB; s++) { for(int m   = NmLlD ; m   <= NmLuD ;   m++) {
+      for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {  
       for(int x = NxLlD; x <= NxLuD; x++) {
 
         const double pos[3] = { X[x], y_k, Z[z] };
@@ -63,9 +63,6 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov 
         //   fields->Bp(x,y,z,m,s ) = Bp_parser.Eval(pos);
   
        } } }
-
-       //fields->gyroAverage(fields->Field0(RxLD,RkyLD, RzLD, RFields), fields->Field(RxLD, RkyLD, RzLD, m , s, RFields), m, s, true);
-       //fields->Bp (RxLD, RyLD, RzLD, m, s) = fields->gyroAverage(fields->Bp (RxLD,RyLD, RzLD,  m, s), m, s, Field::phi);
 
       } } // s, m
            

@@ -79,12 +79,16 @@ class Diagnostics : public IfaceGKC {
   FileAttr *FA_Mom_00      ,  ///< Density  
            *FA_Mom_20      ,  ///< Temperature (parallel) 
            *FA_Mom_02      ,  ///< Temperature (orthogonal)
+           *FA_Mom_10      ,  ///< Momentum .. 
+           *FA_Mom_30      ,  ///< ?? Temperature (parallel) 
+           *FA_Mom_12      ,  ///< ?? Temperature (orthogonal)
            *FA_Mom_HeatFlux,  ///< Heat flux
            *FA_Mom_PartFlux,  ///< Partcle flux
            *FA_Mom_Time    ;  ///< Time 
 
   FileAttr  *FA_HeatFluxKy, ///< Heat Flux as  Q(s,x,ky)
-            *FA_PartFluxKy; ///< Particle Flux as X(s,x,ky)
+            *FA_PartFluxKy, ///< Particle Flux as X(s,x,ky)
+            *FA_CrossPhase; ///< Cross-Phases as (q, 3, s,x,ky)
 
   FileAttr  *FA_grow_x,     ///< Mode-Power (kx)
             *FA_grow_y,     ///< Mode-Power (ky) 
@@ -217,7 +221,8 @@ class Diagnostics : public IfaceGKC {
   **/
   void getParticleHeatFlux( 
                            double ParticleFlux[Nq][NsLD][NkyLD][NxLD], 
-                           double HeatFlux[Nq][NsLD][NkyLD][NxLD],
+                           double  HeatFlux[Nq][NsLD][NkyLD][NxLD],
+                           double CrossPhase[Nq][3][NsLD][Nky][NxLD],
                            const CComplex Field0[Nq][NzLD][NkyLD][NxLD],
                            const CComplex Mom[8][NsLD][NzLD][NkyLD][NxLD] 
                           );

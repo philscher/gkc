@@ -134,6 +134,7 @@ void Diagnostics::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky]
     
       
     ////////////////////////////// Calculate Particle Number /////////////////////////////
+    // Only y_k=0 contributes as higher ky averate out over <A>_y direction
     
     number =  creal(__sec_reduce_add(Mom[0][s-NsLlD][0:NzLD][0][0:NxLD]));
     
@@ -145,7 +146,8 @@ void Diagnostics::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky]
     kineticEnergy = 0.5 * species[s].m * (__sec_reduce_add(creal(Mom[1][s-NsLlD][0:NzLD][0][0:NxLD]))) * grid->dXYZ;
 
     ////////////////////////////// Calculate Entropy /////////////////////////////////////
-    
+    // reference ?
+
     //#pragma omp parallel for reduction(+:kineticEnergy) collapse (2)
     for(int m = NmLlD; m <= NmLuD; m++) {
     for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {
@@ -189,8 +191,9 @@ void Diagnostics::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky]
 
 
 void Diagnostics::getParticleHeatFlux( 
-                                   double ParticleFlux[Nq][NsLD][Nky][NxLD], 
-                                   double     HeatFlux[Nq][NsLD][Nky][NxLD],
+                                   double    ParticleFlux[Nq]   [NsLD][Nky][NxLD], 
+                                   double        HeatFlux[Nq]   [NsLD][Nky][NxLD],
+                                   double      CrossPhase[Nq][3][NsLD][Nky][NxLD],
                                    const CComplex  Field0[Nq][NzLD][Nky][NxLD],
                                    const CComplex Mom[8][NsLD][NzLD][Nky][NxLD] 
                                   )
@@ -198,21 +201,21 @@ void Diagnostics::getParticleHeatFlux(
   // Triad condition. Heat/Particles are only transported by the y_k = 0, as the other y_k > 0 
   // modes cancels out. Thus multiplying y_k = 0 = A(y_k)*B(-y_k) = A(y_k)*[cc : B(y_k)]
   // where the complex conjugate values is used as physcial value is a real quantity.
-  // We average over z here
   
+  // Note : We average over z direction ( BUG ! : does not work use += and set to zero)
   for(int s = NsLlD; s <= NsLuD; s++) { 
   
   double norm[3] = { 1., -species[s].v_th, species[s].T0 / (species[s].q * plasma->B0) };
 
-  norm[:] *= species[s].n0; // / C
+  norm[:] *= species[s].n0 / geo->C;
   
-  // Heat/Particle fluxes are calculates for each fields quantity
+  // Heat/Particle fluxes are calculates for each field quantity (phi, A_par, B_par)
   for(int q = 0    ; q <  Nq   ; q++) {
   
   for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
   for(int x = NxLlD; x <= NxLuD; x++) { 
       
-    // Do I have to include geometry terms ?! partial_y (phi,A_par,B_par)
+    // Do I have to include geometry terms ?! partial_y (phi, A_par, B_par)
     const CComplex iky_field  = _imag * fft->ky(y_k) * Field0[q][z][y_k][x];
 
     // take only real part as it gives the radial direction ?!
@@ -220,11 +223,21 @@ void Diagnostics::getParticleHeatFlux(
         HeatFlux[q][s-NsLlD][y_k][x-NxLlD] = - norm[q] * creal( iky_field * conj(Mom[3*q+1][s-NsLlD][z-NzLlD][y_k][x-NxLlD]
                                                                                + Mom[3*q+2][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
 
+    // Get Cross-phases for the (phi, Ap, Bp) x ( M00, T, T) ( need to divide over Nz to get average after reduce operator later)
+    CrossPhase[q][0][s-NsLlD][y_k][x-NxLlD] = - norm[q] * carg( iky_field * conj(Mom[0][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
+    CrossPhase[q][1][s-NsLlD][y_k][x-NxLlD] = - norm[q] * carg( iky_field * conj(Mom[1][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
+    CrossPhase[q][2][s-NsLlD][y_k][x-NxLlD] = - norm[q] * carg( iky_field * conj(Mom[2][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
+    
   }   // x 
   } } // y_k, z
   }   // q
 
   }   // s
+
+  // BUG (not tested) parallel->reduce(&ParticleFlux[0][0][0][0], Op::sum, DIR_Z, Nq * NsLD * Nky * NxLD);
+  // BUG (not tested) parallel->reduce(&    HeatFlux[0][0][0][0], Op::sum, DIR_Z, Nq * NsLD * Nky * NxLD);
+
+  // BUG (mean not implemented) parallel->reduce(&CrossPhase[0][0][0][0][0], Op::mean, DIR_Z, Nq * 3 * NsLD * Nky * NxLD);
 
   return;
 }
@@ -253,9 +266,15 @@ void Diagnostics::initData(Setup *setup, FileIO *fileIO)
   FA_Mom_00       = new FileAttr("Mom00"   , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
   FA_Mom_20       = new FileAttr("Mom20"   , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
   FA_Mom_02       = new FileAttr("Mom02"   , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
+  
+  FA_Mom_10       = new FileAttr("Mom10"   , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
+  FA_Mom_30       = new FileAttr("Mom30"   , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
+  FA_Mom_12       = new FileAttr("Mom12"   , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
 
   FA_Mom_HeatFlux = new FileAttr("HeatFlux", momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite);
   FA_Mom_PartFlux = new FileAttr("Density" , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite);
+                                   
+  
 
   FA_Mom_Time     = fileIO->newTiming(momGroup);
         
@@ -264,74 +283,87 @@ void Diagnostics::initData(Setup *setup, FileIO *fileIO)
   dataOutputMoments   = Timing(setup->get("DataOutput.Moments.Step", -1), setup->get("DataOutput.Moments.Time", -1.));
 
 
+
   ////////////////////////////////////// X-Dependent Moments data /////////////////////
-     
-  hid_t XDepGroup = fileIO->newGroup("XDep", analysisGroup);
+  { 
+    hid_t XDepGroup = fileIO->newGroup("XDep", analysisGroup);
 
-  hsize_t XDep_dsdim[] =  { 8, Ns     , Nx      , 1            };
-  hsize_t XDep_dmdim[] =  { 8, Ns     , Nx      , H5S_UNLIMITED};
-  hsize_t XDep_cBdim[] =  { 8, NsLD   , NxLD    , 1            };
-  hsize_t XDep_cDdim[] =  { 8, NsLD   , NxLD    , 1            };
-  hsize_t XDep_cdoff[] =  { 0, NsLlB-1, NxLlD-3 , 0            };
+    bool XDepWrite  = (parallel->Coord[DIR_VM] == 0) && (parallel->Coord[DIR_Z] == 0);
+
+    hsize_t XDep_dsdim[] =  { 8, Ns     , Nx      , 1            };
+    hsize_t XDep_dmdim[] =  { 8, Ns     , Nx      , H5S_UNLIMITED};
+    hsize_t XDep_cBdim[] =  { 8, NsLD   , NxLD    , 1            };
+    hsize_t XDep_cDdim[] =  { 8, NsLD   , NxLD    , 1            };
+    hsize_t XDep_cdoff[] =  { 0, NsLlB-1, NxLlD-3 , 0            };
      
-  bool XDepWrite = (parallel->Coord[DIR_VM] == 0) && (parallel->Coord[DIR_Z] == 0);
      
-  FA_XDep_Mom  = new FileAttr("Mom", XDepGroup, fileIO->file, 4, XDep_dsdim, XDep_dmdim, XDep_cDdim, offset0, XDep_cBdim, XDep_cdoff, XDepWrite);
-  FA_XDep_Time = fileIO->newTiming(XDepGroup);
+    FA_XDep_Mom  = new FileAttr("Mom", XDepGroup, fileIO->file, 4, XDep_dsdim, XDep_dmdim, XDep_cDdim, offset0, XDep_cBdim, XDep_cdoff, XDepWrite);
+    FA_XDep_Time = fileIO->newTiming(XDepGroup);
         
-  H5Gclose(XDepGroup);
+    H5Gclose(XDepGroup);
      
-  dataOutputXDep = Timing(setup->get("DataOutput.XDep.Step", -1), setup->get("DataOutput.XDep.Time", -1.));
+    dataOutputXDep = Timing(setup->get("DataOutput.XDep.Step", -1), setup->get("DataOutput.XDep.Time", -1.));
+  }
+
+  //////////////////////////////////////  Analysis - Heat fluxes     /////////////////////////////////////////
+  {
+    hid_t fluxGroup = fileIO->newGroup("Flux", analysisGroup);
+    bool isXYZ  = (parallel->Coord[DIR_VM] == 0) && (parallel->Coord[DIR_Z] == 0);  // we average over z
+   
+    // Heat Flux ky and Particle FluxKy ( per species) 
+    hsize_t FSky_dsdim[] = { Nq, Ns     , Nky   , Nx     , 1            }; 
+    hsize_t FSky_dmdim[] = { Nq, Ns     , Nky   , Nx     , H5S_UNLIMITED};
+    hsize_t FSky_cDdim[] = { Nq, NsLD   , Nky   , NxLD   , 1            };
+    hsize_t FSky_cBdim[] = { Nq, NsLD   , Nky   , NxLD   , 1            };
+    hsize_t FSky_cdoff[] = { 0 , NsLlB-1, 0     , NxLlD-3, 0            };
+
+    FA_HeatFluxKy = new FileAttr("Heat"    , fluxGroup, fileIO->file, 5, FSky_dsdim, FSky_dmdim, FSky_cDdim, offset0,  FSky_cBdim, FSky_cdoff, isXYZ);
+    FA_PartFluxKy = new FileAttr("Particle", fluxGroup, fileIO->file, 5, FSky_dsdim, FSky_dmdim, FSky_cDdim, offset0,  FSky_cBdim, FSky_cdoff, isXYZ);
+   
+
+    // Data-Output for cross phase calcultions for (phi, Ap, Bp) x (n, Tp, To) & (Ky, Species, X)
+    hsize_t cph_dsdim[] = { Nq, 3, Ns     , Nky   , Nx     , 1            }; 
+    hsize_t cph_dmdim[] = { Nq, 3, Ns     , Nky   , Nx     , H5S_UNLIMITED};
+    hsize_t cph_cDdim[] = { Nq, 3, NsLD   , Nky   , NxLD   , 1            };
+    hsize_t cph_cBdim[] = { Nq, 3, NsLD   , Nky   , NxLD   , 1            };
+    hsize_t cph_cdoff[] = { 0 , 0, NsLlB-1, 0     , NxLlD-3, 0            };
   
-  //---------------  Analysis - Heat fluxes ------------
-     
-  // Heat Flux ky and Particle FluxKy ( per species) 
-  hid_t fluxGroup = fileIO->newGroup("Flux", analysisGroup);
-     
-  hsize_t FSky_dsdim[] = { Nq, Ns     , Nky   , Nx     , 1            }; 
-  hsize_t FSky_dmdim[] = { Nq, Ns     , Nky   , Nx     , H5S_UNLIMITED};
-  hsize_t FSky_cDdim[] = { Nq, NsLD   , Nky   , NxLD   , 1            };
-  hsize_t FSky_cBdim[] = { Nq, NsLD   , Nky   , NxLD   , 1            };
-  hsize_t FSky_cdoff[] = { 0 , NsLlB-1, 0     , NxLlD-3, 0            };
-
-  bool isXYZ = parallel->Coord[DIR_XYZ] == 0;
-
-  FA_HeatFluxKy = new FileAttr("Heat"    , fluxGroup, fileIO->file, 5, FSky_dsdim, FSky_dmdim, FSky_cDdim, offset0,  FSky_cBdim, FSky_cdoff, isXYZ);
-  FA_PartFluxKy = new FileAttr("Particle", fluxGroup, fileIO->file, 5, FSky_dsdim, FSky_dmdim, FSky_cDdim, offset0,  FSky_cBdim, FSky_cdoff, isXYZ);
+    FA_CrossPhase = new FileAttr("CrossPhases", fluxGroup, fileIO->file, 6, cph_dsdim, cph_dmdim, cph_cDdim, offset0, cph_cBdim, cph_cdoff, isXYZ);
     
-  H5Gclose(fluxGroup);
-     
+    H5Gclose(fluxGroup);
+  }
 
   //---------------------------   Power Spectrum  -------------------------------
-   
-  bool isMaster = parallel->myRank == 0;
-  // X-scalarValue
-  hid_t growGroup = fileIO->newGroup("PowerSpectrum", analysisGroup);
-
-  hsize_t grow_x_dsdim[] = { Nq, Nx, 1 }; 
-  hsize_t grow_x_dmdim[] = { Nq, Nx, H5S_UNLIMITED} ;
-  hsize_t grow_x_cDdim[] = { Nq, Nx, 1 };
-  hsize_t grow_x_cBdim[] = { Nq, Nx, 1 };
-  FA_grow_x  = new FileAttr("X", growGroup, fileIO->file, 3, grow_x_dsdim, grow_x_dmdim, grow_x_cDdim, offset0,  grow_x_cBdim, offset0, isMaster);
-
-  // Y-scalarValue
-  hsize_t grow_y_dsdim[] = { Nq, Nky, 1 };
-  hsize_t grow_y_dmdim[] = { Nq, Nky, H5S_UNLIMITED };
-  hsize_t grow_y_cDdim[] = { Nq, Nky, 1 };
-  hsize_t grow_y_cBdim[] = { Nq, Nky, 1 };
-   
-  FA_grow_y  = new FileAttr("Y", growGroup, fileIO->file, 3, grow_y_dsdim, grow_y_dmdim, grow_y_cDdim, offset0,  grow_y_cBdim, offset0, isMaster);
-
-  FA_grow_t  = fileIO->newTiming(growGroup);
-  
-  H5Gclose(growGroup);
+  { 
+    hid_t growGroup = fileIO->newGroup("PowerSpectrum", analysisGroup);
     
-  hid_t freqGroup = fileIO->newGroup("PhaseShift", analysisGroup);
-  FA_freq_x  = new FileAttr("X", freqGroup, fileIO->file, 3, grow_x_dsdim, grow_x_dmdim, grow_x_cDdim, offset0,  grow_x_cBdim, offset0, isMaster);
-  FA_freq_y  = new FileAttr("Y", growGroup, fileIO->file, 3, grow_y_dsdim, grow_y_dmdim, grow_y_cDdim, offset0,  grow_y_cBdim, offset0, isMaster);
-  FA_freq_t  = fileIO->newTiming(freqGroup);
-  H5Gclose(freqGroup);
+    bool isMaster = parallel->myRank == 0;
 
+    // X-scalarValue
+    hsize_t grow_x_dsdim[] = { Nq, Nx, 1 }; 
+    hsize_t grow_x_dmdim[] = { Nq, Nx, H5S_UNLIMITED} ;
+    hsize_t grow_x_cDdim[] = { Nq, Nx, 1 };
+    hsize_t grow_x_cBdim[] = { Nq, Nx, 1 };
+    FA_grow_x  = new FileAttr("X", growGroup, fileIO->file, 3, grow_x_dsdim, grow_x_dmdim, grow_x_cDdim, offset0,  grow_x_cBdim, offset0, isMaster);
+
+    // Y-scalarValue
+    hsize_t grow_y_dsdim[] = { Nq, Nky, 1 };
+    hsize_t grow_y_dmdim[] = { Nq, Nky, H5S_UNLIMITED };
+    hsize_t grow_y_cDdim[] = { Nq, Nky, 1 };
+    hsize_t grow_y_cBdim[] = { Nq, Nky, 1 };
+   
+    FA_grow_y  = new FileAttr("Y", growGroup, fileIO->file, 3, grow_y_dsdim, grow_y_dmdim, grow_y_cDdim, offset0,  grow_y_cBdim, offset0, isMaster);
+
+    FA_grow_t  = fileIO->newTiming(growGroup);
+  
+    H5Gclose(growGroup);
+    
+    hid_t freqGroup = fileIO->newGroup("PhaseShift", analysisGroup);
+    FA_freq_x  = new FileAttr("X", freqGroup, fileIO->file, 3, grow_x_dsdim, grow_x_dmdim, grow_x_cDdim, offset0,  grow_x_cBdim, offset0, isMaster);
+    FA_freq_y  = new FileAttr("Y", growGroup, fileIO->file, 3, grow_y_dsdim, grow_y_dmdim, grow_y_cDdim, offset0,  grow_y_cBdim, offset0, isMaster);
+    FA_freq_t  = fileIO->newTiming(freqGroup);
+    H5Gclose(freqGroup);
+  }
   //////////////////////////////////////////////////////////////// Setup Table for scalar data ////////////////////////////////////////////////////////
               
   ScalarValues_t scalarValues;
@@ -359,7 +391,6 @@ void Diagnostics::initData(Setup *setup, FileIO *fileIO)
 
 }
 
-
 void Diagnostics::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEnergy)
 {
 
@@ -378,13 +409,14 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
 
     CComplex  Mom[8][NsLD][NzLD][Nky][NxLD];
         
-    double HeatFlux[Nq][NsLD][Nky][NxLD],  // Heat     flux   
-           PartFlux[Nq][NsLD][Nky][NxLD];  // Particle flux
+    double  HeatFlux[Nq]   [NsLD][Nky][NxLD],     // Heat     flux   
+            PartFlux[Nq]   [NsLD][Nky][NxLD],     // Particle flux
+          CrossPhase[Nq][3][NsLD][Nky][NxLD];  // Cross phases of fluxes
 
     // Get Moments of Vlasov equation
     moments->getMoments((A6zz) vlasov->f, (A4zz) fields->Field0, Mom);
         
-    getParticleHeatFlux(PartFlux, HeatFlux, (A4zz) fields->Field0, Mom);
+    getParticleHeatFlux(PartFlux, HeatFlux, CrossPhase, (A4zz) fields->Field0, Mom);
 
     ////////////////// Output Moments /////////////////////
 
@@ -397,6 +429,9 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
       FA_Mom_20->write((CComplex *) &Mom[1][0][0][0][0]);
       FA_Mom_02->write((CComplex *) &Mom[2][0][0][0][0]);
       
+      FA_Mom_10->write((CComplex *) &Mom[3][0][0][0][0]);
+      FA_Mom_30->write((CComplex *) &Mom[4][0][0][0][0]);
+      FA_Mom_12->write((CComplex *) &Mom[5][0][0][0][0]);
       
       FA_Mom_Time->write(&timing);
 
@@ -408,6 +443,7 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
 
       FA_PartFluxKy->write((double *) PartFlux);
       FA_HeatFluxKy->write((double *) HeatFlux);
+      FA_CrossPhase->write((double *) CrossPhase);
       
       double Mom_XDep[8][NsLD][NxLD]; 
 
@@ -540,6 +576,8 @@ void Diagnostics::closeData()
 
   delete FA_HeatFluxKy; 
   delete FA_PartFluxKy;
+  delete FA_CrossPhase;
+  
   delete FA_grow_x; delete FA_grow_y; delete FA_grow_t;     
   delete FA_freq_x; delete FA_freq_y; delete FA_freq_t;    
      
