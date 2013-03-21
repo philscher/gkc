@@ -36,7 +36,7 @@ FileIO::FileIO(Parallel *_parallel, Setup *setup)  :  parallel(_parallel)
   outputFileName       = setup->get("DataOutput.OutputFileName", "default.h5");
   info                 = setup->get("DataOutput.Info"          , "No information provided");
 
-  dataFileFlushTiming  = Timing(setup->get("DataOutput.Flush.Step", -1)       , setup->get("DataOutput.Flush.Time", 100.)); 
+  dataFileFlushTiming  = Timing(setup->get("DataOutput.Flush.Step", -1), setup->get("DataOutput.Flush.Time", 100.)); 
     
   resumeFile           = inputFileName != "";
   

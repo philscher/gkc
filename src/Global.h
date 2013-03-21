@@ -55,7 +55,7 @@ template<class T> inline T pow3(T x) { return x*x*x; };
 template<class T> inline T pow4(T x) { const T x2 =  (x*x); return x2*x2; };
 template<class T> inline T pow5(T x) { const T x2 = x * x; return x2*x2*x; };
 template<class T> inline T pow6(T x) { const T x2 = x * x; return x2*x2*x2; };
-template<class T> inline T pow8(T x) { const T x2 = x * x; x2 *= x2; return x2*x2; };
+template<class T> inline T pow8(T x) { const T x4 = pow4(x); return x4*x4; };
 //__declspec(vector) inline CComplex square(CComplex x) { return x*x; };
 inline CComplex square(CComplex x) { return x*x; };
 

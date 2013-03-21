@@ -1,21 +1,15 @@
 #include "Global.h"
 
-#include<string>
-#include<iostream>
+#include <string>
+#include <iostream>
 #include <unistd.h>
-#include "Tools/System.h"
+#include <cstdlib>
 
 #include "GKC.h"
-
-
-#include <cstdlib>
-   
+#include "Tools/System.h"
 #define MASTER_PROCESS 0
 
 extern int process_rank;
-
-
-
 
 /**
 *   @brief Program starting point

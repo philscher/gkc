@@ -64,12 +64,9 @@ class FileIO : public IfaceGKC
   *
   * @brief Flush all data to disk to prevent corruption 
   *
-  * Not working anyway. If program crashes data is basically
-  * lost as the HDF-5 file becomes corrupted if not closed properly.
-  * Snapshots cannot be saved.
-  *
-  * Well , http://www.hdfgroup.org/HDF5/doc/Advanced/HDF5_Metadata/index.html
-  * say's different, but I don't get them ...
+  * Should be called in regular intervals in order to access written data
+  * in case of program abort. This operation is of the order of ~seconds
+  * thus should be used to often. 
   *
   **/
   void flush(Timing timing, double dt);

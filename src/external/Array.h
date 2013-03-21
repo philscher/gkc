@@ -137,5 +137,44 @@ template <class T> class Array2
    };
 };
 
+template <class T> class Array1
+{
+   nct::allocate alloc; 
+   
+   nct::Range R0;
+   T *ptr_data0;
 
-#endif // __NCT_ARRAY_
+  public:   
+   Array1() { };
+   
+   Array1(nct::Range R0) 
+   { 
+  
+     // allocate array
+     alloc = nct::allocate(R0);
+     alloc(&ptr_data0);
+   
+   };
+     
+   T& operator()(const int x0)
+   {
+
+     // calculate index offset
+       
+       const int idx = x0 ;
+
+       // check bounds
+       return ptr_data0[idx];
+
+   };
+   
+   void operator=(T A)
+   {
+       T* p = alloc.data(&ptr_data0);
+
+       for(int idx=0; idx<alloc.Num;idx++) p[idx] = T;
+   };
+
+};
+
+#endif //__NCT_ARRAY_

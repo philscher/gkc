@@ -138,7 +138,7 @@ public:
     check(H5LTset_attribute_string(collisionGroup, ".", "Model", "Collisionless"), DMESG("H5LTset_attribute"));
             
     H5Gclose(collisionGroup);
-
+  };
 
 };
 
