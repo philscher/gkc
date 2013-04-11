@@ -97,14 +97,14 @@ void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
 
     // Solve field equation in drift coordinates
     // This routine is solved only on root nodes, thus efficiency is crucial for scalability
-    // Any chance to make some other usefull work here ?
+    // Any chance to make some other useful work here ?
     if(parallel->Coord[DIR_MS] == 0) solveFieldEquations((A4zz) Q, (A4zz) Field0);
 
     #pragma omp single
     parallel->bcast(ArrayField0.data(Field0), DIR_MS, ArrayField0.getNum());
 
     // Gyro-averaging procedure for each species and magnetic moment ( drift-coord -> gyro-coord )
-    // OPTIM : We can skip foward transform after first call
+    // OPTIM : We can skip forward transform after first call
     for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) {
 
       // Fields has a complicated stride, thus cannot be easily used in FFTSolver.
@@ -217,16 +217,16 @@ void Fields::updateBoundary()
   {
    
     // X-Boundary (we have extended BC  - 4 ghost cells)
-    SendXl[:][:][:][:][:][:] = Field[:][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD  :4];
+    SendXl[:][:][:][:][:][:] = Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD  :4];
     SendXu[:][:][:][:][:][:] = Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLuD-3:4];
 
     // Boundaries not required in Y (as we use Fourier modes)
 
-    // (For 2-d space simulations (x,y) boundaries are not required ) thus Nz > 1
+    // (For two-dimensional simulations (x,y) boundaries are not required ) thus Nz > 1
     for(int y_k = NkyLlD; y_k <= NkyLuD && (Nz > 1); y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { 
 
-      // Z-Boundary (N z-we need to connect the magnetic field lines)
-      // NzLlD == NzGlD -> Connect only physcial boundaries after mode made one loop 
+      // Z-Boundary (we need to connect the magnetic field lines)
+      // NzLlD == NzGlD -> Connect only physical boundaries after mode made one loop 
       const CComplex shift_l = (NzLlD == NzGlD) ? cexp(-_imag * 2.* M_PI * geo->nu(x)) : 1.;
       const CComplex shift_u = (NzLuD == NzGuD) ? cexp(+_imag * 2.* M_PI * geo->nu(x)) : 1.;
       
@@ -235,7 +235,7 @@ void Fields::updateBoundary()
 
     } }
    
-    // Exchange ghostcells between processors [ SendXu (CPU 1) -> RecvXl (CPU 2) ]
+    // Exchange ghost cells between processors [ SendXu (CPU 1) -> RecvXl (CPU 2) ]
     parallel->updateBoundaryFields(Fields::SendXl, Fields::SendXu, Fields::RecvXl, Fields::RecvXu, ArrayBoundX.getNum(),
                                    Fields::SendZl, Fields::SendZu, Fields::RecvZl, Fields::RecvZu, ArrayBoundZ.getNum()); 
 
@@ -267,7 +267,7 @@ void Fields::updateBoundary()
 void Fields::initData(Setup *setup, FileIO *fileIO) 
 {
     
-  // Set sizes : Note, we use fortran ordering for field variables 
+  // Set sizes : Note, we use Fortran ordering for field variables 
   hsize_t dim  [] = { Nq, Nz     , Nky, Nx     ,             1 };
   hsize_t mdim [] = { Nq, Nz     , Nky, Nx     , H5S_UNLIMITED };
   hsize_t cBdim[] = { Nq, NzLD   , Nky, NxLD   ,             1 };

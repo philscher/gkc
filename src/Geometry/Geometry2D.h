@@ -21,20 +21,15 @@
 /**
 *  @brief 2-d sheared slab geometry definition
 *
-*  ToDO : Parallelize the parallel boundary condition.
-*
-*
 *  In the two-dimensional geometry, we set the \f$ k_\parallel \f$
 *  is a function of, namely we distinguish between
 *
 *
-*  \f$ k_\parallel = \theta k_y    \f$ - constant theta , local simulations with constant ange
-*  \f$ k_\parallel = k_z           \f$ - sheareless slab, local simulations with constant ange
-*  \f$ k_\parallel = \hat{s} x k_y \f$ - sheared slab   , non-local simulations with constant ange
+*  \f$ k_\parallel = \theta k_y    \f$ - constant theta , local simulations with constant angle
+*  \f$ k_\parallel = k_z           \f$ - sheareless slab, local simulations with constant angle
+*  \f$ k_\parallel = \hat{s} x k_y \f$ - sheared slab   , non-local simulations with constant angle
 *  
 *  and other combinations (including extension to three dimensions).
-*
-*
 *
 *
 **/
@@ -72,9 +67,10 @@ class Geometry2D : public Geometry
     for(int x=NxGlB; x <= NxGuB; x++) By[x] = By_parser.Eval(&X[x]) ;
 
     Geometry::initData(fileIO);
-    
+ 
     setupArrays();
 
+    C = 1./(dx * dy);
   }
 
  

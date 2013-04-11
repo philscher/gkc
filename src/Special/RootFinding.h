@@ -72,6 +72,56 @@ class RootFinding {
 
     return x_m;
   };
+  
+  /**
+  *   @brief Muller's method
+  *
+  *   @param x0, x1, x2 
+  *
+  *   @note f(x0) and f(x1) have to be different sign
+  **/
+
+  /*
+  static double Muller(std::function<double (double)> func, double x_a, double x_b, int maxIter=512, double ftol=1.e-9)
+  {
+
+    Complex x0, x1, x2;
+    
+    Complex f_x0 = func(x0),
+            f_x1 = func(x1),
+            f_x2 = func(x2);
+
+
+    for(int iter = 0; iter < maxIter; iter++) {
+
+      // Calculate divided differences
+      Complex fx2_x1 = (f_x1 - f_x2) / (x1 - x2);
+      Complex fx2_x0 = (f_x0 - f_x2) / (x0 - x2);
+      Complex fx1_x0 = (f_x0 - f_x1) / (x0 - x1);
+
+      Complex w       = fx2x1 + fx2x0 - fx1x0;
+      Complex fx2x1x0 = (fx1x0 - fx2x1) / (x0 - x2);
+
+      // update
+      x0 = x1; f_x0 = f_x1;
+      x1 = x2; f_x1 = f_x2;
+
+      // calculate determinant
+      Complex r = sqrt(w*w - 4.*f_x2*fx2x1x0);
+
+      // denominator should be as large as possible, thus
+      // choose corresponding sign
+      if(std::abs(w - r) > std::abs(w + r)) r = -r;
+
+      x2  = 2. * f_x2 / (w + r);
+      fx2 = func(x2);
+
+      if(std::abs(fx2) < ftol) break;
+    }
+
+    return x2;
+  };
+*/
 
   /**
   *   @brief Secant method

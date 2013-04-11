@@ -23,10 +23,7 @@
 #include "FileIO.h"
 
 /** 
-*   @brief Base class for the Geometry abstraction using CRTP
-*
-*
-*  This part mostly relyies on Gorles, PhD, Eq. (2.51)  and goemetric parts
+*   @brief Base class for the Geometry abstraction
 *
 *
 **/
@@ -41,7 +38,8 @@ class Geometry : public IfaceGKC
          *dB_dx,  ///< $\frac{\partial B}{\partial x}$
          *dB_dy,  ///< $\frac{\partial B}{\partial y}$ 
          *dB_dz,  ///< $\frac{\partial B}{\partial z}$
-         *J;      ///< $J$
+         *J    ;      ///< $J$
+//         *C    ; ///< C
 
 
   nct::allocate ArrayGeom;
@@ -50,12 +48,13 @@ class Geometry : public IfaceGKC
 
   Geometry(Setup *setup, Grid *grid, FileIO *fileIO) {
 
-        ArrayGeom = nct::allocate(grid->RzLD, grid->RxLD);
-        ArrayGeom(&Kx, &Ky, &B, &dB_dx, &dB_dy, &dB_dz, &J);
+    ArrayGeom = nct::allocate(grid->RzLD, grid->RxLD);
+    //ArrayGeom(&Kx, &Ky, &B, &dB_dx, &dB_dy, &dB_dz, &J, &C);
+    ArrayGeom(&Kx, &Ky, &B, &dB_dx, &dB_dy, &dB_dz, &J);
     
-        eps_hat = setup->get("Geometry.eps", 1.);
-        C       = 1.;
+    eps_hat = setup->get("Geometry.eps", 1.);
 
+    C = 1./(dx * dy * dz);
   };
 
   virtual ~Geometry() {};
@@ -80,17 +79,18 @@ class Geometry : public IfaceGKC
         double dB_dy[NzLD][NxLD], double dB_dz[NzLD][NxLD], double J[NzLD][NxLD])
     {
         // set metric elements
-       for(int x=NxLlD; x <= NxLuD; x++) {  for(int z=NzLlD; z <= NzLuD; z++) { 
+      for(int x=NxLlD; x <= NxLuD; x++) {  for(int z=NzLlD; z <= NzLuD; z++) { 
 
-             Kx   [z][x] = get_Kx   (x,z);
-             Ky   [z][x] = get_Ky   (x,z);
-             B    [z][x] = get_B    (x,z);
-             dB_dx[z][x] = get_dB_dx(x,z);
-             dB_dy[z][x] = get_dB_dy(x,z);
-             dB_dz[z][x] = get_dB_dz(x,z);
-             J    [z][x] = get_J    (x,z);
+//      C    [z][x] = get_C    (x,z);
+        Kx   [z][x] = get_Kx   (x,z);
+        Ky   [z][x] = get_Ky   (x,z);
+        B    [z][x] = get_B    (x,z);
+        dB_dx[z][x] = get_dB_dx(x,z);
+        dB_dy[z][x] = get_dB_dy(x,z);
+        dB_dz[z][x] = get_dB_dz(x,z);
+        J    [z][x] = get_J    (x,z);
 
-       } }
+      } }
     } ((A2rr) Kx, (A2rr) Ky, (A2rr) B, (A2rr) dB_dx, (A2rr) dB_dy, (A2rr) dB_dz, (A2rr) J);
 
   }
@@ -121,9 +121,9 @@ class Geometry : public IfaceGKC
   *   see Lapillone, PhD Thesis, Eq.(2.135)
   *
   **/ 
-  virtual  double get_Kx(const int x, const int z)  { 
-    
-        return - 1./C * ( g_2(x,z)/g_1(x,z) * get_dB_dz(x,z));
+  virtual  double get_Kx(const int x, const int z)  
+  { 
+    return - 1./C * ( g_2(x,z)/g_1(x,z) * get_dB_dz(x,z));
   };
 
   /**
@@ -143,9 +143,7 @@ class Geometry : public IfaceGKC
   **/ 
   virtual double get_Ky(const int x, const int z)  
   {
-    
-      return 1./C * ( get_dB_dx(x,z) - g_3(x,z)/g_1(x,z) * get_dB_dz(x,z));
-  
+    return 1./C * ( get_dB_dx(x,z) - g_3(x,z)/g_1(x,z) * get_dB_dz(x,z));
   };
   ///@} 
   
@@ -231,7 +229,7 @@ class Geometry : public IfaceGKC
 
   
   /**
-  *    @brief creates Geometry groupd and delegates to child
+  *    @brief creates Geometry group and delegates to child
   *
   *
   **/ 
@@ -242,17 +240,15 @@ class Geometry : public IfaceGKC
     initData(geometryGroup); 
     H5Gclose(geometryGroup);
 
-   };
+  };
         
    
   virtual void initData(hid_t geometryGroup) = 0;
 
-  // is it necessary for later timesteps to 
+  // is it necessary for later time steps to 
   virtual void writeData(Timing *timing) {};
   virtual void closeData() {};
 
-
 };
-
 
 #endif // GEOMETRY_H

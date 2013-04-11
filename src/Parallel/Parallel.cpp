@@ -110,18 +110,18 @@ Parallel::Parallel(Setup *setup)
   Coord[DIR_VM ]   = ((Coord[DIR_V] == 0) && (Coord[DIR_M] == 0))                        ? 0 : -1;
   Coord[DIR_MS ]   = ((Coord[DIR_M] == 0) && (Coord[DIR_S] == 0))                        ? 0 : -1;
 
-  ///////////////////  Set SubCommunicators for various directions //////////////////////////
+  ///////////////////  Set sub-Communicators for various directions //////////////////////////
   // Note , we do not need to translate ranks, because dirMaster is always used with appropriate Comm
   int coord_master[6] = { 0, 0, 0, 0, 0, 0 };
     
   //////////////////////////////////////////////////////////////////////////////
   //
-  //  We set the subcommunictor in direction dir using remain_dims
+  //  We set the sub-communicator in direction dir using remain_dims
   //
   //  We prefer MPI_Cart_sub over MPI_Comm_split as the former includes
   //  more information about the topology and may results in more efficient
   //  communicators. 
-  //  better use intializer list
+  //  better use initializer list
   //
   
   auto setSubCommunicator = [=](int dir, int remain_dims[6]) 
@@ -155,7 +155,7 @@ Parallel::Parallel(Setup *setup)
     
   ///////////////////////////////////////////////////////////////////////
   //
-  //   Get ranks of neigbouring processes for Vlasov equation boundary 
+  //   Get ranks of neighbouring processes for Vlasov equation boundary 
   //   exchange, e.g. in X
   //
   //   ...|(x=n-2)|(x=n-1) rank_l|(x=n) my_rank|(x=n+1) rank_u|(x=+2)| ...
@@ -240,7 +240,7 @@ void Parallel::updateBoundaryVlasovBarrier()
 }
 
 
-// There should be a better way instead of defininng 2 updateNEighbours as all same the same functions
+// There should be a better way instead of defining two updateNeighbours as all same the same functions
 // but template arguments are different ... :(
 
 void  Parallel::updateBoundaryFields(CComplex *SendXl, CComplex *SendXu, CComplex *RecvXl, CComplex *RecvXu, int num_X,
@@ -265,7 +265,7 @@ void  Parallel::updateBoundaryFields(CComplex *SendXl, CComplex *SendXu, CComple
   MPI_Irecv(RecvZu, num_Z, MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_u, Talk[DIR_Z].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[6]); 
   MPI_Isend(SendZl, num_Z, MPI_DOUBLE_COMPLEX, Talk[DIR_Z].rank_l, Talk[DIR_Z].phi_msg_tag[1], Comm[DIR_ALL], &msg_request[7]);
   }
-  // Field boundries required for Vlasov solver, thus wait
+  // Field boundaries required for Vlasov solver, thus wait
   MPI_Waitall(Nz > 1 ? 8 : 4, msg_request, msg_status);
       
   return;
@@ -360,7 +360,7 @@ void Parallel::printOn(std::ostream &output) const
       
   output << " MPI (processes) : " << Setup::num2str(numProcesses) << std::endl;
     
-  output << "           |  Decompostion : " 
+  output << "           |  Decomposition : " 
          << "X(" << decomposition[DIR_X] << ")  Y(" << decomposition[DIR_Y] << ") "
          << "Z(" << decomposition[DIR_Z] << ")  V(" << decomposition[DIR_V] << ") "
          << "M(" << decomposition[DIR_M] << ")  S(" << decomposition[DIR_S] << ") " << std::endl;
@@ -369,6 +369,7 @@ void Parallel::printOn(std::ostream &output) const
 } 
 
 
+// This is initialized in GKC module
 void Parallel::initData(Setup *setup, FileIO *fileIO) 
 {
 
@@ -380,6 +381,10 @@ void Parallel::initData(Setup *setup, FileIO *fileIO)
   check(H5LTset_attribute_int(parallelGroup, ".", "V",  &decomposition[DIR_V], 1), DMESG("H5LTset_attribute"));
   check(H5LTset_attribute_int(parallelGroup, ".", "M",  &decomposition[DIR_M], 1), DMESG("H5LTset_attribute"));
   check(H5LTset_attribute_int(parallelGroup, ".", "S",  &decomposition[DIR_S], 1), DMESG("H5LTset_attribute"));
+  
+  
+  check(H5LTset_attribute_int(parallelGroup, ".", "Threads"  ,  &numThreads  , 1), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_int(parallelGroup, ".", "Processes",  &numProcesses, 1), DMESG("H5LTset_attribute"));
   
   // save MPI library information
   int version, subversion;
@@ -416,12 +421,11 @@ void Parallel::printProcessID()
 {
   std::cout << " Parallel rank  " << myRank 
             << " Thread   id    " << threadID
-  << " Decomposition  "  
-         << "X(" << decomposition[DIR_X] << ")  Y(" << decomposition[DIR_Y] << ") "
-         << "Z(" << decomposition[DIR_Z] << ")  V(" << decomposition[DIR_V] << ") "
-         << "M(" << decomposition[DIR_M] << ")  S(" << decomposition[DIR_S] << ") " 
-         << std::endl << std::flush;
-
+            << " Decomposition  "  
+            << "X(" << decomposition[DIR_X] << ")  Y(" << decomposition[DIR_Y] << ") "
+            << "Z(" << decomposition[DIR_Z] << ")  V(" << decomposition[DIR_V] << ") "
+            << "M(" << decomposition[DIR_M] << ")  S(" << decomposition[DIR_S] << ") " 
+            << std::endl << std::flush;
 
 }
 

@@ -20,38 +20,41 @@
 
 
 /**
-*   @brief s-a geometry definitions
 *
-*    Gives the Geometric coefficients for a s-a geometry geometry with
-*    a magnetic field accroding to.
+*  @brief s-a geometry definitions
+*
+*  Gives the Geometric coefficients for a s-a geometry geometry with
+*  a magnetic field according to.
 *    
-*    \f[ \vec{B}_0 / B_0 = \vec{b} = ???? \f].
+*  \f[ \vec{B}_0 / B_0 = \vec{b} = ???? \f].
 *
-*    Reference : Dannert, PhD , Chapter 2.2 Geometrie and
-*                Goerler, PhD, Chaper 2.2 Geometry
+*  Reference : Dannert, PhD, Chapter 2.2 Geometrie
+*              Görler , PhD, Chapter 2.2 Geometry
 *
 *
-*    \f$q_0, R_0, \hat{s} \f$
+*  \f$q_0, R_0, \hat{s} \f$
 * 
-*    The corresponding metric is 
-*    \f[
-*       g^{ij} = 
+*  The corresponding metric is 
+*  
+*  \f[
+*
+*    g^{ij} = 
 *       \left( \begin{array}{lll}   
-*     1                          &  \frac{\hat{s}} {q_0 R_0} z                                   & 0 \\
-*     \frac{\hat{s}}{q_0}{R_0} z &  1 + \frac{z^2}{L_s^2} + \left( \frac{r_0}{q_0 R_0} \right)^2 & 0 \\
-*                        0       &  \frac{q_0 R_0}{r_0}                                          & \left( \frac{q_0 R_0}{r_0} \right)^2 
+*  1                          &  \frac{\hat{s}} {q_0 R_0} z                                   & 0 \\
+*  \frac{\hat{s}}{q_0}{R_0} z &  1 + \frac{z^2}{L_s^2} + \left( \frac{r_0}{q_0 R_0} \right)^2 & 0 \\
+*                     0       &  \frac{q_0 R_0}{r_0}                                          & \left( \frac{q_0 R_0}{r_0} \right)^2 
 *       
-*       \end{array} \right)
-*    \f]
+*   \end{array} \right)
+*  \f]
 *
-*    r_0 is the minor radius, R_0 the major radius 
+*  r_0 is the minor radius, R_0 the major radius 
 *
-*    For the parallel boundary condition, we have to connect the poloidal modes
-*    with the radial modes, thus we have to fullfill following quantization 
+*  For the parallel boundary condition, we have to connect the poloidal modes
+*  with the radial modes, thus we have to fulfill following quantization condition 
 *    
-*    \f[
-*          \mathcal{N}{} = frac{2\pi\hat{s} L_x}{L_y}
-*    \f]
+*  \f[
+*    \mathcal{N}{} = frac{2\pi\hat{s} L_x}{L_y}
+*  \f]
 *
 **/
 class GeometrySA : public Geometry
@@ -94,7 +97,7 @@ class GeometrySA : public Geometry
  private:
   
   /**  
-  *    @name The metric coefficient the individual metric components
+  *  @name The metric coefficients
   *
   **/
   ///@{
@@ -129,11 +132,11 @@ class GeometrySA : public Geometry
   
    
   /**
-  *   \f[
-  *       K_x = - 2 \frac{L_\perp}{R_0} \sin{(z)}           
-  *   \f]
+  *  \f[
+  *    K_x = - 2 \frac{L_\perp}{R_0} \sin{(z)}           
+  *  \f]
   *
-  *   see Dannert PHD
+  *  see Dannert PHD
   */
   virtual double get_Kx(const int x, const int z)  { 
 
@@ -141,11 +144,11 @@ class GeometrySA : public Geometry
   };
    
   /**
-  *   \f[
-  *       K_y = - 2 \frac{L_\perp}{R_0} \left( \cos{(z)} + \hat{s} z \sin{(z)} \right)           
-  *   \f]
+  *  \f[
+  *    K_y = - 2 \frac{L_\perp}{R_0} \left( \cos{(z)} + \hat{s} z \sin{(z)} \right)           
+  *  \f]
   *
-  *   see Dannert PHD
+  *  see Dannert PHD
   */
   virtual double get_Ky(const int x, const int z)  { 
     
@@ -157,12 +160,12 @@ class GeometrySA : public Geometry
   /**
   * 
   *  \f[ 
-  *       \nu = q_0 \left( 1 + \hat{s} \frac{x}{R_0} \right) 
+  *    \nu = q_0 \left( 1 + \hat{s} \frac{x}{R_0} \right) 
   *  \f]
   *  
   *  as by first order Taylor approximation
   *  \f[
-  *     q(x) \approx q_0 + x \partial_x q = q_0 \left( 1 + x/R_0 \hat{s} \right)
+  *    q(x) \approx q_0 + x \partial_x q = q_0 \left( 1 + x/R_0 \hat{s} \right)
   *  \f]
   *
   */  
@@ -189,6 +192,5 @@ class GeometrySA : public Geometry
   }
 
 };
-
 
 #endif // GEOMETRY_SA_H

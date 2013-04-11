@@ -129,7 +129,7 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
     SendXu[:][:][:][:][:][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLuD-1:2][NvLlD:NvLD];
     parallel->updateBoundaryVlasov(Vlasov::SendXu, Vlasov::SendXl, Vlasov::RecvXu, Vlasov::RecvXl, ArrayBoundX.getNum(), DIR_X);
    
-    // We do not domain decompose poloidal (y) fourier modes, thus boundaries not required
+    // We do not domain decompose poloidal (y) Fourier modes, thus boundaries not required
   
     // Z-Boundary (skip exchange in case we use only 2D (Nz == 1) simulations 
     if(Nz > 1) {
@@ -138,7 +138,7 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
       const CComplex shift_l = (NzLlD == NzGlD) ? cexp(-_imag * 2.* M_PI * geo->nu(x)) : 1.;
       const CComplex shift_u = (NzLuD == NzGuD) ? cexp(+_imag * 2.* M_PI * geo->nu(x)) : 1.;
             
-      // NzLlD == NzGlD -> Connect only physcial boundaries after mode made one loop 
+      // NzLlD == NzGlD -> Connect only physical boundaries after mode made one loop 
       SendZl[:][:][:][y_k][x-NxLlD][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD  :2][y_k][x][NvLlD:NvLD] * shift_l;
       SendZu[:][:][:][y_k][x-NxLlD][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLuD-1:2][y_k][x][NvLlD:NvLD] * shift_u;
                
@@ -210,7 +210,7 @@ double Vlasov::getMaxNLTimeStep(const double maxCFL)
     // time step, add 1.e-10 to avoid division by 0 
     double NL = std::max(NL_ExB_v, NL_Landau_v) + 1.e-10; 
 
-    // get global maximum timestep time step 
+    // get global maximum time step 
     dt_NL = maxCFL / parallel->reduce(NL, Op::max);
   }
 
@@ -240,9 +240,9 @@ void Vlasov::initData(Setup *setup, FileIO *fileIO)
   hsize_t moffset[]   = { 0         , 0         , 2         , 0     , 2         , 2         , 0             };
      
   // ignore, as HDF-5 automatically (?) allocated data for it
-  //FA_f0       = new FileAttr("f0", psfGroup, fileIO->file, 7, dim, maxdim, chunkdim, moffset,  chunkBdim, offset, true, fileIO->complex_tid);
-  //FA_f1       = new FileAttr("f1", psfGroup, fileIO->file, 7, dim, maxdim, chunkdim, moffset,  chunkBdim, offset, true, fileIO->complex_tid);
-  //FA_psfTime  = fileIO->newTiming(psfGroup);
+//  FA_f0       = new FileAttr("f0", psfGroup, fileIO->file, 7, dim, maxdim, chunkdim, moffset,  chunkBdim, offset, true, fileIO->complex_tid);
+//  FA_f1       = new FileAttr("f1", psfGroup, fileIO->file, 7, dim, maxdim, chunkdim, moffset,  chunkBdim, offset, true, fileIO->complex_tid);
+//  FA_psfTime  = fileIO->newTiming(psfGroup);
   // call additional routines
   //initData(vlasovGroup, fileIO);  
 
@@ -272,9 +272,9 @@ void Vlasov::initData(Setup *setup, FileIO *fileIO)
 
 void Vlasov::closeData() 
 {
- // delete FA_f0;
- // delete FA_f1;
- // delete FA_psfTime;
+//  delete FA_f0;
+//  delete FA_f1;
+//  delete FA_psfTime;
 }
 
 
@@ -294,7 +294,7 @@ void Vlasov::writeData(const Timing &timing, const double dt)
 
 void Vlasov::loadData(FileIO *fileIO)
 {
-  // what is exactly the difference between reading and writting HDF-5 ? Setup should be same.
+  // what is exactly the difference between reading and writing HDF-5 ? Setup should be same.
   // Phase space dimensions
   /*
   hsize_t psf_dim[]       = { grid->NsGD, grid->NmGD, grid->NvGD, grid->NzGD, grid->NkyGD, grid->NxGD,  1 };

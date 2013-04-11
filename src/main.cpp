@@ -37,9 +37,9 @@ int main(int argc, char **argv)
   //   Check command line parameters (note, the user can also 
   //   speify PETSc parameters
   //
-  std::string setup_filename(""), setup_Xoptions(""), setup_ExArgv("");
+  std::string setup_filename(""), setup_Xoptions(""), setup_ExArgv(""), stack_size("");
   // set it to automatic ?
-  std::string setup_decomposition("Auto Decomposition"), setup_scalingFileName("ScalingTime.txt");
+  std::string setup_decomposition("Auto Decomposition");
   int gkcFlags=0;
   
   /////////////////// Read In Command Line Arguments //////////////////
@@ -60,8 +60,7 @@ int main(int argc, char **argv)
                        break;
       case 'v' : gkcFlags           |= Setup::GKC_VERBOSE;
                        break;
-      case 's' : gkcFlags           |= Setup::GKC_STATISTICS;
-                     setup_scalingFileName = std::string(optarg);
+      case 's' : stack_size          = std::string(optarg); 
                        break;
       case 'f' : gkcFlags           |= Setup::GKC_OVERWRITE;
                        break;
