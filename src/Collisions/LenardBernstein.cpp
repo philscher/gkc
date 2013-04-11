@@ -176,7 +176,7 @@ void Collisions_LenardBernstein::initData(Setup *setup, FileIO *fileIO)
      
   check(H5LTset_attribute_string(collisionGroup, ".", "Model", "Lenard-Bernstein"), DMESG("H5LTset_attribute"));
   check(H5LTset_attribute_string(collisionGroup, ".", "MomentConservation", consvMoment ? "Yes" : "No"), DMESG("H5LTset_attribute"));
-  check(H5LTset_attribute_double(collisionGroup, ".", "Beta" ,  beta, Ns), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_double(collisionGroup, ".", "Beta" ,  beta, Ns+1), DMESG("H5LTset_attribute"));
             
   H5Gclose(collisionGroup);
 
