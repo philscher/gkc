@@ -78,7 +78,6 @@ Eigenvalue_SLEPc::Eigenvalue_SLEPc(FileIO *fileIO, Setup *setup, Grid *grid, Par
 }
 
 
-
 Complex Eigenvalue_SLEPc::getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields) 
 {
     
@@ -100,7 +99,7 @@ Complex Eigenvalue_SLEPc::getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields)
   EPSGetConverged(EigvSolver, &nconv);
 
   Vec    Vec_F1;   
-  CComplex *x_Vec_F1 = PETScMatrixVector::getCreateVector(grid, Vec_F1, includeZF ? 1 : 2);//, DIR_ALL);
+  //CComplex *x_Vec_F1 = PETScMatrixVector::getCreateVector(grid, Vec_F1, includeZF ? 1 : 2);//, DIR_ALL);
    
   CComplex eigv, eigv_dummy;
   if(nconv > 0) MatGetVecs(A_F1, PETSC_NULL, &Vec_F1);
@@ -179,16 +178,16 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
 
 
   //////////////////////////    Read Out Results /////////////////////
-  for(int n = 0; n < nconv; n++) {
+  for(int nev = 0; nev < nconv; nev++) {
           
     Complex eigv, eigv_dummy;
-    EPSGetEigenpair(EigvSolver, n, (PetscScalar *) &eigv, (PetscScalar *) &eigv_dummy, Vec_F1, Vec_F1_dummy);
+    EPSGetEigenpair(EigvSolver, nev, (PetscScalar *) &eigv, (PetscScalar *) &eigv_dummy, Vec_F1, Vec_F1_dummy);
 
     eigvTable.EigenValue     = eigv;
     //double error = 0.;
     //EPSComputeRelativeError(EigvSolver,m, &error);
     //eigvTable.AbsoluteError  = error;
-    EPSComputeRelativeError(EigvSolver,n, &eigvTable.AbsoluteError);
+    EPSComputeRelativeError(EigvSolver,nev, &eigvTable.AbsoluteError);
             
     EVTable->append(&eigvTable);
           
@@ -227,7 +226,7 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
       VecRestoreArray    (Vec_F1, (PetscScalar **) &x_F1);
         
       // Write put Fields Eigenvector, set Imaginary part as Time 
-      visual->writeData(Timing(n, real(eigv)), 0., true);
+      visual->writeData(Timing(nev, real(eigv)), 0., true);
       
     }
     
