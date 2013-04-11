@@ -216,17 +216,17 @@ void Diagnostics::getParticleHeatFlux(
   for(int x = NxLlD; x <= NxLuD; x++) { 
       
     // Do I have to include geometry terms ?! partial_y (phi, A_par, B_par)
-    const CComplex iky_field  = _imag * fft->ky(y_k) * Field0[q][z][y_k][x];
+    const CComplex iky_field  = -_imag * fft->ky(y_k) * Field0[q][z][y_k][x];
 
     // take only real part as it gives the radial direction ?!
-    ParticleFlux[q][s-NsLlD][y_k][x-NxLlD] = - norm[q] * creal( iky_field * conj(Mom[3*q+0][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
-        HeatFlux[q][s-NsLlD][y_k][x-NxLlD] = - norm[q] * creal( iky_field * conj(Mom[3*q+1][s-NsLlD][z-NzLlD][y_k][x-NxLlD]
+    ParticleFlux[q][s-NsLlD][y_k][x-NxLlD] = norm[q] * creal( iky_field * conj(Mom[3*q+0][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
+        HeatFlux[q][s-NsLlD][y_k][x-NxLlD] = norm[q] * creal( iky_field * conj(Mom[3*q+1][s-NsLlD][z-NzLlD][y_k][x-NxLlD]
                                                                                + Mom[3*q+2][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
 
     // Get Cross-phases for the (phi, Ap, Bp) x ( M00, T, T) ( need to divide over Nz to get average after reduce operator later)
-    CrossPhase[q][0][s-NsLlD][y_k][x-NxLlD] = - norm[q] * carg( iky_field * conj(Mom[0][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
-    CrossPhase[q][1][s-NsLlD][y_k][x-NxLlD] = - norm[q] * carg( iky_field * conj(Mom[1][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
-    CrossPhase[q][2][s-NsLlD][y_k][x-NxLlD] = - norm[q] * carg( iky_field * conj(Mom[2][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
+    CrossPhase[q][0][s-NsLlD][y_k][x-NxLlD] = norm[q] * carg( iky_field * conj(Mom[0][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
+    CrossPhase[q][1][s-NsLlD][y_k][x-NxLlD] = norm[q] * carg( iky_field * conj(Mom[1][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
+    CrossPhase[q][2][s-NsLlD][y_k][x-NxLlD] = norm[q] * carg( iky_field * conj(Mom[2][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
     
   }   // x 
   } } // y_k, z
@@ -272,9 +272,8 @@ void Diagnostics::initData(Setup *setup, FileIO *fileIO)
   FA_Mom_12       = new FileAttr("Mom12"   , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite, fileIO->complex_tid);
 
   FA_Mom_HeatFlux = new FileAttr("HeatFlux", momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite);
-  FA_Mom_PartFlux = new FileAttr("Density" , momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite);
+  FA_Mom_PartFlux = new FileAttr("PartFlux", momGroup, fileIO->file, 5, mom_dsdim, mom_dmdim, mom_cDdim, mom_cmoff, mom_cBdim, mom_cdoff, momWrite);
                                    
-  
 
   FA_Mom_Time     = fileIO->newTiming(momGroup);
         
