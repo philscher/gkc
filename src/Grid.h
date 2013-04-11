@@ -54,6 +54,9 @@ class Grid : public IfaceGKC {
                 ArrayV, ///< Array class for Boundary in Z
                 ArrayM; ///< Array class for Boundary in Z
 
+  std::string  muIntegrationType; ///< Integration type in \f$\mu \f$ dimension
+
+
  public:
 
   /// @name Number of ghost cells

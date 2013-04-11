@@ -50,6 +50,9 @@ double dx, dy, dz, dv,dt;
 
 Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO) 
 {
+  
+  muIntegrationType = setup->get("Grid.MuIntegrationType", "Gauss-Legendre");
+    
   // Set Initial conditions
  
   // Global Domain Grid Number
@@ -192,7 +195,7 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
     
   // M For mu we can choose between various integration type e.g. rectangle or Gaussian
   // @todo use setup to define integration method
-  Integrate integrate("Gauss-Legendre", Nm, 0., Lm);
+  Integrate integrate(muIntegrationType, Nm, 0., Lm);
 
   for(int m = NmGlD, n = 0; m <= NmGuD; m++, n++) {
 
@@ -254,6 +257,8 @@ void Grid::initData(FileIO *fileIO)
   check(H5LTset_attribute_double(gridGroup, ".", "Z", &Z[NzGlD], Nz), DMESG("Attribute"));
   check(H5LTset_attribute_double(gridGroup, ".", "V", &V[NvGlD], Nv), DMESG("Attribute"));
   check(H5LTset_attribute_double(gridGroup, ".", "M", &M[NmGlD], Nm), DMESG("Attribute"));
+  
+  check(H5LTset_attribute_string(gridGroup, ".", "MuIntegrationType", muIntegrationType.c_str()), DMESG("Attribute")); 
   
   H5Gclose(gridGroup);
 
