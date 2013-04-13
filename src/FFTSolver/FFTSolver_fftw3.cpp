@@ -49,7 +49,7 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
     else if (plan == "Exhaustive" ) perf_flag = FFTW_EXHAUSTIVE;
     else    (-1, DMESG("Config file : FFTSolver.FFTW3.Plan"));
 
-    // Setup wisedom
+    // Setup wisdom
     wisdom = setup->get("FFTSolver.FFTW3.Wisdom", "");
     if     (wisdom == "System") fftw_import_system_wisdom();
     else if(wisdom != ""      ) fftw_import_wisdom_from_filename(wisdom.c_str());
@@ -78,7 +78,7 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
       
     FFTSolver::X_NkxL = X_NkxL;
       
-    // Prefactor of 2 for safety (is required otherwise we get crash, but why ?)
+    // Pre-factor of 2 for safety (is required otherwise we get crash, but why ?)
     int numAlloc = 2 * X_numElements * NkyLD * NzLD * nfields;
     // allocate arrays 
     data_X_kIn      = (CComplex *) fftw_alloc_complex(numAlloc);
@@ -101,7 +101,7 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
     kXOut = Array_kX.zero(data_X_kOut);
 
     // fftw_plan fftw_mpi_plan_many_dft(int rnk, const ptrdiff_t *n, 
-    //     ptrdiff_t howmany, ptrdiff_t block, ptrdiff_t tblock, fftw_complex *in, fftw_complex *out,
+    //           ptrdiff_t howmany, ptrdiff_t block, ptrdiff_t tblock, fftw_complex *in, fftw_complex *out,
     //           MPI_Comm comm, int sign, unsigned flags);
     
     long numTrans = NkyLD * NzLD * nfields;
@@ -153,12 +153,12 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
     //
     //
     //   Thus :
-    //           X is on fast dimension, thus our fourier mode is the stride NxLD+BD
+    //           X is on fast dimension, thus our Fourier mode is the stride NxLD+BD
     //           Distance for the next mode is thus 1          
     //
     
     //perf_flag |= FFTW_UNALIGNED;
-    // Orginal
+    // Original
     //
     // Note from the fftw manual, Sec. 4.3.2
     //
@@ -217,7 +217,7 @@ void FFTSolver_fftw3::solve(const FFT_Type type, const FFT_Sign direction, void 
     
     else if(direction == FFT_Sign::Backward) {
                   
-      // fftw3-mpi many transform requires specific input (thus we have to transpose our data and backtransform)
+      // fftw3-mpi many transform requires specific input (thus we have to transpose our data and back transform)
       transpose(X_NkxL, NkyLD, NzLD, plasma->nfields, (A4zz) ((CComplex *) data_X_kIn), (A4zz) ((CComplex *) data_X_Transp_1));                
       fftw_mpi_execute_dft(plan_XBackward_Fields, (fftw_complex *) data_X_Transp_1, (fftw_complex *) data_X_Transp_2 ); 
       transpose_rev(NxLD, NkyLD, NzLD, plasma->nfields, (A4zz) ((CComplex *) data_X_Transp_2), (A4zz) ((CComplex *) in));                
@@ -230,7 +230,7 @@ void FFTSolver_fftw3::solve(const FFT_Type type, const FFT_Sign direction, void 
    // These are speed critical (move above x-transformation)
    else if(type == FFT_Type::Y_FIELDS ) {
             
-             // Need to cast between bit comparible complex types
+             // Need to cast between bit compatible complex types
              //if     (direction == FFT_Sign::Forward )  fftw_execute_dft_r2c(plan_YForward_Field , (double   *) in, (fftw_complex *) out); 
              if(direction == FFT_Sign::Backward)  fftw_execute_dft_c2r(plan_YBackward_Field, (fftw_complex *) in, (double   *) out); 
              else   check(-1, DMESG("No such FFT direction"));
@@ -239,7 +239,7 @@ void FFTSolver_fftw3::solve(const FFT_Type type, const FFT_Sign direction, void 
    
    else if(type == FFT_Type::Y_PSF ) {
             
-             // Need to cast between bit comparible complex types
+             // Need to cast between bit compatible complex types
              //if     (direction == FFT_Sign::Forward )  fftw_execute_dft_r2c(plan_YForward_PSF , (double   *) in, (fftw_complex *) out); 
              if(direction == FFT_Sign::Backward)  fftw_execute_dft_c2r(plan_YBackward_PSF, (fftw_complex *) in, (double   *) out); 
              else   check(-1, DMESG("No such FFT direction"));
@@ -248,7 +248,7 @@ void FFTSolver_fftw3::solve(const FFT_Type type, const FFT_Sign direction, void 
    
    else if(type == FFT_Type::Y_NL  ) {
             
-             // Need to cast between bit comparible complex types
+             // Need to cast between bit compatible complex types
              if     (direction == FFT_Sign::Forward )  fftw_execute_dft_r2c(plan_YForward_NL , (double   *) in, (fftw_complex *) out); 
              else if(direction == FFT_Sign::Backward)  fftw_execute_dft_c2r(plan_YBackward_NL, (fftw_complex *) in, (double   *) out); 
              else   check(-1, DMESG("No such FFT direction"));
@@ -302,7 +302,7 @@ void FFTSolver_fftw3::multiply(const CComplex A[NkyLD][NxLD], const CComplex B[N
                                      CComplex R[NkyLD][NxLD])
 {
    
-   // Create antialiased arrays and copy and transform to real space
+   // Create anti-aliased arrays and copy and transform to real space
    CComplexAA AA_A[AA_NkyLD][NxLD];
    doubleAA   RS_A[AA_NyLD ][NxLD], 
               RS_B[AA_NyLD ][NxLD];
@@ -399,7 +399,6 @@ void FFTSolver_fftw3::printOn(std::ostream &output) const
 }
 
 
-// restrict pointers
 // transpose from C-ordering to Fortran ordering (required by fftw3-mpi) 
 void FFTSolver_fftw3::transpose(int Nx, int Ny, int Nz, int Nq, CComplex In[Nq][Nz][Ny][Nx], CComplex OutT[Nx][Ny][Nz][Nq])
 {
@@ -407,7 +406,7 @@ void FFTSolver_fftw3::transpose(int Nx, int Ny, int Nz, int Nq, CComplex In[Nq][
   for(int x = 0; x < Nx; x++ ) { for(int y = 0; y < Ny; y++ ) {  
   for(int z = 0; z < Nz; z++ ) { for(int q = 0; q < Nq; q++ ) {  
 
-        OutT[x][y][z][q] = In[q][z][y][x];
+    OutT[x][y][z][q] = In[q][z][y][x];
    
   } } } }
   
@@ -418,10 +417,10 @@ void FFTSolver_fftw3::transpose_rev(int Nx, int Ny, int Nz, int Nq, CComplex In[
 {
   
   #pragma ivdep
-  for(int x=0; x < Nx; x++ ) { for(int y=0; y < Ny; y++ ) {  
-  for(int z=0; z < Nz; z++ ) { for(int q=0; q < Nq; q++ ) {  
+  for(int x = 0; x < Nx; x++ ) { for(int y = 0; y < Ny; y++ ) {  
+  for(int z = 0; z < Nz; z++ ) { for(int q = 0; q < Nq; q++ ) {  
 
-        OutT[q][z][y][x] = In[x][y][z][q];
+    OutT[q][z][y][x] = In[x][y][z][q];
    
   } } } }
   

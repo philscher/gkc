@@ -166,7 +166,7 @@ void VlasovAux::Vlasov_EM(
 
    for(int s = NsLlD; s <= NsLuD; s++) {
         
-      // abbrevations
+      // abbreviations
       const double w_n   = species[s].w_n;
       const double w_T   = species[s].w_T;
       const double alpha = species[s].alpha;
@@ -219,7 +219,7 @@ void VlasovAux::Vlasov_EM(
       }
              
     
-    /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
+    /////////////// Finally the Vlasov equation calculate the time derivative      //////////////////////
    
             
     const CComplex dg_dt = 
@@ -315,7 +315,7 @@ void VlasovAux::calculateParallelNonLinearity(
                               - (f[s][m][z][y_k][x][v+2] - f[s][m][z][y_k][x][v-2])) * _kw_12_dv;
 
     //  Kinetic energy can only be contain in the m=0 mode, otherwise it will
-    //  cancel out. Thus we direclty only calculte the m=0 mode which is given
+    //  cancel out. Thus we directly only calculate the m=0 mode which is given
     //  by  (m=0) = (m') + (m'') = 0 -> m' = -m'' = m''*.
     //  m = 0 needs to be per definition real
     //

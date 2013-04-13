@@ -34,7 +34,7 @@ FieldsFFT::~FieldsFFT()
 void FieldsFFT::solveFieldEquations(const CComplex Q     [Nq][NzLD][Nky][NxLD],
                                           CComplex Field0[Nq][NzLD][Nky][NxLD]) 
 {
-  // Transform to fourier space (x,ky) -> (kx,ky)
+  // Transform to Fourier space (x,ky) -> (kx,ky)
   #pragma omp single
   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, ArrayField0.data((CComplex *) Q));
 
@@ -47,7 +47,7 @@ void FieldsFFT::solveFieldEquations(const CComplex Q     [Nq][NzLD][Nky][NxLD],
   // suppresses modes in all fields (needs work)
   // fft->suppressModes(fft->kXIn, Field::phi);
 
-  // replace calcultated field with fixed one if option is set Don't need - or ?
+  // replace calculated field with fixed one if option is set Don't need - or ?
   //if(!(solveEq & Field::phi) && (Nq >= 1)) fft->rXOut(RxLD, RkyLD, RzLD, Field::phi) = Field0(RxLD, RkyLD, RzLD, Field::phi);
   //if(!(solveEq & Field::Ap ) && (Nq >= 2)) fft->rXOut(RxLD, RkyLD, RzLD, Field::Ap ) = Field0(RxLD, RkyLD, RzLD, Field::Ap );
   //if(!(solveEq & Field::Bpp) && (Nq >= 3)) fft->rXOut(RxLD, RkyLD, RzLD, Field::Bp ) = Field0(RxLD, RkyLD, RzLD, Field::Bp );
@@ -87,7 +87,7 @@ void FieldsFFT::solvePoissonEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_
     // BUG (Optimize) : need to vectorize this one 
     const double k2_p = fft->k2_p(x_k,y_k,z);
          
-    // adiabatic term \adia ( \phi - <\phi>_{yz}), we shift flux averaging term <\phi>_{yz}
+    // adiabatic term \adiab ( \phi - <\phi>_{yz}), we shift flux averaging term <\phi>_{yz}
     // to rhs due to FFT normalization, flux-surface averaging only affects zonal flow itself.
     const double lhs    = plasma->debye2 * k2_p + sum_qqnT_1mG0(k2_p) + adiab;
     const CComplex rhs  = kXOut[Field::phi][z][y_k][x_k] + (y_k == 0 ? adiab*phi_yz[x_k]: 0.); 
@@ -141,7 +141,7 @@ void FieldsFFT::solveBParallelEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::
    
   simd_for(int x_k = fft->K1xLlD; x_k <= fft->K1xLuD; x_k++) {
  
-    if((x_k == 0) && (y_k == 0)) { kXIn[Field::phi][z][y_k][x_k] =0.; continue; }
+    if((x_k == 0) && (y_k == 0)) { kXIn[Field::phi][z][y_k][x_k] = 0.; continue; }
          
     const double k2_p = fft->k2_p(x_k,y_k,z);
 
@@ -169,7 +169,7 @@ void FieldsFFT::calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_NkxL
   const double _kw_NxNy = 1./(Nz)  ; // Number of poloidal points in real space
 
   // Note : In FFT the ky=0 components carries the offset over y (integrated value), thus
-  //        by divinding through the number of points we get the averaged valued
+  //        by dividing through the number of points we get the averaged valued
   for(int z = NzLlD; z <= NzLuD; z++) { if(NkyLlD == 0) { 
     
   for(int x_k = fft->K1xLlD; x_k <= fft->K1xLuD; x_k++) {
@@ -246,7 +246,7 @@ void FieldsFFT::gyroFull(const CComplex In   [Nq][NzLD][Nky][NxLD             ],
   #pragma omp single
   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, stack ? (void *) &In[0][0][0][0] : (void *) &In[0][NzLlD][0][NxLlD]);
 
-  // get therma gyro-radius^2 of species and lambda =  2 x b 
+  // get thermal gyro-radius^2 of species and lambda =  2 x b 
   const double rho_t2  = species[s].T0 * species[s].m / (pow2(species[s].q) * plasma->B0); 
   const double lambda2 = 2. * M[m] * rho_t2;
     
@@ -263,7 +263,7 @@ void FieldsFFT::gyroFull(const CComplex In   [Nq][NzLD][Nky][NxLD             ],
     
     const double k2_p = fft->k2_p(x_k,y_k,z);
     
-    // Remove Nyuiest frequency as it may leads to numerical errors (from stencils)
+    // Remove Nyquist frequency as it may leads to numerical errors (from stencils)
     if(( (y_k == Nky-1) || (x_k == Nx/2)) && screenNyquist) { kXIn[Field::phi][z][y_k][x_k]  = 0.; continue; }
           
     kXIn[q][z][y_k][x_k] = kXOut[q][z][y_k][x_k]/fft->Norm_X * avrg_func[q](sqrt(lambda2 * k2_p));
@@ -299,7 +299,7 @@ void FieldsFFT::gyroFirst(const CComplex In   [Nq][NzLD][Nky][NxLD],
   // solve for all fields at once
   for(int q = 0; q < Nq; q++) {
 
-  // get therma gyro-radius^2 of species and lambda =  2 x b 
+  // get thermal gyro-radius^2 of species and lambda =  2 x b 
   const double rho_t2 = species[s].T0 * species[s].m / (pow2(species[s].q) * plasma->B0); 
 
   #pragma omp for collapse(2)
@@ -383,7 +383,7 @@ void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEn
       if(species[0].doGyro) calcFluxSurfAvrg(kXOut, phi_yz);
         
       const double adiab = species[0].n0 * pow2(species[0].q)/species[0].T0;
-      // add contributions from adiabatic species (eventuellay with flux-averaging term)
+      // add contributions from adiabatic species (eventually with flux-averaging term)
       for(int z = NzLlD; z <= NzLuD; z++) { simd_for(int x_k = fft->K1xLlD; x_k <= fft->K1xLuD; x_k++) {
         
         phiEnergy += adiab * __sec_reduce_add(pow2(cabs((kXOut[Field::phi][z][:][x_k] - phi_yz[x_k])))) ;

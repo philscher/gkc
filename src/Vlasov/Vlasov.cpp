@@ -35,7 +35,7 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
    ArrayG  = nct::allocate(grid->RzLB , grid->RkyLD, grid->RxLB , grid->RvLB)(&G );
    ArrayNL = nct::allocate(grid->RkyLD, grid->RxLD , grid->RvLD)(&nonLinearTerm);
    
-   // allocate boundary (mpi) buffers
+   // allocate boundary (MPI) buffers
    int BoundX_num =    2 * Nky * NzLD * NvLD * NmLD * NsLD;
    int BoundZ_num = NxLD * Nky *    2 * NvLD * NmLD * NsLD;
    int BoundV_num = NxLD * Nky * NzLD *    2 * NmLD * NsLD;

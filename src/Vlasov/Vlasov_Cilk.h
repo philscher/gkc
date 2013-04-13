@@ -40,7 +40,7 @@ class VlasovCilk : public Vlasov {
    *    @brief Calculates the non-linear term using Arakawa type scheme
    *
    *    The non-linear term correspond to the E x B drift.
-   *    It is caculated as
+   *    It is calculated as
    *    
    *    \f[
    *      \mathcal{N}{}_{\left< \chi \right> \times g_{1\sigma}} = 
@@ -53,24 +53,24 @@ class VlasovCilk : public Vlasov {
    *    @todo Describe and add reference
    *
    *
-   *   Updated the CFL (Courant-Friedrich-Levy number). For explicit time-stepening
+   *   Updated the CFL (Courant-Friedrich-Levy number). For explicit time-stepping
    *   the CFL value has to be always < 1 to ensure stability of the system
    *   (practically < 0.4).
    *   
-   *   Note : Stability is still not guranteed. As the system is unstable. Thus the
-   *          time-steppening scheme needs to allows imaginary values e.g.
+   *   Note : Stability is still not guaranteed. As the system is unstable. Thus the
+   *          time-stepping scheme needs to allows imaginary values e.g.
    *          (RK-3, RK-4, Heun method).
    *
    *   Calculated using ....
    *
-   *   This needs only to be caluclated in the non-linear terms
+   *   This needs only to be calculated in the non-linear terms
    *
    *  @note get linking error if defined inline. Check Performance !
    *
-   *  @depracated This is not done direclty in the non-linear term
+   *  @depreciated This is not done directly in the non-linear term
    *
    *  Conserved the L2 norm (L1 ? ), thus guarantees energy conservation.
-   *  [ Proparbly particle conservation too .... !]
+   *  [ Probably particle conservation too .... !]
    *
    *
    **/
@@ -126,7 +126,7 @@ class VlasovCilk : public Vlasov {
    *     f_{1\sigma} = g_{1\sigma} - \frac{q_\sigma}{c}\bar{A}_{1\parallel}\frac{v_\parallel}{T_{0\sigma}} F_{0\sigma} 
    *  \f]
    *
-   *   Reference : @cite Note from Goerles PhD Thesis (Eq. 2.32)
+   *   Reference : @cite Note from Goerler's PhD Thesis (Eq. 2.32)
    *
    *  Note : In [ Xi, G] in electro-static simulations reduces to [ phi, f1 + sigma phi f_0 ],
    *        equals [phi, f1] + [phi, sigma phi f_0], as f_0 does not depend on y or x 
@@ -174,7 +174,7 @@ class VlasovCilk : public Vlasov {
    *
    *  @note   * Is this the no-slip boundary condition ?
    *          * Violates conservation of particles, energy and momentum and
-   *            needs to be fixed by modifing the fields. See Lapillone.
+   *            needs to be fixed by modifying the fields. See Lapillone.
    *
    *
    **/
@@ -215,5 +215,3 @@ class VlasovCilk : public Vlasov {
 
 #endif //  __VLASOV_BLITZ_H
 
-
-//#endif // GKC_CILK

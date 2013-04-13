@@ -18,6 +18,7 @@
 #include "GaussLegendreWeights.h"
 #include "GaussLaguerreWeights.h"
 #include "GaussRadauWeights.h"
+#include "RectangularWeights.h"
 
 #include <functional>
 
@@ -92,6 +93,7 @@ class Integrate {
     if     (type == "Gauss-Legendre") { setupNodesAndWeights(gauss_weights[order].points   , gauss_weights[order].weights,   true); }
     else if(type == "Gauss-Laguerre") { setupNodesAndWeights(Laguerre_weights[order].points, Laguerre_weights[order].weights, false); }
     else if(type == "Gauss-Radau"   ) { setupNodesAndWeights(Radau_weights[order].points   , Radau_weights[order].weights,   true); }
+    else if(type == "Rectangular"   ) { setupNodesAndWeights(Rectangular_weights[order].points   , Rectangular_weights[order].weights,   true); }
     else   check(-1, DMESG("No such quadrature rule"));
 
   };
