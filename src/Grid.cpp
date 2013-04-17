@@ -3,7 +3,7 @@
  *
  *       Filename: Grid.cpp
  *
- *    Description: Grid definitions incuding boundary
+ *    Description: Grid definitions including boundary
  *
  *         Author: Paul P. Hilscher (2009-), 
  *
@@ -14,7 +14,6 @@
 #include "Grid.h"
 
 #include "Special/Integrate/Integrate.h"
-
 
 // **************** Define Global Variables ************* //
 int NxLlD, NxLuD, NxLlB, NxLuB; 
@@ -43,7 +42,7 @@ int NsGlD, NsGuD, NsGlB, NsGuB;
 double *X, *Y, *V, *M, *Z;
 
 double Lx, Ly, Lz, Lv, Lm;
-int    Nx, Nky, Nz, Nv, Nm, Ns;
+int    Nx, Nky, Nz, Nv, Nm, Ns, Nq;
 double dx, dy, dz, dv,dt;
 
 // ************************************************* //
@@ -91,14 +90,13 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
   NmGlD = 1; NmGuD=Nm;   NmGlB=1; NmGuB=Nm; 
   NsGlD = 1; NsGuD=Ns;   NsGlB=1; NsGuB=Ns; 
        
-  NkyGlD = 0; NkyGuD=Nky-1; NkyGlB=0; NkyGuB=Nky-1; 
-  NkyLlD = 0; NkyLuD=Nky-1; NkyLlB=0; NkyLuB=Nky-1;
-  NkyLD=Nky; NkyGD=Nky; 
+  NkyGlD = 0  ; NkyGuD=Nky-1; NkyGlB=0; NkyGuB=Nky-1; 
+  NkyLlD = 0  ; NkyLuD=Nky-1; NkyLlB=0; NkyLuB=Nky-1;
+  NkyLD  = Nky; NkyGD = Nky; 
   
   // Number of Ghost/Halo cells
-  NxGC = 2 ;    NyGC = 2 ;    NzGC = 2 ;    NvGC = 2 ; 
+  NxGC = 2; NyGC = 2; NzGC = 2; NvGC = 2; 
 
-  
   //////////////////   Grid decomposition  ////////////////////////
   // Set local (L) lower (l) and upper (u) bounds
   // Currently we only have equal partition decomposition
@@ -106,22 +104,22 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
   // Set local decomposition indices for X
   NxLlD = (NxGuD - NxGlD + 1)/parallel->decomposition[DIR_X] * parallel->Coord[DIR_X] + NxGC + 1;
   NxLuD = (NxGuD - NxGlD + 1)/parallel->decomposition[DIR_X] * (parallel->Coord[DIR_X]+1) + NxGC;
-  NxLlB=NxLlD - NxGC; NxLuB=NxLuD + NxGC;
+  NxLlB = NxLlD - NxGC; NxLuB = NxLuD + NxGC;
 
   // Set local decomposition indices for Y (wtf?)
-  NyLlD = (NyGuD - NyGlD + 1)/parallel->decomposition[DIR_Y] * parallel->Coord[DIR_Y] + NyGC + 1;
-  NyLuD = (NyGuD - NyGlD + 1)/parallel->decomposition[DIR_Y] * (parallel->Coord[DIR_Y]+1) + NyGC;
-  NyLlB=NyLlD - NyGC; NyLuB=NyLuD + NyGC;
+  NyLlD = (NyGuD - NyGlD + 1)/parallel->decomposition[DIR_Y] *  parallel->Coord[DIR_Y] + NyGC + 1;
+  NyLuD = (NyGuD - NyGlD + 1)/parallel->decomposition[DIR_Y] * (parallel->Coord[DIR_Y]+ 1) + NyGC;
+  NyLlB = NyLlD - NyGC; NyLuB = NyLuD + NyGC;
 
   // Set local decomposition indices for Z
-  NzLlD = (NzGuD - NzGlD + 1)/parallel->decomposition[DIR_Z] * parallel->Coord[DIR_Z] + NzGC + 1;
+  NzLlD = (NzGuD - NzGlD + 1)/parallel->decomposition[DIR_Z] *  parallel->Coord[DIR_Z] + NzGC + 1;
   NzLuD = (NzGuD - NzGlD + 1)/parallel->decomposition[DIR_Z] * (parallel->Coord[DIR_Z]+1) + NzGC;
-  NzLlB =  NzLlD - NzGC; NzLuB=NzLuD + NzGC;
+  NzLlB =  NzLlD - NzGC; NzLuB = NzLuD + NzGC;
     
   // Set local decomposition indices for V
   NvLlD = (NvGuD - NvGlD + 1)/parallel->decomposition[DIR_V] *  parallel->Coord[DIR_V] + NvGC + 1;
   NvLuD = (NvGuD - NvGlD + 1)/parallel->decomposition[DIR_V] * (parallel->Coord[DIR_V] + 1) + NvGC;
-  NvLlB=NvLlD - NvGC; NvLuB=NvLuD + NvGC;
+  NvLlB = NvLlD - NvGC; NvLuB = NvLuD + NvGC;
     
   // Set local decomposition indices for M (no boundary)
   NmLlD = (NmGuD - NmGlD + 1)/parallel->decomposition[DIR_M] *  parallel->Coord[DIR_M] + 1;
@@ -181,7 +179,7 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
  
   ///////////////  Set Grid  Domain ////////////
 
-  // X (Note : For gyro-averaged fields we have extended boubdaries
+  // X (Note : For gyro-averaged fields we have extended boundaries
   ArrayX = nct::allocate(nct::Range(NxGlB-2, NxGB+4))(&X);
   ArrayZ = nct::allocate(RzGB)(&Z);
   ArrayV = nct::allocate(RvGB)(&V);
@@ -190,7 +188,8 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
   // Use  equidistant grid for X, Z and V
   bool includeX0Point = setup->get("Grid.IncludeX0Point", 0);
   for(int x = NxGlB-2; x <= NxGuB+2; x++) X[x] = -Lx/2. + dx * (x - NxGC - 1) + ((includeX0Point) ? dx/2. : 0.);
-  for(int z = NzGlB; z <= NzGuB; z++) Z[z] = -Lz/2. + dz * (z - NzGC - 1) ;
+  //for(int z = NzGlB; z <= NzGuB; z++) Z[z] = -Lz/2. + dz * (z - NzGC - 1) ;
+  for(int z = NzGlB; z <= NzGuB; z++) Z[z] =  dz * (z - NzGC - 1) ;
   for(int v = NvGlB; v <= NvGuB; v++) V[v] = -Lv + dv * (v - NvGlD);
     
   // M For mu we can choose between various integration type e.g. rectangle or Gaussian
@@ -203,7 +202,7 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
     dm[m] = (Nm == 1) ? 1. : integrate.w(n); 
   }
 
-  // Set local jacobian (better use geometry module ?)
+  // Set local Jacobian (better use geometry module ?)
   dXYZ  = dx * dy * dz;
   dXYZV = dx * dy * dz * dv;
 

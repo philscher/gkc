@@ -57,18 +57,18 @@ Nice stuff http://stackoverflow.com/questions/841433/gcc-attribute-alignedx-expl
 
 // Align arrays, allocate on stack, (TAKE care of stackoverflow, if happens allocated
 // dynamically with alloc in Constructor)
-// Speed should not be a concern, as allocation happends instantenously 
-// however, check this, what about alignement ?
+// Speed should not be a concern, as allocation happens instantaneously
+// however, check this, what about alignment ?
 // how to deal with indexes ?
 // from stackoverflow guru : http://stackoverflow.com/questions/161053/c-which-is-faster-stack-allocation-or-heap-allocation
 // Stack is hot, as it probably resides direclty in cache. Good. 
 // Hope stackoverflow is right and we dont get a stackoverflow...
 //
-// Stack variables are alligned per default on 8 bytes (at least for SSE2+ CPUs)
+// Stack variables are aligned per default on 8 bytes (at least for SSE2+ CPUs)
 // Can be controlled on gcc with  -mpreferred-stack-boundary=n
 // See : http://stackoverflow.com/questions/1061818/stack-allocation-padding-and-alignment
 // short array[3] __attribute__ ((aligned (__BIGGEST_ALIGNMENT__)));
-// __BIGGEST_ALIGNMENT autmatically uses max alignments sizes supported by vector instructions
+// __BIGGEST_ALIGNMENT automatically uses max alignments sizes supported by vector instructions
 // take care, for electro-static simulations, G & Xi are null pointers (for e-m f&phi respectively)
 //
 //
@@ -85,7 +85,7 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
   const doubleAA _kw_12_dx = 1./(12.*dx), _kw_12_dy=1./(12.*dy);
   const doubleAA _kw_24_dx = 1./(24.*dx), _kw_24_dy=1./(24.*dy);
  
-  // THERE is also OMP_STACKSIZE !
+  // Take care of OMP_STACKSIZE is large enough
       
   CComplexAA  xky_Xi [Nky][NxLB+4];
   CComplexAA  xky_f1 [Nky][NxLB  ];
@@ -129,11 +129,20 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
             
 
       } } 
-        
-      // get maximum value to calculate CFL condition 
-      Xi_max[DIR_Y] = std::max(Xi_max[DIR_Y], __sec_reduce_max(cabs(xy_dXi_dy[:][:])));
-      Xi_max[DIR_X] = std::max(Xi_max[DIR_X], __sec_reduce_max(cabs(xy_dXi_dx[:][:])));
+      
+      // get maximum partial_nu chi value to calculate CFL condition
+      {
+        const double max_dXi_dx =  __sec_reduce_max(cabs(xy_dXi_dx[:][:]));
+        const double max_dXi_dy =  __sec_reduce_max(cabs(xy_dXi_dy[:][:]));
        
+        #pragma omp critical
+        Xi_max[DIR_X] = std::max(Xi_max[DIR_X], max_dXi_dx);
+        #pragma omp critical
+        Xi_max[DIR_Y] = std::max(Xi_max[DIR_Y], max_dXi_dy);
+      
+        //Xi_max[DIR_X] = std::max(Xi_max[DIR_X], __sec_reduce_max(cabs(xy_dXi_dx[:][:])));
+        //Xi_max[DIR_Y] = std::max(Xi_max[DIR_Y], __sec_reduce_max(cabs(xy_dXi_dy[:][:])));
+      }
       have_xy_dXi = true; 
     }
 
@@ -186,7 +195,7 @@ void VlasovCilk::setupXiAndG(
                            const int m, const int s) 
 {
 
-  // small abbrevations
+  // small abbreviations
   const double alpha = species[s].alpha;
   const double sigma = species[s].sigma;
   
@@ -196,8 +205,9 @@ void VlasovCilk::setupXiAndG(
   const bool useAp   = (Nq >= 2);
   const bool useBp   = (Nq >= 3);
 
+  // do we need boundaries in velocity space ?!
 
-  // ICC vectorizes useAp/useBp into separate lopps, check for any speed penelity ? 
+  // ICC vectorizes useAp/useBp into separate lopps, check for any speed penalty ? 
   #pragma omp for collapse(2)
   for(int z = NzLlB; z <= NzLuB; z++) {      for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
   for(int x = NxLlB; x <= NxLuB; x++) { simd_for(int v   = NvLlB ;   v <= NvLuB ;   v++) { 
@@ -207,7 +217,7 @@ void VlasovCilk::setupXiAndG(
 
      G [z][y_k][x][v] = g[s][m][z][y_k][x][v]  + sigma * Xi[z][y_k][x][v] * f0[s][m][z][y_k][x][v];
 
-     // substract canonical momentum to get "real" f1 (not used "yet")
+     // subtract canonical momentum to get "real" f1 (not used "yet")
      // f1[z][y_k][x][v] = g[s][m][z][y_k][x][v] - (useAp ? saeb * V[v] * f0[s][n][z][y_k][x][v] * Ap[s][m][z][y_k][x] : 0.);
       
   } } // v, x
@@ -225,7 +235,7 @@ void VlasovCilk::setupXiAndG(
   
   } } // y_k, z
 
-};
+}
 
 
 
@@ -248,7 +258,7 @@ void VlasovCilk::Vlasov_EM(
 
   for(int s = NsLlD; s <= NsLuD; s++) {
         
-    // small abbrevations
+    // small abbreviations
     const double w_n   = species[s].w_n;
     const double w_T   = species[s].w_T;
     const double alpha = species[s].alpha;
@@ -261,12 +271,12 @@ void VlasovCilk::Vlasov_EM(
     // Calculate before z loop as we use dg_dz and dXi_dz derivative
     setupXiAndG(g, f0, Fields, Xi, G, m, s);
       
-    // Nested Parallelism (PoissonBracket variables are allocated on stack)
-    // Cannot collapse as we have no perfetly nested loops
+    // Nested Parallelism (Poisson-bracket variables are allocated on stack)
+    // Cannot collapse as we have no perfectly nested loops
           
   for(int z = NzLlD; z <= NzLuD; z++) { 
            
-    // calculate non-linear term (rk_step == 0 for eigenvalue calculatinullptr)
+    // calculate non-linear term (rk_step == 0 for eigenvalue)
     if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(G, Xi, nullptr, nullptr, z, m, s, NonLinearTerm, Xi_max, true); 
     
   #pragma omp for collapse(2) 
@@ -303,7 +313,7 @@ void VlasovCilk::Vlasov_EM(
                            -   (G[z+2][y_k][x][v] - G[z-2][y_k][x][v])) * _kw_12_dz;
 
 
-    // magnetic prefactor defined as  $ \hat{B}_0 / \hat{B}_{0\parallel}^\star = \left[ 1 + \beta_{ref} \sqrt{\frac{\hat{m_\sigma T_{0\sigma}{2}}}}
+    // magnetic pre-factor defined as  $ \hat{B}_0 / \hat{B}_{0\parallel}^\star = \left[ 1 + \beta_{ref} \sqrt{\frac{\hat{m_\sigma T_{0\sigma}{2}}}}
     // note j0 is calculated and needs to be replaced, or ? no we calculate j1 ne ?!
     const double j0   = 0.;
     const double Bpre = 1.; //1./(1. + plasma->beta * sqrt(m * T/2.) * j0 / (q * pow2(geo->B(x,y,z))) * V[v]);
@@ -313,12 +323,12 @@ void VlasovCilk::Vlasov_EM(
         
     const CComplex dg_dt = 
             
-    - NonLinearTerm[y_k][x][v]                                                              // Non-linear ( array is zero for linear simulations) 
-    + Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - 3./2.)) * f0_ * Xi_ * ky          // Source Term
+      NonLinearTerm[y_k][x][v]                                                              // Non-linear ( array is zero for linear simulations) 
+    - Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - 3./2.)) * f0_ * Xi_ * ky          // Source Term
     - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0) *                                   
       (Kx[z][x] * dG_dx - Ky[z][x] * ky * G_)                                               // Magnetic curvature term
     + alpha * pow2(V[v]) * plasma->beta * plasma->w_p * G_ * ky                             // Plasma pressure gradient
-    + CoJB * alpha * V[v]* dG_dz                                                            // Linear Landau damping term
+    - CoJB * alpha * V[v]* dG_dz                                                            // Linear Landau damping term
     + alpha  / 2. * M[m] * dB_dz[z][x] * dg_dv                                              // Magnetic mirror term    
 //    + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * Kx[z][x] * 
 //    + ((w_n + w_T * (pow2(V[v]) + M[m] * B0)/Temp - 3./2.) * dG_dx + sigma * dphi_dx * f0_) // ??

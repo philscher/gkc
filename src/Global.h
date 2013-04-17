@@ -102,7 +102,9 @@ inline int check( int status, std::string file, int line, std::string error_text
 // OR CONFIG !!
 
 // Gx[LlD], Gx[LuD], Gx[LuB], Gx[LuD] // should improve speed due to caching
-extern int Nx, Nky, Nz, Nv, Nm, Ns;
+extern int Nx, Nky, Nz, Nv, Nm, 
+           Ns, 
+           Nq; ///< Nq number of fields 1 = (phi), 2 = (phi, Ap), 3 = (phi, ap, Bp)
 
 extern int NxLlD, NxLuD, NxLlB, NxLuB; 
 extern int NyLlD, NyLuD, NyLlB, NyLuB; 

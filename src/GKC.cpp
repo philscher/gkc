@@ -46,18 +46,18 @@ GKC::GKC(Setup *_setup) : setup(_setup)
 {
 
   // Read Setup 
-  std::string fft_solver_name = setup->get("GKC.FFTSolver"    , "fftw3");
-  std::string psolver_type    = setup->get("Fields.Solver"    , "DFT"  );
-  std::string vlasov_type     = setup->get("Vlasov.Solver"    , "Aux"  );
-  std::string collision_type  = setup->get("Collisions.Solver", "None" );
-  gkc_SolType                 = setup->get("GKC.Type"         , "IVP"  );
-  std::string geometry_Type   = setup->get("GKC.Geometry"     , "2D"   );
+  std::string fft_solver_name = setup->get("GKC.FFTSolver"       , "fftw3");
+  std::string psolver_type    = setup->get("Fields.Solver"       , "DFT"  );
+  std::string vlasov_type     = setup->get("Vlasov.Solver"       , "Aux"  );
+  std::string timeInt_type    = setup->get("GKC.TimeIntegration" , "Explicit"  );
+  std::string collision_type  = setup->get("Collisions.Solver"   , "None" );
+  gkc_SolType                 = setup->get("GKC.Type"            , "IVP"  );
+  std::string geometry_Type   = setup->get("GKC.Geometry"        , "2D"   );
 
 
   ///////////////////////////////   Load subsystems   /////////////////////////////
 
   parallel  = new Parallel(setup);
-  bench     = new Benchmark(setup, parallel); 
 
   parallel->print("Initializing GKC++\n");
 
@@ -66,10 +66,13 @@ GKC::GKC(Setup *_setup) : setup(_setup)
 
   // ugly here, however in parallel constructor fileIO is not defined yet
   parallel->initData(setup, fileIO);
+  
+  bench     = new Benchmark(setup, parallel, fileIO); 
 
-  if     (geometry_Type == "SA"  ) geometry  = new GeometrySA(setup, grid, fileIO);
-  else if(geometry_Type == "2D"  ) geometry  = new Geometry2D(setup, grid, fileIO);
-  else if(geometry_Type == "Slab") geometry  = new GeometrySlab(setup, grid, fileIO);
+  if     (geometry_Type == "SA"   ) geometry  = new GeometrySA(setup, grid, fileIO);
+  else if(geometry_Type == "2D"   ) geometry  = new Geometry2D(setup, grid, fileIO);
+  else if(geometry_Type == "Slab" ) geometry  = new GeometrySlab(setup, grid, fileIO);
+  else if(geometry_Type == "Shear") geometry  = new GeometryShear(setup, grid, fileIO);
   else check(-1, DMESG("No such Geometry"));
 
   plasma    = new Plasma(setup, fileIO, geometry);
@@ -110,9 +113,13 @@ GKC::GKC(Setup *_setup) : setup(_setup)
   init            = new Init(parallel, grid, setup, fileIO, vlasov, fields, geometry);
   control         = new Control(setup, parallel, diagnostics);
   particles       = new TestParticles(fileIO, setup, parallel);
+ 
+  if     (timeInt_type == "Explicit") timeIntegration = new TimeIntegration      (setup, grid, parallel, vlasov, fields, particles, eigenvalue, bench);
+  else if(timeInt_type == "Implicit") timeIntegration = new TimeIntegration_PETSc(setup, grid, parallel, vlasov, fields, particles, eigenvalue, bench);
+  else   check(-1, DMESG("No such TimeIntegratioScheme in GKC.TimeIntegration"));
   
-  timeIntegration = new TimeIntegration(setup, grid, parallel, vlasov, fields, particles, eigenvalue, bench);
-  scanModes       = new ScanLinearModes(setup, grid, parallel, vlasov, fields, fileIO);
+  scanModes       = new ScanLinearModes  (setup, grid, parallel, vlasov, fields, fileIO);
+  //scanEigen       = new ScanPoloidalEigen(setup, grid, parallel, vlasov, fields, fileIO, control, visual, diagnostics, timeIntegration);
   // Optimize values to speed up computation
   bench->bench(vlasov, fields);
   
@@ -126,8 +133,11 @@ int GKC::mainLoop()
 {
 
   parallel->print("Running main loop");
-   
 
+  //int bench_id = benchmark->start("MainLoop", Benchmark::time)
+
+  unsigned int start_time = System::getTime();
+   
   if (gkc_SolType == "IVP") {
  
     Timing timing(0,0.) ;
@@ -198,6 +208,8 @@ int GKC::mainLoop()
     scanModes->solve(vlasov, fields, timeIntegration, eigenvalue, init, visual); 
   }
   else  check(-1, DMESG("No Such gkc.Type Solver"));
+  
+  bench->save("MainLoopTime", System::getTime() - start_time);
 
   parallel->print("Simulation finished normally ... ");
 

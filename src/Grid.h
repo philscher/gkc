@@ -38,7 +38,7 @@
 *
 *    (see http://en.wikipedia.org/wiki/Discrete_Fourier_transform). 
 *    
-*    espcially, we note that the DC comonent F(y_k=0)  = int_ f(y) dy.
+*    especially, we note that the DC component F(y_k=0)  = int_ f(y) dy.
 *    The Nyquiest frequency (Nyquist : y_k=Nky/2) is removed as it has
 *    no phase information. Also as the field quantities are real valued
 *    only positive modes (y_k >= 0) are evolved, as the negative modes
