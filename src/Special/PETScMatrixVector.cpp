@@ -63,12 +63,12 @@ PetscErrorCode PETScMatrixVector::MatrixVectorProduct(Mat A, Vec Vec_x, Vec Vec_
     VecGetArrayRead(Vec_x, (const PetscScalar **) &x_F1);
     VecGetArray    (Vec_y, (      PetscScalar **) &y_F1);
 
-    // copy f1 to vector (important due to bounday conditions, thus cannot pass directly)
+    // copy f1 to vector (important due to boundary conditions, thus cannot pass directly)
     int n = 0;
     
     const int NkyLlD_ = (GL_includeZF ? 0 : 1);
 
-    // how to copy this effiiently ?!#pragma omp for collapse(4) 
+    // how to copy this efficiently ?!#pragma omp for collapse(4) 
     for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) { for(int z = NzLlD; z <= NzLuD; z++) {
     for(int y_k = NkyLlD_; y_k < Nky-1; y_k++) {
     for(int x = NxLlD; x <= NxLuD; x++) { for(int v = NvLlD; v <= NvLuD; v++) { 
@@ -114,7 +114,7 @@ CComplex* PETScMatrixVector::getCreateVector(Grid *grid, Vec &Vec_x, int NkyRed)
 
   CComplex *xp;
 
-  // Usually, Zonal flow/Nyquiest frequency is negelcted
+  // Usually, Zonal flow/Nyquist frequency is neglected
   int getGlobalSize =    Nx * (Nky - NkyRed) * Nz   * Nv   * Nm   * Ns; 
   int getLocalSize  =  NxLD * (Nky - NkyRed) * NzLD * NvLD * NmLD * NsLD;
   

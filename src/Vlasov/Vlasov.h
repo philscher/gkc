@@ -65,7 +65,7 @@ class Vlasov : public IfaceGKC {
 
 
   /**
-  *  @brief Buffer for exchange ghost cells in each direction
+  *  @brief Buffers for exchanging ghost cells in each direction
   */ 
   CComplex *SendXl,  ///< Send Buffer in X-direction (send to down)
            *SendXu,  ///< Send buffer in X-direction (send to up)
@@ -73,12 +73,12 @@ class Vlasov : public IfaceGKC {
            *SendZu,  ///< Send buffer in Z-direction (send to up) 
            *SendVl,  ///< Send buffer in V-direction (send to down)
            *SendVu,  ///< Send buffer in V-direction (send to up) 
-           *RecvXl,  ///< Recv buffer in X-direction (recv from down)
-           *RecvXu,  ///< Recv buffer in X-direction (recv from up)
-           *RecvZl,  ///< Recv buffer in Z-direction (recv from down) 
-           *RecvZu,  ///< Recv buffer in Z-direction (recv from up)
-           *RecvVl,  ///< Recv buffer in V-direction (recv from down) 
-           *RecvVu;  ///< Recv buffer in V-direction (recv from up)
+           *RecvXl,  ///< Recv buffer in X-direction (receive from down)
+           *RecvXu,  ///< Recv buffer in X-direction (receive from up)
+           *RecvZl,  ///< Recv buffer in Z-direction (receive from down) 
+           *RecvZu,  ///< Recv buffer in Z-direction (receive from up)
+           *RecvVl,  ///< Recv buffer in V-direction (receive from down) 
+           *RecvVu;  ///< Recv buffer in V-direction (receive from up)
    
   
   
@@ -249,8 +249,8 @@ class Vlasov : public IfaceGKC {
   /**
   *   @brief get maximum non-linear time step 
   *
-  *   Calculates the timestep according to a defined CFL number. For the Vlasov equation
-  *   several terms needs to be calculated for the highest possible timestep. These are
+  *   Calculates the time step according to a defined CFL number. For the Vlasov equation
+  *   several terms needs to be calculated for the highest possible time step. These are
   *
   *   @param maxCFL maximum CFL value for non-linear terms
   *
@@ -303,7 +303,7 @@ class Vlasov : public IfaceGKC {
  private:
 
   FileAttr *FA_f1,      ///< Data-output for Phase-perturbation 
-           *FA_f0,      ///< Data output for Maxwelliab
+           *FA_f0,      ///< Data output for Maxwellian
            *FA_psfTime; ///< Data output for time step writes
 
 };

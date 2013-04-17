@@ -51,7 +51,7 @@ int solveCycCCSymTriDiagonal(const double *b, double *x, const double cs_alpha, 
   z[N - 1] = b[N - 1] - sum - gamma[N - 2] * z[N - 2];
   for (int i = 0; i < N; i++) c[i] = z[i] / alpha[i];
   
-  // backsubstitution 
+  // back substitution 
   x[N-1] = c[N-1];
   x[N-2] = c[N-2] - gamma[N-2] * x[N-1];
           

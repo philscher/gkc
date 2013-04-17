@@ -44,7 +44,7 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
    ArrayBoundZ = nct::allocate(nct::Range(0 , BoundZ_num ))(&SendZu, &SendZl, &RecvZl, &RecvZu);
    ArrayBoundV = nct::allocate(nct::Range(0 , BoundV_num ))(&SendVu, &SendVl, &RecvVl, &RecvVu);
   
-   equation_type       = setup->get("Vlasov.Equation" , "ES");        
+   equation_type       = setup->get("Vlasov.Equation"   , "ES");        
    doNonLinear         = setup->get("Vlasov.doNonLinear", 0      );
    doNonLinearParallel = setup->get("Vlasov.doNonLinearParallel", 0);
 
@@ -117,8 +117,8 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
          CComplex RecvXl[NsLD][NmLD][NzLD][Nky][GC2 ][NvLD], CComplex RecvXu[NsLD][NmLD][NzLD][Nky][GC2 ][NvLD], 
          CComplex SendZl[NsLD][NmLD][GC2 ][Nky][NxLD][NvLD], CComplex SendZu[NsLD][NmLD][GC2 ][Nky][NxLD][NvLD],
          CComplex RecvZl[NsLD][NmLD][GC2 ][Nky][NxLD][NvLD], CComplex RecvZu[NsLD][NmLD][GC2 ][Nky][NxLD][NvLD],
-         CComplex SendVl[NsLD][NmLD][NzLD][Nky][NxLD][GC2 ], CComplex SendVu[NsLD][NmLD][NvLD][Nky][NxLD][GC2 ],
-         CComplex RecvVl[NsLD][NmLD][NzLD][Nky][NxLD][GC2 ], CComplex RecvVu[NsLD][NmLD][NvLD][Nky][NxLD][GC2 ])
+         CComplex SendVl[NsLD][NmLD][NzLD][Nky][NxLD][GC2 ], CComplex SendVu[NsLD][NmLD][NzLD][Nky][NxLD][GC2 ],
+         CComplex RecvVl[NsLD][NmLD][NzLD][Nky][NxLD][GC2 ], CComplex RecvVu[NsLD][NmLD][NzLD][Nky][NxLD][GC2 ])
   {
 
   /////////////////////////// Send Boundaries //////////////////////////////
@@ -138,7 +138,7 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
       const CComplex shift_l = (NzLlD == NzGlD) ? cexp(-_imag * 2.* M_PI * geo->nu(x)) : 1.;
       const CComplex shift_u = (NzLuD == NzGuD) ? cexp(+_imag * 2.* M_PI * geo->nu(x)) : 1.;
             
-      // NzLlD == NzGlD -> Connect only physical boundaries after mode made one loop 
+      // NzLlD == NzGlD -> Connect only physical boundaries after mode made one toroidal loop 
       SendZl[:][:][:][y_k][x-NxLlD][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD  :2][y_k][x][NvLlD:NvLD] * shift_l;
       SendZu[:][:][:][y_k][x-NxLlD][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLuD-1:2][y_k][x][NvLlD:NvLD] * shift_u;
                
@@ -149,8 +149,9 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
     // We do not need to communicate for M and S as we do not have boundary cells (yet)
   
     // Decomposition in velocity is rather unlikely, thus give non-decomposed version too
-    // We set endpoint in velocity space to zero
+    // We set points at cut-off in velocity space to zero
     if(parallel->decomposition[DIR_V] > 1) {
+      
       SendVl[:][:][:][:][:][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLlD  :2]; 
       SendVu[:][:][:][:][:][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLuD-1:2]; 
       parallel->updateBoundaryVlasov(Vlasov::SendVu, Vlasov::SendVl, Vlasov::RecvVu, Vlasov::RecvVl, ArrayBoundV.getNum(), DIR_V);
@@ -179,6 +180,7 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
 
     // Set boundary in V
     if(parallel->decomposition[DIR_V] > 1) {
+      
       g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLlB  :2] = RecvVl[:][:][:][:][:][:]; 
       g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLuD+1:2] = RecvVu[:][:][:][:][:][:]; 
     }

@@ -24,7 +24,7 @@ TimeIntegration::TimeIntegration(Setup *setup, Grid *grid, Parallel *_parallel, 
     linearTimeStep        = setup->get("TimeIntegration.LinearTimeStep"    , "Eigenvalue"  );
     useCFL                = setup->get("TimeIntegration.useCFL"            , 1             );
     maxCFLNumber          = setup->get("TimeIntegration.maxCFLNumber"      , 0.4           );
-    outputRatio           = setup->get("TimeIntegration.StepOutputRatio"   , 500           );
+    outputRatio           = setup->get("TimeIntegration.StepOutputRatio"   , 100           );
     maxTiming.time        = setup->get("TimeIntegration.MaxTime"           , -1.           );
     maxTiming.step        = setup->get("TimeIntegration.MaxSteps"          , -1            );
 

@@ -3,7 +3,7 @@
  *
  *       Filename: RootFinding.h
  *
- *    Description: Implements various one dimensional root finding algrotihm.
+ *    Description: Implements various one dimensional root finding algorithms.
  *
  *         Author: Paul P. Hilscher (2013), 
  *
@@ -22,7 +22,7 @@
 *
 *   @brief Root finding for 1-dimensional functions  
 *
-*   Implements severl one dimensional root-finding algortihm
+*   Implements several one dimensional root-finding algorithms
 *
 *
 **/
@@ -131,7 +131,7 @@ class RootFinding {
   *
   *   Reference : 
   *
-  *   @param x0 and x1 should idealliy be close to the root 
+  *   @param x0 and x1 should ideally be close to the root 
   *
   **/
   static double Secant(std::function<double (double)> func, double x0, double x1, int maxIter=512, double ftol=1.e-9)
