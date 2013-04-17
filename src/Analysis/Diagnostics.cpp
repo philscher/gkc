@@ -12,7 +12,7 @@
  */
 
 #include "Diagnostics.h"
-
+#include "Tools/System.h"
 
 Diagnostics::Diagnostics(Parallel *_parallel, Vlasov *_vlasov, Fields *_fields, Grid *_grid, Setup *_setup, FFTSolver *_fft, FileIO *fileIO, Geometry *_geo) : 
  
@@ -134,7 +134,7 @@ void Diagnostics::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky]
     
       
     ////////////////////////////// Calculate Particle Number /////////////////////////////
-    // Only y_k=0 contributes as higher ky averate out over <A>_y direction
+    // Only y_k=0 contributes as non-zero ky average out over <A>_y direction
     
     number =  creal(__sec_reduce_add(Mom[0][s-NsLlD][0:NzLD][0][0:NxLD]));
     
@@ -168,7 +168,7 @@ void Diagnostics::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky]
     
     } // if(local s) 
 
-    // Communicate with other groups (make reduce whole structre)
+    // Communicate with other groups (make reduce whole structure)
     parallel->reduce(particle     , Op::sum, DIR_ALL, Nq);
     parallel->reduce(heat         , Op::sum, DIR_ALL, Nq);
     kineticEnergy = parallel->reduce(kineticEnergy, Op::sum);
@@ -200,7 +200,7 @@ void Diagnostics::getParticleHeatFlux(
 {
   // Triad condition. Heat/Particles are only transported by the y_k = 0, as the other y_k > 0 
   // modes cancels out. Thus multiplying y_k = 0 = A(y_k)*B(-y_k) = A(y_k)*[cc : B(y_k)]
-  // where the complex conjugate values is used as physcial value is a real quantity.
+  // where the complex conjugate values is used as physical value is a real quantity.
   
   // Note : We average over z direction ( BUG ! : does not work use += and set to zero)
   for(int s = NsLlD; s <= NsLuD; s++) { 
@@ -320,7 +320,7 @@ void Diagnostics::initData(Setup *setup, FileIO *fileIO)
     FA_PartFluxKy = new FileAttr("Particle", fluxGroup, fileIO->file, 5, FSky_dsdim, FSky_dmdim, FSky_cDdim, offset0,  FSky_cBdim, FSky_cdoff, isXYZ);
    
 
-    // Data-Output for cross phase calcultions for (phi, Ap, Bp) x (n, Tp, To) & (Ky, Species, X)
+    // Data-Output for cross phase calculations for (phi, Ap, Bp) x (n, Tp, To) & (Ky, Species, X)
     hsize_t cph_dsdim[] = { Nq, 3, Ns     , Nky   , Nx     , 1            }; 
     hsize_t cph_dmdim[] = { Nq, 3, Ns     , Nky   , Nx     , H5S_UNLIMITED};
     hsize_t cph_cDdim[] = { Nq, 3, NsLD   , Nky   , NxLD   , 1            };
@@ -367,22 +367,25 @@ void Diagnostics::initData(Setup *setup, FileIO *fileIO)
               
   ScalarValues_t scalarValues;
      
-  size_t SV_cdoff[] = { HOFFSET( ScalarValues_t, timestep       ), HOFFSET( ScalarValues_t, time     ), HOFFSET( ScalarValues_t, phiEnergy       ),
+  size_t SV_cdoff[] = { HOFFSET( ScalarValues_t, walltime       ),
+                        HOFFSET( ScalarValues_t, timestep       ), HOFFSET( ScalarValues_t, time     ), HOFFSET( ScalarValues_t, phiEnergy       ),
                         HOFFSET( ScalarValues_t, ApEnergy       ), HOFFSET( ScalarValues_t, BpEnergy ), HOFFSET( ScalarValues_t, particle_number ),
                         HOFFSET( ScalarValues_t, kinetic_energy ), HOFFSET( ScalarValues_t, entropy  ), HOFFSET( ScalarValues_t, heat_flux       ),
                         HOFFSET( ScalarValues_t, particle_flux  ) };
 
-  size_t SV_sizes[] = { sizeof(scalarValues.timestep), sizeof(scalarValues.time    ), sizeof(scalarValues.phiEnergy), 
+  size_t SV_sizes[] = { sizeof(scalarValues.walltime),
+                        sizeof(scalarValues.timestep), sizeof(scalarValues.time    ), sizeof(scalarValues.phiEnergy), 
                         sizeof(scalarValues.ApEnergy), sizeof(scalarValues.BpEnergy), Ns * sizeof(scalarValues.particle_number[0]), 
                         Ns * sizeof(scalarValues.kinetic_energy[0]), Ns * sizeof(scalarValues.entropy[0]), 
                         Ns * Nq * sizeof(scalarValues.heat_flux[0]), Ns * Nq * sizeof(scalarValues.particle_flux[0])};
 
-  hid_t SV_types[] = { H5T_NATIVE_INT, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, 
+  hid_t SV_types[] = { H5T_NATIVE_DOUBLE, H5T_NATIVE_INT, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, 
                        fileIO->species_tid, fileIO->species_tid, fileIO->species_tid, fileIO->specfield_tid, fileIO->specfield_tid } ;
   
-  const char *SV_names[] = { "Timestep", "Time", "phiEnergy", "ApEnergy", "BpEnergy", "ParticleNumber", "KineticEnergy", "Entropy", "HeatFlux", "ParticleFlux" };
+  const char *SV_names[] = { "WallTime", "Timestep", "Time", "phiEnergy", "ApEnergy", "BpEnergy", "ParticleNumber", 
+                             "KineticEnergy", "Entropy", "HeatFlux", "ParticleFlux" };
 
-  SVTable = new TableAttr(analysisGroup, "scalarValues", 10, SV_names, SV_cdoff, SV_types, SV_sizes, &scalarValues); 
+  SVTable = new TableAttr(analysisGroup, "scalarValues", 11, SV_names, SV_cdoff, SV_types, SV_sizes, &scalarValues); 
 
   dataOutputStatistics  = Timing(setup->get("DataOutput.Statistics.Step", -1), setup->get("DataOutput.Statistics.Time", -1.));
 
@@ -461,7 +464,7 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
 
     }  
 
-      ////////////// Scalar Variables /////////////////
+    ////////////// Scalar Variables /////////////////
     if (timing.check(dataOutputStatistics, dt) )   {
     { 
       // calculate mode spectrum of fields (phi, Ap, Bp)
@@ -471,20 +474,24 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
      
       getPowerSpectrum((A4zz) fft->kXOut, (A4zz) fields->Field0, pSpecX, pSpecY, pPhaseX, pPhaseY);
     
-      // Seperatly writing ? Hopefully it is buffered ... (passing stack pointer ... OK ?)
+      // Separately writing ? Hopefully it is buffered ... (passing stack pointer ... OK ?)
       FA_grow_x->write( &pSpecX [0][0]); FA_grow_y->write(&pSpecY [0][0]); FA_grow_t->write(&timing);
       FA_freq_x->write( &pPhaseX[0][0]); FA_freq_y->write(&pPhaseY[0][0]); FA_freq_t->write(&timing);
     }
 
     ScalarValues scalarValues;
-    
-    // calculate kinetic Energy first, need for initial_e ! sum over domain
+   
+
+    static struct timeval walltime = System::getTimeOfDay();  
+
+    // Need to communicate walltime to other processes (as HDF-5 table requires same value)
+    scalarValues.walltime = parallel->bcast(System::getTimeDifference(walltime), parallel->myRank == 0) ;
     scalarValues.timestep = timing.step;
     scalarValues.time     = timing.time;
     
     fields->getFieldEnergy(scalarValues.phiEnergy, scalarValues.ApEnergy, scalarValues.BpEnergy);
     
-    //  Get scalar values for every species ( this is bad, should calculate them alltogether)
+    //  Get scalar values for every species ( this is bad, should calculate them all together)
     calculateScalarValues((A6zz) vlasov->f, (A6zz) vlasov->f0,
                            Mom, PartFlux, HeatFlux, scalarValues); 
 
@@ -513,7 +520,7 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
                     << " Particle Flux : " << scalarValues.particle_flux[s-1]  
                     << " Heat Flux : "     << scalarValues.heat_flux[s-1] << std::endl;
 
-      // calculate charge/kin energy for validification of the run
+      // calculate charge/kin energy for verification of the run
       total_charge   += species[s].q  * scalarValues.particle_number[s-1];
       kinetic_energy += scalarValues.kinetic_energy[s-1];
 
@@ -567,8 +574,6 @@ void Diagnostics::setMPIStruct()
 */
 
 }
-
-
 
 void Diagnostics::closeData() 
 {

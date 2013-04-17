@@ -30,7 +30,7 @@
 *    @brief Data diagnostics and output
 *
 *
-*    @todo Writting operations are done step-by-step, is HDF-5 buffering them and
+*    @todo Writing operations are done step-by-step, is HDF-5 buffering them and
 *          perform all at once, do we have to set some options, or does it not
 *          buffer at all ?
 *
@@ -54,7 +54,8 @@ class Diagnostics : public IfaceGKC {
   *
   **/ 
   typedef struct ScalarValues_t
-  { 
+  {
+    double walltime;                       ///< Wall clock time
     int    timestep;                       ///< Current time step 
     double time;                           ///< Current time
     double phiEnergy;                      ///< Electric field energy
@@ -75,7 +76,7 @@ class Diagnostics : public IfaceGKC {
          dataOutputXDep      ; ///< Timing to define output of X-dependent variables
 
   ///@{
-  ///@inb group HDF-5 Attributes 
+  ///@ingroup HDF-5 Attributes 
   FileAttr *FA_Mom_00      ,  ///< Density  
            *FA_Mom_20      ,  ///< Temperature (parallel) 
            *FA_Mom_02      ,  ///< Temperature (orthogonal)
@@ -83,7 +84,7 @@ class Diagnostics : public IfaceGKC {
            *FA_Mom_30      ,  ///< ?? Temperature (parallel) 
            *FA_Mom_12      ,  ///< ?? Temperature (orthogonal)
            *FA_Mom_HeatFlux,  ///< Heat flux
-           *FA_Mom_PartFlux,  ///< Partcle flux
+           *FA_Mom_PartFlux,  ///< Particle flux
            *FA_Mom_Time    ;  ///< Time 
 
   FileAttr  *FA_HeatFluxKy, ///< Heat Flux as  Q(s,x,ky)
@@ -100,7 +101,7 @@ class Diagnostics : public IfaceGKC {
 
      
   FileAttr *FA_XDep_Mom ,   ///< X-Dependence (Temperature parallel)
-           *FA_XDep_Time;   ///< X-Depdndence (Time)
+           *FA_XDep_Time;   ///< X-Dependence (Time)
 
   TableAttr *SVTable;       ///< Table for scalar Values
 
