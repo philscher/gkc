@@ -15,12 +15,13 @@
 #ifndef __GKC_INTEGRATE_H__
 #define __GKC_INTEGRATE_H__
 
+#include <functional>
+#include <assert.h>
+
 #include "GaussLegendreWeights.h"
 #include "GaussLaguerreWeights.h"
 #include "GaussRadauWeights.h"
-#include "RectangularWeights.h"
-
-#include <functional>
+#include "RectangleWeights.h"
 
 /**
 *
@@ -32,13 +33,12 @@
 *
 *
 *   Gauss Quadrature formulas only defined between [-1,1], thus for integrating
-*   [ a, b]  we do rescaling
-*    
-*    int_a^b f(x)
+*   over [ a, b]  we do rescaling, given by
 *     
-*     \f[
+*   \f[
+*         int_a^b f(x) \approx \sum_i 
 *         w_i * (b-a)/2 * \int_1^{-1} f((b-a)/2 * x_i + (a+b)/2)
-*     \f]
+*   \f]
 *
 *
 **/
@@ -63,14 +63,14 @@ class Integrate {
   };
 
   double *weights, ///< Weights of nodes
-         *nodes  ; ///< Postion of nodes
+         *nodes  ; ///< Position of nodes
 
   const int order; ///< Number of points to use
 
  public:
 
   Integrate(std::string type, int _order = 11, double a=0., double b=1.) : order(_order)
- {
+  {
        
     auto setupNodesAndWeights = [=] (double *x, double *w, bool rescale) { 
             
@@ -88,12 +88,13 @@ class Integrate {
       }
 
     };
+   
+    assert(order < GAUSS_WEIGHTS_MAX-1);  // check if integration order is not too high to cause array overflow
 
-  
-    if     (type == "Gauss-Legendre") { setupNodesAndWeights(gauss_weights[order].points   , gauss_weights[order].weights,   true); }
-    else if(type == "Gauss-Laguerre") { setupNodesAndWeights(Laguerre_weights[order].points, Laguerre_weights[order].weights, false); }
-    else if(type == "Gauss-Radau"   ) { setupNodesAndWeights(Radau_weights[order].points   , Radau_weights[order].weights,   true); }
-    else if(type == "Rectangular"   ) { setupNodesAndWeights(Rectangular_weights[order].points   , Rectangular_weights[order].weights,   true); }
+    if     (type == "Gauss-Legendre") { setupNodesAndWeights(Legendre_weights[order].points , Legendre_weights[order].weights    , true ); }
+    else if(type == "Gauss-Laguerre") { setupNodesAndWeights(Laguerre_weights[order].points , Laguerre_weights[order].weights , false); }
+    else if(type == "Gauss-Radau"   ) { setupNodesAndWeights(Radau_weights[order].points    , Radau_weights[order].weights    , true ); }
+    else if(type == "Rectangle"     ) { setupNodesAndWeights(Rectangle_weights[order].points, Rectangle_weights[order].weights, true ); }
     else   check(-1, DMESG("No such quadrature rule"));
 
   };
@@ -110,12 +111,12 @@ class Integrate {
   double w(const int n) const { return (n < order) ? weights[n] : 0.; };
 
   /*   
-  static Complex i/ntegrate(std::function<Complex (double)> func, double a, double b, int n=9)
+  static Complex integrate(std::function<Complex (double)> func, double a, double b, int n=9)
     {
 
-    // Maximum Gauss Weigths/
+    // Maximum Gauss Weights/
     if (n > GAUSS_WEIGHTS_MAX) {
-      check(-1, DMESG("Maximum order of intergration limited to 47"));
+      check(-1, DMESG("Maximum order of integration limited to 47"));
       return 0.;
     }
 
@@ -135,7 +136,7 @@ class Integrate {
 
   static Complex GaussLegendre(std::function<Complex (double)> func, double a, double b, int n=9) {
 
-    return integrate(func, a, b, n, gauss_weights[n].points, gauss_weights[n].weights);
+    return integrate(func, a, b, n, Legendre_weights[n].points, Legendre_weights[n].weights);
 
   }
   
