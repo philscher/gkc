@@ -15,6 +15,8 @@
 #ifndef __GKC_EIGENVALUE_H
 #define __GKC_EIGENVALUE_H
 
+#include<array>
+
 #include "Global.h"
 #include "Parallel/Parallel.h"
 #include "Setup.h"

@@ -28,8 +28,7 @@
 
 
 extern int GC2, ///< Number of boundary points (needed ?)
-           GC4, ///< Number of extended boundary points (needed?)
-            Nq; ///< Number of fields
+           GC4; ///< Number of extended boundary points (needed?)
 
 /**
 *  @brief defined offset to access field variables

@@ -15,7 +15,7 @@
 #include "Fields.h"
 
 // global parameters defined in Global.h
-int GC2, GC4, Nq;
+int GC2, GC4;
 
 Fields::Fields(Setup *setup, Grid *_grid, Parallel *_parallel, FileIO *fileIO, Geometry *_geo)  : 
 grid(_grid), parallel(_parallel), geo(_geo), solveEq(0)
@@ -62,8 +62,8 @@ void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
     #pragma omp barrier
 
     // Integrate over velocity space through different CPU's
-    // #pragma omp single
-    // parallel->reduce(ArrayField0.data(Field0), Op::sum, DIR_V, ArrayField0.getNum(), false); 
+    #pragma omp single
+    parallel->reduce(ArrayField0.data(Field0), Op::sum, DIR_V, ArrayField0.getNum(), false); 
       
     // OPTIM : Normally we would decompose in m&s, thus no need for Qm                         
     // backward-transformation from gyro-center to drift-center 
@@ -132,8 +132,8 @@ void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
 
   }  // (parallel->Coord[DIR_V] == 0)
 
-  // #pragma omp single
-  // parallel->bcast(ArrayField.data(Field), DIR_V, ArrayField.getNum());
+  #pragma omp single
+  parallel->bcast(ArrayField.data(Field), DIR_V, ArrayField.getNum());
    
   return;
 

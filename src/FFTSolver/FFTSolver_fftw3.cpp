@@ -37,8 +37,8 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
   // @todo include "fftw_flops"
   // @todo include "fftw_print_plan"
 
-  if(parallel->Coord[DIR_V] == 0) {          // Fourier solver not needed in velocity space
-
+ // if(parallel->Coord[DIR_V] == 0) {          // Fourier solver not needed in velocity space (wrong need for non-linear)
+if(1==1) {
     // Setup plans
     int perf_flag = FFTW_ESTIMATE;
     
@@ -78,8 +78,8 @@ FFTSolver_fftw3::FFTSolver_fftw3(Setup *setup, Parallel *parallel, Geometry *geo
       
     FFTSolver::X_NkxL = X_NkxL;
       
-    // Pre-factor of 2 for safety (is required otherwise we get crash, but why ?)
-    int numAlloc = 2 * X_numElements * NkyLD * NzLD * nfields;
+    // Pre-factor of 3 for safety (is required otherwise we get crash, but why ?)
+    int numAlloc = 3 * std::max(NxLD, (int) X_numElements) * NkyLD * NzLD * nfields;
     // allocate arrays 
     data_X_kIn      = (CComplex *) fftw_alloc_complex(numAlloc);
     data_X_kOut     = (CComplex *) fftw_alloc_complex(numAlloc);
@@ -409,7 +409,6 @@ void FFTSolver_fftw3::transpose(int Nx, int Ny, int Nz, int Nq, CComplex In[Nq][
     OutT[x][y][z][q] = In[q][z][y][x];
    
   } } } }
-  
 }
 
 // transpose from Fortran ordering to C-ordering (required by fftw3-mpi) 
