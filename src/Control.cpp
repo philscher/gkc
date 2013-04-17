@@ -27,7 +27,7 @@ Parallel *gl_parallel; // need extern variables for signal handler
 
 /**
 *
-*   @brief Signal handler for gkc catched signals
+*   @brief Signal handler for gkc which catches signals
 *
 *   Is the usage of std::cerr allowed in the signal handler? 
 *   (in C printf is not !)
@@ -50,13 +50,12 @@ void signal_handler(int sig)
                 // ignore subsequent signals (otherwise program may slow down) 
                 signal(sig, SIG_IGN);
                 System::printStackTrace();
+                System::generateCoreFile();
                 exit(1);
                 break;
     default       :
                 std::cerr << strsignal(sig) << " received. Exiting ..." << std::endl; 
                 control_triggered_signal |= sig;
-      
- 
     }
   
     if(force_exit == true) check(-1, DMESG("Signal received and \"force exit\" set"));
@@ -74,7 +73,7 @@ Control::Control(Setup *setup, Parallel *_parallel, Diagnostics *_diagnostics)
   gl_parallel = parallel;
    
   // distributed unified id (the process id of MPI master process) to all processes
-  // useAControlFile to stop process 
+  // useControlFile to stop process 
   // [ method used by the GKW code to controll MPI processes ]
   if (setup->get("Control.useControlFile", 0)) {
         

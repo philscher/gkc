@@ -68,7 +68,7 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov 
            
     } // Nq > 2
 
-
+/* 
     ////////////////////////////////////////////////////////////// 
     // Perform gyro-average of the fields
     for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) {
@@ -80,6 +80,7 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov 
    
    
    } }
+ * */
 
    //////////////////////////////// construct g from f : g = f + .... .//////////////////////////////////////////////////// 
    // we defined g = f + sigma_j * alpha_j * vp * F_j0 eps * berta * Ap

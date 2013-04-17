@@ -40,6 +40,7 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
      
   nfields = ((beta > 0.e0)  ? 2 : 1);
   nfields = (setup->get("Plasma.Bp", 0 ) == 1) ? 3 : nfields;
+  Nq      = nfields;
       
   ///////////////// set adiabatic species //////////////////////////////////////////////////////
   

@@ -24,7 +24,7 @@
 
 // Maximum number of species (excluding adiabatic species) to be 
 // included without recompilation
-#define SPECIES_MAX 4
+#define SPECIES_MAX 16
 
 /**
 *   @brief Information about Species
@@ -78,7 +78,7 @@ struct Species
    
   };
 
-  /// Calculate debye legnth
+  /// Calculate Debye length
   double debye2(const int x) const { return T[x]/(4.*M_PI*n[x]*q*q); };
    
   double *T    , ///< Temperature profile
@@ -92,7 +92,7 @@ struct Species
 /**
 *   @brief Hold information about the plasma with species and normalizations
 *
-*   General normalization and intialization of species, including 
+*   General normalization and initialization of species, including 
 *   initial temperature profiles / density profiles etc.
 *
 *
@@ -137,7 +137,7 @@ class Plasma : public IfaceGKC {
   int nfields;
    
   /**
-  *    @brief intializes species 
+  *    @brief initializes species 
   * 
   **/
   Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int nfields=1);

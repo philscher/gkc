@@ -91,8 +91,8 @@ class Setup : public IfaceGKC {
   /**
   *   @brief command line arguments after -x
   *
-  *   These command line options are indended to be passed
-  *   to 3rd party libraries like PETSc.
+  *   These command line options are independent so that they can be
+  *   passed to 3rd party libraries such as PETSc.
   *
   *   @todo : better use direct option string e.g.
   *           PETSc.Option = -ksp
@@ -112,7 +112,7 @@ class Setup : public IfaceGKC {
   std::string parser_constants;  ///< Constants for function parser 
 
   /**
-  *   @brief Function parser to parse and evaluate mathematical eqution
+  *   @brief Function parser to parse and evaluate mathematical equation
   *
   *   See  http://warp.povusers.org/FunctionParser/
   *
@@ -144,7 +144,7 @@ class Setup : public IfaceGKC {
   static std::string trimLower(std::string str, bool lowerCase=true);
 
   /**
-  *   @brief split the string into 2 parst separated by delim
+  *   @brief split the string into 2 parts separated by delim
   *
   *   @param str   original string
   *   @param delim delim string
@@ -163,7 +163,7 @@ class Setup : public IfaceGKC {
    /**
    *  @brief checks if all options were red.
    *
-   *  After GKC.cpp intializes all sub-modules, this 
+   *  After GKC.cpp initializes all sub-modules, this 
    *  subroutine should be called to check if some
    *  options, where not requested but set in the configuration file
    *  (e.g. which may happen due to a spelling error)
@@ -212,7 +212,7 @@ class Setup : public IfaceGKC {
    **/ 
    virtual void printOn(std::ostream &output) const;
 
-   // we don't have FileIO object yet, so no writting is performed
+   // we don't have FileIO object yet, so no writing is performed
 
 };
 

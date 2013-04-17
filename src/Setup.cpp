@@ -28,7 +28,7 @@ Setup::Setup(int _argc, char **_argv, std::string setup_filename, std::string se
   extraLineOptions   = setup_ExArgv;
   setupFilename      = setup_filename;
   
-  // Create alternativ argc/argv from -x to pass to libraries 
+  // Create alternative argc/argv from -x to pass to libraries 
   std::istringstream iss(setup_ExArgv);
   std::string token;
     
@@ -61,7 +61,7 @@ Setup::Setup(int _argc, char **_argv, std::string setup_filename, std::string se
   buffer << file.rdbuf();
   configFileString = buffer.str();
   
-  // Parse configuation file given per -c option
+  // Parse configuration file given per -c option
   file.seekg (0, std::ios::beg);
   // read setup file line per line
   while(std::getline(file, line)) parseOption(line);
@@ -106,7 +106,7 @@ std::string Setup::trimLower(std::string str, bool lowerCase)
    
   // Trim Both leading and trailing spaces  
   size_t startpos = str.find_first_not_of("\t "); // Find the first character position after excluding leading blank spaces  
-  size_t endpos   = str.find_last_not_of("\t ");  // Find the first character position from reverse af  
+  size_t endpos   = str.find_last_not_of("\t ");  // Find the first character position from reverse 
      
   // if all spaces or empty return an empty string  
   if  (( std::string::npos == startpos ) || ( std::string::npos == endpos))   str = std::string("");  
@@ -269,18 +269,17 @@ void Setup::printOn(std::ostream &output) const
 
 template<class T> T Setup::get(std::string key, const T default_Value)
 {
-  // Cast and return value correpsonding to key
-  // If ket is not found, return the default value
+  // Cast and return value corresponding to key
+  // If key is not found, return the default value
   if( config.count(key) == 1) {
 
     std::string value_str = config[key];
     T value;
 
     // As pi is often used, we replace the string value with the definition
-    // but that means I have to evalute the string !
+    // but that means I have to evaluate the string !
     if(typeid(T) == typeid(double)) {
-      
-      // Use function parser to evalute exporession
+      // Use function parser to evaluate expression
       FunctionParser fp = getFParser();
       fp.Parse(value_str, "");
       value             = fp.Eval(NULL);

@@ -27,7 +27,7 @@
 /**
 *   @brief class for reading/writing data using HDF5
 *
-*  This class performs readind(resume previous simulation) and
+*  This class performs reading (resume previous simulation) and
 *  writing Data. Additionally a Table is provided in which
 *  Take care, we use Fortran Array syntax
 *  This example writes data to the HDF5 file.
@@ -75,7 +75,7 @@ class FileIO : public IfaceGKC
            timing_tid, ///< Type id for Timing 
           species_tid, ///< species HDF-5 type id (where is it used ?)
         specfield_tid, ///< [ Species, 3 ] type for heat/particle flux
-             str_tid, ///< string datatype
+             str_tid, ///< string data type
          vector3D_tid; ///< Vector (x,y,z) type
    
   hid_t file; ///< main data file id 
@@ -93,7 +93,7 @@ class FileIO : public IfaceGKC
   hid_t  newGroup(std::string name, hid_t parentNode=-2);
         
   /**
-  *   @brief Returns a timing indentifier
+  *   @brief Returns a timing identifier
   *
   *
   **/
