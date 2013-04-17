@@ -110,7 +110,24 @@ class Vlasov : public IfaceGKC {
   *
   **/
   double hyp_visc[6];        
-  
+ 
+   /**
+   *
+   *  Set the Krook operator 
+   *  \f[
+   *     \frac{\partial g_{1\sigma}}{\partial t} = \dots - \nu(x) g_{1\sigma}
+   *  \f]
+   * 
+   *   Is used to damp oscillations close to the simulation boundary.
+   *
+   *  @note   * Is this the no-slip boundary condition ?
+   *          * Violates conservation of particles, energy and momentum and
+   *            needs to be fixed by modifying the fields. See Lapillone.
+   *
+   *
+   **/
+   double *krook;
+
   /**
   *    @brief name of Vlasov equation to solve 
   *
@@ -181,7 +198,8 @@ class Vlasov : public IfaceGKC {
   nct::allocate ArrayPhase, ///< Allocator distribution functions
                 ArrayG    , ///< Allocation class for G
                 ArrayXi   , ///< Allocation class for Xi
-                ArrayNL   ; ///< Allocation class for non-linear term
+                ArrayNL   , ///< Allocation class for non-linear term
+                ArrayKrook; ///< Allocation class Krook term
 
   /**
   *   @brief Phase-space "type" functions

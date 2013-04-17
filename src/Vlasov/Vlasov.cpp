@@ -54,6 +54,13 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
    dataOutputF1      = Timing( setup->get("DataOutput.Vlasov.Step", -1),
                                setup->get("DataOutput.Vlasov.Time", -1.));
 
+   // Parse operators
+   ArrayKrook = nct::allocate(grid->RxGD)(&krook);  
+   FunctionParser krook_parser = setup->getFParser();
+   krook_parser.Parse(setup->get("Vlasov.Krook", "0."), "x");
+   for(int x = NxGlD; x <= NxGuD; x++) krook[x] = krook_parser.Eval(&X[x]); 
+
+   ///
    Xi_max[:] = 0.;
 
    initData(setup, fileIO);
@@ -231,6 +238,7 @@ void Vlasov::initData(Setup *setup, FileIO *fileIO)
   //set object attributes "Stores the phase space function");
 
   check(H5LTset_attribute_double(psfGroup, ".", "HyperViscosity", hyp_visc, 6), DMESG("Attribute"));
+  check(H5LTset_attribute_double(psfGroup, ".", "Krook"         , &krook[NxGlD], Nx), DMESG("Attribute"));
   
   
   // Phase space dimensions
