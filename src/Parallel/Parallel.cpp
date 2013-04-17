@@ -207,7 +207,8 @@ void Parallel::updateBoundaryVlasov(CComplex *Sendu, CComplex *Sendl, CComplex *
     MPI_Isend(Sendu, num, mpi_type, Talk[dir].rank_u, Talk[dir].psf_msg_tag[0], Comm[DIR_ALL], &Talk[dir].psf_msg_req[1]);
     MPI_Irecv(Recvu, num, mpi_type, Talk[dir].rank_u, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_req[2]); 
     MPI_Isend(Sendl, num, mpi_type, Talk[dir].rank_l, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_req[3]);
-      
+     
+    // V domain cutoff is reaches we set to zero
     if(Talk[dir].rank_u == MPI_PROC_NULL)   Recvl[0:num] = 0.e0;
     if(Talk[dir].rank_l == MPI_PROC_NULL)   Recvu[0:num] = 0.e0;
 
@@ -334,7 +335,7 @@ void Parallel::checkValidDecomposition(Setup *setup)
   // check if OpenMP threads are equal decompositon
   if( decomposition[DIR_Y] != numThreads             ) check(-1, DMESG("Failed to set threads. Decomposition[Y] != numThreads. Check OMP_NUM_THREADS"));
    
-  // Simple Check if reasonable values are provided for decomposition (only MPI proceeses)
+  // Simple Check if reasonable values are provided for decomposition (only MPI processes)
   const int pNs = setup->get("Grid.Ns", 1 );
   //if((product(decomposition) != numThreads * numProcesses) && (myRank == 0)) check(-1, DMESG("Decomposition and number of processors are not equal"));
   if((__sec_reduce_mul(decomposition[DIR_X:6]) != numThreads * numProcesses) && (myRank == 0)) check(-1, DMESG("Decomposition and number of processors are not equal"));

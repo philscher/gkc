@@ -18,6 +18,8 @@
 #include <ctime>
 #include <sys/types.h>
 #include <sys/resource.h>
+#include <sys/time.h> // gettimeofday
+
 #include <unistd.h>
 #include <execinfo.h> // stack trace
 
@@ -42,14 +44,14 @@ class System
   *   @brief Increase stack size limit
   *  
   *   Calculation of the non-linear ExB term and especially the
-  *   diagonostic module uses large static arrays. 
+  *   diagnostic module uses large static arrays. 
   *   In order to avoid stack overflow, we increase the stack size
   *   limit. 
   *
   *   @note On most supercomputers using a queue system (e.g. helios),
   *         the available stack size is not limited.
   *
-  *   @todo This feature is currently only supported under linux.
+  *   @todo This feature is currently only supported under Linux.
   *         Possible to define it in class System ?
   *
   **/
@@ -85,12 +87,12 @@ class System
   *    Note : For MPI parallelized version this number is not
   *           equal among different processes.
   *
-  *    @return process id of this proccess     
+  *    @return process id of this process     
   */
   static int getProcessID() 
   {
       // getpid returns unsigned int (take care of casting)
-      // casting as we do not want to define new datatype in MPI
+      // casting as we do not want to define new data type in MPI
       return (int) getpid();
   };
 
@@ -123,12 +125,31 @@ class System
   */
   static std::string getTimeString()
   {
-
-      time_t start_time = std::time(0); 
-      std::string currentTime(std::ctime(&start_time));
+    time_t start_time = std::time(0); 
+    std::string currentTime(std::ctime(&start_time));
    
-      return currentTime;
+    return currentTime;
   };
+
+  static timeval getTimeOfDay()
+  {
+    struct timeval tod;
+    gettimeofday(&tod, NULL);
+
+    return tod;
+  };
+
+  static double getTimeDifference(timeval start)
+  {
+    // http://stackoverflow.com/questions/10874214/measure-execution-time-in-c-openmp-code
+    // should not overflow
+    struct timeval end =  getTimeOfDay();
+    double delta = ((end.tv_sec  - start.tv_sec) * 1000000u + end.tv_usec - start.tv_usec) / 1.e6;
+
+    return delta;
+
+  };
+
 
   static void* align_alloc(size_t N, int align)
   {
@@ -182,6 +203,23 @@ class System
     ss << filestr.rdbuf();
     return ss.str();
   };
+
+  /**
+  *  @brief generates a core file by attaching debugger
+  *
+  *  from http://stackoverflow.com/questions/17965/generate-a-core-dump-in-linux
+  *
+  **/
+  static void generateCoreFile(void)
+  {
+    /*  Got this routine from http://www.whitefang.com/unix/faq_toc.html
+    *      ** Section 6.5. Modified to redirect to file to prevent clutter
+    **/
+    char dbg[160];
+    sprintf(dbg, "gdb --ex generate-core-file --ex quit --pid %d", getpid());
+    system(dbg);
+    return;
+  }
 
 
   /**

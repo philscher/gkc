@@ -46,7 +46,7 @@ Eigenvalue_SLEPc::Eigenvalue_SLEPc(FileIO *fileIO, Setup *setup, Grid *grid, Par
   
   SlepcInitialize(&setup->argc, &setup->argv, (char *) 0,  help);
      
-  // Don't let PETSc catch signals, We handle signals ourselved in Control.cpp
+  // Don't let PETSc catch signals, we handle signals ourself in Control.cpp
   PetscPopSignalHandler();
   PetscPushErrorHandler(petsc_error_handler, NULL);
 
@@ -133,7 +133,7 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
     // Copy initial vector to PETSc vector
     [=](const CComplex f[NsLD][NmLD][NzLB][Nky][NxLB][NvLB]) {
 
-      // copy whole phase space function (waste but starting point) (important due to bounday conditions
+      // copy whole phase space function (waste but starting point) (important due to boundary conditions
       // we can built wrapper around this and directly pass it
       int n = 0;
       
@@ -191,8 +191,8 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
             
     EVTable->append(&eigvTable);
           
-    // Skip eigenvalue results if growthrates are smaller than minimum value
-    if(real(eigv) > growth_min) { // only write eigenvalues with larger growthrates otherwise ignore
+    // Skip eigenvalue results if growth rates are smaller than minimum value
+    if(real(eigv) > growth_min) { // only write eigenvalues with larger growth rates otherwise ignore
     
       // Get EigenVector (Phase Space function) and calculate corresponding potentials
       std::cout << "Saving eigenvector : " << eigv << std::endl;
@@ -204,7 +204,7 @@ void Eigenvalue_SLEPc::solve(Vlasov *vlasov, Fields *fields, Visualization *visu
       [=](CComplex fs[NsLD][NmLD][NzLB][Nky][NxLB][NvLB]) {
 
       
-        // copy whole phase space functio (important due to bounday conditions)
+        // copy whole phase space function (important due to boundary conditions)
         int n = 0;
         for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD ; m++  ) { 
         for(int z = NzLlD; z <= NzLuD; z++) {

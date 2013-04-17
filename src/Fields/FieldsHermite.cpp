@@ -258,7 +258,7 @@ Matrix* FieldsHermite::getGyroAveragingMatrix(const double mu, const int y_k, co
 
   Matrix *M = new Matrix(NxLD, Nx, DIR_X, parallel);         
            
-  // fill martrix
+  // fill matrix
   for(int x = NxLlD; x <= NxLuD; x++) { for(int x_ = NxLlD; x_ <= NxLuD; x_++) {
         
     const double rho_t2  = species[s].T0 * species[s].m / (pow2(species[s].q) * plasma->B0); 
@@ -290,7 +290,7 @@ void FieldsHermite::setDoubleGyroAverageMatrix(Setup *setup)
 {
 
   ///////////////////////     Create Double GyroAverageMatrix /////////////////////
-  // Note : int_0^infty J cdot J e^{mu} is sensitiv, thus we use higher order matrix
+  // Note : int_0^infty J cdot J e^{mu} is sensitive, thus we use higher order matrix
   //        to setup this matrix (linear matrix) Increase by factor 8
   Matrix Matrix_Gamma0    (NxLD, Nx, DIR_X, parallel);
   Matrix Matrix_PoissonLHS(NxLD, Nx, DIR_X, parallel);
@@ -299,11 +299,11 @@ void FieldsHermite::setDoubleGyroAverageMatrix(Setup *setup)
         
   Integrate GRQuad("Gauss-Laguerre", integrationOrder);
 
-  parallel->print("Intializing Double Gyro-Averaging Matrix");
+  parallel->print("Initializing Double Gyro-Averaging Matrix");
         
   for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
               
-    // Is out matrix hermitian (propably depends on the geometry) ?!
+    // Is out matrix hermitian (probably depends on the geometry) ?!
     Matrix_PoissonLHS.setZero();
            
     // Create 1-\Gamma for each species s
@@ -313,7 +313,7 @@ void FieldsHermite::setDoubleGyroAverageMatrix(Setup *setup)
               
       //  Perform loop for higher order integration of Double Gyro Average Matrix
       //
-      // NOT YET Supported by intel: for(int n : Tools::ParallelRange(integrationOrder, parallel, DIR_M)) { 
+      // NOT YET Supported by Intel: for(int n : Tools::ParallelRange(integrationOrder, parallel, DIR_M)) { 
       auto v = Tools::ParallelRange(integrationOrder, parallel, DIR_M);
       
       for(auto it = v.begin(); it != v.end(); ++it) {
@@ -324,7 +324,7 @@ void FieldsHermite::setDoubleGyroAverageMatrix(Setup *setup)
         // ToDO : what if BT != 1 ??!!
         const double BT = plasma->B0 / species[s].T0; 
 
-        // no exp in case of Laguerre intergration const Complex w  = BT * exp(- BT * mu) * GRQuad.w(n); 
+        // no exp in case of Laguerre integration const Complex w  = BT * exp(- BT * mu) * GRQuad.w(n); 
         const CComplex w  = BT * GRQuad.w(n); 
         
         Matrix *GyroM = getGyroAveragingMatrix(mu/BT, y_k, z, s);
@@ -349,7 +349,7 @@ void FieldsHermite::setDoubleGyroAverageMatrix(Setup *setup)
     
     Matrix_PoissonLHS.reduce(DIR_S); 
            
-    // add adibatic response, solve for correction ?!
+    // add adiabatic response, solve for correction ?!
     const double adiab = species[0].n0 * pow2(species[0].q)/species[0].T0;
     Matrix_PoissonLHS.addDiagonal(adiab);
            

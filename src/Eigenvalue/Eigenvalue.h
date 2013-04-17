@@ -43,7 +43,7 @@ class Eigenvalue : public IfaceGKC {
   Parallel *parallel;
   Grid     *grid;
     
-  double growth_min;  ///< Minimum growthrate to save eigenstructure
+  double growth_min;  ///< Minimum growth rate to save eigenvector
 
   /**
   *  @brief structure to store the eigenvalue
@@ -85,7 +85,7 @@ class Eigenvalue : public IfaceGKC {
   
   /**
   *  @brief Get Maximum Absolute Eigenvalue for determining
-  *         the maximum stable linear timestep
+  *         the maximum stable linear time step
   *
   **/
   virtual Complex getMaxAbsEigenvalue(Vlasov *vlasov, Fields *fields) = 0;

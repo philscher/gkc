@@ -35,7 +35,7 @@
 class Eigenvalue_SLEPc : public Eigenvalue {
 
   EPS EigvSolver;     ///< The eigensolver context
-  Complex tolerance;  ///< Set Tolerence of the solution
+  Complex tolerance;  ///< Set tolerance of the solution
   Mat A_F1;           ///< The Matrix Context
   TableAttr *EVTable; ///< Eigenvalue Table
   hid_t eigvGroupID;  ///< HDF-5 reference to Eigenvalue group

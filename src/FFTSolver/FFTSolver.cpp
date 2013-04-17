@@ -29,7 +29,7 @@ void FFTSolver::setNormalizationConstants() {
   solve(FFT_Type::Y_NL, FFT_Sign::Forward, rY, kY);
   Norm_Y_Forward = creal(kY[0][0]);
   
-  // Complex (Fourier sapce) -> Real transform
+  // Complex (Fourier space) -> Real transform
   kY[:][:] = 0. ; kY[0][0] = 1.;
   solve(FFT_Type::Y_NL, FFT_Sign::Backward, kY, rY);
   Norm_Y_Backward = rY[0][0];

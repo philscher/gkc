@@ -202,7 +202,7 @@ struct NeighbourDir {
   *   @todo rename to bcast
   *
   **/
-  template<class T> void bcast(T &x, bool isRoot, int dir=DIR_ALL) 
+  template<class T> T bcast(const T x, bool isRoot, int dir=DIR_ALL) 
   {
 
     // Notify all process who is root (is there a simpler way ?), take care it fails 
@@ -211,12 +211,11 @@ struct NeighbourDir {
     master_rank = 0;
 
 #ifdef GKC_PARALLEL_MPI
-    if(dir <= DIR_S) if(decomposition[dir] == 1) return;
-    // rank differ between communicators, so we should take care of rankFFTMaster
-    check(MPI_Bcast(&x, 1, getMPIDataType(typeid(T)), master_rank, Comm[dir]), DMESG("MPI_Bcast")); 
+    if(dir <= DIR_S) if(decomposition[dir] == 1) return x;
+    // rank differ between communicators (?)
+    check(MPI_Bcast((void *) &x, 1, getMPIDataType(typeid(T)), master_rank, Comm[dir]), DMESG("MPI_Bcast")); 
 #endif
-    return; 
-
+    return x; 
   }
    
 
@@ -224,7 +223,7 @@ struct NeighbourDir {
   *   @brief Allreduce over direction dir
   *
   **/
-  template<class T>  T  reduce(T x, Op op, int dir=DIR_ALL, bool allreduce=true)
+  template<class T>  T reduce(T x, Op op, int dir=DIR_ALL, bool allreduce=true)
   {
 #ifdef GKC_PARALLEL_MPI
     T global_dValue;
