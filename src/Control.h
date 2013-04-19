@@ -31,7 +31,7 @@ extern int control_triggered_signal;
 *
 *    The other purpose is to control various triggers, such
 *    as large electric field energy, which indicates an
-*    errounous simulations. Also in this case the simulation
+*    errorneous simulations. Also in this case the simulation
 *    is stopped.
 *  
 *    Conditions
@@ -57,14 +57,14 @@ class Control : public IfaceGKC {
   class CntrlID {
     
     bool ok;                   ///< True if condition is met, False otherwise
-    std::string error_message; ///< Errror message describing reason of failure
+    std::string error_message; ///< Error message describing reason of failure
    public:
        
     CntrlID() { ok=true; error_message="";};
 
     bool check(bool isOK, std::string message) {
 
-      // Append messeges of failure
+      // Append messages of failure
       if(isOK == false) {
         ok = false;
         error_message += std::string("\n") + message;

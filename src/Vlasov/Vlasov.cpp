@@ -216,7 +216,7 @@ double Vlasov::getMaxNLTimeStep(const double maxCFL)
     const double NL_Landau_v = 0.; // Not included yet
 
     // if non-linear terms are very small, there is no restriction on
-    // time step, add 1.e-10 to avoid division by 0 
+    // time step ( we add 1.e-10 to avoid division by 0)
     double NL = std::max(NL_ExB_v, NL_Landau_v) + 1.e-10; 
 
     // get global maximum time step 
@@ -235,11 +235,9 @@ void Vlasov::initData(Setup *setup, FileIO *fileIO)
    
   //// Phasespace Group 
   hid_t psfGroup = fileIO->newGroup("/Vlasov", fileIO->getFileID());
-  //set object attributes "Stores the phase space function");
 
   check(H5LTset_attribute_double(psfGroup, ".", "HyperViscosity", hyp_visc, 6), DMESG("Attribute"));
   check(H5LTset_attribute_double(psfGroup, ".", "Krook"         , &krook[NxGlD], Nx), DMESG("Attribute"));
-  
   
   // Phase space dimensions
   hsize_t dim[]       = { Ns , Nm, Nz, Nky, Nx, Nv,             1 };
@@ -250,11 +248,11 @@ void Vlasov::initData(Setup *setup, FileIO *fileIO)
   hsize_t moffset[]   = { 0         , 0         , 2         , 0     , 2         , 2         , 0             };
      
   // ignore, as HDF-5 automatically (?) allocated data for it
-//  FA_f0       = new FileAttr("f0", psfGroup, fileIO->file, 7, dim, maxdim, chunkdim, moffset,  chunkBdim, offset, true, fileIO->complex_tid);
-//  FA_f1       = new FileAttr("f1", psfGroup, fileIO->file, 7, dim, maxdim, chunkdim, moffset,  chunkBdim, offset, true, fileIO->complex_tid);
-//  FA_psfTime  = fileIO->newTiming(psfGroup);
+  // FA_f0       = new FileAttr("f0", psfGroup, fileIO->file, 7, dim, maxdim, chunkdim, moffset,  chunkBdim, offset, true, fileIO->complex_tid);
+  // FA_f1       = new FileAttr("f1", psfGroup, fileIO->file, 7, dim, maxdim, chunkdim, moffset,  chunkBdim, offset, true, fileIO->complex_tid);
+  // FA_psfTime  = fileIO->newTiming(psfGroup);
   // call additional routines
-  //initData(vlasovGroup, fileIO);  
+  // initData(vlasovGroup, fileIO);  
 
   H5Gclose(psfGroup);
 
@@ -290,7 +288,6 @@ void Vlasov::closeData()
 
 void Vlasov::writeData(const Timing &timing, const double dt) 
 {
-  
   if (timing.check(dataOutputF1, dt)       )   {
       
     FA_f0->write(ArrayPhase.data(f0));

@@ -181,8 +181,10 @@ void Plasma::initData(FileIO *fileIO)
   //////////////////////// Set Table for species.
          
   
+#pragma warning (disable : 1875) // ignore warnings about non-POD types
   size_t spec_offset[] = { HOFFSET( Species, name ), HOFFSET( Species, q  ), HOFFSET( Species, m ), HOFFSET( Species, n ), 
                            HOFFSET( Species, w_T  ), HOFFSET( Species, w_n) };
+#pragma warning (enable  : 1875)
 
   size_t spec_sizes[]  = { sizeof(species[0].name ), sizeof(species[0].q  ), sizeof(species[0].m ), sizeof(species[0].n ), 
                            sizeof(species[0].w_T  ), sizeof(species[0].w_n) };

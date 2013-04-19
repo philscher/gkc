@@ -262,10 +262,12 @@ void Eigenvalue_SLEPc::initData(Setup *setup, FileIO *fileIO)
 {
   eigvGroupID = fileIO->newGroup("Eigenvalue");
 
-  // ********************* setup Table for EigenValues *****************
+  /////////// Table to store eigenvalues (@todo move to Eigenvalues.cpp) ///
   EigenValue EigVal_table;
          
+#pragma warning (disable : 1875) // ignore warnings about non-POD types
   size_t EigVal_offsets[] = { HOFFSET(EigenValue, EigenValue), HOFFSET(EigenValue, AbsoluteError) };
+#pragma warning (enable  : 1875)
   size_t EigVal_sizes  [] = { sizeof(EigVal_table.EigenValue) ,  sizeof(EigVal_table.AbsoluteError) };
   hid_t  EigVal_types  [] = { fileIO->complex_tid , H5T_NATIVE_DOUBLE };
   const char * EigVal_names  [] = {"Eigenvalue", "Absolute Error"};

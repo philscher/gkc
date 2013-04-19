@@ -50,7 +50,7 @@ void signal_handler(int sig)
                 // ignore subsequent signals (otherwise program may slow down) 
                 signal(sig, SIG_IGN);
                 System::printStackTrace();
-                System::generateCoreFile();
+                //System::generateCoreFile();
                 exit(1);
                 break;
     default       :
