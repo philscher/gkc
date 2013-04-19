@@ -49,6 +49,7 @@ class Fields;
 **/
 class Benchmark : public IfaceGKC
 {
+  hid_t benchGroup; ///< HDF-5 Group id 
   
   int num_hwcntrs; ///< Number of available Hardware counters
 
@@ -88,15 +89,16 @@ class Benchmark : public IfaceGKC
   *   @brief constructor which initialized PAPI
   *
   **/
-  Benchmark(Setup *setup, Parallel *_parallel);
+  Benchmark(Setup *setup, Parallel *_parallel, FileIO *fileIO);
 
  ~Benchmark();
 
   void start(std::string id, int type=0);
-
   double stop(std::string id, int type=0);
- 
-  void bench(Vlasov *vlasov, Fields *fields) ;
+  
+  void bench(Vlasov *vlasov, Fields *fields);
+
+  void save(std::string id, int value);
 
  protected:
 

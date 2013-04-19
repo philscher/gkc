@@ -17,7 +17,7 @@
 #include "Vlasov/Vlasov.h"
 #include "Fields/Fields.h"
 
-Benchmark::Benchmark(Setup *setup, Parallel *_parallel) : parallel(_parallel)
+Benchmark::Benchmark(Setup *setup, Parallel *_parallel, FileIO *fileIO) : parallel(_parallel)
 {
       
   int EventSet = PAPI_NULL;
@@ -45,10 +45,15 @@ Benchmark::Benchmark(Setup *setup, Parallel *_parallel) : parallel(_parallel)
   }
   
   simMaxGFLOPS = 0.;
+
+  initData(setup, fileIO);
+
 }
    
 Benchmark::~Benchmark()
 {
+  H5Gclose(benchGroup);
+  
   if(useBenchmark) PAPI_shutdown();
 }
 
@@ -186,8 +191,9 @@ double Benchmark::stop(std::string id, int type)
 void Benchmark::initData(Setup *setup, FileIO *fileIO)
 {
    
-  hid_t benchGroup = fileIO->newGroup("/Benchmark");
+  benchGroup = fileIO->newGroup("/Benchmark");
 
+  /* 
   check(H5LTset_attribute_int   (benchGroup, ".", "NumberOfCounters",  &num_hwcntrs, 1), DMESG("H5LTset_attribute"));
 
          
@@ -210,8 +216,15 @@ void Benchmark::initData(Setup *setup, FileIO *fileIO)
    
   check(H5LTset_attribute_int   (benchGroup, ".", "X",  &num_hwcntrs, 1), DMESG("H5LTset_attribute"));
    
-
-  H5Gclose(benchGroup);
-
+   * */
 }
+
+
+
+
+void Benchmark::save(std::string id, int value)
+{
+  check(H5LTset_attribute_int(benchGroup, ".", id.c_str(),  &value, 1), DMESG("H5LTset_attribute"));
+};
+
 

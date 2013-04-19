@@ -204,8 +204,11 @@ int GKC::mainLoop()
 
   } 
   else if(gkc_SolType == "Scan") {
-
     scanModes->solve(vlasov, fields, timeIntegration, eigenvalue, init, visual); 
+  }
+  else if(gkc_SolType == "Eigen") {
+    //scanEigen->solve(vlasov, fields, timeIntegration, eigenvalue, init, visual); 
+
   }
   else  check(-1, DMESG("No Such gkc.Type Solver"));
   
@@ -232,6 +235,7 @@ GKC::~GKC()
   delete eigenvalue;
   delete event;
   delete scanModes;
+//  delete scanEigen;
   delete fileIO; // once this is successful, file cannot
                  // be corrupted anymore.
   

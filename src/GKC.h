@@ -31,6 +31,7 @@
 #include "Eigenvalue/Eigenvalue.h"
 #include "TimeIntegration/TimeIntegration.h"
 #include "TimeIntegration/ScanLinearModes.h"
+#include "TimeIntegration/ScanPoloidalEigen.h"
 #include "Geometry.h"
 #include "Collisions/Collisions.h"
 #include "Analysis/Diagnostics.h"
@@ -72,6 +73,7 @@ private:
     Benchmark       *bench;              ///< Interface for profiling and benchmarking
     TimeIntegration *timeIntegration;    ///< Numerical time integration
     ScanLinearModes *scanModes;          ///< Scan over linear modes
+    //ScanPoloidalEigen *scanEigen;        ///< Scan over linear modes
 
     /**
     * @brief Run the code, as "IVP" (initial value code)
