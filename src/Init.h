@@ -26,9 +26,9 @@
 
 
 /**
-*   @brief Initialized the background field and intial perturbation
+*   @brief Initialized the background field and initial perturbation
 *
-*   Currently only contant temperature/density Maxwellian is supported
+*   Currently only constant temperature/density Maxwellian is supported
 *
 **/ 
 class Init   : public IfaceGKC 
@@ -36,8 +36,8 @@ class Init   : public IfaceGKC
   friend class ScanLinearModes;
   Geometry *geo;
    
-  double epsilon_0, ///< Strengh of perturbation
-             sigma; ///< Additional value e.g. FWHM of exp
+  double epsilon_0, ///< strength of perturbation
+             sigma; ///< additional value e.g. FWHM of exp
 
   /**
   *
@@ -53,7 +53,7 @@ class Init   : public IfaceGKC
    
 
   /**
-  *   @brief inits the Maxwellian 
+  *   @brief initializes the Maxwellian 
   *
   *
   **/
@@ -86,12 +86,12 @@ class Init   : public IfaceGKC
   std::string PerturbationMethod;
 
   /**
-  *  @brief Function to set Initital conditions
+  *  @brief Function to set initial conditions
   *
   *  This function is used to set the initial conditions for the
-  *  gyrokinetic simulation. For the electrostatic simulation
+  *  gyro-kinetic simulation. For the electrostatic simulation
   *  one only need to set the temperature profile (T), its
-  *  derivative Tx and the inital Phasespace function f0
+  *  derivative Tx and the initial phasespace function f0
   *  and the perturbed one f
   *
   *  T  = ...
@@ -119,7 +119,7 @@ class Init   : public IfaceGKC
                                  CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB]);
 
   /**
-  *   @brief Initialization of f1 using exponetial
+  *   @brief Initialization of f1 using exponential
   *
   *   @note only m => 1 (y_k >= 1) nodes are perturbed in order to ensure charge neutrality
   *  
@@ -132,7 +132,7 @@ class Init   : public IfaceGKC
   /**
   *   @brief Initialization of f1 using random noise
   *
-  *   The perturbed distribution function is intialized using random noise.
+  *   The perturbed distribution function is initialized using random noise.
   *
   *   Init.RandomSeed
   *   Setup : "Init.Epsilon0", 1.e-14 (default) set perturbation factor

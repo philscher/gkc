@@ -21,7 +21,7 @@
 /**
 *   @brief Lenard-Bernstein collision term
 *
-*   The Lenard-Bernstein operator was descirbed in \cite{LenardBernstein_1958:DiffusionVP}.
+*   The Lenard-Bernstein operator was described in \cite{LenardBernstein_1958:DiffusionVP}.
 *
 *   The Lenard-Bernstein operator has the form of
 *   \f[ 
@@ -29,19 +29,15 @@
 *                                 + v^2_0 \frac{\partial F_1}{\partial v} \right)
 *   \f]
 *
-*   with \f$ v_0 \f$, the root mean square speed corresponding to the equilibrium distribution \f[ F_0 \f]
-*  Quare of Root mean square defined as \f[ v_{rms}^2 = \int_0^{\infty} v^2 F_{0\sigma}  = 1/2\f] and
-*  Folowing Lenard and Bernstein, \f[ \beta \f] can be roughly estimated by comapring with the true
-*  Fokker-Planck equation. One get's approximately \f[ \beta \approx \frac{4 \ pi e^4}{m^2 v_0^3} \f].
+*  with \f$ v_0 \f$, the root mean square speed corresponding to the equilibrium distribution \f[ F_0 \f]
+*  defined as \f[ v_{rms}^2 = \int_0^{\infty} v^2 F_{0\sigma}  = 1/2\f] and
+*  Following Lenard and Bernstein, \f[ \beta \f] can be roughly estimated by comparing with the true
+*  Fokker-Planck equation. One gets approximately \f[ \beta \approx \frac{4 \ pi e^4}{m^2 v_0^3} \f].
 *
-*   Here, we include additionally correction terms to ensure particle, momentum and energy
-*   conservation as described by \cite{Satake_2008:DevTranpCode}. The correction
-*   terms are described by
+*  Here, we include additionally correction terms to ensure particle, momentum and energy
+*  conservation as described by \cite{Satake_2008:DevTranpCode}. The correction
+*  terms are described by
 *     
-*
-*
-*  
-*
 *
 **/
 class Collisions_LenardBernstein : public Collisions {
@@ -79,7 +75,6 @@ class Collisions_LenardBernstein : public Collisions {
 
  public:
 
-  
   /**
   *
   *   @brief constructor
@@ -90,14 +85,12 @@ class Collisions_LenardBernstein : public Collisions {
   **/
   Collisions_LenardBernstein(Grid *grid, Parallel *parallel, Setup *setup, FileIO *fileIO, Geometry *geo); 
        
- 
   /**
   *
   *
   **/ 
  ~Collisions_LenardBernstein();
  
-  
   /**
   *   Calculate Collisional corrections
   *
@@ -121,10 +114,6 @@ class Collisions_LenardBernstein : public Collisions {
   **/
   virtual void printOn(std::ostream &output) const;
 
-
 };
-
-
-
 
 #endif // __GKC_COLLISION_LENARD_BERNSTEIN_H__

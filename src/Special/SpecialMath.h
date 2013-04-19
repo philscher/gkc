@@ -55,7 +55,7 @@ class SpecialMath
 
   /**
   *
-  *  @brief Modified bessel function of zeroth order
+  *  @brief Modified Bessel function of zeroth order
   *  @image html Bessel_I0.png
   *
   *  @todo any better approach ?
@@ -65,7 +65,7 @@ class SpecialMath
   **/
 
   /**
-  *  @brief Modified bessel function of first order
+  *  @brief Modified Bessel function of first order
   *  @image html Bessel_I1.png
   *
   *  @todo any better approach ? Plenty of room for optimization
@@ -75,7 +75,7 @@ class SpecialMath
   // ?
    
   /**
-  *  @brief Modified bessel function of first order
+  *  @brief Modified Bessel function of first order
   *  @image html Bessel_I1.png
   *
   **/
@@ -87,7 +87,7 @@ class SpecialMath
 
 
   /**
-  *  @brief Modified bessel function of first order
+  *  @brief Modified Bessel function of first order
   *  @image html GK_1mG0_Pade.png
   *
   *  Defined as 
@@ -109,11 +109,11 @@ class SpecialMath
   };
 
   /**
-  *  @brief Modified bessel function of first order
+  *  @brief Modified Bessel function of first order
   *  @image html GK_Gamma0.png
   *
   *  Calculating I_0(b) exp(-b) individually, will overflow for
-  *  I_0(b) due to exponetial behaviour for large b and underflow
+  *  I_0(b) due to exponential behaviour for large b and underflow
   *  for exp(-b).
   *
   **/
@@ -123,10 +123,10 @@ class SpecialMath
   };
 
   /**
-  *  @brief Modified bessel function of first order
+  *  @brief Modified Bessel function of first order
   *  @image html GK_Gamma1.png
   *
-  *  Is this correct ?! Inconsistent with Asytrophys gyrokinetics
+  *  Is this correct ?! Inconsistent with astrophysics gyrokinetics (agk)
   *
   */
   static inline double Gamma1(const double b, bool gyro=true) 
@@ -135,7 +135,7 @@ class SpecialMath
   };
 
   /**
-  *  @brief Modified bessel function of first order
+  *  @brief Modified Bessel function of first order
   *  @image html G0mG1.png
   *
   */
@@ -145,7 +145,7 @@ class SpecialMath
   };
 
   /**
-  *  @brief Modified bessel function of first order
+  *  @brief Modified Bessel function of first order
   *  @image html Bessel_I1.png
   *  
   *  @note wtf ? 
@@ -156,7 +156,7 @@ class SpecialMath
   };
 
   /**
-  *  @brief Modified bessel function of first order
+  *  @brief Modified Bessel function of first order
   *   \f[     \Delta = \left( I_0(x) - I_1(x) \right) \exp(-x)  \f]
   *  @image html GK_Delta.png
   *

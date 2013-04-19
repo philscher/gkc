@@ -54,7 +54,7 @@ Setup::Setup(int _argc, char **_argv, std::string setup_filename, std::string se
   std::ifstream file;
   
   file.open(setupFilename.c_str(), std::ios::in);
-  check(file.is_open(), DMESG("Could open find file! Wrong path ?"));
+  check(file.is_open() ? 1 : -1, DMESG("Could open or find file! Wrong path ?"));
 
   // read file in as a string
   std::stringstream buffer;

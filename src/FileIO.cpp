@@ -211,9 +211,9 @@ hid_t  FileIO::newGroup(std::string name, hid_t parentNode)
 };
 
 
-void FileIO::flush(Timing timing, double dt)
+void FileIO::flush(Timing timing, double dt, bool force_flush)
 {
-   if(timing.check(dataFileFlushTiming, dt)) H5Fflush(file, H5F_SCOPE_GLOBAL);
+   if(timing.check(dataFileFlushTiming, dt) || force_flush) H5Fflush(file, H5F_SCOPE_GLOBAL);
 }
 
 

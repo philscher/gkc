@@ -69,13 +69,13 @@ class FileIO : public IfaceGKC
   * thus should be used to often. 
   *
   **/
-  void flush(Timing timing, double dt);
+  void flush(Timing timing, double dt, bool force_flush=false);
    
   hid_t   complex_tid, ///< Complex Data type
            timing_tid, ///< Type id for Timing 
           species_tid, ///< species HDF-5 type id (where is it used ?)
         specfield_tid, ///< [ Species, 3 ] type for heat/particle flux
-             str_tid, ///< string data type
+             str_tid,  ///< string data type
          vector3D_tid; ///< Vector (x,y,z) type
    
   hid_t file; ///< main data file id 

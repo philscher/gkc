@@ -19,11 +19,11 @@
 #include "Global.h"
 
 /**
-*  @brief Geometry definitions using numerical MHD equilibrium
+*  @brief Geometry defintions using numerical MHD equilibrium
 *         from CHEASE code 
 *
 *  @warning not working
-*  @todo  add link to CHEASE
+*  @todo  add link to Chease
 *
 **/
 class GeometryCHEASE : public Geometry

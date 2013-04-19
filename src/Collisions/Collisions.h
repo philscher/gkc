@@ -27,7 +27,7 @@ class Vlasov;
  * 
  *  @brief Base class for collisions
  *
- *  Thus functions does merly define some popular functions. 
+ *  Thus functions does merely define some popular functions. 
  *  As well as the collisionless operator.
  *
  *
