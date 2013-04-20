@@ -11,7 +11,7 @@ export CXXFLAGS='-std=c++0x -O3 -xHOST -fno-alias -DMPICH_IGNORE_CXX_SEEK'
 # Configure with proper parameters
 ./configure --enable-mpi --enable-openmp                                           \
             --with-hdf5dir=/opt/app/hdf5-parallel/1.8.8/intel-12.1/                \
-            --enable-fftw3 --with-fftw3dir=/LARGE0/gr10140/Packages/fftw-3.3.2/    \
+            --enable-fftw3 --with-fftw3dir=/opt/app/fftw/3.3.1-2/intel-12.1/       \
             --enable-petsc --with-petscdir=$PETSC_DIR                              \
             --enable-slepc --with-slepcdir=$SLEPC_DIR                              \
             --enable-mkl   --with-mkldir=$MKLROOT                                  \
