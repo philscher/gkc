@@ -590,8 +590,7 @@ void Diagnostics::closeData()
   delete FA_Mom_00; delete FA_Mom_20; delete FA_Mom_02;
   delete FA_Mom_10; delete FA_Mom_30; delete FA_Mom_12;
   
-  delete FA_Mom_HeatFlux;
-  delete FA_Mom_PartFlux;
+  delete FA_Mom_HeatFlux; delete FA_Mom_PartFlux;
   delete FA_Mom_Time;
 
   delete SVTable;

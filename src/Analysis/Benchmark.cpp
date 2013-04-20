@@ -28,6 +28,7 @@ Benchmark::Benchmark(Setup *setup, Parallel *_parallel, FileIO *fileIO) : parall
   useBenchmark = setup->get("Benchmark.usePAPI", 0);
 
   if(useBenchmark) {
+
    //int Events[2] = { PAPI_TOT_CYC, PAPI_TOT_INS };
 /*  
    // Initialize the PAPI library 
@@ -107,8 +108,6 @@ void Benchmark::bench(Vlasov *vlasov, Fields *fields)
     std::cout << "One Step     " << ggflops << std::endl;
    
    } } // BlockSize_V, BlockSize_X
-   
-
 }
 
  

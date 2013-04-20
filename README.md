@@ -4,7 +4,8 @@ The GKC++ code
 Description
 -----------
 
-GKC++ (GyroKinetic Code++) is a delta-f gyro-kinetic 
+GKC++ (**G**yro**K**inetic **C**ode**++**)
+is a delta-f [gyro-kinetic](http://en.wikipedia.org/wiki/Gyrokinetics)
 code. Currently features are 
       
   * Various geometries (sheared, shearless, toroidal)
@@ -14,21 +15,24 @@ code. Currently features are
   * Preliminary support for global simulations
   * 3-stage parallelization (Vectorization, OpenMP and MPI) 
   * Data output using [HDF-5](www.hdfgroup.org/HDF5). 
+  * Data analysis using 
+    [ipython](http://ipython.org/)/[matplotlib](http://matplotlib.org/)/
+    [scipy](http://www.scipy.org/)/[pytables](http://www.pytables.org/)
  
 However, this code is still considered *experimental*
 and benchmark to other codes is pending. You may want to consider 
 other gyro-kinetic codes such as [GENE](http://www.ipp.mpg.de/~fsj/gene/),
-[gkw](http://www.gkw.org.uk/) or [gs2](http://gs2.sourceforge.net/).
-
+[gkw](http://www.gkw.org.uk/) or [gs2](http://gs2.sourceforge.net/) for
+production usage.
 
 GKC++ is programmed in C++-11/[Cilk+](http://cilkplus.org/) 
 which on greatly simplifies readability and handling of multi-dimensional 
 arrays. However note that only a limited subset of compilers support
 the Cilk+ extensions such as
 
-* Intel Compiler (12.1+)
-* GCC compiler (gcc-cilk plus branch)
-* LLVM compiler (cilkplus branch) 
+* [Intel Compiler](http://software.intel.com/en-us/intel-compilers)
+* [GCC-4.9] (http://gcc.gnu.org/wiki/cilkplus-merge)
+* [Cilkplus/LLVM](http://cilkplus.github.io/) 
 
 Why C++ but not Fortran
 ------------------------

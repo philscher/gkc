@@ -235,6 +235,7 @@ GKC::~GKC()
   delete eigenvalue;
   delete event;
   delete scanModes;
+  delete bench;
 //  delete scanEigen;
   delete fileIO; // once this is successful, file cannot
                  // be corrupted anymore.
@@ -245,7 +246,6 @@ GKC::~GKC()
   delete parallel;
   delete init;
   delete timeIntegration;
-  delete bench;
 
 }
 
