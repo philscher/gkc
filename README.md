@@ -16,7 +16,10 @@ code. Currently features are
   * Data output using [HDF-5](www.hdfgroup.org/HDF5). 
  
 However, this code is still considered *experimental*
-and benchmark to other codes is pending.
+and benchmark to other codes is pending. You may want to consider 
+other gyro-kinetic codes such as [GENE](http://www.ipp.mpg.de/~fsj/gene/),
+[gkw](http://www.gkw.org.uk/) or [gs2](http://gs2.sourceforge.net/).
+
 
 GKC++ is programmed in C++-11/[Cilk+](http://cilkplus.org/) 
 which on greatly simplifies readability and handling of multi-dimensional 
