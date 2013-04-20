@@ -22,11 +22,6 @@
 #include "Special/Vector3D.h"
 #include "Tools/System.h"
 
-typedef struct ComplexSplit_t {
-  double r;   ///< real part
-  double i;   ///< imaginary part
-} ComplexSplit;
-
 
 FileIO::FileIO(Parallel *_parallel, Setup *setup)  :  parallel(_parallel)
 {
@@ -42,21 +37,28 @@ FileIO::FileIO(Parallel *_parallel, Setup *setup)  :  parallel(_parallel)
   
   bool allowOverwrite  = setup->get("DataOutput.Overwrite", 0) || (setup->flags & Setup::GKC_OVERWRITE);
     
-
 #pragma warning (disable : 1875) // ignore warnings about non-POD types
-  timing_tid = H5Tcreate(H5T_COMPOUND, sizeof(Timing));
-  H5Tinsert(timing_tid, "Timestep", HOFFSET(Timing, step), H5T_NATIVE_INT   );
-  H5Tinsert(timing_tid, "Time"    , HOFFSET(Timing, time), H5T_NATIVE_DOUBLE);
+  { // Create compound data types 
+    timing_tid = H5Tcreate(H5T_COMPOUND, sizeof(Timing));
+    H5Tinsert(timing_tid, "Timestep", HOFFSET(Timing, step), H5T_NATIVE_INT   );
+    H5Tinsert(timing_tid, "Time"    , HOFFSET(Timing, time), H5T_NATIVE_DOUBLE);
 
-  // do not changes r and i name otherwise it will break compatibiltiy with pyTables
-  complex_tid = H5Tcreate(H5T_COMPOUND, sizeof (ComplexSplit_t));
-  H5Tinsert(complex_tid, "r", HOFFSET(ComplexSplit_t, r), H5T_NATIVE_DOUBLE);
-  H5Tinsert(complex_tid, "i", HOFFSET(ComplexSplit_t, i), H5T_NATIVE_DOUBLE);
+    // do not changes r and i name otherwise it will break compatibility with pyTables
+    // Note that this should be binary compatible with C/C++ complex numbers
+    typedef struct ComplexSplit_t {
+      double r;   ///< real part
+      double i;   ///< imaginary part
+    } ComplexSplit;
+
+    complex_tid = H5Tcreate(H5T_COMPOUND, sizeof (ComplexSplit_t));
+    H5Tinsert(complex_tid, "r", HOFFSET(ComplexSplit_t, r), H5T_NATIVE_DOUBLE);
+    H5Tinsert(complex_tid, "i", HOFFSET(ComplexSplit_t, i), H5T_NATIVE_DOUBLE);
     
-  vector3D_tid = H5Tcreate(H5T_COMPOUND, sizeof (Vector3D));
-  H5Tinsert(vector3D_tid, "x", HOFFSET(Vector3D, x), H5T_NATIVE_DOUBLE);
-  H5Tinsert(vector3D_tid, "y", HOFFSET(Vector3D, y), H5T_NATIVE_DOUBLE);
-  H5Tinsert(vector3D_tid, "z", HOFFSET(Vector3D, z), H5T_NATIVE_DOUBLE);
+    vector3D_tid = H5Tcreate(H5T_COMPOUND, sizeof (Vector3D));
+    H5Tinsert(vector3D_tid, "x", HOFFSET(Vector3D, x), H5T_NATIVE_DOUBLE);
+    H5Tinsert(vector3D_tid, "y", HOFFSET(Vector3D, y), H5T_NATIVE_DOUBLE);
+    H5Tinsert(vector3D_tid, "z", HOFFSET(Vector3D, z), H5T_NATIVE_DOUBLE);
+  }
 #pragma warning (enable  : 1875)
 
   hsize_t species_dim[1]   = { setup->get("Grid.Ns", 1) }; 
@@ -73,53 +75,13 @@ FileIO::FileIO(Parallel *_parallel, Setup *setup)  :  parallel(_parallel)
 
   // Create/Load HDF5 file
   if(resumeFile == false || (inputFileName != outputFileName)) create(setup, allowOverwrite);
-
 }
-
 
 void FileIO::create(Setup *setup, bool allowOverwrite) 
 {
-
   hid_t file_apl = H5Pcreate(H5P_FILE_ACCESS);
 
-  // from http://mail.hdfgroup.org/pipermail/hdf-forum_hdfgroup.org/2010-June/012076.html
-  // to prevent corruption of HDF-5 file (requires regular calls to this->flush() ] 
-  {
-//    H5AC_cache_config_t mdc_config;
-
-//    mdc_config.version = H5AC__CURR_CACHE_CONFIG_VERSION;
-//    H5Pget_mdc_config(file_apl, &mdc_config);
-  
-//    mdc_config.evictions_enabled = false;
-//    mdc_config.incr_mode         = H5C_incr__off;
-//    mdc_config.decr_mode         = H5C_decr__off;
-
-//    H5Pset_mdc_config(file_apl, &mdc_config);
-  }
-  
-  // pass some information onto the underlying MPI_File_open call 
-  // to optimize file access
-  {
-#ifdef GKC_PARALLEL_MPI
-    MPI_Info file_info;
-    check(MPI_Info_create(&file_info), DMESG("File info"));
-     
-    // H5Pset_sieve_buf_size(file_plist, 262144); 
-    // H5Pset_alignment(file_plist, 524288, 262144);
-     
-    // MPI_Info_set(file_info, (char *) "access_style"        , (char *) "write_once");
-    // MPI_Info_set(file_info, (char *) "collective_buffering", (char *) "true");
-    // MPI_Info_set(file_info, (char *) "cb_block_size"       , (char *) "1048576");
-    // MPI_Info_set(file_info, (char *) "cb_buffer_size"      , (char *) "4194304");
-
-    check( H5Pset_fapl_mpio(file_apl, parallel->Comm[DIR_ALL], file_info), DMESG("Critical HDF-5 Error"));
-
-    // shouldn't be freed before H5Pclose(file_apl)
-    MPI_Info_free(&file_info);
-#endif
-  }
-
-  // Close file even if some objects are still open (should generate warning as this is not correct
+  // Close file even if some objects are still open (should generate warning)
   H5Pset_fclose_degree(file_apl, H5F_CLOSE_STRONG);
  
   // Create new output file
@@ -128,7 +90,6 @@ void FileIO::create(Setup *setup, bool allowOverwrite)
      
   check( H5Pclose(file_apl),   DMESG("H5Pclose"));
 
-        
   //////////////////////////////////////////////////////////////// Info Group ////////////////////////////////////////////////////////
    
   hid_t infoGroup = newGroup("/Info");
@@ -173,11 +134,8 @@ void FileIO::create(Setup *setup, bool allowOverwrite)
     }
          
   }
-   
   H5Gclose(constantsGroup);
-
 }
-
 
 void FileIO::initData(Setup *setup)
 {
@@ -188,7 +146,6 @@ void FileIO::initData(Setup *setup)
 // Destructor
 FileIO::~FileIO()  
 {
-   
   check(H5LTset_attribute_string(file, ".", "StopTime", System::getTimeString().c_str()), DMESG("H5LTset_attribute"));
   // Free all HDF5 resources
 
@@ -212,11 +169,12 @@ hid_t  FileIO::newGroup(std::string name, hid_t parentNode)
 };
 
 
+// from http://mail.hdfgroup.org/pipermail/hdf-forum_hdfgroup.org/2010-June/012076.html
+// to prevent corruption of HDF-5 file (requires regular calls to this->flush() ] 
 void FileIO::flush(Timing timing, double dt, bool force_flush)
 {
    if(timing.check(dataFileFlushTiming, dt) || force_flush) H5Fflush(file, H5F_SCOPE_GLOBAL);
 }
-
 
 void FileIO::printOn(std::ostream &output) const 
 {
