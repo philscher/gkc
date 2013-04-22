@@ -81,6 +81,17 @@ void FileIO::create(Setup *setup, bool allowOverwrite)
 {
   hid_t file_apl = H5Pcreate(H5P_FILE_ACCESS);
 
+#ifdef GKC_PARALLEL_MPI
+    MPI_Info file_info;
+    check(MPI_Info_create(&file_info), DMESG("File info"));
+    // Note that using MPI_Info_set we can optimize HDF-5 MPI/IO writes
+
+    check( H5Pset_fapl_mpio(file_apl, parallel->Comm[DIR_ALL], file_info), DMESG("Critical HDF-5 Error"));
+
+    // shouldn't be freed before H5Pclose(file_apl) ?
+    MPI_Info_free(&file_info);
+#endif
+  
   // Close file even if some objects are still open (should generate warning)
   H5Pset_fclose_degree(file_apl, H5F_CLOSE_STRONG);
  
