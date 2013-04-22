@@ -107,7 +107,7 @@ void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
     // OPTIM : We can skip forward transform after first call
     for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) {
 
-      // Fields has a complicated stride, thus cannot be easily used in FFTSolver.
+      // Fields has a complicated stride, thus cannot be easily be used in FFTSolver.
       // Use temporary Qm, and copy to Fields afterwards.
 
       // forward-transformation from drift-center -> gyro-center 

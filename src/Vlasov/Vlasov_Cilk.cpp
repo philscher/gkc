@@ -39,53 +39,38 @@ void VlasovCilk::solve(std::string equation_type, Fields *fields, CComplex *f_in
 }
 
 
-/*
- *
- *
-struct my_float {
-          float number;
-}  __attribute__((aligned(0x1000)));
-}
- my_float a[4] = { ...} 
- aligned them all
-
-Nice stuff http://stackoverflow.com/questions/841433/gcc-attribute-alignedx-explanation
-           http://stackoverflow.com/questions/3876758/working-around-the-char-array-on-stack-align-problem
-           godd bless sof
-
-*/
-
+// Nice stuff http://stackoverflow.com/questions/841433/gcc-attribute-alignedx-explanation
+//            http://stackoverflow.com/questions/3876758/working-around-the-char-array-on-stack-align-problem
 // Align arrays, allocate on stack, (TAKE care of stackoverflow, if happens allocated
-// dynamically with alloc in Constructor)
+// dynamically with allocation in Constructor)
 // Speed should not be a concern, as allocation happens instantaneously
 // however, check this, what about alignment ?
 // how to deal with indexes ?
 // from stackoverflow guru : http://stackoverflow.com/questions/161053/c-which-is-faster-stack-allocation-or-heap-allocation
-// Stack is hot, as it probably resides direclty in cache. Good. 
-// Hope stackoverflow is right and we dont get a stackoverflow...
+// Stack is hot, as it probably resides directly in cache. Good. 
+// Hope stackoverflow is right and we don't get a stackoverflow...
 //
 // Stack variables are aligned per default on 8 bytes (at least for SSE2+ CPUs)
 // Can be controlled on gcc with  -mpreferred-stack-boundary=n
 // See : http://stackoverflow.com/questions/1061818/stack-allocation-padding-and-alignment
 // short array[3] __attribute__ ((aligned (__BIGGEST_ALIGNMENT__)));
 // __BIGGEST_ALIGNMENT automatically uses max alignments sizes supported by vector instructions
-// take care, for electro-static simulations, G & Xi are null pointers (for e-m f&phi respectively)
+// take care, for electro-static simulations, G & Xi are null pointers (for em &phi respectively)
 //
+// Take care that OMP_STACKSIZE is large enough in case of thread parallelization
 //
-void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][Nky][NxLB  ][NvLB],  // in case of e-m
-                                         const CComplex Xi              [NzLB][Nky][NxLB+4][NvLB],  // in case of e-m
-                                         const CComplex  f [NsLD][NmLD ][NzLB][Nky][NxLB  ][NvLB],  // in case of e-s
-                                         const CComplex Fields[Nq][NsLD][NmLD ][NzLB][Nky][NxLB+4], // in case of e-s
+void VlasovCilk::calculateExBNonLinearity(const CComplex  G              [NzLB][Nky][NxLB  ][NvLB],  // in case of em
+                                         const CComplex Xi              [NzLB][Nky][NxLB+4][NvLB],  // in case of em
+                                         const CComplex  f [NsLD][NmLD ][NzLB][Nky][NxLB  ][NvLB],  // in case of es
+                                         const CComplex Fields[Nq][NsLD][NmLD ][NzLB][Nky][NxLB+4], // in case of es
                                          const int z, const int m, const int s,
                                          CComplex ExB[Nky][NxLD][NvLD], double Xi_max[3], const bool electroMagnetic)
 {
   // phase space function & Poisson bracket
   const double _kw_fft_Norm = 1./(fft->Norm_Y_Backward * fft->Norm_Y_Backward * fft->Norm_Y_Forward);
    
-  const doubleAA _kw_12_dx = 1./(12.*dx), _kw_12_dy=1./(12.*dy);
-  const doubleAA _kw_24_dx = 1./(24.*dx), _kw_24_dy=1./(24.*dy);
- 
-  // Take care of OMP_STACKSIZE is large enough
+  const doubleAA _kw_12_dx  = 1./(12.*dx), _kw_12_dy=1./(12.*dy);
+  const doubleAA _kw_24_dx  = 1./(24.*dx), _kw_24_dy=1./(24.*dy);
       
   CComplexAA  xky_Xi [Nky][NxLB+4];
   CComplexAA  xky_f1 [Nky][NxLB  ];
@@ -121,13 +106,11 @@ void VlasovCilk::calculatePoissonBracket(const CComplex  G              [NzLB][N
       xy_Xi[0     :4][:] =  xy_Xi[NyLD  :4][:];
       xy_Xi[NyLD+4:4][:] =  xy_Xi[4     :4][:];
 
-      // perform CD-4 derivative for dphi_dx , and dphi_dy (Note, we have extendend GC in X&Y)
+      // perform CD-4 derivative for dphi_dx , and dphi_dy (Note, we have extended GC in X&Y)
       for(int y=2; y < NyLB+2; y++) { simd_for(int x = 2; x < NxLB+2; x++)  {
 
          xy_dXi_dx[y-2][x-2] = (8.*(xy_Xi[y][x+1] - xy_Xi[y][x-1]) - (xy_Xi[y][x+2] - xy_Xi[y][x-2])) * _kw_12_dx;
          xy_dXi_dy[y-2][x-2] = (8.*(xy_Xi[y+1][x] - xy_Xi[y-1][x]) - (xy_Xi[y+2][x] - xy_Xi[y-2][x])) * _kw_12_dy;
-            
-
       } } 
       
       // get maximum partial_nu chi value to calculate CFL condition
@@ -207,7 +190,7 @@ void VlasovCilk::setupXiAndG(
 
   // do we need boundaries in velocity space ?!
 
-  // ICC vectorizes useAp/useBp into separate lopps, check for any speed penalty ? 
+  // ICC vectorizes useAp/useBp into separate loops, check for any speed penalty ? 
   #pragma omp for collapse(2)
   for(int z = NzLlB; z <= NzLuB; z++) {      for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
   for(int x = NxLlB; x <= NxLuB; x++) { simd_for(int v   = NvLlB ;   v <= NvLuB ;   v++) { 
@@ -277,7 +260,8 @@ void VlasovCilk::Vlasov_EM(
   for(int z = NzLlD; z <= NzLuD; z++) { 
            
     // calculate non-linear term (rk_step == 0 for eigenvalue)
-    if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(G, Xi, nullptr, nullptr, z, m, s, NonLinearTerm, Xi_max, true); 
+    if(doNonLinear         && (rk_step != 0)) calculateExBNonLinearity(G, Xi, nullptr, nullptr, z, m, s, NonLinearTerm, Xi_max, true); 
+    if(doNonLinearParallel && (rk_step != 0)) calculateParallelNonLinearity(g, Fields, z, m, s, NonLinearTerm);
     
   #pragma omp for collapse(2) 
   for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { 
@@ -291,7 +275,6 @@ void VlasovCilk::Vlasov_EM(
     const CComplex ky      = _imag * fft->ky(y_k);
 
     const double CoJB      = 1.;///geo->get_J(x,z);
-    
     
   simd_for(int v = NvLlD; v <= NvLuD; v++) {
 
@@ -366,11 +349,42 @@ void VlasovCilk::initData(Setup *setup, FileIO *fileIO)
    
 void VlasovCilk::calculateParallelNonLinearity(
                                 const CComplex f          [NsLD][NmLD][NzLB][Nky][NxLB   ][NvLB],
-                                const CComplex Fields [Nq][NsLD][NmLD ][NzLB][Nky][NxLB+4], // in case of e-s
+                                const CComplex Fields [Nq][NsLD][NmLD][NzLB][Nky][NxLB+4], 
                                 const int z, const int m, const int s                     ,
                                 CComplex NonLinearTerm[Nky][NxLD][NvLD])
 {
-   check(-1, DMESG("Not implemented"));
 
-};
+  const double _kw_fft_Norm = 1./(fft->Norm_Y_Backward * fft->Norm_Y_Backward * fft->Norm_Y_Forward);
+   
+  CComplexAA  xky_dg_dv  [Nky][NxLB];
+  CComplexAA  xky_dphi_dz[Nky][NxLB];
+  CComplexAA  xky_v_NL   [Nky][NxLD];
+  
+  doubleAA    xy_dg_dv  [NyLD+4][NxLB  ];
+  doubleAA    xy_dphi_dz[NyLD+4][NxLB  ];
+  doubleAA    xy_v_NL   [NyLD  ][NxLD  ];
+ 
+  // phi
+  xky_dphi_dz[:][0:NxLB] = (8.*(Fields[Field::phi][s][m][z+1][:][NxLlB:NxLB] - Fields[Field::phi][s][m][z-1][:][NxLlB:NxLB]) 
+                            -  (Fields[Field::phi][s][m][z+2][:][NxLlB:NxLB] - Fields[Field::phi][s][m][z-2][:][NxLlB:NxLB])) * _kw_12_dz  ; 
+
+  fft->solve(FFT_Type::Y_PSF, FFT_Sign::Backward, xky_dphi_dz, &xy_dphi_dz[2][0]);
+
+  #pragma omp for
+  for(int v = NvLlD; v <= NvLuD; v++) { 
+  
+   xky_dg_dv[:][0:NxLB]  = (8. *(f[s][m][z][:][NxLlB:NxLB][v+1] - f[s][m][z][:][NxLlB:NxLB][v-1]) 
+                              - (f[s][m][z][:][NxLlB:NxLB][v+2] - f[s][m][z][:][NxLlB:NxLB][v-2])) * _kw_12_dv;
+    
+   fft->solve(FFT_Type::Y_PSF, FFT_Sign::Backward, xky_dg_dv, &xy_dg_dv[2][0]);
+  
+   // Multiply in real space
+   xy_v_NL[:][:] = xy_dphi_dz[2:NyLD][2:NxLD] * xy_dg_dv[2:NyLD][2:NxLD] * _kw_fft_Norm;
+
+   fft->solve(FFT_Type::Y_NL, FFT_Sign::Forward, xy_v_NL, (CComplex *) xky_v_NL);
+
+   if(doNonLinear) NonLinearTerm[0:Nky][NxLlD:NxLD][v] += xky_v_NL[:][:];
+   else            NonLinearTerm[0:Nky][NxLlD:NxLD][v]  = xky_v_NL[:][:];
+  }
+}
 

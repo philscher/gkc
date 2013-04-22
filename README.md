@@ -4,7 +4,7 @@ The GKC++ code
 Description
 -----------
 
-GKC++ (**G**yro**K**inetic **C**ode**++**)
+GKC++ (GyroKinetic Cod++)
 is a delta-f [gyro-kinetic](http://en.wikipedia.org/wiki/Gyrokinetics)
 code. Currently features are 
       

@@ -28,97 +28,94 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
 
 {
 
-   ArrayPhase = nct::allocate(grid->RsLD, grid->RmLD, grid->RzLB, grid->RkyLD, grid->RxLB, grid->RvLB);
-   ArrayPhase(&f0, &f, &fss, &fs, &f1, &ft, &Coll);
+  ArrayPhase = nct::allocate(grid->RsLD, grid->RmLD, grid->RzLB, grid->RkyLD, grid->RxLB, grid->RvLB);
+  ArrayPhase(&f0, &f, &fss, &fs, &f1, &ft, &Coll);
    
-   ArrayXi = nct::allocate(grid->RzLB , grid->RkyLD, grid->RxLB4, grid->RvLB)(&Xi);
-   ArrayG  = nct::allocate(grid->RzLB , grid->RkyLD, grid->RxLB , grid->RvLB)(&G );
-   ArrayNL = nct::allocate(grid->RkyLD, grid->RxLD , grid->RvLD)(&nonLinearTerm);
+  ArrayXi = nct::allocate(grid->RzLB , grid->RkyLD, grid->RxLB4, grid->RvLB)(&Xi);
+  ArrayG  = nct::allocate(grid->RzLB , grid->RkyLD, grid->RxLB , grid->RvLB)(&G );
+  ArrayNL = nct::allocate(grid->RkyLD, grid->RxLD , grid->RvLD)(&nonLinearTerm);
    
-   // allocate boundary (MPI) buffers
-   int BoundX_num =    2 * Nky * NzLD * NvLD * NmLD * NsLD;
-   int BoundZ_num = NxLD * Nky *    2 * NvLD * NmLD * NsLD;
-   int BoundV_num = NxLD * Nky * NzLD *    2 * NmLD * NsLD;
+  // allocate boundary (MPI) buffers
+  int BoundX_num =    2 * Nky * NzLD * NvLD * NmLD * NsLD;
+  int BoundZ_num = NxLD * Nky *    2 * NvLD * NmLD * NsLD;
+  int BoundV_num = NxLD * Nky * NzLD *    2 * NmLD * NsLD;
 
-   ArrayBoundX = nct::allocate(nct::Range(0 , BoundX_num ))(&SendXu, &SendXl, &RecvXl, &RecvXu);
-   ArrayBoundZ = nct::allocate(nct::Range(0 , BoundZ_num ))(&SendZu, &SendZl, &RecvZl, &RecvZu);
-   ArrayBoundV = nct::allocate(nct::Range(0 , BoundV_num ))(&SendVu, &SendVl, &RecvVl, &RecvVu);
+  ArrayBoundX = nct::allocate(nct::Range(0 , BoundX_num ))(&SendXu, &SendXl, &RecvXl, &RecvXu);
+  ArrayBoundZ = nct::allocate(nct::Range(0 , BoundZ_num ))(&SendZu, &SendZl, &RecvZl, &RecvZu);
+  ArrayBoundV = nct::allocate(nct::Range(0 , BoundV_num ))(&SendVu, &SendVl, &RecvVl, &RecvVu);
   
-   equation_type       = setup->get("Vlasov.Equation"   , "ES");        
-   doNonLinear         = setup->get("Vlasov.doNonLinear", 0      );
-   doNonLinearParallel = setup->get("Vlasov.doNonLinearParallel", 0);
+  equation_type       = setup->get("Vlasov.Equation"   , "ES");        
+  doNonLinear         = setup->get("Vlasov.doNonLinear", 0      );
+  doNonLinearParallel = setup->get("Vlasov.doNonLinearParallel", 0);
 
-   const std::string dir_string[] = { "X", "Y", "Z", "V", "M", "S" };
-   for(int dir = DIR_X; dir <= DIR_S; dir++) hyp_visc[dir] = setup->get("Vlasov.HyperViscosity." + dir_string[dir], 0.0);
+  const std::string dir_string[] = { "X", "Y", "Z", "V", "M", "S" };
+  for(int dir = DIR_X; dir <= DIR_S; dir++) hyp_visc[dir] = setup->get("Vlasov.HyperViscosity." + dir_string[dir], 0.0);
    
-   dataOutputF1      = Timing( setup->get("DataOutput.Vlasov.Step", -1),
-                               setup->get("DataOutput.Vlasov.Time", -1.));
+  dataOutputF1      = Timing( setup->get("DataOutput.Vlasov.Step", -1),
+                              setup->get("DataOutput.Vlasov.Time", -1.));
 
-   // Parse operators
-   ArrayKrook = nct::allocate(grid->RxGD)(&krook);  
-   FunctionParser krook_parser = setup->getFParser();
-   krook_parser.Parse(setup->get("Vlasov.Krook", "0."), "x");
-   for(int x = NxGlD; x <= NxGuD; x++) krook[x] = krook_parser.Eval(&X[x]); 
+  // Parse operators
+  ArrayKrook = nct::allocate(grid->RxGD)(&krook);  
+  FunctionParser krook_parser = setup->getFParser();
+  krook_parser.Parse(setup->get("Vlasov.Krook", "0."), "x");
+  for(int x = NxGlD; x <= NxGuD; x++) krook[x] = krook_parser.Eval(&X[x]); 
 
-   ///
-   Xi_max[:] = 0.;
+  ///
+  Xi_max[:] = 0.;
 
-   initData(setup, fileIO);
+  initData(setup, fileIO);
 }
-
-
 
 Vlasov::~Vlasov() 
 {
-   closeData();
-};
-
+  closeData();
+}
 
 void Vlasov::solve(Fields *fields, CComplex  *_fs, CComplex  *_fss, 
                    double dt, int rk_step, const double rk[3], bool useNonBlockingBoundary)
 {
-   static CComplex *f_boundary = nullptr;
+  static CComplex *f_boundary = nullptr;
 
-   useNonBlockingBoundary =  false;
+  useNonBlockingBoundary =  false;
 
-   // Need boundary_isclean to avoid deadlock at first iteration
-   #pragma omp single nowait
-   {
-   if((f_boundary != nullptr) && useNonBlockingBoundary) setBoundary(f_boundary, Boundary::RECV);
-   }
+  // Need boundary_isclean to avoid deadlock at first iteration
+  #pragma omp single nowait
+  {
+  if((f_boundary != nullptr) && useNonBlockingBoundary) setBoundary(f_boundary, Boundary::RECV);
+  }
 
-   Xi_max[:] = 0.; // Needed to calculate CFL time step 
+  Xi_max[:] = 0.; // Needed to calculate CFL time step 
   
-   // Calculate the collision operator
-   // BUG : how to deal with velocity space decomposition ?!
-   coll->solve(fields, _fs, f0, Coll, dt, rk_step);
+  // Calculate the collision operator
+  // BUG : how to deal with velocity space decomposition ?!
+  coll->solve(fields, _fs, f0, Coll, dt, rk_step);
        
-   // Calculate the Vlasov equation
-   #pragma omp barrier
-   solve(equation_type, fields, _fs, _fss, dt, rk_step, rk);
+  // Calculate the Vlasov equation
+  #pragma omp barrier
+  solve(equation_type, fields, _fs, _fss, dt, rk_step, rk);
 
 
-   // Note : we have non-blocking boundaries as Poisson solver does not require ghosts
-   // Set nowait, as field solver does not require boundaries & analysis too ... ?! 
-   #pragma omp single nowait
-   {
-   (useNonBlockingBoundary) ? setBoundary(_fss, Boundary::SEND) :  setBoundary(_fss, Boundary::SENDRECV); 
-   }
+  // Note : we have non-blocking boundaries as Poisson solver does not require ghosts
+  // Set nowait, as field solver does not require boundaries & analysis too ... ?! 
+  #pragma omp single nowait
+  {
+  (useNonBlockingBoundary) ? setBoundary(_fss, Boundary::SEND) :  setBoundary(_fss, Boundary::SENDRECV); 
+  }
 
-   f_boundary = _fss; 
+  f_boundary = _fss; 
   
-   return;
+  return;
 }
 
 void Vlasov::setBoundary(CComplex *f) 
 { 
   setBoundary(f, Boundary::SENDRECV); 
-};
+}
 
 
 void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
 {
-    [=] (
+  [=] (
          CComplex g     [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
          CComplex SendXl[NsLD][NmLD][NzLD][Nky][GC2 ][NvLD], CComplex SendXu[NsLD][NmLD][NzLD][Nky][GC2 ][NvLD], 
          CComplex RecvXl[NsLD][NmLD][NzLD][Nky][GC2 ][NvLD], CComplex RecvXu[NsLD][NmLD][NzLD][Nky][GC2 ][NvLD], 
@@ -315,7 +312,8 @@ void Vlasov::loadData(FileIO *fileIO)
 
 void Vlasov::printOn(std::ostream &output) const
 {
-  output << "Vlasov     | Type : " << equation_type <<  " Non-Linear : " << (doNonLinear ? "yes" : "no") << std::endl ;
+  output << "Vlasov     | Type : " << equation_type <<  " Non-Linear (ExB): " << (doNonLinear ? "yes" : "no") 
+                                   << " Non-Linear (v∥): " << (doNonLinearParallel ? "yes" : "no") << std::endl;
   output << "Vlasov     | Hyperviscosity [ " ;
   for(int dir = DIR_X; dir <= DIR_S; dir++) output << hyp_visc[dir] << " ";
   output << " ] " << std::endl;
