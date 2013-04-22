@@ -14,7 +14,6 @@
 #ifndef __GKC_TIMING_H__
 #define __GKC_TIMING_H__
 
-
 #include "Global.h"
 
 #include<ctime>
@@ -23,7 +22,7 @@
 /**
 *  @brief Timing class - governs timing etc.
 *
-*
+*  @todo Please extend documentation of this class ...
 * 
 **/
 struct Timing {
@@ -86,8 +85,8 @@ struct Timing {
   **/
   friend std::ostream& operator<<(std::ostream& output, const Timing& t) 
   {
-      output << "Steps : " << t.step << " Time : " << t.time;// << std::endl;
-      return output;
+    output << "Steps : " << t.step << " Time : " << t.time;
+    return output;
   };
   
   /**

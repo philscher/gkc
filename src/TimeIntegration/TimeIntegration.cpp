@@ -133,7 +133,7 @@ void TimeIntegration::solveTimeStepRK3(Timing timing, const double dt)
   vlasov->solve(fields, vlasov->fss, vlasov->f, 3./4. * dt , 1, rk_3);
         
   return;
-};
+}
       
 
 void TimeIntegration::solveTimeStepRK2(Timing timing, const double dt) 
@@ -148,7 +148,6 @@ void TimeIntegration::solveTimeStepRK2(Timing timing, const double dt)
   // Runge-Kutta step 2
   fields->solve(vlasov->f0,vlasov->fs, timing);
   vlasov ->solve(fields, vlasov->fs , vlasov->fss, 0.5e0*dt, 2);
-
  */ 
 }
 
@@ -163,7 +162,6 @@ void TimeIntegration::solveTimeStepHeun(Timing timing, const double dt)
    fields->solve(vlasov->f0,vlasov->fs, timing);
    vlasov ->solve(fields, vlasov->fs , vlasov->f, 1./4.*dt, 2);
   * */ 
-
 }
 
 void TimeIntegration::solveTimeStepEigen(Timing timing, const double dt) 
@@ -173,7 +171,6 @@ void TimeIntegration::solveTimeStepEigen(Timing timing, const double dt)
   const double rk_0[] = { 0., 0., 0.};
   fields->solve(vlasov->f0,vlasov->f, timing);
   vlasov->solve(fields, vlasov->f  , vlasov->fs,  1. , 0, rk_0);
-
 }
        
 void TimeIntegration::writeTimeStep(Timing timing, Timing maxTiming, double dt)
@@ -200,7 +197,7 @@ void TimeIntegration::writeTimeStep(Timing timing, Timing maxTiming, double dt)
 
 void TimeIntegration::printOn(std::ostream &output) const 
 {
-            output << "Time Int.  |  " << timeIntegrationScheme << "  maxCFL Number : " << maxCFLNumber   << std::endl;
-            output << "Max Timing |  " << maxTiming << "  lin. TimeStep : " << linearTimeStep <<  std::endl;
+  output << "Time Int.  |  " << timeIntegrationScheme << "  maxCFL Number : " << maxCFLNumber   << std::endl;
+  output << "Max Timing |  " << maxTiming << "  lin. TimeStep : " << linearTimeStep <<  std::endl;
 }
 

@@ -94,23 +94,6 @@ void Diagnostics::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][Nky][FFTSolver::X
 
 //////////////////////// Calculate scalar values ///////////////////////////
 
-/* 
-void Diagnostics::calculateZFTurbEnergy()
-                                CComplex  Field0 [Nq][NzLD][Nky][NxLD]      ,
-{
-
-     double ddphi_dx2[Nky]; 
-
-     for(int y_k = 0; y_k < Nky; y_k++) {
-
-     // use CD-4
-     for(int x = NxLlD; x <= NxLuD; x++) {
-       ddphi_dx2[y_k] = Field[:][NzLD][y_k][NxLD] -
-     }
-}
- * */
-
-
 void Diagnostics::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB], 
                                         const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
                                         const CComplex Mom[8][NsLD][NzLD][Nky][NxLD], 
@@ -234,8 +217,8 @@ void Diagnostics::getParticleHeatFlux(
 
   }   // s
 
-  // BUG (not tested) parallel->reduce(&ParticleFlux[0][0][0][0], Op::sum, DIR_Z, Nq * NsLD * Nky * NxLD);
-  // BUG (not tested) parallel->reduce(&    HeatFlux[0][0][0][0], Op::sum, DIR_Z, Nq * NsLD * Nky * NxLD);
+  parallel->reduce(&ParticleFlux[0][0][0][0], Op::sum, DIR_Z, Nq * NsLD * Nky * NxLD);
+  parallel->reduce(&    HeatFlux[0][0][0][0], Op::sum, DIR_Z, Nq * NsLD * Nky * NxLD);
 
   // BUG (mean not implemented) parallel->reduce(&CrossPhase[0][0][0][0][0], Op::mean, DIR_Z, Nq * 3 * NsLD * Nky * NxLD);
 
@@ -280,8 +263,6 @@ void Diagnostics::initData(Setup *setup, FileIO *fileIO)
   H5Gclose(momGroup);
       
   dataOutputMoments   = Timing(setup->get("DataOutput.Moments.Step", -1), setup->get("DataOutput.Moments.Time", -1.));
-
-
 
   ////////////////////////////////////// X-Dependent Moments data /////////////////////
   { 
@@ -484,7 +465,7 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
 
     static struct timeval walltime = System::getTimeOfDay();  
 
-    // Need to communicate walltime to other processes (as HDF-5 table requires same value)
+    // Need to communicate wall clock time to other processes (as HDF-5 table requires same value)
     scalarValues.walltime = parallel->bcast(System::getTimeDifference(walltime), parallel->myRank == 0) ;
     scalarValues.timestep = timing.step;
     scalarValues.time     = timing.time;
