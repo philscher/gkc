@@ -4,9 +4,8 @@ The GKC++ code
 Description
 -----------
 
-GKC++ (GyroKinetic Cod++)
-is a delta-f [gyro-kinetic](http://en.wikipedia.org/wiki/Gyrokinetics)
-code. Currently features are 
+GKC++ (GyroKinetic Code++) is a δf gyro-kinetic 
+code. Currently features are :
       
   * Various geometries (sheared, shearless, toroidal)
   * multiple species support 
@@ -26,8 +25,8 @@ other gyro-kinetic codes such as [GENE](http://www.ipp.mpg.de/~fsj/gene/),
 production usage.
 
 GKC++ is programmed in C++-11/[Cilk+](http://cilkplus.org/) 
-which on greatly simplifies readability and handling of multi-dimensional 
-arrays. However note that only a limited subset of compilers support
+which (for our opinion) greatly simplifies readability and handling of
+multi-dimensional arrays. However, note that only a limited subset of compilers support
 the Cilk+ extensions such as
 
 * [Intel Compiler](http://software.intel.com/en-us/intel-compilers)

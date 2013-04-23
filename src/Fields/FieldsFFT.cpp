@@ -15,7 +15,6 @@
 #include "Special/SpecialMath.h"
 
 
-
 FieldsFFT::FieldsFFT(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry *geo, FFTSolver *_fft)
 : Fields(setup, grid, parallel, fileIO,  geo), fft(_fft)
 {
@@ -56,9 +55,7 @@ void FieldsFFT::solveFieldEquations(const CComplex Q     [Nq][NzLD][Nky][NxLD],
   #pragma omp single
   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, ArrayField0.data((CComplex *) Field0));
 
-
   return;
-
 }
 
 void FieldsFFT::solvePoissonEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_NkxL],
@@ -371,7 +368,7 @@ void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEn
       for(int x_k = fft->K1xLlD; x_k <= fft->K1xLuD; x_k++) {
               
         const double k2_p = fft->k2_p(x_k,y_k,z);
-        if(Nq >= 1) phiEnergy += k2_p * pow2(cabs(kXOut[Field::phi][z][y_k][x_k])) * (1. + plasma->debye2);
+        if(Nq >= 1) phiEnergy += cabs(k2_p * pow2(kXOut[Field::phi][z][y_k][x_k]))/fft->Norm_X * (1. + plasma->debye2);
         if(Nq >= 2) ApEnergy  += cabs(k2_p * pow2(kXOut[Field::Ap ][z][y_k][x_k]))/fft->Norm_X;
         if(Nq >= 3) BpEnergy  += cabs(       pow2(kXOut[Field::Bp ][z][y_k][x_k]))/fft->Norm_X;
         //if(Nq >= 1) phiEnergy += (plasma->debye2*k2_p + sum_qqnT_1mG0(k2_p)) * pow2(cabs(kXOut[Field::phi][z][y_k][x_k]))/fft->Norm_X;

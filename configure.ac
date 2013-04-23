@@ -1,4 +1,4 @@
-AC_INIT([GKC],[0.19],[mail@gkc.special-combo.net])
+AC_INIT([GKC],[0.20],[mail@gkc.special-combo.net])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign]) 
 
 AC_CONFIG_HEADERS([config.h])
@@ -207,7 +207,7 @@ if test x$CXX = xg++ || test x$FC = xmpic++.openmpi ; then
 
     if test x$openmp = xyes ; then
       # echo " openmp = $openmp : add -fopenmp to CXXFLAGS"
-	  CXXFLAGS+=" -fopenmp"
+   CXXFLAGS+=" -fopenmp"
     fi
       CXXFLAGS+=" -std=c++0x"
   fi
@@ -231,7 +231,7 @@ if test x$CXX = xicc || test x$CXX = icc.openmpi ; then
     fi
 
     if test x$openmp = xyes ; then
-	  CXXFLAGS+=" -openmp "
+   CXXFLAGS+=" -openmp "
     fi
         CXXFLAGS+="-std=c++0x -Wall"
   fi
@@ -261,7 +261,7 @@ echo " PAPI  DIR    = $DIR_PAPI  "
 
 AC_CONFIG_FILES([
   Makefile
-  src/Makefile	
+  src/Makefile 
 ])
 AC_OUTPUT 
 

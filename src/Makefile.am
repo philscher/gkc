@@ -3,18 +3,19 @@ bin_PROGRAMS = gkc
 ## Include source files
 
 gkc_SOURCES = \
-	main.cpp GKC.cpp FileIO.cpp Fields/Fields.cpp Fields/FieldsFFT.cpp Setup.cpp Grid.cpp  \
+   main.cpp GKC.cpp FileIO.cpp Fields/Fields.cpp Fields/FieldsFFT.cpp Setup.cpp Grid.cpp  \
    Parallel/Parallel.cpp Vlasov/Vlasov.cpp Analysis/Event.cpp Vlasov/Vlasov_Island.cpp\
    Vlasov/Vlasov_Cilk.cpp Vlasov/Vlasov_Aux.cpp Vlasov/Vlasov_Optim.cpp \
    Analysis/Diagnostics.cpp  Init.cpp Control.cpp Analysis/Moments.cpp \
    Plasma.cpp Special/LA.cpp TimeIntegration/Timing.cpp Analysis/TestParticle.cpp TimeIntegration/TimeIntegration.cpp \
    FFTSolver/FFTSolver.cpp Visualization/Visualization_Data.cpp Analysis/Benchmark.cpp \
-   Collisions/LenardBernstein.cpp Tools/TermColor.cpp TimeIntegration/ScanLinearModes.cpp
+   Collisions/LenardBernstein.cpp Tools/TermColor.cpp TimeIntegration/ScanLinearModes.cpp \
+   TimeIntegration/ScanPoloidalEigen.cpp
 
 ## Include corresponding header files
 
 gkc_SOURCES += \
-	GKC.h FileIO.h Fields/Fields.h Fields/FieldsFFT.h Setup.h Grid.h  \
+   GKC.h FileIO.h Fields/Fields.h Fields/FieldsFFT.h Setup.h Grid.h  \
    Parallel/Parallel.h Vlasov/Vlasov.h Analysis/Event.h Vlasov/Vlasov_Island.h\
    Vlasov/Vlasov_Cilk.h Vlasov/Vlasov_Aux.h Vlasov/Vlasov_Optim.h \
    Analysis/Diagnostics.h Analysis/Moments.h Init.h Control.h \
@@ -25,24 +26,26 @@ gkc_SOURCES += \
    Collisions/Collisions.h Collisions/LenardBernstein.h \
    Geometry/Geometry.h Geometry/Geometry2D.h Geometry/GeometryShear.h \
    Geometry/GeometrySlab.h Geometry/GeometrySA.h Geometry/GeometryCHEASE.h\
-   Tools/System.h Tools/TermColor.h Special/SpecialMath.h Special/HermitePoly.h Tools/Tools.h Special/Vector3D.h 
+   Tools/System.h Tools/TermColor.h Special/SpecialMath.h Special/HermitePoly.h Tools/Tools.h Special/Vector3D.h \
+   TimeIntegration/ScanLinearModes.h TimeIntegration/ScanPoloidalEigen.h
  
 # Integration sub-module
 gkc_SOURCES += \
-	Special/Integrate/GaussChebychevFirstWeights.h Special/Integrate/GaussChebychevSecondWeights.h \
-   Special/Integrate/GaussHermiteWeights.h        Special/Integrate/GaussLaguerInitializer.h \
+   Special/Integrate/GaussChebychevFirstWeights.h Special/Integrate/GaussChebychevSecondWeights.h \
+   Special/Integrate/GaussHermiteWeights.h        Special/Integrate/RectangleWeights.h \
    Special/Integrate/GaussLaguerreWeights.h       Special/Integrate/GaussLegendreWeights.h \
-   Special/Integrate/GaussRadauWeights.h          Special/Integrate/GaussWeights.h \
-   Special/Integrate/GaussWeights.py              Special/Integrate/Integrate.h
+   Special/Integrate/GaussRadauWeights.h      \
+   Special/Integrate/GaussWeights.py              Special/Integrate/Integrate.h\
+   Special/Interpolate/LinearInterpolate.h Special/RootFinding.h
 
 # Interpolation sub-module
-gkc_SOURCES += Special/HermiteInterpolation.h 
+gkc_SOURCES += Special/Interpolate/HermiteInterpolation.h 
 
 # Matrix module
 gkc_SOURCES += Matrix/Matrix.h Matrix/MatrixPETSc.h Matrix/MatrixSolver.h \
                Matrix/SpecialMatrix.h Matrix/MatrixPETSc.cpp
 
-EXTRA_DIST =   gkc.doxygen external
+EXTRA_DIST =   external
 
 gkc_SOURCES += external/FunctionParser/fparser.cc external/SFL/SFL.cpp 
 
@@ -74,7 +77,7 @@ endif
 
 if PAPI
 AM_CPPFLAGS += -I$(DIR_PAPI)/include
-gkc_LDADD   += -L$(DIR_PAPI)/lib/ -lpapi -lrt
+gkc_LDADD   += -L$(DIR_PAPI)/lib/ -lpapi -lrt -lpfm
 endif
 
 if MPI
@@ -87,6 +90,7 @@ endif
 
 if OPENMP
 AM_CPPFLAGS += -fopenmp
+gkc_LDADD   += -liomp5
 endif
 
 ##################### FFTW3 setup ################
@@ -144,9 +148,5 @@ endif
 
 # Atlas packages
 #gkc_LDADD   += -L/usr/lib64/atlas/  -llapack -lblas
-
-#ifdef PAPI
-gkc_LDADD   += -L/home/b/b30683/papi-5.0.0/lib -lpapi
-#endif
 
 

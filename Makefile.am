@@ -4,4 +4,4 @@ AUTOMAKE_OPTIONS = subdir-objects
 
 SUBDIRS = src
 
-EXTRA_DIST = README COPYRIGHT LICENSE scripts PyPPL compile Benchmarks
+EXTRA_DIST = README README.md COPYRIGHT LICENSE scripts PyPPL compile Benchmarks gkc.doxygen

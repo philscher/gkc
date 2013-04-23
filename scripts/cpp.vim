@@ -1,8 +1,8 @@
 "
-"  Part of gkc project. 
-"  Includes syntax highlitening for vim (www.vim.org)
+"  Part of gkc++ project. 
 "
-"  for some defined types and other statements
+"  Includes syntax highlitening for important markers 
+"  define types and other statements to use in vim (www.vim.org)
 "
 "
 "  Installation procedure :
@@ -19,10 +19,6 @@ syn keyword cStatement DMESG
 " try to mark as red
 syn keyword cStatement omp_for
 "syn keyword gkcSyntaxGroup transient
-"hi gkcSyntaxGroup guifg=#ff00ff
-"syn cluster GKCParaGroup add=gkcSyntaxGriyo
-
-"syn keyword gkcSyntaxGroup omp_for
 
 
 
