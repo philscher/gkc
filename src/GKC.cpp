@@ -166,10 +166,10 @@ int GKC::mainLoop()
       parallel->setThreadID();
    
       do {
-        
+        bench->start("A", 1);        
         // integrate for one time-step, give current dt as output
         const double dt = timeIntegration->solveTimeStep(vlasov, fields, particles, timing);     
-
+        bench->stop("A", 1);
         // Analysis results and output data (currently singlethreaded)
         #pragma omp master
         {

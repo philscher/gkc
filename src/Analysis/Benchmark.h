@@ -43,7 +43,6 @@ class Fields;
 * operations per second).
 *
 * @todo optimize also cache misses
-* @todo save value in HDF-5 file.
 * @todo check if using PAPI does have performance impact
 *
 **/
@@ -53,22 +52,21 @@ class Benchmark : public IfaceGKC
   
   int num_hwcntrs; ///< Number of available Hardware counters
 
+  TableAttr *eventTable;
   
-  struct Counters
-  {
-    long long Cycles;       ///< Total Cycles
-    long long Instructions; ///< Total Instructions
-  };
+  static const int event_num = 3;
+ 
+  struct Event {
+      double    dtime;            /// Time 
+      long long value[event_num]; // Values
+  } event;
 
-  struct Measure {
-    float      rtime;  ///< Real time
-    float      ptime;  ///< Processor time
-    long long flpops;  ///< Total floating point operations
-    float     mflops;  ///< Million Floating Operations Per Second
-  } M;
-    
-  timespec ts_start, ts_end;
-  
+
+  long long time_usec_start;
+
+  int events[8]      ; /// Pre-defined max number of events
+  char *event_name[8]; /// Name of events
+
   bool useBenchmark;
 
   Parallel * parallel;
@@ -78,8 +76,6 @@ class Benchmark : public IfaceGKC
   **/ 
   static std::string getPAPIErrorString(int error_val);
 
-  double simMaxGFLOPS;
- 
  public:
   
   int BlockSize_X, ///< Blocksize in X to use in Vlasov equation 

@@ -19,8 +19,7 @@
 
 Benchmark::Benchmark(Setup *setup, Parallel *_parallel, FileIO *fileIO) : parallel(_parallel)
 {
-      
-  int EventSet = PAPI_NULL;
+  
   int retval;
   
   BlockSize_X=1, BlockSize_V=1;
@@ -29,32 +28,30 @@ Benchmark::Benchmark(Setup *setup, Parallel *_parallel, FileIO *fileIO) : parall
 
   if(useBenchmark) {
 
-   //int Events[2] = { PAPI_TOT_CYC, PAPI_TOT_INS };
-/*  
+   
    // Initialize the PAPI library 
-   retval = PAPI_library_init(PAPI_VER_CURRENT);
-   check(retval != PAPI_VER_CURRENT, DMESG("PAPI library init error!\n"));
+   if(PAPI_library_init(PAPI_VER_CURRENT) != PAPI_VER_CURRENT) DMESG("PAPI library init error!\n");
    
    // check avaiable counters
    check((num_hwcntrs = PAPI_num_counters()) <= PAPI_OK, DMESG("Could not get number of avaiable counters"));
+   
+   events[:] =  PAPI_NULL;
+   events[0] =  PAPI_DP_OPS;
+   events[1] =  PAPI_VEC_DP;
+   events[2] =  PAPI_FP_OPS;
 
-   // Create our event set
-   check(PAPI_create_eventset(&EventSet) != PAPI_OK, DMESG("Could not create Eventset"));
-   check(PAPI_add_event(EventSet, PAPI_TOT_INS) != PAPI_OK, DMESG("Could not add Event"));
-*/
-// reset counters PAPIF_stop_counters(NULL, array_length, check)
   }
-  
-  simMaxGFLOPS = 0.;
-
+ 
   initData(setup, fileIO);
-
 }
    
 Benchmark::~Benchmark()
 {
   H5Gclose(benchGroup);
-  
+ 
+  closeData();
+
+  delete eventTable;
   if(useBenchmark) PAPI_shutdown();
 }
 
@@ -62,7 +59,7 @@ Benchmark::~Benchmark()
 void Benchmark::bench(Vlasov *vlasov, Fields *fields) 
 {
   if(!useBenchmark) return;
-      
+  return;    
     // Set difference optimization options
     for(BlockSize_X = 1; BlockSize_X < Nx/8; BlockSize_X += 4) {
     for(BlockSize_V = 1; BlockSize_V < Nv/8; BlockSize_V += 4) {
@@ -104,7 +101,7 @@ void Benchmark::bench(Vlasov *vlasov, Fields *fields)
     std::cout << "Vlasov full  " << benchtest(vlasov_full ) << std::endl;
     std::cout << "Poisson      " << benchtest(poisson     ) << std::endl;
     double ggflops = benchtest(full_step  );
-    simMaxGFLOPS   = std::max(simMaxGFLOPS, ggflops);
+    //simMaxGFLOPS   = std::max(simMaxGFLOPS, ggflops);
     std::cout << "One Step     " << ggflops << std::endl;
    
    } } // BlockSize_V, BlockSize_X
@@ -127,11 +124,12 @@ void Benchmark::closeData()
 void Benchmark::printOn(std::ostream &output) const
  {
 
-  double totalFLOPS    = parallel->reduce(simMaxGFLOPS, Op::sum) * parallel->numThreads;
-  double flops_per_cpu = totalFLOPS/(parallel->numProcesses * parallel->numThreads) ;
+  //double totalFLOPS    = parallel->reduce(simMaxGFLOPS, Op::sum) * parallel->numThreads;
+  //double flops_per_cpu = totalFLOPS/(parallel->numProcesses * parallel->numThreads) ;
 
-  output << "           | Total GFLOPS : " << std::setprecision(3) << totalFLOPS 
-         <<     "   Average GFLOPS/CPU : " << flops_per_cpu        << std::endl;
+  double totalFLOPS = 0.;
+  output << "PAPI       | Total GFLOPS : " << std::setprecision(3) << totalFLOPS << std::endl;
+  //       <<     "   Average GFLOPS/CPU : " << flops_per_cpu        << std::endl;
 
 }
 
@@ -149,41 +147,30 @@ std::string Benchmark::getPAPIErrorString(int error_val)
    
 void Benchmark::start(std::string id, int type)
 
-{ 
-  if(!useBenchmark) return; 
-  
-  int ret;
-  // Setup PAPI library and begin collecting data from the counters
-  if((ret = PAPI_flops( &M.rtime, &M.ptime, &M.flpops, &M.mflops)) < PAPI_OK);
-  clock_gettime(CLOCK_REALTIME, &ts_start); 
+{
+  if(!useBenchmark) return;
+   // measure floating point
+   PAPI_start_counters(events, event_num);
+   time_usec_start = PAPI_get_real_usec();
 }
 
 double Benchmark::stop(std::string id, int type)
 {
+  if(!useBenchmark) return;
 
-  if(!useBenchmark) return 0.; 
-
-  int ret;
+  long long time_usec_end = PAPI_get_real_usec();
+ 
+  // Get results and time
+  if(PAPI_read_counters(event.value, event_num) != PAPI_OK) std::cout << "Error Reading counters" << std::endl;
   
-  // Setup PAPI library and begin collecting data from the counters
+  event.dtime = (time_usec_end - time_usec_start) * 1.e-6;
   
-  if((ret = PAPI_flops( &M.rtime, &M.ptime, &M.flpops, &M.mflops)) < PAPI_OK);
+  eventTable->append(&event);
 
-  clock_gettime(CLOCK_REALTIME, &ts_end); 
+  if(PAPI_stop_counters(event.value, event_num) != PAPI_OK) std::cout << "Error Stoping counters" << std::endl;
     
-  
-  
-  double secs  = (ts_end.tv_sec - ts_start.tv_sec);
-  double nsecs = (ts_end.tv_nsec - ts_start.tv_nsec);
-    
-  double time  = secs + nsecs * 1.e-9;
 
-  long long flop = M.flpops;//parallel->reduce(M.flpops);
-
-  const double gflops = M.mflops/1.e3;
-
-  return gflops;
-
+  return 0;
 }
 
 
@@ -192,38 +179,36 @@ void Benchmark::initData(Setup *setup, FileIO *fileIO)
    
   benchGroup = fileIO->newGroup("/Benchmark");
 
-  /* 
   check(H5LTset_attribute_int   (benchGroup, ".", "NumberOfCounters",  &num_hwcntrs, 1), DMESG("H5LTset_attribute"));
 
-         
-  //////////////////////// Set Table for species.
-  size_t counters_offset[]     = { HOFFSET(Counters , Cycles ), HOFFSET( Counters, Instructions ) };
-  size_t counters_sizes[]      = { sizeof(long long), sizeof(long long) };
-  hid_t counters_type[]        = { H5T_NATIVE_LLONG, H5T_NATIVE_LLONG };
-  const char *counters_names[]  = { "Cycles", "Intructions" };
 
-  Counters counters;
+  //////////////////////// Set Table for Events
+  size_t cs_offset[event_num+1]; cs_offset[0] = HOFFSET(Event, dtime); 
+  for(int n=0; n < event_num; n++) cs_offset[n+1] = HOFFSET( Event, value[0]) + n * sizeof(long long);
 
-  check(H5TBmake_table("Counters", fileIO->getFileID(), "Counters", (hsize_t) 2, (hsize_t) 0, 
-                        sizeof(Counters), (const char**) counters_names, counters_offset, counters_type,
-                        32, NULL, 0, &counters ), DMESG("H5Tmake_table Counters"));
+  size_t cs_sizes[event_num+1]; cs_sizes[0] = sizeof(double);
+  for(int n=0; n < event_num; n++) cs_sizes[n+1]  = sizeof(long long);
 
-  // create table for all included species
-  //H5TBappend_records (fileIO->getFileID(), "Species", 1, sizeof(Species), species_offset, species_sizes, &species[s]); 
-
-  // write parallel decomposition information
-   
-  check(H5LTset_attribute_int   (benchGroup, ".", "X",  &num_hwcntrs, 1), DMESG("H5LTset_attribute"));
-   
-   * */
+  hid_t cs_types[event_num+1];  cs_types[0] = H5T_NATIVE_DOUBLE;
+  for(int n=0; n < event_num; n++) cs_types[n+1]  = H5T_NATIVE_LLONG;
+ 
+  // Set PAPI event names as columns
+  const char *cs_names[event_num+1]; cs_names[0] = std::string("dt").c_str();
+  
+  // that looks weird, but I do not find any information how to call event_code_to_name properly ... (HELP!) 
+  char str[event_num][128]; // MAX_LEN ? Maybe 20 or so ...
+  for(int n=0; n < event_num; n++) {
+    PAPI_event_code_to_name(events[n], &str[n][0]);
+    cs_names[n+1] = &str[n][0];
+  }
+  
+  Event ev;
+  eventTable = new TableAttr(benchGroup, "Counters", event_num + 1, cs_names, cs_offset, cs_types, cs_sizes, &ev); 
 }
-
-
-
 
 void Benchmark::save(std::string id, int value)
 {
   check(H5LTset_attribute_int(benchGroup, ".", id.c_str(),  &value, 1), DMESG("H5LTset_attribute"));
-};
+}
 
 
