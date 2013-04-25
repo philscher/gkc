@@ -48,7 +48,7 @@ To handle multiple dimension in C++, we make use of CEAN
 Additionally, Cilk+ allows to use C99 complex numbers within
 C++, which facilitates vectorization. Although the code
 is non-standard, the authors believe that Cilk+ will establish
-as a new-standard such as OpenMP did.
+as a new-standard such as OpenMP did (e.g. array sections in Section 2.6 OpenMP 4.0rc2).
 
 License 
 -------------------------
