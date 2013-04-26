@@ -3,7 +3,7 @@
  *
  *       Filename: Setup.cpp
  *
- *    Description: Read in Config parameters
+ *    Description: Read config parameters
  *
  *         Author: Paul P. Hilscher (2009-), 
  *

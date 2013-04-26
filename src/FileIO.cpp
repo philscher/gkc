@@ -15,8 +15,6 @@
 #include <sstream>
 #include <stddef.h>
 
-#include "hdf5.h"
-#include "hdf5_hl.h"
 #include "FileIO.h"
 #include "Plasma.h"
 #include "Special/Vector3D.h"
@@ -83,10 +81,10 @@ void FileIO::create(Setup *setup, bool allowOverwrite)
 
 #ifdef GKC_PARALLEL_MPI
     MPI_Info file_info;
-    check(MPI_Info_create(&file_info), DMESG("File info"));
+    check(MPI_Info_create(&file_info), DMESG("HDF-5 Error"));
     // Note that using MPI_Info_set we can optimize HDF-5 MPI/IO writes
 
-    check( H5Pset_fapl_mpio(file_apl, parallel->Comm[DIR_ALL], file_info), DMESG("Critical HDF-5 Error"));
+    check( H5Pset_fapl_mpio(file_apl, parallel->Comm[DIR_ALL], file_info), DMESG("HDF-5 Error"));
 
     // shouldn't be freed before H5Pclose(file_apl) ?
     MPI_Info_free(&file_info);
@@ -97,22 +95,22 @@ void FileIO::create(Setup *setup, bool allowOverwrite)
  
   // Create new output file
   file = check(H5Fcreate(outputFileName.c_str(), (allowOverwrite ? H5F_ACC_TRUNC : H5F_ACC_EXCL),
-          H5P_DEFAULT, file_apl ), DMESG("H5FCreate : HDF5 File (File already exists ? use -f to overwrite)"));
+          H5P_DEFAULT, file_apl ), DMESG("HDF-5 Error : File already exists ? use -f to overwrite..."));
      
-  check( H5Pclose(file_apl),   DMESG("H5Pclose"));
+  check( H5Pclose(file_apl), DMESG("HDF-5 Error"));
 
   //////////////////////////////////////////////////////////////// Info Group ////////////////////////////////////////////////////////
    
   hid_t infoGroup = newGroup("/Info");
    
   check(H5LTset_attribute_string(infoGroup, ".", "Output" , outputFileName.c_str()), DMESG("HDF-5 Error"));
-  check(H5LTset_attribute_string(infoGroup, ".", "Input"  , inputFileName.c_str()) , DMESG("H5LTset_attribute"));
-  check(H5LTset_attribute_string(infoGroup, ".", "Version", PACKAGE_VERSION)       , DMESG("H5LTset_attribute"));
-  check(H5LTset_attribute_string(infoGroup, ".", "Info"   , info.c_str())          , DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_string(infoGroup, ".", "Input"  , inputFileName.c_str()) , DMESG("HDF-5 Error"));
+  check(H5LTset_attribute_string(infoGroup, ".", "Version", PACKAGE_VERSION)       , DMESG("HDF-5 Error"));
+  check(H5LTset_attribute_string(infoGroup, ".", "Info"   , info.c_str())          , DMESG("HDF-5 Error"));
 
-  check(H5LTset_attribute_string(infoGroup, ".", "Config", setup->configFileString.c_str()), DMESG("H5LTset_attribute"));
-  
-  check(H5LTset_attribute_string(file, ".", "StartTime", System::getTimeString().c_str()), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_string(infoGroup, ".", "Config", setup->configFileString.c_str()), DMESG("HDF-5 Error"));
+
+  check(H5LTset_attribute_string(file     , ".", "StartTime", System::getTimeString().c_str()), DMESG("HDF-5 Error"));
 
   // get & save HDF-5 version
   { 
@@ -121,7 +119,7 @@ void FileIO::create(Setup *setup, bool allowOverwrite)
     H5get_libversion(&majnum, &minnum, &relnum);
     version << majnum << "." << minnum << "." << relnum << std::endl;
   
-    check(H5LTset_attribute_string(infoGroup, ".", "HDF5version", version.str().c_str()), DMESG("H5LTset_attribute"));
+    check(H5LTset_attribute_string(infoGroup, ".", "HDF5version", version.str().c_str()), DMESG("HDF-5 Error"));
   }
 
   H5Gclose(infoGroup);
@@ -141,7 +139,7 @@ void FileIO::create(Setup *setup, bool allowOverwrite)
 
        double value = std::stod(key_value[1]);
        
-       check(H5LTset_attribute_double(constantsGroup, ".", key_value[0].c_str(), &value, 1), DMESG("H5LTset_attribute"));
+       check(H5LTset_attribute_double(constantsGroup, ".", key_value[0].c_str(), &value, 1), DMESG("HDF-5 Error"));
     }
          
   }
@@ -157,42 +155,39 @@ void FileIO::initData(Setup *setup)
 // Destructor
 FileIO::~FileIO()  
 {
-  check(H5LTset_attribute_string(file, ".", "StopTime", System::getTimeString().c_str()), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_string(file, ".", "StopTime", System::getTimeString().c_str()), DMESG("HDF-5 Error"));
   // Free all HDF5 resources
 
   // close some extra stuff
-  check( H5Tclose(complex_tid), DMESG("H5Tclose"));
-  check( H5Tclose(timing_tid ), DMESG("H5Tclose"));
-  check( H5Tclose(species_tid), DMESG("H5Tclose"));
-  check( H5Tclose(str_tid    ), DMESG("H5Tclose"));
+  check( H5Tclose(complex_tid), DMESG("HDF-5 Error"));
+  check( H5Tclose(timing_tid ), DMESG("HDF-5 Error"));
+  check( H5Tclose(species_tid), DMESG("HDF-5 Error"));
+  check( H5Tclose(str_tid    ), DMESG("HDF-5 Error"));
 
   // close file
-  check( H5Fclose(file)    , DMESG("Unable to close file ..."));
-
+  check( H5Fclose(file)    , DMESG("HDF-5 Error : Unable to close file ..."));
 }
 
 hid_t  FileIO::newGroup(std::string name, hid_t parentNode)
 {
-   if (parentNode == -2) parentNode = getFileID();
-   hid_t newGroup = check(H5Gcreate(parentNode, name.c_str(),H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), 
-                          DMESG("Error creating group file for Spectrum : H5Gcreate"));
-   return newGroup;
-};
-
+  if (parentNode == -2) parentNode = getFileID();
+  hid_t newGroup = check(H5Gcreate(parentNode, name.c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("HDF-5 Error"));
+  return newGroup;
+}
 
 // from http://mail.hdfgroup.org/pipermail/hdf-forum_hdfgroup.org/2010-June/012076.html
 // to prevent corruption of HDF-5 file (requires regular calls to this->flush() ] 
 void FileIO::flush(Timing timing, double dt, bool force_flush)
 {
-   if(timing.check(dataFileFlushTiming, dt) || force_flush) H5Fflush(file, H5F_SCOPE_GLOBAL);
+  if(timing.check(dataFileFlushTiming, dt) || force_flush) H5Fflush(file, H5F_SCOPE_GLOBAL);
 }
 
 void FileIO::printOn(std::ostream &output) const 
 {
-   output << "            -------------------------------------------------------------------" << std::endl
-          << "Data       |  Input : " << (inputFileName == "" ? "---None---" : inputFileName)  << std::endl 
-          << "           | Output : " <<  outputFileName  << " Resume : " << (resumeFile ? "yes" : "no") << std::endl;
-};
+  output << "            -------------------------------------------------------------------" << std::endl
+         << "Data       |  Input : " << (inputFileName == "" ? "---None---" : inputFileName)  << std::endl 
+         << "           | Output : " <<  outputFileName  << " Resume : " << (resumeFile ? "yes" : "no") << std::endl;
+}
 
 FileAttr* FileIO::newTiming(hid_t group, hsize_t offset, bool write)
 {

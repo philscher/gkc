@@ -174,9 +174,9 @@ void Plasma::initData(FileIO *fileIO)
   
   hid_t plasmaGroup = fileIO->newGroup("Plasma");
 
-  check(H5LTset_attribute_double(plasmaGroup, ".", "Debye2",  &debye2, 1), DMESG("H5LTset_attribute"));
-  check(H5LTset_attribute_double(plasmaGroup, ".", "beta"  ,  &beta  , 1), DMESG("H5LTset_attribute"));
-  check(H5LTset_attribute_double(plasmaGroup, ".", "B0"    ,  &B0    , 1), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_double(plasmaGroup, ".", "Debye2",  &debye2, 1), DMESG("HDF-5 Error"));
+  check(H5LTset_attribute_double(plasmaGroup, ".", "beta"  ,  &beta  , 1), DMESG("HDF-5 Error"));
+  check(H5LTset_attribute_double(plasmaGroup, ".", "B0"    ,  &B0    , 1), DMESG("HDF-5 Error"));
          
   //////////////////////// Set Table for species.
          
@@ -197,7 +197,7 @@ void Plasma::initData(FileIO *fileIO)
 
   // Note : +1 for adiabatic species
   check(H5TBmake_table("SpeciesTable", fileIO->getFileID(), "Species", (hsize_t) 6, (hsize_t) Ns+1, sizeof(Species), spec_names,
-                       spec_offset, spec_type, Ns+1, NULL, 0, &species[0] ), DMESG("H5Tmake_table : Species"));
+                       spec_offset, spec_type, Ns+1, NULL, 0, &species[0] ), DMESG("HDF-5 Error"));
         
   /////////////////////
          
