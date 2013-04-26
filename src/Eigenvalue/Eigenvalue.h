@@ -3,7 +3,7 @@
  *
  *       Filename: Eigenvalue.h
  *
- *    Description: Interface for eigenvalue calulcations
+ *    Description: Interface for eigenvalue calculations
  *
  *         Author: Paul P. Hilscher (2011-)
  *
@@ -29,13 +29,14 @@
 /**
 *    @brief  Interface for eigenvalue calculations
 *
-*    Can be used to calculate the eigenvalues of the
-*    current setup, use is rather limited due to the
-*    problem size - or to calculate the maximum absolute
-*    eigenvalue in order to estimate the time step.
+*    Calculate the eigenvalues of the linear gyrokinetic operator (however is 
+*    only practicable for rather small problem sizes). 
+*    Additionally, the most unstable eigenvalue can be extracted in order to
+*    calculate the largest stable linear time step.
 *
-*    @cite Merz2012:MultiDimensionalGKParameterStudy
-*    @cite Roman2010:FastEigenvalueMassivelyParallel
+*    References :
+*      @cite Merz2012:MultiDimensionalGKParameterStudy
+*      @cite Roman2010:FastEigenvalueMassivelyParallel
 *
 **/
 class Eigenvalue : public IfaceGKC {

@@ -101,7 +101,7 @@ void FieldsFFT::solvePoissonEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_
 
 
 
-// Note : additional field corrections are missing ! see Lapillione
+// Note : additional field corrections are missing ! see Lapillionne
 void FieldsFFT::solveAmpereEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_NkxL],
                                     CComplex kXIn [Nq][NzLD][Nky][FFTSolver::X_NkxL])
 
@@ -360,33 +360,30 @@ void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEn
 
       fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Forward, ArrayField0.data((CComplex *) Field0));
 
-      // Calculate |∇ φ|^2 (check if FFT Norm is correct)
-      //
+      // Calculate |∇ φ|^2 (check if FFT norm is correct)
+      // e.g. Y. Idomura et al., J.Comp.Phys 2007, New conservative gk ..., Eq.(11) 
+      
+      CComplex phi_yz[Nx]; phi_yz[:] = 0.;
+      if(species[0].doGyro) calcFluxSurfAvrg(kXOut, phi_yz);
+      const double adiab = species[0].n0 * pow2(species[0].q)/species[0].T0;
+      
       //#pragma omp parallel for, collapse(2), reduce(+,phiEnergy,ApEnergy,BpEnergy)
       for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
       
       for(int x_k = fft->K1xLlD; x_k <= fft->K1xLuD; x_k++) {
-              
+    
         const double k2_p = fft->k2_p(x_k,y_k,z);
-        if(Nq >= 1) phiEnergy += cabs(k2_p * pow2(kXOut[Field::phi][z][y_k][x_k]))/fft->Norm_X * (1. + plasma->debye2);
+
+        // when to do FFT normalization ?
+        if(Nq >= 1) phiEnergy += (plasma->debye2*k2_p + sum_qqnT_1mG0(k2_p)) * pow2(cabs(kXOut[Field::phi][z][y_k][x_k]))/fft->Norm_X +
+                                 // adiabatic contributions (with correction from flux-surface averaging)
+                                 adiab * pow2(cabs(kXOut[Field::phi][z][y_k][x_k] - (y_k == 0 ? phi_yz[x_k] : 0.)))/fft->Norm_X ;
+
         if(Nq >= 2) ApEnergy  += cabs(k2_p * pow2(kXOut[Field::Ap ][z][y_k][x_k]))/fft->Norm_X;
         if(Nq >= 3) BpEnergy  += cabs(       pow2(kXOut[Field::Bp ][z][y_k][x_k]))/fft->Norm_X;
-        //if(Nq >= 1) phiEnergy += (plasma->debye2*k2_p + sum_qqnT_1mG0(k2_p)) * pow2(cabs(kXOut[Field::phi][z][y_k][x_k]))/fft->Norm_X;
            
       } } }
-      
-      ////////////// add contribution to field energy arising from adiabatic term ( including flux-averaging correction ) ///////////////
-      CComplex phi_yz[Nx]; phi_yz[:] = 0.;
-      if(species[0].doGyro) calcFluxSurfAvrg(kXOut, phi_yz);
         
-      const double adiab = species[0].n0 * pow2(species[0].q)/species[0].T0;
-      // add contributions from adiabatic species (eventually with flux-averaging term)
-      for(int z = NzLlD; z <= NzLuD; z++) { simd_for(int x_k = fft->K1xLlD; x_k <= fft->K1xLuD; x_k++) {
-        
-        phiEnergy += adiab * __sec_reduce_add(pow2(cabs((kXOut[Field::phi][z][:][x_k] - phi_yz[x_k])))) ;
-
-      } } // z, x_k
-
       phiEnergy =  parallel->reduce(phiEnergy * grid->dXYZ / (8. * M_PI), Op::sum, DIR_XYZ) ; 
       ApEnergy  =  parallel->reduce( ApEnergy * grid->dXYZ / (8. * M_PI), Op::sum, DIR_XYZ) ;
       BpEnergy  =  parallel->reduce( BpEnergy * grid->dXYZ / (8. * M_PI), Op::sum, DIR_XYZ) ;

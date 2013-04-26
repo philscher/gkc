@@ -52,10 +52,10 @@ void Moments::getMoment(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB][Nv
   Mom[idx][:][:][:][:] = 0.;
  
   // temporary arrays for integration over \mu
-  // Need Nq in order to let gyroaveraging work for Nq > 1
+  // Need Nq in order to let gyro-averaging work for Nq > 1
   CComplex Mom_m[Nq][NzLD][Nky][NxLD];
   
-  // We have set to zero, because gyro-averaging operator courrently requires size [Nq][...].
+  // We have set to zero, because gyro-averaging operator currently requires size [Nq][...].
   // and surplus arrays may contain NaN
   if(Nq > 1) Mom_m[1:Nq-1][:][:][:] = 0.;
 

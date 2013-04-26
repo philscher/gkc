@@ -97,8 +97,8 @@ void Diagnostics::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][Nky][FFTSolver::X
 void Diagnostics::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB], 
                                         const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
                                         const CComplex Mom[8][NsLD][NzLD][Nky][NxLD], 
-                                        double ParticleFlux[Nq][NsLD][Nky][NxLD], 
-                                        double     HeatFlux[Nq][NsLD][Nky][NxLD],
+                                        const double   ParticleFlux[Nq][NsLD][Nky][NxLD], 
+                                        const double   HeatFlux[Nq][NsLD][Nky][NxLD],
                                         ScalarValues &scalarValues) 
 
 {
@@ -106,13 +106,26 @@ void Diagnostics::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky]
   for(int s = NsGlD; s <= NsGuD; s++) {
     
       
-    double number = 0.e0;
-    double kineticEnergy=0.e0;
-    double entropy = 0.;
+    double number        = 0.;
+    double kineticEnergy = 0.;
+    double entropy       = 0.;
     double particle[Nq]; particle[:] = 0.;
     double heat[Nq];         heat[:] = 0.;
-    // ? Why not working ?? double heat[Nq] = { 0.};
+
+    ////////////////////////////// Calculate Entropy /////////////////////////////////////
+
+    // Kinetic energy is calculated in gyro-center coordinates
+    // Y.Idomura et al., J.Comp.Phys 2007, New conservative gk ..., Eq.(11)  [ but we use different normalization]
+    // Only y_k==0 has contributions, as other one cancel with integration over y
+    for(int m = NmLlD; m <= NmLuD; m++) { 
+    const double d6Z = grid->dXYZ * dv * grid->dm[m] * pow2(species[s].m) * plasma->B0;
+    for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {
+    for(int x = NxLlD; x <= NxLuD; x++) { for(int   v = NvLlD ;   v <= NvLuD ;   v++) {
+      
+      kineticEnergy += (species[s].m * pow2(V[v]) + M[m] * plasma->B0) * f[s][m][z][0][x][v] * d6Z;
     
+    } } } } } // m, z, y_k, x, v 
+     
     if((s >= NsLlD && s <= NsLuD) && (parallel->Coord[DIR_VM] == 0))  {
     
       
@@ -122,16 +135,14 @@ void Diagnostics::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky]
     number =  creal(__sec_reduce_add(Mom[0][s-NsLlD][0:NzLD][0][0:NxLD]));
     
     //////////// Calculate Kinetic Energy  //////////////////////////
+   
+    //    kineticEnergy = (species[s].m * __sec_reduce_add(creal(Mom[1][s-NsLlD][0:NzLD][0][0:NxLD])) +
+     //                                    __sec_reduce_add(creal(Mom[2][s-NsLlD][0:NzLD][0][0:NxLD])) ) * grid->dXYZ;
+    //kineticEnergy = (0.5 * species[s].m * __sec_reduce_add(creal(Mom[1][s-NsLlD][0:NzLD][0][0:NxLD])) +
+    //                                      __sec_reduce_add(creal(Mom[2][s-NsLlD][0:NzLD][0][0:NxLD])) ) * grid->dXYZ;
     
-    kineticEnergy = (__sec_reduce_add(creal(Mom[1][s-NsLlD][0:NzLD][0][0:NxLD])) +
-                     __sec_reduce_add(creal(Mom[2][s-NsLlD][0:NzLD][0][0:NxLD])) ) * grid->dXYZ;
-    
-    kineticEnergy = 0.5 * species[s].m * (__sec_reduce_add(creal(Mom[1][s-NsLlD][0:NzLD][0][0:NxLD]))) * grid->dXYZ;
 
-    ////////////////////////////// Calculate Entropy /////////////////////////////////////
-    // reference ?
-
-    //#pragma omp parallel for reduction(+:kineticEnergy) collapse (2)
+    //#pragma omp parallel for reduction(+:entropy) collapse (2)
     for(int m = NmLlD; m <= NmLuD; m++) {
     for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {
     for(int x = NxLlD; x <= NxLuD; x++) { 
@@ -151,7 +162,7 @@ void Diagnostics::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky]
     
     } // if(local s) 
 
-    // Communicate with other groups (make reduce whole structure)
+    // Communicate with other groups (reduce whole structure)
     parallel->reduce(particle     , Op::sum, DIR_ALL, Nq);
     parallel->reduce(heat         , Op::sum, DIR_ALL, Nq);
     kineticEnergy = parallel->reduce(kineticEnergy, Op::sum);
@@ -204,7 +215,7 @@ void Diagnostics::getParticleHeatFlux(
     // take only real part as it gives the radial direction ?!
     ParticleFlux[q][s-NsLlD][y_k][x-NxLlD] = norm[q] * creal( iky_field * conj(Mom[3*q+0][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
         HeatFlux[q][s-NsLlD][y_k][x-NxLlD] = norm[q] * creal( iky_field * conj(Mom[3*q+1][s-NsLlD][z-NzLlD][y_k][x-NxLlD]
-                                                                               + Mom[3*q+2][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
+                                                                             + Mom[3*q+2][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
 
     // Get Cross-phases for the (phi, Ap, Bp) x ( M00, T, T) ( need to divide over Nz to get average after reduce operator later)
     CrossPhase[q][0][s-NsLlD][y_k][x-NxLlD] = norm[q] * carg( iky_field * conj(Mom[0][s-NsLlD][z-NzLlD][y_k][x-NxLlD]));
@@ -512,9 +523,10 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
     messageStream << std::setprecision(4);
     if(vlasov->doNonLinearParallel) {
 
-      double field_energy     = scalarValues.phiEnergy + scalarValues.ApEnergy + scalarValues.BpEnergy;
-      double rel_energy_consv = 100*abs((kinetic_energy+field_energy)/(field_energy == 0. ? 1.e-99 : field_energy));
-      messageStream << "         | Total Energy Ratio : " <<  std::noshowpos << std::fixed << rel_energy_consv << "%";
+      double field_energy     = scalarValues.phiEnergy ;// skip for first+ scalarValues.ApEnergy + scalarValues.BpEnergy;
+      double rel_energy_consv = 100*std::abs((kinetic_energy+field_energy)/(field_energy == 0. ? 1.e-99 : field_energy));
+      messageStream << "         | Energy conservation (es) : " <<  rel_energy_consv << "%";
+      //messageStream << "         | Total Energy Ratio : " <<  std::noshowpos << std::fixed << rel_energy_consv << "%";
     }
 
     if(Ns > 1) messageStream << "    Total Charge = " << ((species[0].n0 != 0.) ? 0. : total_charge);

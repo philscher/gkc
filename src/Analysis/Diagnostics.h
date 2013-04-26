@@ -187,11 +187,11 @@ class Diagnostics : public IfaceGKC {
   *
   **/
   void calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB], 
-                                     const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
-                                     const CComplex Mom[8][NsLD][NzLD][NkyLD][NxLD], 
-                                     double ParticleFlux[Nq][NsLD][NkyLD][NxLD], 
-                                     double HeatFlux[Nq][NsLD][NkyLD][NxLD],
-                                     ScalarValues &scalarValues) ;
+                             const CComplex f0[NsLD][NmLD][NzLB][NkyLD][NxLB][NvLB],
+                             const CComplex Mom[8][NsLD][NzLD][NkyLD][NxLD], 
+                             const double ParticleFlux[Nq][NsLD][NkyLD][NxLD], 
+                             const double HeatFlux[Nq][NsLD][NkyLD][NxLD],
+                             ScalarValues &scalarValues) ;
 
   /**
   *  @brief calculates and returns the heat flux across magnetic flux surfaces
@@ -250,7 +250,5 @@ class Diagnostics : public IfaceGKC {
   void printOn(std::ostream &output) const;
 
 };
-
-
 
 #endif // __GKC_DIAGNOSTICS_H__

@@ -37,7 +37,7 @@ class Fields;
 *
 * PAPI, the Performance Application Programming Interface
 * (@ref http://icl.cs.utk.edu/papi/),
-* is a C-library to faciliate the usage of hardware counters.
+* is a C-library to facilitate the usage of hardware counters.
 *
 * We mainly employ it to estimate the FLOP/s (Floating point
 * operations per second).
@@ -54,7 +54,7 @@ class Benchmark : public IfaceGKC
 
   TableAttr *eventTable;
   
-  static const int event_num = 3;
+  static const int event_num = 8;
  
   struct Event {
       double    dtime;            /// Time 
@@ -64,10 +64,9 @@ class Benchmark : public IfaceGKC
 
   long long time_usec_start;
 
-  int events[8]      ; /// Pre-defined max number of events
-  char *event_name[8]; /// Name of events
+  int events[event_num]      ; /// Pre-defined max number of events
 
-  bool useBenchmark;
+  bool useBenchmark;   ///< Enable PAPI Hardware counters
 
   Parallel * parallel;
   /**

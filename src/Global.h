@@ -33,7 +33,8 @@ typedef std::complex<double> Complex;
 typedef _Complex double CComplex;  
 typedef double               Real   ;
 #define _imag ((CComplex) (0.+1.j)) 
-   
+
+// use attributes with c++-11 ?!
 // align to cache-lines
 typedef __declspec(align(64)) double     doubleAA;
 typedef __declspec(align(64)) CComplex CComplexAA;

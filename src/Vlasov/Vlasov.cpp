@@ -312,8 +312,8 @@ void Vlasov::loadData(FileIO *fileIO)
 
 void Vlasov::printOn(std::ostream &output) const
 {
-  output << "Vlasov     | Type : " << equation_type <<  " Non-Linear (ExB): " << (doNonLinear ? "yes" : "no") 
-                                   << " Non-Linear (v∥): " << (doNonLinearParallel ? "yes" : "no") << std::endl;
+  output << "Vlasov     | Type : " << equation_type <<  " Non-Linearity : (ExB) " << (doNonLinear ? "yes" : "no") 
+                                   << "  (v∥) " << (doNonLinearParallel ? "yes" : "no") << std::endl;
   output << "Vlasov     | Hyperviscosity [ " ;
   for(int dir = DIR_X; dir <= DIR_S; dir++) output << hyp_visc[dir] << " ";
   output << " ] " << std::endl;

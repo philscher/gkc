@@ -79,7 +79,7 @@ namespace Field { const int  phi =0 , ///< electric field
 *           The integration in \f$ \mu \f$ is performed using either
 *           Gaussian-Legendre integration or Trapezoidal rule.
 *           @note : is Gauss-Laguerre not the better choice ? Check. 
-*           The perpendicular interation can be setup using 
+*           The perpendicular integration can be setup using 
 *           Integration.cpp (move to grid).
 *   
 *
@@ -184,7 +184,7 @@ class Fields : public IfaceGKC {
   *  Reference : 
   *  
   *  @param f0 The Maxwellian phase-space background distribution
-  *  @param f  Currect phase-space distribution
+  *  @param f  Current phase-space distribution
   *  @param m  index for perpendicular velocity \f$ \mu = M[m]\f$
   *  @param s  index for species
   *
@@ -233,11 +233,32 @@ class Fields : public IfaceGKC {
   /**
   *    @brief calculate Field energy
   *
-  *    calculates The field energy
+  *    calculates the field energy
+  *
+  *    Liouvilles equation shows that the F is conserved (from Idomura, 2007, ...).
+  *    This can be calculated by from the gyro-kinetic Hamiltonian 
+  *    \f[
+  *         H = \frac{1}{2} m v_\parallel^2 + \mu B_0 + q_i \left< \phi \right>
+  *    \f]
+  *    Liouville equations is conserved, such that energy can be calculated from
+  *
+  *    \f[
+  *       \int H \frac{partial F}{partial t} = frac{E_k}{d t} + frac{E_f}{dt}
+  *
+  *    \f]
+  *
+  *    to get
+  *    \f[aligned
+  *         \frac{E_k}{dt} = \frac{d}{dt} \int left( \frac{1}{2} m_i v_\parallel^2 + \mu B_0 \right) F d^6 Z \\
+  *         frac{E_f}{dt}  = \int q_i \left< \phi \right> \frac{\partial F}{\partial t} d^Z
+  *                        = \frac{d}{dt} \frac{1}{8pi} \int \left[ \lambda_D^2 |\nabla \phi|^2 + \sum_s |\Gamma_0(k_perp^2) \phi|^2
+  *                              + | \phi - \left< \phi \right>_{yz} \right] dx dy dz
+  *    \f]
+  *
   *
   *    @out phiEnergy  Total Energy of electric field
-  *    @out ApEnergy   total energy of perpendicular magnetic fieled (perturbation)
-  *    @out BpEnergy   total energy of parallell magnetic field (perturbation)
+  *    @out ApEnergy   total energy of perpendicular magnetic field (perturbation)
+  *    @out BpEnergy   total energy of parallel magnetic field (perturbation)
   **/
   virtual void getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEnergy) = 0;
 
@@ -286,7 +307,7 @@ class Fields : public IfaceGKC {
   
    
   /**
-  *    @brief performed double-gyroaverage over Maxwellian background
+  *    @brief performed double gyro-average over Maxwellian background
   *
   *    \f[
   *        \int_0^\infty <<\phi>> e^{-\mu} d\mu
@@ -376,7 +397,7 @@ class Fields : public IfaceGKC {
   /**
   *  @brief write field values put to data file
   * 
-  *  Thus function saves the state of all fields at the current timestep.
+  *  Thus function saves the state of all fields at the current time step.
   *  you are using, which is either \f$ (\phi) \f$, \f$ (\phi, A_\parallel) \f$,
   *  \f$ (\phi, A_\parallel, B_\parallel) \f$. Values are stored at
   *  

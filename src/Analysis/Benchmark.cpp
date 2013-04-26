@@ -28,13 +28,13 @@ Benchmark::Benchmark(Setup *setup, Parallel *_parallel, FileIO *fileIO) : parall
 
   if(useBenchmark) {
 
-   
    // Initialize the PAPI library 
    if(PAPI_library_init(PAPI_VER_CURRENT) != PAPI_VER_CURRENT) DMESG("PAPI library init error!\n");
    
    // check avaiable counters
    check((num_hwcntrs = PAPI_num_counters()) <= PAPI_OK, DMESG("Could not get number of avaiable counters"));
-   
+  
+   // Set Hardware counters here (use setup for that !)
    events[:] =  PAPI_NULL;
    events[0] =  PAPI_DP_OPS;
    events[1] =  PAPI_VEC_DP;
@@ -176,6 +176,7 @@ double Benchmark::stop(std::string id, int type)
 
 void Benchmark::initData(Setup *setup, FileIO *fileIO)
 {
+  if(!useBenchmark) return;
    
   benchGroup = fileIO->newGroup("/Benchmark");
 
@@ -203,7 +204,7 @@ void Benchmark::initData(Setup *setup, FileIO *fileIO)
   }
   
   Event ev;
-  eventTable = new TableAttr(benchGroup, "Counters", event_num + 1, cs_names, cs_offset, cs_types, cs_sizes, &ev); 
+  eventTable = new TableAttr(benchGroup, "PAPICounters", event_num + 1, cs_names, cs_offset, cs_types, cs_sizes, &ev); 
 }
 
 void Benchmark::save(std::string id, int value)
