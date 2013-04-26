@@ -4,7 +4,7 @@
  *       Filename: Collision_LenardBernstein.cpp
  *
  *    Description: Lenard-Bernstein collisional operator including
- *                 energy & momentum conservational terms
+ *                 energy & momentum conservation terms
  *
  *         Author: Paul P. Hilscher (2012-), 
  *
@@ -117,7 +117,7 @@ void Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const
            
     simd_for(int v = NvLlD; v <= NvLuD; v++) {
 
-      // Velocity derivaties for Lennard-Bernstein Collisional Model (shouln't I use G ?)
+      // Velocity derivatives for Lennard-Bernstein Collisional Model (shouldn't I use G ?)
       const CComplex f_      = f[s][m][z][y_k][x][v];
       const CComplex df_dv   = (8. *(f[s][m][z][y_k][x][v+1] - f[s][m][z][y_k][x][v-1]) 
                                   - (f[s][m][z][y_k][x][v+2] - f[s][m][z][y_k][x][v-2])) * _kw_12_dv;
