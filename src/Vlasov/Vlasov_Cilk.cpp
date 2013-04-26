@@ -3,7 +3,7 @@
  *
  *       Filename: Vlasov_Cilk.cpp
  *
- *    Description: Implementation of GK Vlasov's equation using 
+ *    Description: Implementation of GK Vlasov equation using 
  *                 Intel Cilk (Array Notation)
  *
  *         Author: Paul P. Hilscher (2011-), 
@@ -162,11 +162,9 @@ void VlasovCilk::calculateExBNonLinearity(const CComplex  G              [NzLB][
 
     // Done - store the non-linear term in ExB
     ExB[0:Nky][NxLlD:NxLD][v] = xky_ExB[:][:];
-
   }
     
   return;
-
 }
                            
 void VlasovCilk::setupXiAndG(
@@ -263,8 +261,9 @@ void VlasovCilk::Vlasov_EM(
     if(doNonLinear         && (rk_step != 0)) calculateExBNonLinearity(G, Xi, nullptr, nullptr, z, m, s, NonLinearTerm, Xi_max, true); 
     if(doNonLinearParallel && (rk_step != 0)) calculateParallelNonLinearity(g, Fields, z, m, s, NonLinearTerm);
     
+  // Note : we do not evolve highest mode (Nyquist)
   #pragma omp for collapse(2) 
-  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { 
+  for(int y_k = 0; y_k < Nky-1; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { 
            
        
     const CComplex phi_    = Fields[Field::phi][s][m][z][y_k][x];

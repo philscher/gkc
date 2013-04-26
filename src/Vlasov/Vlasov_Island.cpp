@@ -201,10 +201,11 @@ void VlasovIsland::Vlasov_2D_Island(
   for(int m = NmLlD; m <= NmLuD; m++) { for(int z = NzLlD; z <= NzLuD; z++) {  
         
     //calculate non-linear term (rk_step == 0 for eigenvalue calculations)
-    if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
-        
+    if(doNonLinear && (rk_step != 0)) calculateExBNonLinearity(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
+  
+  // don't evolve Nyquist
   #pragma omp for
-  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {
+  for(int y_k = 0; y_k < Nky-1; y_k++) {
 
     // Note : for negative modes we need to use complex conjugate value
     const CComplex iky     = _imag * fft->ky(y_k);
@@ -380,14 +381,14 @@ void VlasovIsland::Vlasov_2D_Island_Equi(
       for(int m=NmLlD; m<=NmLuD; m++) { for(int z=NzLlD; z<= NzLuD;z++) {  
         
         //calculate non-linear term (rk_step == 0 for eigenvalue calculations)
-        if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
+        if(doNonLinear && (rk_step != 0)) calculateExBNonLinearity(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
         
         for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
 
         // Note : for negative modes we need to use complex conjugate value
         const CComplex ky = _imag * fft->ky(y_k) ;
         
-        for(int x=NxLlD; x<= NxLuD;x++) {  
+        for(int x = NxLlD; x <= NxLuD;x++) {  
           
           const CComplex phi_ = Fields[Field::phi][s][m][z][y_k][x];
           
@@ -489,7 +490,7 @@ void VlasovIsland::Vlasov_2D_Island_filter(
       for(int m=NmLlD; m<=NmLuD; m++) { for(int z=NzLlD; z<= NzLuD;z++) {  
         
         //calculate non-linear term (rk_step == 0 for eigenvalue calculations)
-        if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
+        if(doNonLinear && (rk_step != 0)) calculateExBNonLinearity(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
         
         for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
 
@@ -838,7 +839,7 @@ void VlasovIsland::Vlasov_2D_Island(
       for(int m=NmLlD; m<=NmLuD; m++) { for(int z=NzLlD; z<= NzLuD;z++) {  
         
         //calculate non-linear term (rk_step == 0 for eigenvalue calculations)
-        if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
+        if(doNonLinear && (rk_step != 0)) calculateExBNonLinearity(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
         
         #pragma omp for
         for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {
@@ -1007,7 +1008,7 @@ void VlasovIsland::Vlasov_2D_Island_orig(
 
   for(int s = NsLlD; s <= NsLuD; s++) {
         
-    // small abbrevations
+    // small abbreviations
     const double w_n   = species[s].w_n;
     const double w_T   = species[s].w_T;
     const double alpha = species[s].alpha;
@@ -1025,7 +1026,7 @@ void VlasovIsland::Vlasov_2D_Island_orig(
         
  
     //calculate non-linear term (rk_step == 0 for eigenvalue calculations)
-    if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
+    if(doNonLinear && (rk_step != 0)) calculateExBNonLinearity(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
         
   #pragma omp for
   for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) {

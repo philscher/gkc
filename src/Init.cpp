@@ -26,12 +26,13 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov 
    
   random_seed = setup->get("Init.RandomSeed", 0);
    
-  // Only perturbed if simulation is not resumbed
+  // Only perturb if simulation is not resumed
   if(fileIO->resumeFile == false) {
 
     initBackground(setup, grid, (A6zz) vlasov->f0, (A6zz) vlasov->f);
     
-    // Note : do not perturb m=0 modes as this perturbes direclty energy and density of f1 
+    // Note : do not perturb m=0 modes as this perturbs directly energy and density of f1 
+    //        also m=Nky-1 mode is not perturbed as it is not evolved (Nyquist)
     if     (PerturbationMethod == "NoPerturbation") ;
     else if(PerturbationMethod == "EqualModePower")  PerturbationPSFMode ((A6zz) vlasov->f0, (A6zz) vlasov->f); 
     else if(PerturbationMethod == "Noise"         )  PerturbationPSFNoise((A6zz) vlasov->f0, (A6zz) vlasov->f); 
@@ -118,7 +119,7 @@ void Init::initBackground(Setup *setup, Grid *grid,
   
   for(int s = NsLlD; s <= NsLuD; s++) {
    
-    // Initialize Form of f, Ap, phi, and g, we need superposition between genereal f1 pertubration and species dependent
+    // Initialize Form of f, Ap, phi, and g, we need superposition between general f1 perturbation and species dependent
     const double VOff = 0.;//setup->get("Plasma.Species" + Setup::num2str(s) + ".VelocityOffset", 0.);
       
     FunctionParser f0_parser = setup->getFParser();
@@ -163,7 +164,7 @@ void Init::PerturbationPSFNoise(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][N
     std::srand(random_seed == 0 ? System::getTime() + System::getProcessID() + s : random_seed); 
       
     for(int m   = NmLlD ; m   <= NmLuD ;   m++) { for(int z = NzLlD; z <= NzLuD; z++) {
-    for(int y_k = 1     ; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { 
+    for(int y_k = 1     ; y_k <  Nky-1 ; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { 
     for(int v   = NvLlD ; v   <= NvLuD ;   v++) {
 
       const double random_number = static_cast<double>(std::rand()) / RAND_MAX; // get random number [0,1]
@@ -188,7 +189,7 @@ void Init::PerturbationPSFExp(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvL
 
   // Note : Ignore species dependence
   for(int s = NsLlD; s <= NsLuD; s++) { for(int m   = NmLlD; m   <= NmLuD ;   m++) { 
-  for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = 1    ; y_k <= NkyLuD; y_k++) {
+  for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = 1    ; y_k <  Nky-1 ; y_k++) {
    
   // Add shifted phase information for poloidal modes
 
@@ -210,12 +211,12 @@ void Init::PerturbationPSFExp(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvL
 void Init::PerturbationPSFMode(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
                                      CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB])
 {
-   //  Callculates the phase (of what ??!)
+   // Calculates the phase (of what ??!)
    auto Phase = [=] (const int q, const int N)  -> double { return 2.*M_PI*((double) (q-1)/N); };
    // check if value is reasonable
        
    for(int s   = NsLlD; s   <= NsLuD ;   s++) { for(int m = NmLlD; m <= NmLuD; m++) { for(int z = NzLlD; z<=NzLuD; z++) {
-   for(int y_k = 1    ; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { for(int v = NvLlD; v<=NvLuD; v++) {
+   for(int y_k = 1    ; y_k <  Nky-1 ; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { for(int v = NvLlD; v<=NvLuD; v++) {
       
       double pert_x=0., pert_z=0.;
       

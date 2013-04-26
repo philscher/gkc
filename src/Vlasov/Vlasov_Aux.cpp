@@ -74,7 +74,7 @@ void VlasovAux::Vlasov_ES(
   //#pragma ivdep 
   for(int s = NsLlD; s <= NsLuD; s++) {
         
-    // some abbrevations
+    // some abbreviations
     const double w_n   = species[s].w_n;
     const double w_T   = species[s].w_T;
     const double alpha = species[s].alpha;
@@ -92,7 +92,7 @@ void VlasovAux::Vlasov_ES(
     for(int m = NmLlD; m <= NmLuD; m++) { for(int z = NzLlD; z <= NzLuD; z++) { 
       
       /// calculate non-linear term (rk_step == 0 for eigenvalue calculations)
-      if(doNonLinear         && (rk_step != 0)) calculatePoissonBracket(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
+      if(doNonLinear         && (rk_step != 0)) calculateExBNonLinearity(nullptr, nullptr, fs, Fields, z, m, s, nonLinearTerm, Xi_max, false); 
       if(doNonLinearParallel && (rk_step != 0)) calculateParallelNonLinearity2(fs, Fields, z, m, s, nonLinearTerm);
 
       #pragma omp for
@@ -184,7 +184,7 @@ void VlasovAux::Vlasov_EM(
        
     for(int z = NzLlD; z <= NzLuD; z++) { 
       
-          if(doNonLinear && (rk_step != 0)) calculatePoissonBracket(G, Xi, nullptr, nullptr, z, m, s, nonLinearTerm, Xi_max, true); 
+          if(doNonLinear && (rk_step != 0)) calculateExBNonLinearity(G, Xi, nullptr, nullptr, z, m, s, nonLinearTerm, Xi_max, true); 
       
     for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { 
 
