@@ -1,7 +1,7 @@
 /*
  * =====================================================================================
  *
- *       Filename: Benchmark.h
+ *       Filename: Benchmark_PAPI.h
  *
  *    Description: PAPI Benchmark class definition. Used for optimizing
  *                 Vlasov equation runtime.
