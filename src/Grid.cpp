@@ -12,10 +12,9 @@
  */
 
 #include "Grid.h"
-
 #include "Special/Integrate/Integrate.h"
 
-// **************** Define Global Variables ************* //
+/////////////////  Define Global Variables ////////////////////////
 int NxLlD, NxLuD, NxLlB, NxLuB; 
 int NyLlD, NyLuD, NyLlB, NyLuB; 
 int NkyLlD, NkyLuD, NkyLlB, NkyLuB; 
@@ -45,7 +44,7 @@ double Lx, Ly, Lz, Lv, Lm;
 int    Nx, Nky, Nz, Nv, Nm, Ns, Nq;
 double dx, dy, dz, dv,dt;
 
-// ************************************************* //
+///////////////////////////////////////////////
 
 Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO) 
 {
@@ -76,7 +75,7 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
       
   check(((Nm == 1) && (Lm != 1.)) ? -1 : 0, DMESG("For Nm=1, set Lm = 1 !"));
   
-  // Calculate some preknown values
+  // Calculate grid distances values (equidistant for X, Y, Z, V)
   dx = (Nx > 1) ? Lx/((double) (Nx-1)) : Lx;
   dy = (Ny > 1) ? Ly/((double) (Ny-1)) : Ly;
   dz = (Nz > 1) ? Lz/((double) (Nz  )) : Lz;
@@ -207,7 +206,6 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
   dXYZV = dx * dy * dz * dv;
 
   initData(fileIO);
-
 }
 
 Grid::~Grid () 
@@ -226,7 +224,6 @@ void Grid::printOn(std::ostream &output) const
          << "Grid       |  Nx : " << std::setw(4) << Nx << "  Nky : " << std::setw(4) << Nky 
                      << "  Nz : " << std::setw(4) << Nz <<  "  Nv : " << std::setw(4) << Nv 
          << std::setw(4)          << (doGyro ? std::string( "  Nμ : ") + Setup::num2str(Nm) : "") << std::endl;
-     
 }
     
 void Grid::initData(FileIO *fileIO) 
@@ -234,30 +231,28 @@ void Grid::initData(FileIO *fileIO)
 
   hid_t gridGroup = fileIO->newGroup("/Grid");
   
-  //fileIO->setAttribute(gridGroup, "Lv", Lv);
-
-  // Length scale
-  check(H5LTset_attribute_double(gridGroup, ".", "Lx", &Lx, 1), DMESG("Attribute"));
-  check(H5LTset_attribute_double(gridGroup, ".", "Ly", &Ly, 1), DMESG("Attribute"));
-  check(H5LTset_attribute_double(gridGroup, ".", "Lz", &Lz, 1), DMESG("Attribute"));
-  check(H5LTset_attribute_double(gridGroup, ".", "Lv", &Lv, 1), DMESG("Attribute"));
-  check(H5LTset_attribute_double(gridGroup, ".", "Lm", &Lm, 1), DMESG("Attribute"));
+  // set lengths
+  check(H5LTset_attribute_double(gridGroup, ".", "Lx", &Lx, 1), DMESG("HDF-5 Error"));
+  check(H5LTset_attribute_double(gridGroup, ".", "Ly", &Ly, 1), DMESG("HDF-5 Error"));
+  check(H5LTset_attribute_double(gridGroup, ".", "Lz", &Lz, 1), DMESG("HDF-5 Error"));
+  check(H5LTset_attribute_double(gridGroup, ".", "Lv", &Lv, 1), DMESG("HDF-5 Error"));
+  check(H5LTset_attribute_double(gridGroup, ".", "Lm", &Lm, 1), DMESG("HDF-5 Error"));
          
-  // Grid point number
-  check(H5LTset_attribute_int(gridGroup, ".", "Nx", &Nx , 1), DMESG("Attribute"));
-  check(H5LTset_attribute_int(gridGroup, ".", "Nky",&Nky, 1), DMESG("Attribute"));
-  check(H5LTset_attribute_int(gridGroup, ".", "Nz", &Nz , 1), DMESG("Attribute"));
-  check(H5LTset_attribute_int(gridGroup, ".", "Nv", &Nv , 1), DMESG("Attribite"));
-  check(H5LTset_attribute_int(gridGroup, ".", "Nm", &Nm , 1), DMESG("Attribute"));
-  check(H5LTset_attribute_int(gridGroup, ".", "Ns", &Ns , 1), DMESG("Attribute"));
+  // set grid point number
+  check(H5LTset_attribute_int(gridGroup, ".", "Nx", &Nx , 1), DMESG("HDF-5 Error"));
+  check(H5LTset_attribute_int(gridGroup, ".", "Nky",&Nky, 1), DMESG("HDF-5 Error"));
+  check(H5LTset_attribute_int(gridGroup, ".", "Nz", &Nz , 1), DMESG("HDF-5 Error"));
+  check(H5LTset_attribute_int(gridGroup, ".", "Nv", &Nv , 1), DMESG("HDF-5 Error"));
+  check(H5LTset_attribute_int(gridGroup, ".", "Nm", &Nm , 1), DMESG("HDF-5 Error"));
+  check(H5LTset_attribute_int(gridGroup, ".", "Ns", &Ns , 1), DMESG("HDF-5 Error"));
          
-  // set Lengths
-  check(H5LTset_attribute_double(gridGroup, ".", "X", &X[NxGlD], Nx), DMESG("Attribute"));
-  check(H5LTset_attribute_double(gridGroup, ".", "Z", &Z[NzGlD], Nz), DMESG("Attribute"));
-  check(H5LTset_attribute_double(gridGroup, ".", "V", &V[NvGlD], Nv), DMESG("Attribute"));
-  check(H5LTset_attribute_double(gridGroup, ".", "M", &M[NmGlD], Nm), DMESG("Attribute"));
+  // set grids 
+  check(H5LTset_attribute_double(gridGroup, ".", "X", &X[NxGlD], Nx), DMESG("HDF-5 Error"));
+  check(H5LTset_attribute_double(gridGroup, ".", "Z", &Z[NzGlD], Nz), DMESG("HDF-5 Error"));
+  check(H5LTset_attribute_double(gridGroup, ".", "V", &V[NvGlD], Nv), DMESG("HDF-5 Error"));
+  check(H5LTset_attribute_double(gridGroup, ".", "M", &M[NmGlD], Nm), DMESG("HDF-5 Error"));
   
-  check(H5LTset_attribute_string(gridGroup, ".", "MuIntegrationType", muIntegrationType.c_str()), DMESG("Attribute")); 
+  check(H5LTset_attribute_string(gridGroup, ".", "MuIntegrationType", muIntegrationType.c_str()), DMESG("HDF-5 Error")); 
   
   H5Gclose(gridGroup);
 

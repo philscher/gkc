@@ -24,15 +24,15 @@
 #include "Parallel/Parallel.h"
 #include "Init.h"
 #include "Eigenvalue/Eigenvalue.h"
-#include "Analysis/Benchmark.h"
+#include "Benchmark/Benchmark_PAPI.h"
 #include "Analysis/TestParticle.h"
 #include "Fields.h"
 
 /**
-*    @brief Class which handles explicit time intergration
+*    @brief Class which handles explicit time integration
 *
 *
-*    The maximum TimeStep is defined from istability consideration of the Time Integration
+*    The maximum time step is defined from istability consideration of the Time Integration
 *    method. Following  Karniadakis(2009), Parallel Scientific Computing in C++, it is defined
 *    by the Eigenvalue problem
 *    \f[ 
@@ -71,7 +71,7 @@ class TimeIntegration  : public IfaceGKC{
    
    int outputRatio;            ///< Frequency (time step) of step output
    bool useCFL;                ///< Set if CFL number is used for time-step calculations
-   double maxCFLNumber,        ///< Restruct timestep to fullfill CFL number
+   double maxCFLNumber,        ///< Restrict time step to fulfill CFL number
           linearSafetyFactor,  ///< Safety factor for time-step got from eigenvalue calculations
           maxLinearTimeStep ;  ///< Maximum linear time-step
 
@@ -89,22 +89,22 @@ class TimeIntegration  : public IfaceGKC{
                    Eigenvalue *eigenvalue, Benchmark *bench);
 
    /** 
-   *  @brief calculated the maximum allowed linear timestep from max. absoulte eigenvalue
+   *  @brief calculated the maximum allowed linear time step from max. absolute eigenvalue
    *
    *  Calculated maximum allowed time step from the maximum absolute eigenvalue
-   *  which is guarranted to be stable for the current integration scheme.
+   *  which is guaranteed to be stable for the current integration scheme.
    *
-   *  Note : This is only an approximation, because the positiv real eigenvalues
+   *  Note : This is only an approximation, because the positive real eigenvalues
    *         (growing structure) is not necessarily captured.
    *
    *   @param   max_abs_eigv maximum absolute eigenvalue
-   *   @return               maximum linear timestep
+   *   @return               maximum linear time step
    **/ 
    double getMaxTimeStepFromEigenvalue(Vlasov *vlasov, Fields *fields, Eigenvalue *eigenvalue);
 
    /**
    * 
-   * @brief solves the current timestep using predefined integration scheme
+   * @brief solves the current time step using predefined integration scheme
    *
    **/
    virtual double solveTimeStep(Vlasov *vlasov, Fields *fields, TestParticles *particles, Timing &timing);
@@ -141,12 +141,12 @@ class TimeIntegration  : public IfaceGKC{
    *    \f]
    *
    *    To save computational time, calculation of k_1 and the update to y_{n+1} is performed
-   *    at the last timestep.
+   *    at the last time step.
    *
-   *    RK-4 integration is probably the best choice, between tradeoff of computational cost 
-   *    and maximum allowed time step for linear runs. E.g. alltough RK-3 scheme has a 33% 
+   *    RK-4 integration is probably the best choice, between trade-off of computational cost 
+   *    and maximum allowed time step for linear runs. e.g.  RK-3 scheme has a 33% 
    *    lower computational cost, maximum linear time-step is also reduced by 30%. 
-   *    However, non-linear timestep is resctricted by the ExB velocity to fullfill the
+   *    However, non-linear time step is restricted by the ExB velocity to fulfill the
    *    CFL condition. Thus in case time integration error can be neglected, RK-3 is the
    *    better choice.
    *
@@ -168,7 +168,7 @@ class TimeIntegration  : public IfaceGKC{
    *    \f]
    *
    *    To save computational time, calculation of k_1 and the update to y_{n+1} is performed
-   *    at the last timestep.
+   *    at the last time step.
    *
    *    @image html TimeIntegration_RK3_Stability.png
    **/
@@ -191,7 +191,7 @@ class TimeIntegration  : public IfaceGKC{
    void solveTimeStepHeun(Timing timing, const double dt);
 
    /**
-   *    Eigenvalues caluclation do not require an timestep integration
+   *    Eigenvalues calculation do not require an time step integration
    *
    **/
    void solveTimeStepEigen(Timing timing, const double dt);

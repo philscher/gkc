@@ -22,8 +22,10 @@
 
 #include "FFTSolver/FFTSolver_fftw3.h"
 
-#include "TimeIntegration.h"
 #include "TimeIntegration_PETSc.h"
+
+#include "Collisions/LenardBernstein.h"
+#include "Collisions/PitchAngle.h"
 
 #include "Vlasov/Vlasov_Cilk.h"
 #include "Vlasov/Vlasov_Aux.h"
@@ -93,8 +95,9 @@ GKC::GKC(Setup *_setup) : setup(_setup)
   else    check(-1, DMESG("No such Fields Solver"));
   
   // Load Collisonal Operator
-  if     (collision_type == "None" ) collisions = new Collisions                (grid, parallel, setup, fileIO, geometry); 
-  else if(collision_type == "LB"   ) collisions = new Collisions_LenardBernstein(grid, parallel, setup, fileIO, geometry); 
+  if     (collision_type == "None"      ) collisions = new Collisions                (grid, parallel, setup, fileIO, geometry); 
+  else if(collision_type == "LB"        ) collisions = new Collisions_LenardBernstein(grid, parallel, setup, fileIO, geometry); 
+  else if(collision_type == "PitchAngle") collisions = new Collisions_PitchAngle     (grid, parallel, setup, fileIO, geometry); 
   else    check(-1, DMESG("No such Collisions Solver"));
     
   // Load Vlasov Solver
@@ -118,7 +121,7 @@ GKC::GKC(Setup *_setup) : setup(_setup)
   else if(timeInt_type == "Implicit") timeIntegration = new TimeIntegration_PETSc(setup, grid, parallel, vlasov, fields, particles, eigenvalue, bench);
   else   check(-1, DMESG("No such TimeIntegratioScheme in GKC.TimeIntegration"));
   
-  scanModes       = new ScanLinearModes  (setup, grid, parallel, vlasov, fields, fileIO);
+  //scanModes       = new ScanLinearModes  (setup, grid, parallel, vlasov, fields, fileIO);
   //scanEigen       = new ScanPoloidalEigen(setup, grid, parallel, vlasov, fields, fileIO, control, visual, diagnostics, timeIntegration);
   // Optimize values to speed up computation
   bench->bench(vlasov, fields);
@@ -204,7 +207,7 @@ int GKC::mainLoop()
 
   } 
   else if(gkc_SolType == "Scan") {
-    scanModes->solve(vlasov, fields, timeIntegration, eigenvalue, init, visual); 
+   // scanModes->solve(vlasov, fields, timeIntegration, eigenvalue, init, visual); 
   }
   else if(gkc_SolType == "Eigen") {
     //scanEigen->solve(vlasov, fields, timeIntegration, eigenvalue, init, visual); 
@@ -234,7 +237,7 @@ GKC::~GKC()
   delete particles;
   delete eigenvalue;
   delete event;
-  delete scanModes;
+  //delete scanModes;
   delete bench;
 //  delete scanEigen;
   delete fileIO; // once this is successful, file cannot

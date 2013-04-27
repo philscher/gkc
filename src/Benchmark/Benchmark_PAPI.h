@@ -12,8 +12,8 @@
  * =====================================================================================
  */
 
-#ifndef __GKC_BENCHMARK_H__
-#define __GKC_BENCHMARK_H__
+#ifndef __GKC_BENCHMARK_PAPI_H__
+#define __GKC_BENCHMARK_PAPI_H__
 
 #include "Global.h"
 
@@ -105,4 +105,4 @@ class Benchmark : public IfaceGKC
 };
 
 
-#endif // __GKC_BENCHMARK_H__
+#endif // __GKC_BENCHMARK_PAPI_H__

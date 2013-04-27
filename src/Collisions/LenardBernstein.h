@@ -4,7 +4,7 @@
  *       Filename: Collision_LenardBernstein.h
  *
  *    Description: Lenard-Bernstein collisional operator including
- *                 energy & momentum conservational terms
+ *                 energy & momentum conservation terms
  *
  *         Author: Paul P. Hilscher (2012-), 
  *
@@ -16,7 +16,6 @@
 #define __GKC_COLLISION_LENARD_BERNSTEIN_H__
 
 #include "Collisions/Collisions.h"
-
 
 /**
 *   @brief Lenard-Bernstein collision term

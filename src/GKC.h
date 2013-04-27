@@ -23,19 +23,21 @@
 #include "Init.h"
 #include "Parallel/Parallel.h"
 #include "Collisions/Collisions.h"
-#include "Collisions/LenardBernstein.h"
 #include "FFTSolver/FFTSolver.h"
 #include "Control.h"
 #include "Timing.h"
 #include "Visualization/Visualization.h"
 #include "Eigenvalue/Eigenvalue.h"
 #include "TimeIntegration/TimeIntegration.h"
-#include "TimeIntegration/ScanLinearModes.h"
-#include "TimeIntegration/ScanPoloidalEigen.h"
+//#include "TimeIntegration/ScanLinearModes.h"
+//#include "TimeIntegration/ScanPoloidalEigen.h"
 #include "Geometry.h"
-#include "Collisions/Collisions.h"
 #include "Analysis/Diagnostics.h"
-#include "Analysis/Benchmark.h"
+
+#include "Benchmark/Benchmark_PAPI.h"
+#include "Benchmark/Benchmark_PMPI.h"
+
+
 #include "Analysis/Event.h"
 #include "Analysis/TestParticle.h"
 
@@ -72,7 +74,7 @@ private:
     Visualization   *visual;             ///< Visualization
     Benchmark       *bench;              ///< Interface for profiling and benchmarking
     TimeIntegration *timeIntegration;    ///< Numerical time integration
-    ScanLinearModes *scanModes;          ///< Scan over linear modes
+    //ScanLinearModes *scanModes;          ///< Scan over linear modes
     //ScanPoloidalEigen *scanEigen;        ///< Scan over linear modes
 
     /**

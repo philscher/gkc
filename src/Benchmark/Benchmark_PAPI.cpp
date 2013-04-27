@@ -13,7 +13,7 @@
 
 #include <functional>
 
-#include "Benchmark.h"
+#include "Benchmark_PAPI.h"
 #include "Vlasov/Vlasov.h"
 #include "Fields/Fields.h"
 
@@ -28,19 +28,41 @@ Benchmark::Benchmark(Setup *setup, Parallel *_parallel, FileIO *fileIO) : parall
 
   if(useBenchmark) {
 
-   // Initialize the PAPI library 
-   if(PAPI_library_init(PAPI_VER_CURRENT) != PAPI_VER_CURRENT) DMESG("PAPI library init error!\n");
-   
-   // check avaiable counters
-   check((num_hwcntrs = PAPI_num_counters()) <= PAPI_OK, DMESG("Could not get number of avaiable counters"));
+    // Initialize the PAPI library 
+    if(PAPI_library_init(PAPI_VER_CURRENT) != PAPI_VER_CURRENT) DMESG("PAPI library init error!\n");
+ 
+    /* 
+    // Store hardware information
+    const PAPI_hw_info_t *hwinfo = NULL;
   
-   // Set Hardware counters here (use setup for that !)
-   events[:] =  PAPI_NULL;
-   events[0] =  PAPI_DP_OPS;
-   events[1] =  PAPI_VEC_DP;
-   events[2] =  PAPI_FP_OPS;
+    if ((hwinfo = PAPI_get_hardware_info()) != NULL) {
 
-  }
+      std::cout << " Total CPUs : " << hwinfo->totalcpus << std::endl;
+      std::cout << " MHz : "        << hwinfo->mhz << std::endl;
+      std::cout << " MHz : "        << hwinfo->vendor_string << std::endl;
+      std::cout << " Cache : "        << hwinfo->mem_hierarchy.levels << std::endl;
+      int mem_levels = hwinfo->mem_hierarchy.levels;
+
+      for(int n = 0; n < mem_levels; n++) {
+      
+         std::cout << " Cache TLB : "        << hwinfo->mem_hierarchy.level[n].tlb[0].num_entries << std::endl;
+         std::cout << " Cache size: "        << hwinfo->mem_hierarchy.level[n].cache[0].size/1024 << "kByte" << std::endl;
+         std::cout << " Line size: "        << hwinfo->mem_hierarchy.level[n].cache[0].line_size << "Byte" << std::endl;
+      }
+    }
+     * */
+
+
+    // check available counters
+    check((num_hwcntrs = PAPI_num_counters()) <= PAPI_OK, DMESG("Could not get number of avaiable counters"));
+  
+    // Set Hardware counters here (use setup for that !)
+    events[:] =  PAPI_NULL;
+    events[0] =  PAPI_DP_OPS;
+    events[1] =  PAPI_VEC_DP;
+    events[2] =  PAPI_FP_OPS;
+
+    }
  
   initData(setup, fileIO);
 }

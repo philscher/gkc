@@ -102,7 +102,7 @@ class GeometryShear : public Geometry
 
     //check connection length, otherwise parallel boundary will fail
     // modf :  extract signed integral and fractional values from floating-point number
-    if((abs(fmod(2. * M_PI * shear * Lx/Ly, 1.)) > 1.e-5) && roundShearToConnect) {
+    if((std::abs(fmod(2. * M_PI * shear * Lx/Ly, 1.)) > 1.e-5) && roundShearToConnect) {
 
       std::cout << "Warning : Rounding shear to ensure magnetic field line connection" << std::endl;
       const double di = round(2. * M_PI * shear * Lx/Ly);

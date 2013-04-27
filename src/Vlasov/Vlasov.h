@@ -20,8 +20,7 @@
 #include "Fields/Fields.h"
 #include "Grid.h"
 #include "FFTSolver/FFTSolver.h"
-#include "Analysis/Benchmark.h"
-
+#include "Benchmark/Benchmark_PAPI.h"
 #include "Collisions/Collisions.h"
 
 class Event;

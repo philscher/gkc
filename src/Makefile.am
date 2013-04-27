@@ -8,7 +8,7 @@ gkc_SOURCES = \
    Vlasov/Vlasov_Cilk.cpp Vlasov/Vlasov_Aux.cpp Vlasov/Vlasov_Optim.cpp \
    Analysis/Diagnostics.cpp  Init.cpp Control.cpp Analysis/Moments.cpp \
    Plasma.cpp Special/LA.cpp TimeIntegration/Timing.cpp Analysis/TestParticle.cpp TimeIntegration/TimeIntegration.cpp \
-   FFTSolver/FFTSolver.cpp Visualization/Visualization_Data.cpp Analysis/Benchmark.cpp \
+   FFTSolver/FFTSolver.cpp Visualization/Visualization_Data.cpp Benchmark/Benchmark_PAPI.cpp \
    Collisions/LenardBernstein.cpp Tools/TermColor.cpp TimeIntegration/ScanLinearModes.cpp \
    TimeIntegration/ScanPoloidalEigen.cpp
 
@@ -27,7 +27,7 @@ gkc_SOURCES += \
    Geometry/Geometry.h Geometry/Geometry2D.h Geometry/GeometryShear.h \
    Geometry/GeometrySlab.h Geometry/GeometrySA.h Geometry/GeometryCHEASE.h\
    Tools/System.h Tools/TermColor.h Special/SpecialMath.h Special/HermitePoly.h Tools/Tools.h Special/Vector3D.h \
-   TimeIntegration/ScanLinearModes.h TimeIntegration/ScanPoloidalEigen.h
+   TimeIntegration/ScanLinearModes.h TimeIntegration/ScanPoloidalEigen.h Collisions/PitchAngle.h
  
 # Integration sub-module
 gkc_SOURCES += \
