@@ -69,7 +69,8 @@ GKC::GKC(Setup *_setup) : setup(_setup)
   // ugly here, however in parallel constructor fileIO is not defined yet
   parallel->initData(setup, fileIO);
   
-  bench     = new Benchmark(setup, parallel, fileIO); 
+  bench      = new Benchmark(setup, parallel, fileIO); 
+  bench_pmpi = new Benchmark_PMPI(setup, parallel, fileIO); 
 
   if     (geometry_Type == "SA"   ) geometry  = new GeometrySA(setup, grid, fileIO);
   else if(geometry_Type == "2D"   ) geometry  = new Geometry2D(setup, grid, fileIO);
@@ -239,6 +240,7 @@ GKC::~GKC()
   delete event;
   //delete scanModes;
   delete bench;
+  delete bench_pmpi;
 //  delete scanEigen;
   delete fileIO; // once this is successful, file cannot
                  // be corrupted anymore.

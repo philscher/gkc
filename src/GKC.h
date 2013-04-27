@@ -73,6 +73,7 @@ private:
     Init            *init;               ///< Initialization for plasma
     Visualization   *visual;             ///< Visualization
     Benchmark       *bench;              ///< Interface for profiling and benchmarking
+    Benchmark_PMPI  *bench_pmpi;         ///< Benchmark using PMPI interface
     TimeIntegration *timeIntegration;    ///< Numerical time integration
     //ScanLinearModes *scanModes;          ///< Scan over linear modes
     //ScanPoloidalEigen *scanEigen;        ///< Scan over linear modes
