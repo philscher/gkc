@@ -35,7 +35,7 @@
 *  
 *  @brief support of timed events
 *
-*  checkEvent() is called every timestep. In case of an event, e.g.
+*  checkEvent() is called every time step. In case of an event, e.g.
 *  suppress zonal-flow from T > 100 , this should be written here.
 *
 *  @todo provide example

@@ -50,7 +50,6 @@ class Init   : public IfaceGKC
   *
   **/
   int random_seed; 
-   
 
   /**
   *   @brief initializes the Maxwellian 
@@ -62,7 +61,6 @@ class Init   : public IfaceGKC
                       CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB]);
 
  public :
-
 
   /**
   *   @brief document me please
@@ -151,7 +149,6 @@ class Init   : public IfaceGKC
   virtual void initData(FileIO *fileIO) {};
   virtual void writeData(const Timing &timing, const double dt) {};
   virtual void closeData() {};
-
 };
 
 #endif // __INIT_H_

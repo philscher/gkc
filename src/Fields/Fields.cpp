@@ -40,15 +40,12 @@ grid(_grid), parallel(_parallel), geo(_geo), solveEq(0)
   Yeb = (1./sqrt(M_PI) * __sec_reduce_add(pow2(V[NvLlD:NvLD]) * exp(-pow2(V[NvLlD:NvLD]))) * dv) * geo->eps_hat * plasma->beta; 
 
   initData(setup, fileIO);
-
 } 
 
 Fields::~Fields() 
 {
   closeData() ;
-
 }
-
 
 void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
 {
@@ -79,12 +76,9 @@ void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
 
           if  (loop == 0) Q[0:Nq][z][y_k][NxLlD:NxLD]   = Qm[0:Nq][z][y_k][NxLlD:NxLD];
           else            Q[0:Nq][z][y_k][NxLlD:NxLD]  += Qm[0:Nq][z][y_k][NxLlD:NxLD];
-
         } }
-
       } ((A4zz) Q, (A4zz) Qm);
     }
-      
   } } // for m, s
 
   /////////////////////////////// Solve for the corresponding fields ////////////////////////////////
@@ -120,11 +114,8 @@ void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
         for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {
 
           Field[:][s][m][z][y_k][NxLlD:NxLD] = Qm[:][z][y_k][NxLlD:NxLD];
-
         } }
-
       } ((A4zz) Qm, (A6zz) Field);
-        
     } } // s, m
  
     #pragma omp single
@@ -136,9 +127,7 @@ void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
   parallel->bcast(ArrayField.data(Field), DIR_V, ArrayField.getNum());
    
   return;
-
 }
-
 
 void Fields::calculateChargeDensity(const CComplex f0      [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
                                     const CComplex f       [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
@@ -159,10 +148,7 @@ void Fields::calculateChargeDensity(const CComplex f0      [NsLD][NmLD][NzLB][Nk
   } } } // z, y_k, x
    
   return; 
-
 }
-
-
 
 void Fields::calculateParallelCurrentDensity(const CComplex f0    [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
                                              const CComplex f     [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
@@ -180,10 +166,8 @@ void Fields::calculateParallelCurrentDensity(const CComplex f0    [NsLD][NmLD][N
   } } } // z, y_k, x
 
   return;
-
 }
 
-  
 // Note : Did not checked correctness of this function
 void Fields::calculatePerpendicularCurrentDensity(const CComplex f0     [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
                                                   const CComplex f      [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
@@ -204,10 +188,9 @@ void Fields::calculatePerpendicularCurrentDensity(const CComplex f0     [NsLD][N
   return;
 }
 
-   
 void Fields::updateBoundary()
 {
- 
+
   [&](
          CComplex Field [Nq][NsLD][NmLD][NzLB][Nky][NxLB+4], 
          CComplex SendXl[Nq][NsLD][NmLD][NzLD][Nky][GC4   ], CComplex SendXu[Nq][NsLD][NmLD][NzLD][Nky][GC4 ],
@@ -254,15 +237,9 @@ void Fields::updateBoundary()
       (A6zz ) SendZl, (A6zz) SendZu, (A6zz) RecvZl, (A6zz) RecvZu);
   
   return; 
-
-};
-
-
-
-
+}
 
 ///////////////////////////////////////////// Data I/O ///////////////////////////////
-
 
 void Fields::initData(Setup *setup, FileIO *fileIO) 
 {
@@ -304,7 +281,6 @@ void Fields::closeData()
    delete FA_fieldsTime;
 }
 
-
 void Fields::printOn(std::ostream &output) const 
 {
   output   << "Fields     |  λD : "  << sqrt(plasma->debye2) 
@@ -312,6 +288,5 @@ void Fields::printOn(std::ostream &output) const
                        << "  A∥ : " << (Nq >= 2 ? "-on-" : "-off-")
                        << "  B∥ : " << (Nq >= 3 ? "-on-" : "-off-")
                        << std::endl;
-
 }
 

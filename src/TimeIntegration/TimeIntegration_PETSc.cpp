@@ -20,9 +20,8 @@ extern PetscErrorCode MatrixVectorProduct(Mat A, Vec x, Vec y);
 
 TimeIntegration_PETSc::TimeIntegration_PETSc(Setup *setup, Grid *grid, Parallel *parallel, Vlasov *vlasov, Fields *fields, 
                                              TestParticles *particles, Eigenvalue *eigenvalue, Benchmark *bench)
-     : TimeIntegration(setup, grid, parallel, vlasov, fields, particles, eigenvalue, bench)
+: TimeIntegration(setup, grid, parallel, vlasov, fields, particles, eigenvalue, bench)
 {
-  
   PetscInitialize(&setup->argc, &setup->argv, (char *) 0,  help);
       
   // create Matrix Operations
@@ -71,11 +70,8 @@ TimeIntegration_PETSc::~TimeIntegration_PETSc()
   TSDestroy(&ts);
 }
 
-
-
 double TimeIntegration_PETSc::solveTimeStep(Vlasov *vlasov, Fields *fields, TestParticles *particles, Timing &timing)
 {
-    
   double dt = maxLinearTimeStep;
     
   PETScMatrixVector pMV(vlasov, fields);
@@ -113,5 +109,4 @@ double TimeIntegration_PETSc::solveTimeStep(Vlasov *vlasov, Fields *fields, Test
         
   return dt;
 }
-
 

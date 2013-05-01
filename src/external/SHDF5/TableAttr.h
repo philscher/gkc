@@ -47,7 +47,7 @@ class TableAttr
             copy(_types,types);
             copy(_sizes, sizes);;
            
-            // probably bads solution, but we should close twice (not workin anyway)
+            // probably bads solution, but we should close twice (not working anyway)
             //            node = _node;
             //            H5Oincr_refcount( node );
             //node = check(H5Gcreate(_node, name.c_str(),H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("Error creating group file for Spectrum : H5Gcreate"));

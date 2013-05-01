@@ -20,21 +20,17 @@
 #include "Special/Vector3D.h"
 #include "Tools/System.h"
 
-
 FileIO::FileIO(Parallel *_parallel, Setup *setup)  :  parallel(_parallel)
 {
-
   // Set Initial values
   inputFileName        = setup->get("DataOutput.InputFileName" , "");
   outputFileName       = setup->get("DataOutput.OutputFileName", "default.h5");
   info                 = setup->get("DataOutput.Info"          , "No information provided");
-
+  bool allowOverwrite  = setup->get("DataOutput.Overwrite", 0) || (setup->flags & Setup::GKC_OVERWRITE);
+  
   dataFileFlushTiming  = Timing(setup->get("DataOutput.Flush.Step", -1), setup->get("DataOutput.Flush.Time", 100.)); 
-    
   resumeFile           = inputFileName != "";
   
-  bool allowOverwrite  = setup->get("DataOutput.Overwrite", 0) || (setup->flags & Setup::GKC_OVERWRITE);
-    
 #pragma warning (disable : 1875) // ignore warnings about non-POD types
   { // Create compound data types 
     timing_tid = H5Tcreate(H5T_COMPOUND, sizeof(Timing));
@@ -65,14 +61,27 @@ FileIO::FileIO(Parallel *_parallel, Setup *setup)  :  parallel(_parallel)
   hsize_t specfield_dim[2] = { setup->get("Grid.Ns", 1), setup->get("Plasma.Beta", 0.) == 0. ? 1 : 2 }; 
   specfield_tid = H5Tarray_create(H5T_NATIVE_DOUBLE, 2, specfield_dim);
     
-  // used for species name
   // BUG : Somehow HDF-8 stores only up to 8 chars of 64 possible. The rest is truncated ! Why ?
-  // not supported by HDF-5 parallel yet ....
-  // str_tid = H5Tcopy(H5T_C_S1); H5Tset_size(str_tid, H5T_VARIABLE); H5Tset_strpad(str_tid, H5T_STR_NULLTERM);
+  // H5Tset_size(str_tid, H5T_VARIABLE) ..  not supported by HDF-5 parallel yet ....
   str_tid = H5Tcopy(H5T_C_S1); H5Tset_size(str_tid, 64); H5Tset_strpad(str_tid, H5T_STR_NULLTERM);
 
   // Create/Load HDF5 file
   if(resumeFile == false || (inputFileName != outputFileName)) create(setup, allowOverwrite);
+}
+
+FileIO::~FileIO()  
+{
+  check(H5LTset_attribute_string(file, ".", "StopTime", System::getTimeString().c_str()), DMESG("HDF-5 Error"));
+  // Free all HDF5 resources
+
+  // close some extra stuff
+  check( H5Tclose(complex_tid), DMESG("HDF-5 Error"));
+  check( H5Tclose(timing_tid ), DMESG("HDF-5 Error"));
+  check( H5Tclose(species_tid), DMESG("HDF-5 Error"));
+  check( H5Tclose(str_tid    ), DMESG("HDF-5 Error"));
+
+  // close file
+  check( H5Fclose(file)    , DMESG("HDF-5 Error : Unable to close file ..."));
 }
 
 void FileIO::create(Setup *setup, bool allowOverwrite) 
@@ -136,12 +145,9 @@ void FileIO::create(Setup *setup, bool allowOverwrite)
     for(int s = 0; s < const_vec.size(); s++) { 
      
        std::vector<std::string> key_value = Setup::split(const_vec[s],"=");
-
        double value = std::stod(key_value[1]);
-       
        check(H5LTset_attribute_double(constantsGroup, ".", key_value[0].c_str(), &value, 1), DMESG("HDF-5 Error"));
     }
-         
   }
   H5Gclose(constantsGroup);
 }
@@ -151,24 +157,7 @@ void FileIO::initData(Setup *setup)
 
 }
 
-
-// Destructor
-FileIO::~FileIO()  
-{
-  check(H5LTset_attribute_string(file, ".", "StopTime", System::getTimeString().c_str()), DMESG("HDF-5 Error"));
-  // Free all HDF5 resources
-
-  // close some extra stuff
-  check( H5Tclose(complex_tid), DMESG("HDF-5 Error"));
-  check( H5Tclose(timing_tid ), DMESG("HDF-5 Error"));
-  check( H5Tclose(species_tid), DMESG("HDF-5 Error"));
-  check( H5Tclose(str_tid    ), DMESG("HDF-5 Error"));
-
-  // close file
-  check( H5Fclose(file)    , DMESG("HDF-5 Error : Unable to close file ..."));
-}
-
-hid_t  FileIO::newGroup(std::string name, hid_t parentNode)
+hid_t FileIO::newGroup(std::string name, hid_t parentNode)
 {
   if (parentNode == -2) parentNode = getFileID();
   hid_t newGroup = check(H5Gcreate(parentNode, name.c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT), DMESG("HDF-5 Error"));
@@ -191,14 +180,12 @@ void FileIO::printOn(std::ostream &output) const
 
 FileAttr* FileIO::newTiming(hid_t group, hsize_t offset, bool write)
 {
-    
    hsize_t timing_cdim  [1] = {1             };
    hsize_t timing_maxdim[1] = {H5S_UNLIMITED };
    hsize_t timing_dim   [1] = {1             };
    
    FileAttr *Attr = new FileAttr("Time", group, file, 1, timing_dim, timing_maxdim, timing_cdim, &offset,  
                                   timing_cdim, &offset, parallel->myRank == 0, timing_tid);
-    
    return Attr;
 }
 

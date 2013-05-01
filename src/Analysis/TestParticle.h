@@ -12,8 +12,8 @@
  */
 
 
-#ifndef __TESTPARTICLE_H
-#define __TESTPARTICLE_H
+#ifndef _GKC_TESTPARTICLE_H__
+#define _GKC_TESTPARTICLE_H__
 
 #include "Global.h"
 #include "Setup.h"
@@ -26,8 +26,9 @@
 #include "Special/Vector3D.h"
 
 /**
-* @brief passive tracer particle
+* @brief Passive trace 
 *
+* @todo this class has no function yet
 *
 **/
 class TestParticles : public IfaceGKC 
@@ -39,41 +40,36 @@ class TestParticles : public IfaceGKC
   struct Particle {
 /*
  * Particle() {
-            position = velocity =0.;
+  position = velocity =0.;
             mass = 1.;
             charge = 1.;
         }
         */
-      int number;
+      int id;
 
       double mass;
       double charge;
       
       double p[3];
       double v[3];
-   };
+  };
   
   Particle *particles;
   FileAttr *FA_X, *FA_V, *FA_Time;
-  public:
 
+ public:
 
-TestParticles(FileIO *fileIO, Setup *setup, Parallel *parallel) ;
-~TestParticles() ;
-// Simplest model, only follow phi potential
-void integrate(Vlasov *vlasov, Fields *fields, int step);
+  TestParticles(FileIO *fileIO, Setup *setup, Parallel *parallel) ;
+ ~TestParticles() ;
 
+  // Simplest model, only follow phi potential
+  void integrate(Vlasov *vlasov, Fields *fields, int step);
 
-        virtual void printOn(std::ostream &output) const;
-      
-        virtual void initData(Setup *setup, FileIO *fileIO);
-        virtual void writeData(Timing timing, double dt);
-        virtual void closeData();
+  virtual void printOn(std::ostream &output) const;
+  
+  virtual void initData(Setup *setup, FileIO *fileIO);
+  virtual void writeData(Timing timing, double dt);
+  virtual void closeData();
+}
 
-
-};
-
-
-
-
-#endif //TESTPARTICLE
+#endif // _GKC_TESTPARTICLE_H__

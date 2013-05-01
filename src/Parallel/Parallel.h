@@ -41,7 +41,7 @@ extern int threadID;
 *
 *  and OpenMP (3.1) http://www.openmp.org.
 *
-*  @todo move implementations to seperate class
+*  @todo move implementations to separate class
 *
 **/
 class Parallel : public IfaceGKC {
@@ -49,8 +49,8 @@ class Parallel : public IfaceGKC {
 /**
 *  @brief  Class to simplify MPI handling, for each direction, such a class
 *  
-*  rank_l correspindes to lower rank in the dimension grid (..., myPosition - 1 , ... )
-*  rank_u correspindes to upper rank in the dimension grid (..., myPosition + 1 , ... )
+*  rank_l corresponds to lower rank in the dimension grid (..., myPosition - 1 , ... )
+*  rank_u corresponds to upper rank in the dimension grid (..., myPosition + 1 , ... )
 *
 **/
 struct NeighbourDir {
@@ -66,7 +66,7 @@ struct NeighbourDir {
  public:
  
   /**
-  *  @brief Decompostion of the code as 
+  *  @brief Decomposition of the code as 
   *         \f$ (x,y_k,z,v_\parallel, \mu, \sigma) \f$.
   *
   *  Note that $y_k$ decomposition is not supported
@@ -76,7 +76,7 @@ struct NeighbourDir {
   int decomposition[6];
    
   /**
-  *  @brief Decompoistion coordinate of process as 
+  *  @brief Decomposition coordinate of process as 
   *         \f$ (x,y_k,z,v_\parallel, \mu, \sigma) \f$.
   *
   *  Coord[dir] for dir > DIR_Z coordinate is defined as e.g.
@@ -118,6 +118,8 @@ struct NeighbourDir {
   /**
   *   @brief get MPI data type from  C++ type
   *
+  *   @todo should be possible to make constexpr
+  *
   **/
   MPI_Datatype getMPIDataType(const std::type_info &T);
 
@@ -127,7 +129,7 @@ struct NeighbourDir {
   /**
   *    @brief updates field boundaries for X,Z direction
   * 
-  *    @todo how to make this allowed to be calles only from Fields ?!
+  *    @todo how to make this allowed to be called only from Fields ?!
   *
   *
   *    @params  SendXl  Boundary values to send to Coord(dir +1)
@@ -150,7 +152,7 @@ struct NeighbourDir {
   /**
   *    @brief updates Vlasov boundaries for direction dir
   * 
-  *    @todo how to make this allowed to be calles only from Vlasov ?!
+  *    @todo how to make this allowed to be called only from Vlasov ?!
   *
   *    This function uses non-blocking boundary conditions. As
   *    to calculate the field values a boundary points of the f
@@ -199,8 +201,6 @@ struct NeighbourDir {
   /**
   *   @brief sends scalar data to other CPU 
   *
-  *   @todo rename to bcast
-  *
   **/
   template<class T> T bcast(const T x, bool isRoot, int dir=DIR_ALL) 
   {
@@ -247,7 +247,7 @@ struct NeighbourDir {
     if( (dir <= DIR_S) && (decomposition[dir] == 1)) return;
 
     // make range check for debugging
-    if( (dir >= DIR_SIZE) ) check(-1, DMESG("Reduce : Invalide direction"));
+    if( (dir >= DIR_SIZE) ) check(-1, DMESG("Reduce : Invalid direction"));
   
     auto mpi_type = getMPIDataType(typeid(T)); 
 
@@ -281,7 +281,7 @@ struct NeighbourDir {
   void   checkValidDecomposition(Setup *setup);
 
   /**
-  *   @brief determines recommendend decomposition 
+  *   @brief determines recommended decomposition 
   *
   *   @param numCPU Total Number of available CPUs
   *   @return  Recommended decomposition
@@ -301,9 +301,9 @@ struct NeighbourDir {
   virtual void setThreadID(); 
 
   /**
-  *  @brief intializes data output
+  *  @brief initializes data output
   *
-  *  Writtes decomposition information, as well as version number
+  *  Writes decomposition information, as well as version number
   *  underlying libraries
   *
   **/
@@ -313,8 +313,6 @@ struct NeighbourDir {
   virtual void printOn(std::ostream &output) const ;
   virtual void writeData(Timing *timing) {};
   virtual void closeData() {};
-
-
 };
 
 #endif // __SERIAL_H

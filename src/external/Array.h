@@ -37,17 +37,17 @@
 *    @note
 *
 *          Ranges offset can be positive. That means the pointer 
-*          we have to artifically calculate the negative offset 
+*          we have to artificially calculate the negative offset 
 *          to compensate for this offset. 
 *          However, it may happen that the negative offset is large
 *          so that the final pointer address is negative.
 *          
 *          However, pointers on x86-64 are signed and symmetric around
-*          0. Thus this offset calculation is valud. See
+*          0. Thus this offset calculation is valid. See
 *
 *          http://stackoverflow.com/questions/3304795/can-a-pointer-address-ever-be-negative
 *
-*     @rename R0, appropriatly first dimension is always continuous (access with stride = 1)
+*     @rename R0, appropriately first dimension is always continuous (access with stride = 1)
 *
 *
 **/
@@ -90,10 +90,7 @@ public:
        return ptr_data0[idx];
 
    };
-
-
-
- };
+};
          
 template <class T> class Array2
 {

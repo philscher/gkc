@@ -14,7 +14,6 @@
 #ifndef __GKC_SETUP_H__
 #define __GKC_SETUP_H__
 
-
 // define to compile Fparser with complex number support
 //#define FP_SUPPORT_COMPLEX_DOUBLE_TYPE
 
@@ -28,8 +27,6 @@
 #include <algorithm>
 #include <fstream>
 
-
-
 /**
 *   @brief Program configuration 
 *
@@ -41,8 +38,6 @@
 *   Class also provided interface to argv arguments.
 *
 *   Reads option like Grid.Nx = 64
-*
-*
 **/ 
 class Setup : public IfaceGKC {
 
@@ -74,9 +69,9 @@ class Setup : public IfaceGKC {
   **/ 
   template<class T> static std::string num2str(T number) 
   {
-      std::stringstream ss;
-      ss << number;
-      return ss.str();
+    std::stringstream ss;
+    ss << number;
+    return ss.str();
   }
 
   /**
@@ -132,7 +127,6 @@ class Setup : public IfaceGKC {
   **/ 
  ~Setup() { };
 
-
   /**
   *   @brief erases specific characters from the string 
   **/
@@ -154,67 +148,63 @@ class Setup : public IfaceGKC {
   **/
   static std::vector<std::string> split(std::string str, std::string delim);
 
-   /**
-   *   @brief parser configuration files
-   *
-   **/ 
-   void parseOption(std::string line, bool fromFile = true);
+  /**
+  *   @brief parser configuration files
+  *
+  **/ 
+  void parseOption(std::string line, bool fromFile = true);
 
-   /**
-   *  @brief checks if all options were red.
-   *
-   *  After GKC.cpp initializes all sub-modules, this 
-   *  subroutine should be called to check if some
-   *  options, where not requested but set in the configuration file
-   *  (e.g. which may happen due to a spelling error)
-   *
-   **/ 
-   void check_config();
+  /**
+  *  @brief checks if all options were red.
+  *
+  *  After GKC.cpp initializes all sub-modules, this 
+  *  subroutine should be called to check if some
+  *  options, where not requested but set in the configuration file
+  *  (e.g. which may happen due to a spelling error)
+  *
+  **/ 
+  void check_config();
 
-   /** 
-   *    @brief Access Elements from Configuration file
-   *
-   *    Will drop an error in case a key is duplicated.
-   *
-   **/
-   std::string get(std::string key, const char *default_Value) { return get(key, std::string(default_Value)); };
-  
+  /** 
+  *    @brief Access Elements from Configuration file
+  *
+  *    Will drop an error in case a key is duplicated.
+  *
+  **/
+  std::string get(std::string key, const char *default_Value) { return get(key, std::string(default_Value)); };
    
-   /** 
-   *    @brief Access Elements from Configuration file
-   *
-   *    Will drop an error in case a key is duplicated.
-   *   
-   *    @note : We use explicit template intantiation
-   **/
-   template<class T> T get(std::string key, const T default_Value);
+  /** 
+  *    @brief Access Elements from Configuration file
+  *
+  *    Will drop an error in case a key is duplicated.
+  *   
+  *    @note : We use explicit template instantiation
+  **/
+  template<class T> T get(std::string key, const T default_Value);
   
-   /**
-   *
-   * @brief returns int of seconds from time string
-   * 
-   *  time_string should be of the form e.g.
-   *  1y:1l:1w:1d:1h:24m:7s, 1h:24m, 1d:30m
-   *
-   *  month [l] = fixed to 30 days 
-   *              (note as m collides with m for minutes we choose l (luna) for months
-   *  one year  = fixed to 365 days
-   *
-   **/
-   static int getSecondsFromTimeString(std::string time_string);
+  /**
+  *
+  * @brief returns int of seconds from time string
+  * 
+  *  time_string should be of the form e.g.
+  *  1y:1l:1w:1d:1h:24m:7s, 1h:24m, 1d:30m
+  *
+  *  month [l] = fixed to 30 days 
+  *              (note as m collides with m for minutes we choose l (luna) for months
+  *  one year  = fixed to 365 days
+  *
+  **/
+  static int getSecondsFromTimeString(std::string time_string);
      
-  protected:
+ protected:
 
+  /** 
+  *   @brief configuration summary output 
+  *
+  **/ 
+  virtual void printOn(std::ostream &output) const;
 
-   /** 
-   *   @brief configuration summary output 
-   *
-   **/ 
-   virtual void printOn(std::ostream &output) const;
-
-   // we don't have FileIO object yet, so no writing is performed
-
+  // we don't have FileIO object yet, so no writing is performed
 };
-
 
 #endif // __GKC_SETUP_H__

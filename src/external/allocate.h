@@ -104,17 +104,17 @@ enum alloc_flags  {
 *    @note
 *
 *          Ranges offset can be positive. That means the pointer 
-*          we have to artifically calculate the negative offset 
+*          we have to artificially calculate the negative offset 
 *          to compensate for this offset. 
 *          However, it may happen that the negative offset is large
 *          so that the final pointer address is negative.
 *          
 *          However, pointers on x86-64 are signed and symmetric around
-*          0. Thus this offset calculation is valud. See
+*          0. Thus this offset calculation is valid. See
 *
 *          http://stackoverflow.com/questions/3304795/can-a-pointer-address-ever-be-negative
 *
-*     @rename R0, appropriatly first dimension is always continuous (access with stride = 1)
+*     @rename R0, appropriately first dimension is always continuous (access with stride = 1)
 *
 *
 **/
@@ -142,10 +142,10 @@ class allocate
   };
 
   /**
-  *    @brief move assigment operator
+  *    @brief move assignment operator
   *
   *    We define a move assignment operator. Using copy
-  *    construcor should be avoided as it may deallocate
+  *    constructor should be avoided as it may deallocate
   *    all variables once the destructor is called, leaving
   *    the other object's variables in an undefined state.
   *
@@ -156,7 +156,7 @@ class allocate
     Num       = alloc.Num;
     Off       = alloc.Off;
 
-    // propably move can be used, but 
+    // probably move can be used, but 
     ptr_stack = alloc.ptr_stack;
     //ptr_stack = std::move(alloc.ptr_stack);
 
@@ -399,7 +399,7 @@ class allocate
          }
 
          // Take care, pointer arithmetic is typed, only char* is 1 Byte !!!
-         // Substract offset to calculate p[0][0]....
+         // Subtract offset to calculate p[0][0]....
          *g = *g - Off;
     
          return *this;

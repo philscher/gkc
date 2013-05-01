@@ -14,7 +14,6 @@
 #include "Setup.h"
 
 #include <sstream>
-#include <iostream>
 #include <cstdlib>
 
 
@@ -83,7 +82,6 @@ Setup::Setup(int _argc, char **_argv, std::string setup_filename, std::string se
       parseOption(options_list.back(), false);
       options_list.pop_back();
   } }
-
   // ToDo : check some values
   parser_constants = eraseCharacter(get("Setup.Constants", ""), "[]");
 
@@ -92,18 +90,15 @@ Setup::Setup(int _argc, char **_argv, std::string setup_filename, std::string se
 
 std::string Setup::eraseCharacter(std::string str, std::string chars) 
 {
-
   for(int p, s = 0; s < chars.length(); s++) {
 
       while((p = str.find(chars[s])) != std::string::npos) str.erase(p,1);
   }
-
   return str;
 }
 
 std::string Setup::trimLower(std::string str, bool lowerCase)  
 { 
-   
   // Trim Both leading and trailing spaces  
   size_t startpos = str.find_first_not_of("\t "); // Find the first character position after excluding leading blank spaces  
   size_t endpos   = str.find_last_not_of("\t ");  // Find the first character position from reverse 
@@ -118,12 +113,9 @@ std::string Setup::trimLower(std::string str, bool lowerCase)
   return str; 
 }    
 
-
-
 // simplify !
 std::vector<std::string> Setup::split(std::string str, std::string delim) 
 {
-    
   std::vector<std::string> items;
   std::size_t dlm_idx;
    
@@ -147,11 +139,8 @@ std::vector<std::string> Setup::split(std::string str, std::string delim)
   return items;
 }
 
-
-
 void Setup::parseOption(std::string line, bool fromFile) 
 {
-
   // skip empty lines
   if(line.empty() == true) return;
   
@@ -181,7 +170,6 @@ void Setup::parseOption(std::string line, bool fromFile)
 
 FunctionParser Setup::getFParser() 
 {
-
   FunctionParser parser;
 
   parser.AddConstant("pi", M_PI);
@@ -204,14 +192,11 @@ FunctionParser Setup::getFParser()
       parser.AddConstant(trimLower(key_value[0], false), std::stod(key_value[1]));
     }
   }
-   
   return parser;
 }
 
-
 int Setup::getSecondsFromTimeString(std::string time_string) 
 {
-   
   std::vector<std::string> const_vec = split(time_string, ":");
   int seconds = 0;
 
@@ -233,18 +218,14 @@ int Setup::getSecondsFromTimeString(std::string time_string)
       case('a') : c2sec = 31536000; break;
       
       default : check(-1, DMESG("No such token for time string"));
-      
     }
-    
     seconds += c2sec*std::stoi(token.substr(0, token.length()-1));
   }
-    
   return seconds;
 }
    
 void Setup::check_config() 
 {
-   
   if(config_check.size() != 0) {
   
     for(auto mode = config_check.begin(); mode != config_check.end(); mode++) {
@@ -253,7 +234,6 @@ void Setup::check_config()
     }
     check(-1, DMESG("Parsing Error : Elements not accessed"));
   }
-  
   return;
 }
    
@@ -289,7 +269,6 @@ template<class T> T Setup::get(std::string key, const T default_Value)
       std::istringstream stream (value_str);
       stream >> value;
     }    
-
     // Check, if element was accessed at least once (aka Kees method)
     auto f = find(config_check.begin(), config_check.end(), key);
     if( f != config_check.end() ) config_check.erase(f);

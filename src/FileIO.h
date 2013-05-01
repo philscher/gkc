@@ -80,7 +80,6 @@ class FileIO : public IfaceGKC
    
   hid_t file; ///< main data file id 
    
-
   hid_t getFileID() const { return file; };
 
   bool resumeFile; ///< true if simulation resumed from input file 
@@ -105,7 +104,6 @@ class FileIO : public IfaceGKC
   virtual void initData(Setup *setup);
   virtual void writeData(const Timing &timing, const double dt) {};
   virtual void closeData() {};
-
 };
 
 #endif // __FILEIO_H_

@@ -130,7 +130,7 @@ CComplex FieldsHermite::getElements(const int x, const int x_, const double r, i
   };
         
   
-  // Integration is very sensitif on order ( why ? some bug ?? )
+  // Integration is very sensitive on order ( why ? some bug ?? )
   //return 1./(2.*M_PI) * Integrate::GaussLegendre(Integrand, 0., 2.*M_PI, 128);
   return 1./(2.*M_PI) * *(reinterpret_cast<CComplex*> (&(Integrate::GaussLegendre(Integrand, 0., 2.*M_PI, 128))));
         

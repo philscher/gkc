@@ -300,9 +300,10 @@ MPI_Datatype Parallel::getMPIDataType(const std::type_info &T)
   else if(T == typeid(CComplex ) ) type = MPI_DOUBLE_COMPLEX;
   else if(T == typeid(double   ) ) type = MPI_DOUBLE;
   else if(T == typeid(int      ) ) type = MPI_INT;
+  else if(T == typeid(char     ) ) type = MPI_CHAR;
   else if(T == typeid(long long) ) type = MPI_LONG_LONG;
   //else if(T == typeid(bool     ) ) type = MPI::BOOL;   
-  else check(-1, DMESG("Such type is not defined"));
+  else check(-1, DMESG("No such MPI type is not defined"));
     
   return type;
 
@@ -329,7 +330,7 @@ void Parallel::checkValidDecomposition(Setup *setup)
   if( decomposition[DIR_M] > setup->get("Grid.Nm", 1)) check(-1, DMESG("Decomposition in m bigger than Nm"));
   if( decomposition[DIR_S] > setup->get("Grid.Ns", 1)) check(-1, DMESG("Decomposition in s bigger than Ns"));
   
-  // check if OpenMP threads are equal to y-decompositon
+  // check if OpenMP threads are equal to y-decomposition
   if( decomposition[DIR_Y] != numThreads             ) check(-1, DMESG("Failed to set threads. Decomposition[Y] != numThreads. Check OMP_NUM_THREADS"));
    
   // Simple Check if reasonable values are provided for decomposition (only MPI processes)

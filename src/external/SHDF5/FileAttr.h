@@ -162,7 +162,7 @@ class FileAttr
   //   hid_t dataset_hdf = check(H5Dopen(file_hdf, loc_string.c_str(), H5P_DEFAULT), DMESG("H5Dopen"));
 
           // extend data-dimensions
-          dim[ndim-1]    += increase;
+          dim[ndim-1] += increase;
           off[ndim-1] += increase;
           check( H5Dset_extent (dataset_hdf, dim) , DMESG("Extending Dataset")); 
 
