@@ -3,20 +3,18 @@
  *
  *       Filename: TermColor.cpp
  *
- *    Description: Consol Color support through escape sequences
+ *    Description: Console Color support through escape sequences
  *                 (Currently only bash is tested)
  *
  *         Author: Paul P. Hilscher (2012), 
  *
- *        License: MIT
+ *        License: WTFPL
  * =====================================================================================
  */
 
-
 #include "TermColor.h"
 
-
-//// Forground colors
+//// Foreground colors
 const char *TermColor::cdefault  = "\033[0m";
 
 const char *TermColor::black     = "\033[30m";
@@ -39,7 +37,6 @@ const char *TermColor::lwhite    = "\033[97m";
 
 
 //// Background colors
-
 const char *TermColor::bcdefault = "\033[49m";
 
 const char *TermColor::bblack    = "\033[40m";
@@ -59,7 +56,6 @@ const char *TermColor::blblue    = "\033[104m";
 const char *TermColor::blmagenta = "\033[105m";
 const char *TermColor::blcyan    = "\033[106m";
 const char *TermColor::blwhite   = "\033[107m";
-
 
 const char *TermColor::reset     = "\033[0m";
 const char *TermColor::bright    = "\033[1m";

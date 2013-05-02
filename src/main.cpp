@@ -14,7 +14,7 @@ extern int process_rank;
 /**
 *   @brief Program starting point
 *
-*   The main program. Reads in program arguments and intilizes
+*   The main program. Reads in program arguments and initializes
 *   the Setup class and the gkc class and handles over the
 *   control to mainLoop
 *
@@ -35,7 +35,7 @@ int main(int argc, char **argv)
   //////////////////////////////////////////////////////////////////
   //
   //   Check command line parameters (note, the user can also 
-  //   speify PETSc parameters
+  //   specify PETSc parameters
   //
   std::string setup_filename(""), setup_Xoptions(""), setup_ExArgv(""), stack_size("");
   // set it to automatic ?

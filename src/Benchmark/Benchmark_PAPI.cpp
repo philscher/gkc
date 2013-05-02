@@ -1,7 +1,7 @@
 /*
  * =====================================================================================
  *
- *       Filename: Benchmark.cpp
+ *       Filename: Benchmark_PAPI.cpp
  *
  *    Description: PAPI Benchmark class implementation.
  *
@@ -198,11 +198,12 @@ double Benchmark::stop(std::string id, int type)
 
 void Benchmark::initData(Setup *setup, FileIO *fileIO)
 {
-  if(!useBenchmark) return;
    
   benchGroup = fileIO->newGroup("/Benchmark");
+  
+  if(!useBenchmark) return;
 
-  check(H5LTset_attribute_int   (benchGroup, ".", "NumberOfCounters",  &num_hwcntrs, 1), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_int   (benchGroup, ".", "NumberOfCounters",  &num_hwcntrs, 1), DMESG("HDF-5 Error"));
 
 
   //////////////////////// Set Table for Events
@@ -231,7 +232,7 @@ void Benchmark::initData(Setup *setup, FileIO *fileIO)
 
 void Benchmark::save(std::string id, int value)
 {
-  check(H5LTset_attribute_int(benchGroup, ".", id.c_str(),  &value, 1), DMESG("H5LTset_attribute"));
+  check(H5LTset_attribute_int(benchGroup, ".", id.c_str(),  &value, 1), DMESG("HDF-5 Error"));
 }
 
 

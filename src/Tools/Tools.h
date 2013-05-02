@@ -11,7 +11,6 @@
  * =====================================================================================
  */
 
-
 #ifndef __TOOLS_H_
 #define __TOOLS_H_
 
@@ -22,9 +21,6 @@
 *
 *   @brief collection of various helper functions
 *
-*
-*
-*
 **/
 class Tools
 {
@@ -32,9 +28,9 @@ class Tools
  public:
 
   /** 
-  *     Create an integrer squence of [ 0, 1, 2, 3, 4, 5, 6 ...., N-1 ].
+  *     Create an integer sequence of [ 0, 1, 2, 3, 4, 5, 6 ...., N-1 ].
   *
-  *     This squence is split around the number of CPUs in the communicator.
+  *     This sequence is split around the number of CPUs in the communicator.
   *     
   *     e.g. for 3 CPUs and stop = 10, we will get a distribution like
   *
@@ -45,11 +41,9 @@ class Tools
   *    right now only MPI workers ( processes) are supported.
   *
   *
-  *    ToDo : Is A more template based approach which also supports double etc useful ?
+  *    ToDo : Is A more template based approach which also supports double etc. useful ?
   *         
-  *    Note : Don't expcet this to be performant (du eot creation of std::vector object)
-  *
-  *
+  *    Note : Don't expect this to be performant (due to creation of std::vector object)
   *
   **/
   static std::vector<int> ParallelRange(const int stop, Parallel *parallel, int dir) 
@@ -89,23 +83,18 @@ class Tools
   static std::vector<double> linspace(double start, double stop, int N)
   {
     assert(N >= 2);
-    
     std::vector<double> linsp;
-
     const double dx = (stop - start) / (N-1);
+    
     for(int n = 0; n < N; n++) linsp.push_back(start + n * dx);
 
     return linsp;
-
   };
 
   static std::vector<double> logspace(double start, double stop, int N)
   {
-
     assert(N >= 2);
-
     std::vector<double> logsp;
-
     const double dx = (stop - start) / (N-1);
 
     for(int n = 0; n < N; n++)  logsp.push_back(std::pow(10., start + n * dx));

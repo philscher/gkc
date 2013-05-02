@@ -70,6 +70,6 @@ class TestParticles : public IfaceGKC
   virtual void initData(Setup *setup, FileIO *fileIO);
   virtual void writeData(Timing timing, double dt);
   virtual void closeData();
-}
+};
 
 #endif // _GKC_TESTPARTICLE_H__

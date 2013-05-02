@@ -14,9 +14,7 @@
 #ifndef __GLOBAL_H
 #define __GLOBAL_H
 
-
 #include <cilk/cilk.h>
-
 
 #include<string>
 #include<complex>
@@ -25,6 +23,7 @@
 #include<iomanip>
 
 #include "external/allocate.h"
+#include "Tools/TermColor.h"
 #include "config.h"
 
 ///////////////////// Define data types ////////////////
@@ -34,8 +33,7 @@ typedef _Complex double CComplex;
 typedef double               Real   ;
 #define _imag ((CComplex) (0.+1.j)) 
 
-// use attributes with c++-11 ?!
-// align to cache-lines
+// align to cache-lines (use attributes with c++-11 ?!)
 typedef __declspec(align(64)) double     doubleAA;
 typedef __declspec(align(64)) CComplex CComplexAA;
 
@@ -48,16 +46,12 @@ extern "C" double carg  (CComplex z);
 extern "C" CComplex conj(CComplex z);
 extern "C" CComplex cexp (CComplex z);
 
-
-
-
 template<class T> __attribute__((vector)) inline T pow2(T x) { return x*x; };
 template<class T> inline T pow3(T x) { return x*x*x; };
 template<class T> inline T pow4(T x) { const T x2 =  (x*x); return x2*x2; };
 template<class T> inline T pow5(T x) { const T x2 = x * x; return x2*x2*x; };
 template<class T> inline T pow6(T x) { const T x2 = x * x; return x2*x2*x2; };
 template<class T> inline T pow8(T x) { const T x4 = pow4(x); return x4*x4; };
-//__declspec(vector) inline CComplex square(CComplex x) { return x*x; };
 inline CComplex square(CComplex x) { return x*x; };
 
 // for vectorization support, see 
@@ -69,25 +63,16 @@ enum Dir : int {DIR_X=0, DIR_Y, DIR_Z, DIR_V, DIR_M, DIR_S, DIR_ALL, DIR_XYZ, DI
      
 inline int check( int status, std::string file, int line, std::string error_text, bool doAbort=false)
 {
-  if(status == -1 ) {
+  if(status == -1) {
             
-    std::stringstream ss;
+    std::cout << TermColor::lred    << "\r" <<"FAILED : " << file << "(" << line << ") " << error_text
+              << TermColor::cdefault << std::endl << std::flush;
     
-    ss << std::endl; 
-    ss << "\033[0;m";
-    ss << "\033[1;m"  <<"!.... " << file << "(" << line << ") " << error_text; 
-    ss << "\033[0m" << std::endl << std::flush;
-
-    std::cout << ss.str();
-              
     // exit through abort so we can get stack trace
     if(doAbort==true) abort();
     else              exit(0);
-    
   }
-  
   return status;
-
 }
 
 
@@ -168,13 +153,15 @@ extern Plasma *plasma;
 class Species;
 extern Species *species;
 
-typedef CComplex(*A6zz)[0][0][0][0][0];
-typedef CComplex(*A5zz)[0][0][0][0];
-typedef CComplex(*A4zz)[0][0][0];
-typedef CComplex(*A3zz)[0][0];
-typedef CComplex(*A2zz)[0];
+//typedef double * __restrict__ __attribute__((align_value (32))) Real_ptr ;
 
-typedef Real(*A2rr)[0];
-typedef Real(*A3rr)[0][0];
+typedef __declspec(align(64)) CComplex(*A6zz)[0][0][0][0][0];
+typedef __declspec(align(64)) CComplex(*A5zz)[0][0][0][0];
+typedef __declspec(align(64)) CComplex(*A4zz)[0][0][0];
+typedef __declspec(align(64)) CComplex(*A3zz)[0][0];
+typedef __declspec(align(64)) CComplex(*A2zz)[0];
+
+typedef __declspec(align(64)) double(*A2rr)[0];
+typedef __declspec(align(64)) double(*A3rr)[0][0];
 
 #endif // __GLOBAL_H

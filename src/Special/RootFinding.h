@@ -41,13 +41,11 @@ class RootFinding {
   **/
   static double BiSection(std::function<double (double)> func, double x_a, double x_b, int maxIter=512, double ftol=1.e-9)
   {
-
     // return True for +, False for - (doesn't handle nan, but -0,+0)
     auto sign = [] (double val) -> bool { return val == std::abs(val); };
      
     // evaluate functions
-    double f_a = func(x_a), 
-           f_b = func(x_b);
+    double f_a = func(x_a), f_b = func(x_b);
 
     if(f_a == 0.) return x_a;
     if(f_b == 0.) return x_b;
@@ -69,7 +67,6 @@ class RootFinding {
       
       (sign(f_m) == sign(f_a)) ? x_a = x_m : x_b = x_m;
     }
-
     return x_m;
   };
   
