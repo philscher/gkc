@@ -65,7 +65,7 @@ inline int check( int status, std::string file, int line, std::string error_text
 {
   if(status == -1) {
             
-    std::cout << TermColor::lred    << "\r" <<"FAILED : " << file << "(" << line << ") " << error_text
+    std::cout << TermColor::lred    << "\r" <<"ERROR @ " << file << "(" << line << ") : " << error_text
               << TermColor::cdefault << std::endl << std::flush;
     
     // exit through abort so we can get stack trace

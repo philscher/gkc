@@ -21,33 +21,37 @@
 
 #include "Vlasov_Aux.h"
 
+#include "Special/Interpolate/LinearInterpolate.h"
 
 /**
-*  @brief Implementation of Vlasov's equation using Cilk Array Notation
-*
-*  Making extensively use of Intel's Cilk Plus Array Notation to faciliate
-*  array operations (especially vectorization). (http://software.intel.com/en-us/articles/intel-cilk-plus/)
-*  Supported by Intel(12.1)  and GCC (svn side branch)
+*  @brief Vlasov equation with magnetic island modification
 *
 *
 **/
 class VlasovIsland : public VlasovAux {
 
    nct::allocate ArrayX,
-                 ArrayY;
+                 ArrayY,
+                 ArrayPhi0;
   
-   nct::allocate ArrayAp_mod; 
 
-   CComplex *Ap_mod;
+   void loadMHDFields(std::string mhd_filename, 
+                     LinearInterpolation<double, CComplex> *inter_phi, 
+                     LinearInterpolation<double, CComplex> *inter_psi);
   
    CComplex  *G_lin,  ///< Modified phase distribution with fields contributions
             *Xi_lin; ///< Combined fields \f$ \Xi = \phi + v_\parallel A_{1\parallel}  \f$
 
    double width, ///< Magnetic Island width
-          shear, ///< Shearing rate
-          omega; ///< Island frequeny
+          Ap_ky, ///< Values neq to zero if Xi term is included
+          omega; ///< Island frequency
 
-   double *MagIs, *dMagIs_dx, *ky_filter;
+   double *MagIs, 
+          *dMagIs_dx, 
+          *ky_filter;
+
+   CComplex *Phi0, 
+            *Psi0;
 
    double p[3]; ///<  Coefficients for the island structure
  
@@ -67,7 +71,7 @@ class VlasovIsland : public VlasovAux {
                            CComplex nonLinear                  [Nky][NxLD  ][NvLD],
                            const double MagIs[NxGB], const double dMagIs[NxGB], 
                            const double X[NxGB+4], const double V[NvGB], const double M[NmGB],
-                           const CComplex Ap_mod                    [NzLB][Nky][NxLB+4]      ,
+                           const CComplex Psi0                    [NzLB][Nky][NxLB+4]      ,
                            CComplex Field0[Nq][NzLD][Nky][NxLD]   ,
                            const double dt, const int rk_step, const double rk[3]);
    
@@ -82,7 +86,7 @@ class VlasovIsland : public VlasovAux {
                            CComplex nonLinear                  [Nky][NxLD  ][NvLD],
                            const double MagIs[NxGB], const double dMagIs[NxGB], 
                            const double X[NxGB+4], const double V[NvGB], const double M[NmGB],
-                           const CComplex Ap_mod                    [NzLB][Nky][NxLB+4]      ,
+                           const CComplex Psi0                    [NzLB][Nky][NxLB+4]      ,
                            CComplex Field0[Nq][NzLD][Nky][NxLD]   ,
                            const double dt, const int rk_step, const double rk[3]);
 
@@ -99,7 +103,7 @@ class VlasovIsland : public VlasovAux {
                            CComplex G        [NzLB][Nky][NxLB][NvLB],
                            CComplex Xi_lin       [NzLB][Nky][NxLB+4][NvLB],
                            CComplex G_lin        [NzLB][Nky][NxLB][NvLB],
-                           const CComplex Ap_mod                    [NzLB][Nky][NxLB+4]      ,
+                           const CComplex Psi0                    [NzLB][Nky][NxLB+4]      ,
                            CComplex Field0[Nq][NzLD][Nky][NxLD]   ,
                            const double dt, const int rk_step, const double rk[3]);
    
@@ -109,10 +113,19 @@ class VlasovIsland : public VlasovAux {
                            const CComplex Fields [Nq][NsLD][NmLD][NzLB][Nky][NxLB+4],
                                  CComplex Xi                     [NzLB][Nky][NxLB+4][NvLB],
                                  CComplex G                      [NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex Phi0                   [NzLB][Nky][NxLB+4]      ,
                            const int m, const int s);
 
-   
-   
+   virtual void setupXiAndG(
+                           const CComplex g          [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex f0         [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex Fields [Nq][NsLD][NmLD][NzLB][Nky][NxLB+4],
+                                 CComplex Xi                     [NzLB][Nky][NxLB+4][NvLB],
+                                 CComplex G                      [NzLB][Nky][NxLB  ][NvLB],
+                           const CComplex Phi0                   [NzLB][Nky][NxLB+4]      ,
+                           const int m, const int s);
+
+
    void  Vlasov_2D_Island_Equi(
                            CComplex fs       [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
                            CComplex fss      [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],

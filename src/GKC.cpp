@@ -129,9 +129,7 @@ GKC::GKC(Setup *_setup) : setup(_setup)
   
   printSettings();   
   setup->check_config();
-
 }
-          
 
 int GKC::mainLoop()   
 {
@@ -223,10 +221,8 @@ int GKC::mainLoop()
   return 0;
 }
 
-
 GKC::~GKC()
 {
-   
   // Shutdown submodules : ORDER IS IMPORTANT !!
   delete fields;
   delete visual;
@@ -251,9 +247,7 @@ GKC::~GKC()
   delete parallel;
   delete init;
   delete timeIntegration;
-
 }
-
 
 void GKC::printSettings() 
 {

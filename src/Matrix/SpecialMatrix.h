@@ -43,7 +43,7 @@ class Matrix_FD_Stencil
       // use 2nd order Central Difference stencil h^{-2} [ 1 -2 1]
       const double h = 2 * pow2(dx);
       
-      // parrial_xx 
+      // partial_xx 
       
       // use 4th order Central Difference stencil (1./12 h^2) [ -1 16 -30 16 -1 ]
       const double h_2   = 12. * pow2(dx);
@@ -62,7 +62,7 @@ class Matrix_FD_Stencil
       if ( (x < NxGuD-2)) ierr = MatSetValue(A, idx, idx+2, val_dx2_p2, INSERT_VALUES);
       if ( (x > NxGlD+2)) ierr = MatSetValue(A, idx, idx-2, val_dx2_m2, INSERT_VALUES);
                  
-      // parrial_x ky 
+      // partial_x ky 
       // use 4th order Central Difference stencil (1./12 h^2) [ -1 16 -30 16 -1 ]
       
       const double h_1   = 12. * pow2(dx);

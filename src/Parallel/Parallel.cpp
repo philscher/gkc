@@ -12,8 +12,6 @@
  * =====================================================================================
  */
 
-
-
 #include "Global.h"
 #include "Parallel.h"
 #include "FileIO.h"
@@ -189,10 +187,8 @@ Parallel::~Parallel()
   return;
 }
 
-
 void Parallel::updateBoundaryVlasov(CComplex *Sendu, CComplex *Sendl, CComplex *Recvu, CComplex  *Recvl, int num, int dir)
-{
-  
+{ 
  // OPTIM : If we don't decompose,  copy Sendu->Recvl, .., without going through MPI
 
 #ifdef GKC_PARALLEL_MPI
@@ -228,7 +224,6 @@ void Parallel::updateBoundaryVlasov(CComplex *Sendu, CComplex *Sendl, CComplex *
   return;
 }
 
-
 void Parallel::updateBoundaryVlasovBarrier() 
 {
   // BUG what happen if we never sent a message, what does Waitall
@@ -239,7 +234,6 @@ void Parallel::updateBoundaryVlasovBarrier()
       
   return;
 }
-
 
 void  Parallel::updateBoundaryFields(CComplex *SendXl, CComplex *SendXu, CComplex *RecvXl, CComplex *RecvXu, int num_X,
                                      CComplex *SendZl, CComplex *SendZu, CComplex *RecvZl, CComplex *RecvZu, int num_Z) 
@@ -268,7 +262,6 @@ void  Parallel::updateBoundaryFields(CComplex *SendXl, CComplex *SendXu, CComple
       
   return;
 }
-
 
 MPI_Op Parallel::getMPIOp(Op op) 
 {
@@ -306,9 +299,7 @@ MPI_Datatype Parallel::getMPIDataType(const std::type_info &T)
   else check(-1, DMESG("No such MPI type is not defined"));
     
   return type;
-
 }
-
 
 void Parallel::getAutoDecomposition(int numCPU) 
 {
@@ -318,7 +309,6 @@ void Parallel::getAutoDecomposition(int numCPU)
 
   return;
 }
-  
 
 void Parallel::checkValidDecomposition(Setup *setup) 
 {
@@ -341,7 +331,6 @@ void Parallel::checkValidDecomposition(Setup *setup)
 
    return;
 }
-
 
 void Parallel::print(std::string message)
 {
@@ -366,7 +355,6 @@ void Parallel::printOn(std::ostream &output) const
    
   } else output << std::endl;
 } 
-
 
 // This is initialized in GKC module
 void Parallel::initData(Setup *setup, FileIO *fileIO) 
@@ -394,7 +382,6 @@ void Parallel::initData(Setup *setup, FileIO *fileIO)
   H5Gclose(parallelGroup);
 }
 
-
 int Parallel::getNumberOfWorkers(int dir) 
 {
   int numWorkers = 0;
@@ -402,7 +389,6 @@ int Parallel::getNumberOfWorkers(int dir)
   return numWorkers;
 }
     
-   
 int Parallel::getWorkerID(int dir) 
 {
   int rankWorker = 0;
@@ -414,7 +400,6 @@ void Parallel::barrier(int dir)
 {
   MPI_Barrier(Comm[dir]);
 }
-
 
 void Parallel::printProcessID()
 {

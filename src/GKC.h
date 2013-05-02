@@ -55,47 +55,46 @@
  */
 class GKC
 {
-private:
-    FileIO          *fileIO;             ///< Used for Data Input/Output
-    Vlasov          *vlasov;             ///< Vlasov equation solver
-    Collisions      *collisions;         ///< Collisional operator
-    Grid            *grid;               ///< Grid initialization and boundaries
-    Setup           *setup;              ///< Reads configuration files
-    Parallel        *parallel;           ///< Parallel communication functions
-    Diagnostics     *diagnostics;        ///< Data Diagnostic
-    Fields          *fields;             ///< Source calculation and field solvers
-    Control         *control;            ///< Program flow control
-    FFTSolver       *fftsolver;          ///< FFTSolver used
-    TestParticles   *particles;          ///< Test particles
-    Eigenvalue      *eigenvalue;         ///< Eigenvalue calculations
-    Geometry        *geometry;           ///< Geometry module
-    Event           *event;              ///< Programmable events 
-    Init            *init;               ///< Initialization for plasma
-    Visualization   *visual;             ///< Visualization
-    Benchmark       *bench;              ///< Interface for profiling and benchmarking
-    Benchmark_PMPI  *bench_pmpi;         ///< Benchmark using PMPI interface
-    TimeIntegration *timeIntegration;    ///< Numerical time integration
-    //ScanLinearModes *scanModes;          ///< Scan over linear modes
-    //ScanPoloidalEigen *scanEigen;        ///< Scan over linear modes
+  FileIO          *fileIO;             ///< Used for Data Input/Output
+  Vlasov          *vlasov;             ///< Vlasov equation solver
+  Collisions      *collisions;         ///< Collisional operator
+  Grid            *grid;               ///< Grid initialization and boundaries
+  Setup           *setup;              ///< Reads configuration files
+  Parallel        *parallel;           ///< Parallel communication functions
+  Diagnostics     *diagnostics;        ///< Data Diagnostic
+  Fields          *fields;             ///< Source calculation and field solvers
+  Control         *control;            ///< Program flow control
+  FFTSolver       *fftsolver;          ///< FFTSolver used
+  TestParticles   *particles;          ///< Test particles
+  Eigenvalue      *eigenvalue;         ///< Eigenvalue calculations
+  Geometry        *geometry;           ///< Geometry module
+  Event           *event;              ///< Programmable events 
+  Init            *init;               ///< Initialization for plasma
+  Visualization   *visual;             ///< Visualization
+  Benchmark       *bench;              ///< Interface for profiling and benchmarking
+  Benchmark_PMPI  *bench_pmpi;         ///< Benchmark using PMPI interface
+  TimeIntegration *timeIntegration;    ///< Numerical time integration
+  //ScanLinearModes *scanModes;          ///< Scan over linear modes
+  //ScanPoloidalEigen *scanEigen;        ///< Scan over linear modes
 
-    /**
-    * @brief Run the code, as "IVP" (initial value code)
+  /**
+  * @brief Run the code, as "IVP" (initial value code)
              or "Eigenvalue" code.
-    */
-    std::string gkc_SolType; 
+  */
+  std::string gkc_SolType; 
   
+  void printSettings();
 
-    void printSettings();
-
-public:
-    /**
-    * @param setup configuration parameters
-    **/
-    GKC(Setup *setup);
-   ~GKC();  
+ public:
    
-   int mainLoop();
+  /**
+  * @param setup configuration parameters
+  *
+  **/
+  GKC(Setup *setup);
+ ~GKC();  
+   
+  int mainLoop();
 };
-
 
 #endif // __GKC_H_

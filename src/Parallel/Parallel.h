@@ -12,9 +12,8 @@
  */
 
 
-#ifndef __PARALELL_H
-#define __PARALELL_H
-
+#ifndef __GKC_PARALELL_H
+#define __GKC_PARALELL_H
 
 #include "Global.h"
 #include "Setup.h"
@@ -22,7 +21,6 @@
 #ifdef GKC_PARALLEL_OPENMP
 #include <omp.h>
 #endif
-
 
 #include <mpi.h>
 
@@ -315,4 +313,4 @@ struct NeighbourDir {
   virtual void closeData() {};
 };
 
-#endif // __SERIAL_H
+#endif // __GKC_PARALLEL_H
