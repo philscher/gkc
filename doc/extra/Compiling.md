@@ -1,10 +1,8 @@
-/**
-  * Here we cover some general rules
+  
 
+Compiling sup-packages 
+------------------------
 
-    When compiling PETSc c++ mode needs to be activated.
-    Additionality compile with fortran kernel for complex
-    computations.
+* When compiling PETSc c++ mode needs to be activated. Additionally compile
+  with Fortran kernel for complex computations.
 
-  *   
-  */

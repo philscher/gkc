@@ -24,14 +24,14 @@
 class Vlasov;
 
 /**
- * 
- *  @brief Base class for collisions
- *
- *  Thus functions does merely define some popular functions. 
- *  As well as the collisionless operator.
- *
- *
- */
+* 
+*  @brief Base class for collisions
+*
+*  Thus functions does merely define some popular functions. 
+*  As well as the collisionless operator.
+*
+*
+*/
 class Collisions : public IfaceGKC {
   
 protected:

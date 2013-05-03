@@ -64,8 +64,8 @@ class Diagnostics : public IfaceGKC {
     double particle_number[SPECIES_MAX  ]; ///< Total particle number (per species)
     double kinetic_energy [SPECIES_MAX  ]; ///< Total kinetic energy (per species)
     double entropy        [SPECIES_MAX  ]; ///< Total entropy (per species)
-    double heat_flux      [SPECIES_MAX*3]; ///< Total heat flux (per species) for \f$ (\phi,A_\par, B_\par) \f$
-    double particle_flux  [SPECIES_MAX*3]; ///< Total particle flux (per species) for \f$ (\phi,A_\par, B_\par) \f$
+    double heat_flux      [SPECIES_MAX*3]; ///< Total heat flux (per species) for \f$ (\phi,A_\parallel, B_\parallel) \f$
+    double particle_flux  [SPECIES_MAX*3]; ///< Total particle flux (per species) for \f$ (\phi,A_\parallel, B_\parallel) \f$
 
   } ScalarValues;
    

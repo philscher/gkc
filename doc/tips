@@ -1,4 +1,4 @@
-#Doxygen stored latex generated files in ../doc/doxygen/html/_formulas.tex
+# Doxygen stored latex generated files in ../doc/doxygen/html/_formulas.tex
 
 # Spell Check Recursively C++ comments and string (needs aspell)
 find . -name "*.h" -or "*.cpp" -exec aspell --mode=ccpp -c '{}' \;
@@ -48,8 +48,26 @@ sysconf ....
 :set spell
 git log --pretty=format:'' | wc -l
 
+
 # concenate various pdf pages#
 gs -q -sPAPERSIZE=letter -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=out.pdf Phi_2.pdf Phi_3.pdf Phi_4.pdf Phi_5.pdf Phi_6.pdf Phi_7.pdf
 
 # Shows jobs (does it work ? what does it do ?)
 qstat | egrep  -o [0-9]+.nqs | sed '{:q;N;s/\n/ /g;t q}'
+
+
+# Grep recursive through specific file extension
+grep -r --include=*.py "Cross" .
+
+# Show inode number of files
+ls -li
+# Delete file by inode number
+find . -inum 633410393 -exec rm -i {} \;
+
+# vim spell checker
+set spell
+s[ - next word
+s] - previous word
+z= - suggestions
+zg - add word
+

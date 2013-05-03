@@ -248,12 +248,12 @@ class Fields : public IfaceGKC {
   *    \f]
   *
   *    to get
-  *    \f[aligned
-  *         \frac{E_k}{dt} = \frac{d}{dt} \int left( \frac{1}{2} m_i v_\parallel^2 + \mu B_0 \right) F d^6 Z \\
-  *         frac{E_f}{dt}  = \int q_i \left< \phi \right> \frac{\partial F}{\partial t} d^Z
-  *                        = \frac{d}{dt} \frac{1}{8pi} \int \left[ \lambda_D^2 |\nabla \phi|^2 + \sum_s |\Gamma_0(k_perp^2) \phi|^2
-  *                              + | \phi - \left< \phi \right>_{yz} \right] dx dy dz
-  *    \f]
+  *    \f{align}{
+  *         \frac{E_k}{dt} &= \frac{d}{dt} \int \left( \frac{1}{2} m_i v_\parallel^2 + \mu B_0 \right) F d^6 Z \quad,\\
+  *         \frac{E_f}{dt} &= \int q_i \left< \phi \right> \frac{\partial F}{\partial t} d^Z
+  *                        &= \frac{d}{dt} \frac{1}{8pi} \int \left[ \lambda_D^2 |\nabla \phi|^2 + \sum_s |\Gamma_0(k_perp^2) \phi|^2
+  *                              + | \phi - \left< \phi \right>_{yz} \right] dx dy dz \quad.
+  *    \f}
   *
   *
   *    @out phiEnergy  Total Energy of electric field

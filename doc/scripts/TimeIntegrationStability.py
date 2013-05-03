@@ -52,7 +52,7 @@ def plotRK(n):
     clf()
     pylab.fill(real(z[1:]), imag(z[1:]), color="#333333", label="RK-%i" % n)
 
-    title("Stability region of explicit RK-%i integration" %n)	
+    title("Stability region of explicit RK-%i integration" %n) 
     xlabel("Re$(\\lambda)$")
     ylabel("Im$(\\lambda)$")
    

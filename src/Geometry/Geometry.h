@@ -35,9 +35,9 @@ class Geometry : public IfaceGKC
   double *Kx,     ///< Curvature term
          *Ky,     ///< Curvature term 
          *B,      ///< Equilibrium magnetic field strength
-         *dB_dx,  ///< $\frac{\partial B}{\partial x}$
-         *dB_dy,  ///< $\frac{\partial B}{\partial y}$ 
-         *dB_dz,  ///< $\frac{\partial B}{\partial z}$
+         *dB_dx,  ///< \f$ \frac{\partial B}{\partial x} \f$
+         *dB_dy,  ///< \f$ \frac{\partial B}{\partial y} \f$ 
+         *dB_dz,  ///< \f$ \frac{\partial B}{\partial z} \f$
          *J    ;      ///< $J$
 //         *C    ; ///< C
 

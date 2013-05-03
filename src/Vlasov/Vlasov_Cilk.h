@@ -106,7 +106,7 @@ class VlasovCilk : public Vlasov
   *   @brief Calculated the gyro-average modified potential
   *
   *   \f[ 
-  *        \left<\chi \right> = \left<\phi_1 \right> - \frac{v_\parallel}{c}\eft<{A}_{1\parallel} \right>
+  *        \left<\chi \right> = \left<\phi_1 \right> - \frac{v_\parallel}{c}\left<{A}_{1\parallel}\right>
   *                + \frac{\mu}{q_\sigma} \left< {B}_{1\parallel} \right>
   *   \f]
   *
@@ -125,9 +125,11 @@ class VlasovCilk : public Vlasov
   *
   *   Reference : @cite Note from Goerler's PhD Thesis (Eq. 2.32)
   *
-  *  Note : In [ Xi, G] in electro-static simulations reduces to [ phi, f1 + sigma phi f_0 ],
-  *        equals [phi, f1] + [phi, sigma phi f_0], as f_0 does not depend on y or x 
-  *        [ Here, we do not use local assumption with partial_x f_0 = eta ... 
+  *  Note : In \f$ \left[\Xi, G \right]\f$ in electro-static simulations reduces to 
+  *        \f$ \left[ \phi, f_1 + \sigma \phi f_0 \right] \f$, equals 
+  *        \f$ \left[\phi, f_1 \right] + \left[\phi, \sigma \phi f_0 \right] \f$, as \f$ f_0 \f$ does not depend 
+  *         on \f$ y \f$ or \f$ x \f$ 
+  *        [ Here, we do not use local assumption with \f$ partial_x f_0 = \eta ... $\f 
   *          but indeed use only numerically value ]. This changes of course once we go 
   *          to global version 
   *
