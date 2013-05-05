@@ -382,15 +382,14 @@ void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEn
         if(Nq >= 2) ApEnergy  += cabs(k2_p * pow2(kXOut[Field::Ap ][z][y_k][x_k]))/fft->Norm_X;
         if(Nq >= 3) BpEnergy  += cabs(       pow2(kXOut[Field::Bp ][z][y_k][x_k]))/fft->Norm_X;
            
-      } } }
-        
-      phiEnergy =  parallel->reduce(phiEnergy * grid->dXYZ / (8. * M_PI), Op::sum, DIR_XYZ) ; 
-      ApEnergy  =  parallel->reduce( ApEnergy * grid->dXYZ / (8. * M_PI), Op::sum, DIR_XYZ) ;
-      BpEnergy  =  parallel->reduce( BpEnergy * grid->dXYZ / (8. * M_PI), Op::sum, DIR_XYZ) ;
-      
+      } } }      
     } ((A4zz) fft->kXIn, (A4zz) fft->kXOut, (A4zz) Field0); 
-
   }     
+
+  // have to put here as HDF-5 (table) requires equal values for all MPI ranks
+  phiEnergy =  parallel->reduce(phiEnergy * grid->dXYZ / (8. * M_PI), Op::sum, DIR_ALL) ; 
+  ApEnergy  =  parallel->reduce( ApEnergy * grid->dXYZ / (8. * M_PI), Op::sum, DIR_ALL) ;
+  BpEnergy  =  parallel->reduce( BpEnergy * grid->dXYZ / (8. * M_PI), Op::sum, DIR_ALL) ;
 }
 
 
