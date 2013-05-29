@@ -255,7 +255,5 @@ void Grid::initData(FileIO *fileIO)
   check(H5LTset_attribute_string(gridGroup, ".", "MuIntegrationType", muIntegrationType.c_str()), DMESG("HDF-5 Error")); 
   
   H5Gclose(gridGroup);
-
-  return;
 }
 

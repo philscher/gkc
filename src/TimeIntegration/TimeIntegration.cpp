@@ -36,7 +36,6 @@ void TimeIntegration::setMaxLinearTimeStep(Eigenvalue *eigenvalue, Vlasov *vlaso
   if     (linearTimeStep == "Estimate"  ) maxLinearTimeStep = 1.e-99; // not implemented, use estimate of max(kp)
   else if(linearTimeStep == "Eigenvalue") maxLinearTimeStep = getMaxTimeStepFromEigenvalue(vlasov, fields, eigenvalue);
   else                                    maxLinearTimeStep = std::stod(linearTimeStep);
-
 }
 
 double TimeIntegration::getMaxTimeStepFromEigenvalue(Vlasov *vlasov, Fields *fields, Eigenvalue *eigenvalue)
@@ -52,7 +51,6 @@ double TimeIntegration::getMaxTimeStepFromEigenvalue(Vlasov *vlasov, Fields *fie
   else    check(-1, DMESG("Config File Error : TimeIntegration.Scheme"));
        
   return (max_scheme_eigv * linearSafetyFactor / abs(max_abs_eigv));
-
 }
 
 double TimeIntegration::solveTimeStep(Vlasov *vlasov, Fields *fields, TestParticles *particles, Timing &timing) 
@@ -75,13 +73,11 @@ double TimeIntegration::solveTimeStep(Vlasov *vlasov, Fields *fields, TestPartic
   }
 
   return dt;
-
 }
 
 // use const reference instead
 void TimeIntegration::solveTimeStepRK4(Timing timing, const double dt)
 {
-
   // Runge-Kutta step 1
   const double rk_1[] = { 0., 1., 0.};
   
@@ -110,13 +106,10 @@ void TimeIntegration::solveTimeStepRK4(Timing timing, const double dt)
   fields->solve(vlasov->f0,vlasov->fs, timing);
   vlasov ->solve(fields, vlasov->fs , vlasov->f ,  dt/6., 4, rk_4);
   particles->integrate(vlasov, fields, 1);
-
-  return;
 }
 
 void TimeIntegration::solveTimeStepRK3(Timing timing, const double dt) 
 {
-
   // Runge-Kutta step 1
   const double rk_1[] = { 0., 1., 0.};
   fields->solve(vlasov->f0,vlasov->f, timing);
@@ -131,14 +124,11 @@ void TimeIntegration::solveTimeStepRK3(Timing timing, const double dt)
   const double rk_3[] = { 1., 0., 1.};
   fields->solve(vlasov->f0,vlasov->fss, timing);
   vlasov->solve(fields, vlasov->fss, vlasov->f, 3./4. * dt , 1, rk_3);
-        
-  return;
 }
       
 
 void TimeIntegration::solveTimeStepRK2(Timing timing, const double dt) 
 {
-
  /* 
   
   // Runge-Kutta step 1
@@ -166,7 +156,6 @@ void TimeIntegration::solveTimeStepHeun(Timing timing, const double dt)
 
 void TimeIntegration::solveTimeStepEigen(Timing timing, const double dt) 
 {
-  
   // Runge-Kutta step 1
   const double rk_0[] = { 0., 0., 0.};
   fields->solve(vlasov->f0,vlasov->f, timing);
@@ -175,7 +164,6 @@ void TimeIntegration::solveTimeStepEigen(Timing timing, const double dt)
        
 void TimeIntegration::writeTimeStep(Timing timing, Timing maxTiming, double dt)
 {
-        
    static const time_t start_time = std::time(0);
 
   // should I use flush ? For many CPU maybe not good.
@@ -191,8 +179,6 @@ void TimeIntegration::writeTimeStep(Timing timing, Timing maxTiming, double dt)
     std::cout << TermColor::cdefault;
 
   }
-  
-  return;
 }
 
 void TimeIntegration::printOn(std::ostream &output) const 

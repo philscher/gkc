@@ -19,7 +19,6 @@
 
 bool Timing::operator<=(Timing &b) 
 {
-
   bool check_step = (step <= b.step) ||  (step == -1 ) || (b.step == -1 );
   bool check_time = (time <= b.time) ||  (time == -1.) || (b.time == -1.);
     
@@ -115,6 +114,5 @@ std::string Timing::TimeStringFromSeconds(int secs)
   if(seconds > 0)  ss << seconds << "s ";
 
   return ss.str();
-
-};
+}
 

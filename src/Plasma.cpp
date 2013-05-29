@@ -133,8 +133,7 @@ Plasma::Plasma(Setup *setup, FileIO *fileIO, Geometry *geo, const int _nfields) 
 
 Plasma::~Plasma()
 {
-
-   delete[] species;
+  delete[] species;
 }
 
 
@@ -165,9 +164,7 @@ void Plasma::printOn(std::ostream &output) const
            << " ωn : " << species[s].w_n << " ωT : " << species[s].w_T 
            << " Model : " << species[s].gyroModel       << std::endl;
   } 
-     
 }
-
 
 void Plasma::initData(FileIO *fileIO) 
 {

@@ -57,9 +57,7 @@ public:
   **/
   virtual void solve(Fields *fields, const CComplex  *fs, const CComplex *f0, CComplex *Coll, double dt, int rk_step) 
   {
-            // we have collisionless system
-            return;
-
+    // we have collisionless system
   };
 
   /**

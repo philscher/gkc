@@ -184,7 +184,6 @@ Parallel::~Parallel()
 
   check(MPI_Finalize(), DMESG("MPI Error"));
  
-  return;
 }
 
 void Parallel::updateBoundaryVlasov(CComplex *Sendu, CComplex *Sendl, CComplex *Recvu, CComplex  *Recvl, int num, int dir)
@@ -220,8 +219,6 @@ void Parallel::updateBoundaryVlasov(CComplex *Sendu, CComplex *Sendl, CComplex *
   }
 
 #endif // GKC_PARALLEL_MPI
-  
-  return;
 }
 
 void Parallel::updateBoundaryVlasovBarrier() 
@@ -232,7 +229,6 @@ void Parallel::updateBoundaryVlasovBarrier()
   if(Nz > 1) MPI_Waitall(4, Talk[DIR_Z].psf_msg_req, Talk[DIR_Z].msg_status);
   if(decomposition[DIR_V] > 1) MPI_Waitall(4, Talk[DIR_V].psf_msg_req, Talk[DIR_V].msg_status);
       
-  return;
 }
 
 void  Parallel::updateBoundaryFields(CComplex *SendXl, CComplex *SendXu, CComplex *RecvXl, CComplex *RecvXu, int num_X,
@@ -260,7 +256,6 @@ void  Parallel::updateBoundaryFields(CComplex *SendXl, CComplex *SendXu, CComple
   // Field boundaries required for Vlasov solver, thus wait
   MPI_Waitall(Nz > 1 ? 8 : 4, msg_request, msg_status);
       
-  return;
 }
 
 MPI_Op Parallel::getMPIOp(Op op) 
@@ -307,7 +302,6 @@ void Parallel::getAutoDecomposition(int numCPU)
   if (numCPU == 1) decomposition[:] = 1;
   else check(-1, DMESG("Not implemented"));
 
-  return;
 }
 
 void Parallel::checkValidDecomposition(Setup *setup) 
@@ -329,7 +323,6 @@ void Parallel::checkValidDecomposition(Setup *setup)
   if((__sec_reduce_mul(decomposition[DIR_X:6]) != numThreads * numProcesses) && (myRank == 0)) check(-1, DMESG("Decomposition and number of processors are not equal"));
   if(((pNs %   decomposition[DIR_S]) != 0    ) && (myRank == 0)) check(-1, DMESG("Decomposition in s have to be modulo of the total number"));
 
-   return;
 }
 
 void Parallel::print(std::string message)

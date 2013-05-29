@@ -60,8 +60,6 @@ void Collisions_LenardBernstein::calculatePreTerms(double a[NsLD][NmLD][NvLD], d
     c [s][m][v] = pow(v_,-1./2.) *  (erf(v_) - Derf(v_)) ;
       
   } } } // s, m, v 
-
-  return;
 }
 
 
@@ -144,9 +142,6 @@ void Collisions_LenardBernstein::solve(Fields *fields, const CComplex  *f, const
   } } ((A6zz) f  , (A6zz) f0, (A6zz) Coll, 
        (A3zz) dn , (A3zz) dP, (A3zz) dE, 
        (A3rr) a  , (A3rr) b , (A3rr)  c, (A3rr) nu);
-   
-  return;
-
 };
 
 
@@ -167,7 +162,6 @@ void Collisions_LenardBernstein::printOn(std::ostream &output) const
 
   output   << "Collisions |  Drift-Kinetic Lenard-Bernstein  β = " << arr2str(&beta[1], Ns)
            << " Corrections : " << (consvMoment  ? "Yes" : "No") <<  std::endl;
-  
 }
 
 void Collisions_LenardBernstein::initData(Setup *setup, FileIO *fileIO)
@@ -179,6 +173,5 @@ void Collisions_LenardBernstein::initData(Setup *setup, FileIO *fileIO)
   check(H5LTset_attribute_double(collisionGroup, ".", "Beta" ,  beta, Ns+1), DMESG("H5LTset_attribute"));
             
   H5Gclose(collisionGroup);
-
 }
 

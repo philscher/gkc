@@ -21,7 +21,6 @@ FieldsFFT::FieldsFFT(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileI
    
   screenNyquist = setup->get("Fields.screenNyquist", 1);
 
-  return;
 } 
 
 
@@ -54,8 +53,6 @@ void FieldsFFT::solveFieldEquations(const CComplex Q     [Nq][NzLD][Nky][NxLD],
   // transform back to real-space (kx,ky) -> (x,ky)
   #pragma omp single
   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, ArrayField0.data((CComplex *) Field0));
-
-  return;
 }
 
 void FieldsFFT::solvePoissonEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_NkxL],
@@ -88,18 +85,12 @@ void FieldsFFT::solvePoissonEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_
     // to rhs due to FFT normalization, flux-surface averaging only affects zonal flow itself.
     const double lhs    = plasma->debye2 * k2_p + sum_qqnT_1mG0(k2_p) + adiab;
     const CComplex rhs  = kXOut[Field::phi][z][y_k][x_k] + (y_k == 0 ? adiab*phi_yz[x_k]: 0.); 
-          
+    
     kXIn[Field::phi][z][y_k][x_k] = rhs/(lhs * fft->Norm_X);
          
     
   } } } // z, y_k, x_k
-        
-  return;    
-
 }
-
-
-
 
 // Note : additional field corrections are missing ! see Lapillionne
 void FieldsFFT::solveAmpereEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_NkxL],
@@ -122,9 +113,6 @@ void FieldsFFT::solveAmpereEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_N
     kXIn[Field::Ap][z][y_k][x_k] = rhs/(lhs * fft->Norm_X);
 
   } } } // z, y_k, x_k
-      
-  return;
-
 }            
 
 void FieldsFFT::solveBParallelEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_NkxL],
@@ -153,10 +141,7 @@ void FieldsFFT::solveBParallelEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::
     kXIn[Field::Bp ][z][y_k][x_k] = (C_1 * M_01 - C_2 * M_00) / ((C_1 * C_3 - pow2(C_2)) * fft->Norm_X);
 
   } } } // z, y_k, x_k
-    
-  return;
 }
-
 
 // Note : is it also valid in toroidal case ? 
 void FieldsFFT::calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_NkxL],
@@ -186,9 +171,6 @@ void FieldsFFT::calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_NkxL
 
   // average over z-direction
   parallel->reduce(phi_yz, Op::sum, DIR_Z, Nx);  
-
-  return;
-
 }
 
 void FieldsFFT::doubleGyroExp(const CComplex In [Nq][NzLD][Nky][NxLD], 
@@ -228,9 +210,6 @@ void FieldsFFT::doubleGyroExp(const CComplex In [Nq][NzLD][Nky][NxLD],
        
   //#pragma omp single
   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, &Out[0][0][0][0]);
-
-  return;
-
 }
 
 void FieldsFFT::gyroFull(const CComplex In   [Nq][NzLD][Nky][NxLD             ], 
@@ -272,10 +251,7 @@ void FieldsFFT::gyroFull(const CComplex In   [Nq][NzLD][Nky][NxLD             ],
    
   #pragma omp single
   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, stack ? &Out[0][0][0][0] : &Out[0][NzLlD][0][NxLlD]);
- 
-  return;
 }
-
 
 void FieldsFFT::gyroFirst(const CComplex In   [Nq][NzLD][Nky][NxLD], 
                                 CComplex Out  [Nq][NzLD][Nky][NxLD],
@@ -315,11 +291,7 @@ void FieldsFFT::gyroFirst(const CComplex In   [Nq][NzLD][Nky][NxLD],
 
   #pragma omp single
   fft->solve(FFT_Type::X_FIELDS, FFT_Sign::Backward, &Out[0][NzLlD][NkyLlD][NxLlD]);
-  
-  return;
-
-};
-
+}
 
 // note : back gyro-average goes over only one field not all !
 void FieldsFFT::gyroAverage(const CComplex In [Nq][NzLD][Nky][NxLD], CComplex Out[Nq][NzLD][NkyLD][NxLD],
@@ -334,10 +306,7 @@ void FieldsFFT::gyroAverage(const CComplex In [Nq][NzLD][Nky][NxLD], CComplex Ou
   else if(species[s].gyroModel == "Gyro-1") gyroFirst(In, Out, (A4zz) fft->kXOut, (A4zz) fft->kXIn,    s, gyroFields);  
   else   check(-1, DMESG("No such gyro-average Model"));
   
-  return;
-
 }
-
 
 void FieldsFFT::printOn(std::ostream &output) const
 {
@@ -348,7 +317,6 @@ void FieldsFFT::printOn(std::ostream &output) const
 
 void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEnergy)
 {
-
   phiEnergy = ApEnergy = BpEnergy = 0.;
 
   if(parallel->Coord[DIR_VMS] == 0) {
@@ -395,8 +363,6 @@ void FieldsFFT::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEn
 
 ///////////////////////////////////////// Some Helper functions ///////////////////////////////////////////
 
-
-
 double FieldsFFT::sum_qqnT_1mG0(const double k2_p) 
 {
    
@@ -412,7 +378,6 @@ double FieldsFFT::sum_qqnT_1mG0(const double k2_p)
         
   }
   return g0;
-
 }
   
 double FieldsFFT::sum_sa2qG0(const double kp_2) 
@@ -432,12 +397,10 @@ double FieldsFFT::sum_sa2qG0(const double kp_2)
    
   }
   return g0;
-
 }
 
 double FieldsFFT::sum_qnB_Delta(const double k2_p) 
 {
-
   double g0 = 0.;
    
   for(int s = NsGlD; s <= NsGuD; s++) {
@@ -448,12 +411,10 @@ double FieldsFFT::sum_qnB_Delta(const double k2_p)
     g0 += qn * SpecialMath::Delta(rho_t2 * k2_p);
   }
   return g0/plasma->B0;
-
 }
 
 double FieldsFFT::sum_2TnBB_Delta(const double k2_p) 
 {
-   
   double g0 = 0.;
    
   for(int s = NsGlD; s <= NsGuD; s++) {
@@ -463,7 +424,6 @@ double FieldsFFT::sum_2TnBB_Delta(const double k2_p)
 
     g0 += Tn * SpecialMath::Delta(rho_t2 * k2_p);
   }
-
   return 2. * g0 /pow2(plasma->B0) ;
 }
 

@@ -105,11 +105,7 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov 
    vlasov->setBoundary( vlasov->f0   );
    vlasov->setBoundary( vlasov->f    );
    fields->updateBoundary(); 
-
-
-};
-
-
+}
 
 void Init::initBackground(Setup *setup, Grid *grid, 
                           CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
@@ -148,13 +144,10 @@ void Init::initBackground(Setup *setup, Grid *grid,
    if(plasma->global == false)  f [NsLlD:NsLD][NmLlD:NmLD][NzLlB:NzLB][:][NxLlB:NxLB][NvLlB:NvLB] = ((CComplex) 0.e0);
    else                         f [NsLlD:NsLD][NmLlD:NmLD][NzLlB:NzLB][:][NxLlB:NxLB][NvLlB:NvLB] =
                                 f0[NsLlD:NsLD][NmLlD:NmLD][NzLlB:NzLB][:][NxLlB:NxLB][NvLlB:NvLB];
-   
   }
 }
 
-
 ///////////////////// functions for initial perturbation //////////////////////
-
 void Init::PerturbationPSFNoise(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
                                       CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB])
 { 
@@ -171,16 +164,12 @@ void Init::PerturbationPSFNoise(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][N
       f[s][m][z][y_k][x][v] += epsilon_0*(random_number-0.5e0) * f0[s][m][z][y_k][x][v];
 
     } } } } }
-
   }
-
-  return;
 }   
 
 void Init::PerturbationPSFExp(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
                                     CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB])
 { 
-   
   const double isGlobal = plasma->global ? 1. : 0.; 
   
   auto Perturbation = [=] (int x, int z, double epsilon_0, double sigma) -> double {
@@ -202,10 +191,7 @@ void Init::PerturbationPSFExp(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvL
                          (isGlobal + species[s].n[x] * phase * Perturbation(x, z, epsilon_0, sigma)
                          * exp(-y_k*abs(sigma)*dky));
     
-
   } } } } } }
-
-  return;
 }
 
 void Init::PerturbationPSFMode(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
@@ -233,11 +219,8 @@ void Init::PerturbationPSFMode(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][Nv
         f[s][m][z][y_k][x][v] = epsilon_0 * (pert_x*pert_z) * f0[s][m][z][y_k][x][v] * (1./ (Nx * Nz));
 
     }}} }}}
-
-   return;
 }
 
-    
 void Init::printOn(std::ostream &output) const 
 {
   output << "Init       | " << PerturbationMethod << std::endl;

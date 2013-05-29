@@ -39,7 +39,7 @@ PetscErrorCode petsc_error_handler(MPI_Comm comm, int line, const char *fun, con
   // PETSc errors are fatal
   abort();
   exit(0);
-};
+}
 
 Eigenvalue_SLEPc::Eigenvalue_SLEPc(FileIO *fileIO, Setup *setup, Grid *grid, Parallel *_parallel) : Eigenvalue(fileIO, setup,grid,  _parallel)
 {
@@ -199,7 +199,6 @@ Eigenvalue_SLEPc::~Eigenvalue_SLEPc()
   SlepcFinalize();  
   H5Gclose(eigvGroupID);
   delete EVTable;
-
 }
 
 void Eigenvalue_SLEPc::printOn(std::ostream &output) const 

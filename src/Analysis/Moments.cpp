@@ -40,7 +40,6 @@ void Moments::getMoments(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB  ]
   getMoment(f, Field0, Mom, 2, 2, 6); 
   getMoment(f, Field0, Mom, 0, 4, 7); 
 
-  return;
 }
 
 
@@ -123,8 +122,5 @@ void Moments::getMoment(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB][Nv
 
 
   } // s
-    
-
-  return;
 }
 

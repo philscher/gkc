@@ -163,8 +163,6 @@ void Setup::parseOption(std::string line, bool fromFile)
  
   if(fromFile) config_check.push_back(key) ;
   config[key] = value;
-  
-  return;
 }
 
 
@@ -234,7 +232,6 @@ void Setup::check_config()
     }
     check(-1, DMESG("Parsing Error : Elements not accessed"));
   }
-  return;
 }
    
 void Setup::printOn(std::ostream &output) const 

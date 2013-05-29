@@ -79,7 +79,7 @@ void Collisions_PitchAngle::C_vm(const double df_dv, const double df_dm, const d
 void Collisions_PitchAngle::solve(Fields *fields, const CComplex  *f, const CComplex *f0, CComplex *Coll, double dt, int rk_step)
 {
 
-  [=](const CComplex f   [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],  // Phase-space function for current timestep
+  [=](const CComplex f   [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],  // Phase-space function for current time step
       const CComplex f0  [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],  // Background Maxwellian
             CComplex Coll[NsLD][NmLD][NzLB][Nky][NxLB][NvLB]   // Collisional term
      ) 
@@ -89,14 +89,15 @@ void Collisions_PitchAngle::solve(Fields *fields, const CComplex  *f, const CCom
   CComplex C_v[NmLD][NvLD];
   CComplex C_m[NmLD][NvLD];
 
-const double dm = 1.;
+  const double _kw_12_dv = 1./(12.*dv);
 
  // Take care m-space may be not equidistant discretized
   for(int s = NsLlD; s <= NsLuD; s++) {
   for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = 0     ; y_k <= Nky-2; y_k++) {
   for(int x = NxLlD; x <= NxLuD; x++) { 
 
-  for(int m = NmLlD; m <= NmLuD; m++) { for(int v = NvLlD; v <= NvLuD; v++) { 
+  for(int m = NmLlD; m <= NmLuD; m++) { const double _kw_12_dm = 1./(12.*grid->dm[m]);
+  for(int v = NvLlD; v <= NvLuD; v++) { 
 
     const CComplex df_dv = (8.*(f[s][m][z][y_k][x][v+1] - f[s][m][z][y_k][x][v-1]) - (f[s][m][z][y_k][x][v+2] - f[s][m][z][y_k][x][v-2]))/(12.*dv);
     const CComplex df_dm = (8.*(f[s][m+1][z][y_k][x][v] - f[s][m-1][z][y_k][x][v]) - (f[s][m+2][z][y_k][x][v] - f[s][m-2][z][y_k][x][v]))/(12.*dm);
@@ -115,8 +116,6 @@ const double dm = 1.;
   } } } }
   
   } ((A6zz) f  , (A6zz) f0, (A6zz) Coll); 
-   
-  return;
 }
 
 void Collisions_PitchAngle::initData(hid_t fileID) 

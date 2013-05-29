@@ -125,8 +125,6 @@ void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
 
   #pragma omp single
   parallel->bcast(ArrayField.data(Field), DIR_V, ArrayField.getNum());
-   
-  return;
 }
 
 void Fields::calculateChargeDensity(const CComplex f0      [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
@@ -146,8 +144,6 @@ void Fields::calculateChargeDensity(const CComplex f0      [NsLD][NmLD][NzLB][Nk
                   - (plasma->global ? __sec_reduce_add(f0[s][m][z][y_k][x][NvLlD:NvLD]) : 0)) * pqnB_dvdm;
      
   } } } // z, y_k, x
-   
-  return; 
 }
 
 void Fields::calculateParallelCurrentDensity(const CComplex f0    [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
@@ -164,8 +160,6 @@ void Fields::calculateParallelCurrentDensity(const CComplex f0    [NsLD][NmLD][N
     Field0[Field::Ap][z][y_k][x] = -__sec_reduce_add(V[NvLlD:NvLD] * f[s][m][z][y_k][x][NvLlD:NvLD]) * qa_dvdm;
 
   } } } // z, y_k, x
-
-  return;
 }
 
 // Note : Did not checked correctness of this function
@@ -184,8 +178,6 @@ void Fields::calculatePerpendicularCurrentDensity(const CComplex f0     [NsLD][N
     Field0[Field::Bp][z][y_k][x] =  M[m] * __sec_reduce_add(f[s][m][z][y_k][x][NvLlD:NvLD]) * qan_dvdm;
             
   } } } // z, y_k, x
-
-  return;
 }
 
 void Fields::updateBoundary()
@@ -235,8 +227,6 @@ void Fields::updateBoundary()
     }((A6zz ) Field, 
       (A6zz ) SendXl, (A6zz) SendXu, (A6zz) RecvXl, (A6zz) RecvXu,
       (A6zz ) SendZl, (A6zz) SendZu, (A6zz) RecvZl, (A6zz) RecvZu);
-  
-  return; 
 }
 
 ///////////////////////////////////////////// Data I/O ///////////////////////////////
@@ -262,7 +252,6 @@ void Fields::initData(Setup *setup, FileIO *fileIO)
   H5Gclose(fieldsGroup);
       
   dataOutputFields = Timing(setup->get("DataOutput.Fields.Step", -1), setup->get("DataOutput.Fields.Time", -1.));
-
 }   
 
 void Fields::writeData(const Timing &timing, const double dt) 
@@ -277,8 +266,8 @@ void Fields::writeData(const Timing &timing, const double dt)
       
 void Fields::closeData() 
 {
-   delete FA_fields;
-   delete FA_fieldsTime;
+  delete FA_fields;
+  delete FA_fieldsTime;
 }
 
 void Fields::printOn(std::ostream &output) const 

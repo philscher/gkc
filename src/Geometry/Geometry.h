@@ -92,7 +92,6 @@ class Geometry : public IfaceGKC
 
       } }
     } ((A2rr) Kx, (A2rr) Ky, (A2rr) B, (A2rr) dB_dx, (A2rr) dB_dy, (A2rr) dB_dz, (A2rr) J);
-
   }
 
  public:
