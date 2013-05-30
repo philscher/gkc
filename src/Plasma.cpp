@@ -179,11 +179,11 @@ void Plasma::initData(FileIO *fileIO)
          
   
 #pragma warning (disable : 1875) // ignore warnings about non-POD types
-  size_t spec_offset[] = { HOFFSET( Species, name ), HOFFSET( Species, q  ), HOFFSET( Species, m ), HOFFSET( Species, n ), 
+  size_t spec_offset[] = { HOFFSET( Species, name ), HOFFSET( Species, q  ), HOFFSET( Species, m ), HOFFSET( Species, n0), 
                            HOFFSET( Species, w_T  ), HOFFSET( Species, w_n) };
 #pragma warning (enable  : 1875)
 
-  size_t spec_sizes[]  = { sizeof(species[0].name ), sizeof(species[0].q  ), sizeof(species[0].m ), sizeof(species[0].n ), 
+  size_t spec_sizes[]  = { sizeof(species[0].name ), sizeof(species[0].q  ), sizeof(species[0].m ), sizeof(species[0].n0), 
                            sizeof(species[0].w_T  ), sizeof(species[0].w_n) };
 
   hid_t spec_type[]    = { fileIO->str_tid         , H5T_NATIVE_DOUBLE     , H5T_NATIVE_DOUBLE    , H5T_NATIVE_DOUBLE    , 
