@@ -19,7 +19,7 @@ code. Currently features are :
     [scipy](http://www.scipy.org/)/[pytables](http://www.pytables.org/)
  
 However, this code is still considered *experimental*
-and benchmark to other codes is pending. You may want to consider 
+and benchmark to other codes is pending. You may want to consider using
 other gyro-kinetic codes such as [GENE](http://www.ipp.mpg.de/~fsj/gene/),
 [gkw](http://www.gkw.org.uk/) or [gs2](http://gs2.sourceforge.net/) for
 production usage.
