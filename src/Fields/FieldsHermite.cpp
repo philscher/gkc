@@ -27,11 +27,9 @@
 static char FieldsHermite_help[] = "Help for PETSc Interface not available, please look up gkc & PETSc manual.";
 
 
-
 FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileIO *fileIO, Geometry *geo) 
 : Fields(setup, grid, parallel,fileIO, geo)
 {
-      
   // Move to Master PETSc class (create one ...) 
   
   PetscInitialize(&setup->argc, &setup->argv, (char *) 0,  FieldsHermite_help);
@@ -51,7 +49,6 @@ FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileI
           
   } } } }
 
-    
   setDoubleGyroAverageMatrix(setup);
         
   // Create Vectors
@@ -59,15 +56,17 @@ FieldsHermite::FieldsHermite(Setup *setup, Grid *grid, Parallel *parallel, FileI
   VecCreateMPI(parallel->Comm[DIR_X], NxLD, Nx, &GyroVector_XAvrg);
   VecAssemblyBegin(GyroVector_X    );    VecAssemblyEnd  (GyroVector_X    );
   VecAssemblyBegin(GyroVector_XAvrg);    VecAssemblyEnd  (GyroVector_XAvrg);
-
 }
 
+FieldsHermite::~FieldsHermite()
+{
+  // shutdown PETSc !?
+}
 
 void FieldsHermite::gyroAverage(const CComplex In [Nq][NzLD][Nky][NxLD], 
                                       CComplex Out[Nq][NzLD][Nky][NxLD],
                                 const int m, const int s, const bool forward, const bool stack)
 {
-  
   CComplex *vec_X, *vec_XAvrg;
   
   // Create Matrix
@@ -85,18 +84,12 @@ void FieldsHermite::gyroAverage(const CComplex In [Nq][NzLD][Nky][NxLD],
     VecGetArrayRead    (GyroVector_XAvrg, (const PetscScalar **) &vec_XAvrg);
     for(int x=NxLlD, n = 0; x <= NxLuD; x++)  Out[q][z][y_k][x] = vec_XAvrg[n++]; 
     VecRestoreArrayRead(GyroVector_XAvrg, (const PetscScalar **) &vec_XAvrg);
-        
-    
   } } } 
-
-  return;
-
 }
 
 
 CComplex FieldsHermite::getElements(const int x, const int x_, const double r, int y_k, const int z) 
 {
-  
   const double ky = (2. * M_PI/Ly) * y_k;
   // Assign the lambda expression that adds two numbers to an auto variable.
   auto Integrand = [=] (double alpha) -> CComplex { 
@@ -125,35 +118,20 @@ CComplex FieldsHermite::getElements(const int x, const int x_, const double r, i
     if( ((X[x] - r_x) <= X[NxGlD]) || ((X[x] - r_x) >= X[NxGuD])) return 0.;
 
     return Lambda(X[x] - r_x, x_) * cexp(_imag * ky * r_y);
-
-    
   };
         
-  
   // Integration is very sensitive on order ( why ? some bug ?? )
   //return 1./(2.*M_PI) * Integrate::GaussLegendre(Integrand, 0., 2.*M_PI, 128);
   return 1./(2.*M_PI) * *(reinterpret_cast<CComplex*> (&(Integrate::GaussLegendre(Integrand, 0., 2.*M_PI, 128))));
-        
-
 }
-
-FieldsHermite::~FieldsHermite()
-{
-  // shutdown PETSc !?
-}
-
 
 void FieldsHermite::solveFieldEquations(const CComplex Q     [Nq][NzLD][Nky][NxLD],
                                               CComplex Field0[Nq][NzLD][Nky][NxLD])
 {
-   
   // for 3 fields phi and B_perp are coupled and need to be solved differently
   if( solveEq & Field::Iphi) solvePoissonEquation  (Q, Field0);
   if( solveEq & Field::IAp ) check(-1, DMESG("Not Implemented"));
   if( solveEq & Field::IBp ) check(-1, DMESG("Not Implemented"));
-    
-  return;
-
 }
 
 
@@ -224,15 +202,12 @@ double FieldsHermite::Lambda(const double x, const int n)
 void FieldsHermite::printOn(std::ostream &output) const 
 {
   output   << "Fields    |  Hermite      Order : "  << interpolationOrder << std::endl;
-
-  return;
 }
  
 
 void FieldsHermite::solvePoissonEquation(const CComplex Q     [Nq][NzLD][Nky][NxLD],
                                                CComplex Field0[Nq][NzLD][Nky][NxLD])
 {
-
   CComplex *vec_Q, *vec_Field;
      
   for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {
@@ -248,8 +223,6 @@ void FieldsHermite::solvePoissonEquation(const CComplex Q     [Nq][NzLD][Nky][Nx
     VecRestoreArrayRead(GyroVector_XAvrg, (const PetscScalar **) &vec_Field);
 
   } }
-
-  return;
 }
            
          
@@ -277,15 +250,14 @@ Matrix* FieldsHermite::getGyroAveragingMatrix(const double mu, const int y_k, co
   return M;
 }
   
-// not implemented
 void FieldsHermite::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEnergy) 
 {
-   phiEnergy = 0.; ApEnergy = 0.; BpEnergy = 0.;
-
-   return ;
+   // not implemented
+   phiEnergy = 0.; 
+   ApEnergy = 0.; 
+   BpEnergy = 0.;
 }
         
-
 void FieldsHermite::setDoubleGyroAverageMatrix(Setup *setup)
 {
 
@@ -359,7 +331,5 @@ void FieldsHermite::setDoubleGyroAverageMatrix(Setup *setup)
     // ignore for now, only do quasi neutrality.
     
   } } // y_k, z
-
-  return;
 }
 

@@ -25,7 +25,7 @@
 *
 *   @brief Class Matrix implementation using PETSc (http://www.mcs.anl.gov/petsc/)
 *
-*   From the PETSc documenation (do we take care of this ? ) : 
+*   From the PETSc documentation (do we take care of this ? ) : 
 *     
 *   Currently, all PETSc parallel matrix formats are partitioned by
 *   contiguous chunks of rows across the processors.  Determine which

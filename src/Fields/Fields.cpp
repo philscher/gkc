@@ -97,7 +97,7 @@ void Fields::solve(const CComplex *f0, CComplex *f, Timing timing)
     #pragma omp single
     parallel->bcast(ArrayField0.data(Field0), DIR_MS, ArrayField0.getNum());
 
-    // Gyro-averaging procedure for each species and magnetic moment ( drift-coord -> gyro-coord )
+    // Gyro-averaging procedure for each species and magnetic moment ( guiding-coord -> gyro-coord )
     // OPTIM : We can skip forward transform after first call
     for(int s = NsLlD; s <= NsLuD; s++) { for(int m = NmLlD; m <= NmLuD; m++) {
 
@@ -202,8 +202,8 @@ void Fields::updateBoundary()
 
       // Z-Boundary (we need to connect the magnetic field lines)
       // NzLlD == NzGlD -> Connect only physical boundaries after mode made one loop 
-      const CComplex shift_l = (NzLlD == NzGlD) ? cexp(-_imag * 2.* M_PI * geo->nu(x)) : 1.;
-      const CComplex shift_u = (NzLuD == NzGuD) ? cexp(+_imag * 2.* M_PI * geo->nu(x)) : 1.;
+      const CComplex shift_l = -(NzLlD == NzGlD) ? cexp(-_imag * 2.* M_PI * y_k * geo->nu(x)) : 1.;
+      const CComplex shift_u = -(NzLuD == NzGuD) ? cexp(+_imag * 2.* M_PI * y_k * geo->nu(x)) : 1.;
       
       SendZl[:][:][:][:][y_k][x-NxLlD] = Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLlD  :2][y_k][x] * shift_l;
       SendZu[:][:][:][:][y_k][x-NxLlD] = Field[0:Nq][NsLlD:NsLD][NmLlD:NmLD][NzLuD-1:2][y_k][x] * shift_u;

@@ -10,7 +10,8 @@ gkc_SOURCES = \
    Plasma.cpp Special/LA.cpp TimeIntegration/Timing.cpp Analysis/TestParticle.cpp TimeIntegration/TimeIntegration.cpp \
    FFTSolver/FFTSolver.cpp Visualization/Visualization_Data.cpp Benchmark/Benchmark_PAPI.cpp \
    Collisions/LenardBernstein.cpp Tools/TermColor.cpp TimeIntegration/ScanLinearModes.cpp \
-   TimeIntegration/ScanPoloidalEigen.cpp Collisions/PitchAngle.cpp Benchmark/Benchmark_PMPI.cpp
+   TimeIntegration/ScanPoloidalEigen.cpp Collisions/PitchAngle.cpp Benchmark/Benchmark_PMPI.cpp\
+	Analysis/Auxiliary.cpp
 
 ## Include corresponding header files
 
@@ -27,7 +28,8 @@ gkc_SOURCES += \
    Geometry/Geometry.h Geometry/Geometry2D.h Geometry/GeometryShear.h \
    Geometry/GeometrySlab.h Geometry/GeometrySA.h Geometry/GeometryCHEASE.h\
    Tools/System.h Tools/TermColor.h Special/SpecialMath.h Special/HermitePoly.h Tools/Tools.h Special/Vector3D.h \
-   TimeIntegration/ScanLinearModes.h TimeIntegration/ScanPoloidalEigen.h Collisions/PitchAngle.h
+   TimeIntegration/ScanLinearModes.h TimeIntegration/ScanPoloidalEigen.h Collisions/PitchAngle.h \
+	Analysis/Auxiliary.h
  
 # Integration sub-module
 gkc_SOURCES += \

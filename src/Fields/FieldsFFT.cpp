@@ -59,7 +59,6 @@ void FieldsFFT::solvePoissonEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_
                                      CComplex kXIn [Nq][NzLD][Nky][FFTSolver::X_NkxL])
 {
   // Calculate flux-surface averaging  Note : how to deal with FFT normalization here ?
-  // OpenMP how to set this variable to be shared ? copyprivate(phi_yz)
   CComplex phi_yz[Nx]; phi_yz[:] = 0.;
 
   #pragma omp single copyprivate(phi_yz)
@@ -147,8 +146,7 @@ void FieldsFFT::solveBParallelEquation(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::
 void FieldsFFT::calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_NkxL],
                                  CComplex phi_yz[Nx])
 {
-  //const double _kw_NxNy = 1./((2.*Nky-2.)*Nz)  ; // Number of poloidal points in real space
-  const double _kw_NxNy = 1./(Nz)  ; // Number of poloidal points in real space
+  const double _kw_Nz = 1./((double) Nz)  ; // Number of poloidal points in real space
 
   // Note : In FFT the ky=0 components carries the offset over y (integrated value), thus
   //        by dividing through the number of points we get the averaged valued
@@ -163,7 +161,7 @@ void FieldsFFT::calcFluxSurfAvrg(CComplex kXOut[Nq][NzLD][Nky][FFTSolver::X_NkxL
      
     const double lhs   = plasma->debye2 * k2_p + sum_qqnT_1mG0(k2_p);
     // A(x_k, 0) is the sum over y, thus A(x_k, 0)/Ny is the average 
-    const CComplex rhs =  kXOut[Field::phi][z][0][x_k] * _kw_NxNy;
+    const CComplex rhs =  kXOut[Field::phi][z][0][x_k] * _kw_Nz;
      
     phi_yz[x_k] = rhs/lhs;
     
@@ -373,9 +371,8 @@ double FieldsFFT::sum_qqnT_1mG0(const double k2_p)
     const double qqnT   = species[s].n0 * pow2(species[s].q)/species[s].T0;
     const double rho_t2 = species[s].T0  * species[s].m / pow2(species[s].q * plasma->B0);
        
-    g0 += qqnT * SpecialMath::_1mGamma0_Pade( rho_t2 * k2_p);
-  //g0 += qqnT * SpecialMath::_1mGamma0( rho_t2 * k2_p);
-        
+    // g0 += qqnT * SpecialMath::_1mGamma0_Pade( rho_t2 * k2_p);
+    g0 += qqnT * SpecialMath::_1mGamma0( rho_t2 * k2_p);
   }
   return g0;
 }
@@ -393,8 +390,7 @@ double FieldsFFT::sum_sa2qG0(const double kp_2)
 
     const double b = rho_t2 * kp_2;
        
-    g0  += sa2q * (1.e0 - SpecialMath::_1mGamma0_Pade(b));
-   
+    g0  += sa2q * (1.e0 - SpecialMath::_1mGamma0(b));
   }
   return g0;
 }

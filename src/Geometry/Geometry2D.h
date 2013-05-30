@@ -117,7 +117,7 @@ class Geometry2D : public Geometry
   *
   **/
   inline CComplex get_kp(const int x, const CComplex ky, const int z) const  { 
-    return ky * By[x] + ((CComplex (0. + 1.j)) * kz); 
+    return ky * By[x] + _imag * kz; 
   };
   
   double nu (const int x) { return 0.; };

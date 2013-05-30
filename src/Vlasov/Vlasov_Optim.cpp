@@ -75,7 +75,6 @@ void VlasovOptim::solve(std::string equation_type, Fields *fields, CComplex *_fs
    
    for(int s = NsLlD; s <= NsLuD; s++) {
         
-      // small abbrevations
       const double w_n   = species[s].w_n;
       const double w_T   = species[s].w_T;
       const double alpha = species[s].alpha;
@@ -86,7 +85,6 @@ void VlasovOptim::solve(std::string equation_type, Fields *fields, CComplex *_fs
         
       for(int m=NmLlD; m<= NmLuD;m++) { 
   
-       // calculate for estimation of CFL condition
        for(int z=NzLlD; z<= NzLuD;z++) { for(int y_k=NkyLlD; y_k<= NkyLuD;y_k++) { 
              
           const double ky_im = fft->ky(y_k);
@@ -125,12 +123,8 @@ void VlasovOptim::solve(std::string equation_type, Fields *fields, CComplex *_fs
        const double dfs_dv_re   = (8.  *(fs[s][m][z][y_k][xx][vv+1].re - fs[s][m][z][y_k][xx][vv-1].re) - (fs[s][m][z][y_k][xx][vv+2].re - fs[s][m][z][y_k][xx][vv-2].re))*_kw_12_dv;
        const double ddfs_dvv_re = (16. *(fs[s][m][z][y_k][xx][vv+1].re + fs[s][m][z][y_k][xx][vv-1].re) - (fs[s][m][z][y_k][xx][vv+2].re + fs[s][m][z][y_k][xx][vv-2].re) - 30.*fs[s][m][z][y_k][xx][vv].re) * _kw_12_dv_dv;
      
-        
-        // hyperdiffusion terms
-   //     const Complex d4fs_d4x = (-(fs[s][m][z][y_k][x-2][v] + fs[s][m][z][y_k][x+2][v]) + 4. * (fs[s][m][z][y_k][x-1][v] + fs[s][m][z][y_k][x+1][v]) - 6.*fs[s][m][z][y_k][x][v])/_16_dx4;
+       /////////////// Finally the Vlasov equation calculate the time derivative      //////////////////////
        
-       /////////////// Finally the Vlasov equation calculate the time derivatve      //////////////////////
-       //
        // Note, we split here real and imaginary part to enhance vectorization
        const double dg_dt_re = 
             ky_im* (-(w_n + w_T * (((V[vv]*V[vv])+ M[m])/kw_T  - 3./2.)) * f0 [s][m][z][y_k][xx][vv].re * phi_im )

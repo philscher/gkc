@@ -27,9 +27,9 @@
 class MatrixSolver
 {
  
-  KSP      ksp; ///< PETSc Krylov solver context 
-  PC pc    ;    ///< PETSc Preconditioner context
-  Mat     F;    ///< PETSc Matrix
+  KSP ksp; ///< PETSc Krylov solver context 
+  PC  pc ;    ///< PETSc Preconditioner context
+  Mat F  ;    ///< PETSc Matrix
 
  public:
   
@@ -61,7 +61,7 @@ class MatrixSolver
       else check(-1, DMESG("No such solver"));
  
       //if      (linearSolver == "SuperLU") ierr = PCFactorSetMatSolverPackage(pc,MATSOLVERSUPERLU_DIST);
-      // ToDo : Distinguish between SuperLU_disc, Super_LU, super
+      // ToDo : Distinguish between SuperLU_dist, Super_LU, super
       if      (linearSolver == "SuperLU") ierr = PCFactorSetMatSolverPackage(pc, MATSOLVERSUPERLU);
       else if (linearSolver == "PETSc"  ) ierr = PCFactorSetMatSolverPackage(pc, MATSOLVERPETSC);
       else if (linearSolver == "MUMPS"  ) ierr = PCFactorSetMatSolverPackage(pc, MATSOLVERMUMPS);
@@ -83,7 +83,7 @@ class MatrixSolver
   
     KSPSetFromOptions(ksp);
     // No Need to call this ?!
-    //    KSPSetUp(ksp);
+    KSPSetUp(ksp);
   
   };
   

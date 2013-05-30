@@ -19,7 +19,7 @@
 #include "Vlasov.h"
 
 /**
-*     @brief Optimzed implementations of various Vlasov functions
+*     @brief Optimized implementations of various Vlasov functions
 *
 *     Implements optimized algorithms.
 *
@@ -28,7 +28,7 @@
 *        Experimental and mainly broken.
 *
 *  Optimization used :
-*     Seperat calculations of real and imaginary parts
+*     Separate calculations of real and imaginary parts
 *     Cache-blocking
 *
 **/

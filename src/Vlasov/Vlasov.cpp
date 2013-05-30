@@ -25,9 +25,7 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
 , _kw_12_dv_dv( 1./(12.*dv*dv)   )
 , _kw_16_dx4  ( 1./(16.*pow4(dx)))
 
-
 {
-
   ArrayPhase = nct::allocate(grid->RsLD, grid->RmLD, grid->RzLB, grid->RkyLD, grid->RxLB, grid->RvLB);
   ArrayPhase(&f0, &f, &fss, &fs, &f1, &ft, &Coll);
    
@@ -103,8 +101,6 @@ void Vlasov::solve(Fields *fields, CComplex  *_fs, CComplex  *_fss,
   }
 
   f_boundary = _fss; 
-  
-  return;
 }
 
 void Vlasov::setBoundary(CComplex *f) 
@@ -139,8 +135,8 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
     if(Nz > 1) {
     for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { for(int x = NxLlD; x <= NxLuD; x++) { 
 
-      const CComplex shift_l = (NzLlD == NzGlD) ? cexp(-_imag * 2.* M_PI * geo->nu(x)) : 1.;
-      const CComplex shift_u = (NzLuD == NzGuD) ? cexp(+_imag * 2.* M_PI * geo->nu(x)) : 1.;
+      const CComplex shift_l = -(NzLlD == NzGlD) ? cexp(-_imag * 2.* M_PI * y_k * geo->nu(x)) : 1.;
+      const CComplex shift_u = -(NzLuD == NzGuD) ? cexp(+_imag * 2.* M_PI * y_k * geo->nu(x)) : 1.;
             
       // NzLlD == NzGlD -> Connect only physical boundaries after mode made one toroidal loop 
       SendZl[:][:][:][y_k][x-NxLlD][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD  :2][y_k][x][NvLlD:NvLD] * shift_l;
@@ -188,17 +184,13 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
       g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLlB  :2] = RecvVl[:][:][:][:][:][:]; 
       g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLuD+1:2] = RecvVu[:][:][:][:][:][:]; 
     }
-   
   }
-
+  
   }  ((A6zz) f, 
       (A6zz) SendXl,  (A6zz) SendXu,  (A6zz) RecvXl,  (A6zz) RecvXu,
       (A6zz) SendZl,  (A6zz) SendZu,  (A6zz) RecvZl,  (A6zz) RecvZu,
       (A6zz) SendVl,  (A6zz) SendVu,  (A6zz) RecvVl,  (A6zz) RecvVu);
-
 }
-
-
 
 double Vlasov::getMaxNLTimeStep(const double maxCFL) 
 {
@@ -223,9 +215,7 @@ double Vlasov::getMaxNLTimeStep(const double maxCFL)
   return dt_NL;
 }
 
-
 ///////////////////////////////////////////   File I/O    ///////////////////////////////////////
-
 
 void Vlasov::initData(Setup *setup, FileIO *fileIO) 
 {
@@ -245,11 +235,10 @@ void Vlasov::initData(Setup *setup, FileIO *fileIO)
   hsize_t moffset[]   = { 0         , 0         , 2         , 0     , 2         , 2         , 0             };
      
   // ignore, as HDF-5 automatically (?) allocated data for it
-  // FA_f0       = new FileAttr("f0", psfGroup, fileIO->file, 7, dim, maxdim, chunkdim, moffset,  chunkBdim, offset, true, fileIO->complex_tid);
-  // FA_f1       = new FileAttr("f1", psfGroup, fileIO->file, 7, dim, maxdim, chunkdim, moffset,  chunkBdim, offset, true, fileIO->complex_tid);
-  // FA_psfTime  = fileIO->newTiming(psfGroup);
+  FA_f0       = new FileAttr("f0", psfGroup, fileIO->file, 7, dim, maxdim, chunkdim, moffset,  chunkBdim, offset, true, fileIO->complex_tid);
+  FA_f1       = new FileAttr("f1", psfGroup, fileIO->file, 7, dim, maxdim, chunkdim, moffset,  chunkBdim, offset, true, fileIO->complex_tid);
+  FA_psfTime  = fileIO->newTiming(psfGroup);
   // call additional routines
-  // initData(vlasovGroup, fileIO);  
 
   H5Gclose(psfGroup);
 
@@ -269,17 +258,14 @@ void Vlasov::initData(Setup *setup, FileIO *fileIO)
     delete FA_in_f1;
 
     H5Fclose(file_in); 
-
   }
-
-  return;
 }
 
 void Vlasov::closeData() 
 {
-//  delete FA_f0;
-//  delete FA_f1;
-//  delete FA_psfTime;
+  delete FA_f0;
+  delete FA_f1;
+  delete FA_psfTime;
 }
 
 
@@ -307,7 +293,6 @@ void Vlasov::loadData(FileIO *fileIO)
   hsize_t psf_chunkBdim[] = { NsLB, NmLB, NvLB, NzLB, Nky, NxLB, 1};
   hsize_t psf_chunkdim[]  = { NsLD, NmLD, NvLD, NzLD, Nky, NxLD, 1};
   */
-  return;
 }
 
 void Vlasov::printOn(std::ostream &output) const

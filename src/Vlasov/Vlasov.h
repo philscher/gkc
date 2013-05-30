@@ -133,13 +133,7 @@ class Vlasov : public IfaceGKC {
   **/
   std::string equation_type;
 
-  /**
-  *    @brief set if non-linear simulations are performed
-  *
-  **/
-  bool doNonLinear; 
-    
-        
+
   /**
   *
   *  Interface to solve Vlasov equation of name equation_type
@@ -153,8 +147,11 @@ class Vlasov : public IfaceGKC {
 
 
  public:
-       
+  
+  bool doNonLinear; ///< set if non-linear simulations are performed
   bool doNonLinearParallel; ///< Calculate the parallel non-linearity
+  bool removeZF; ///< remove zonal flows
+       
   
   /**
   *   @brief Pre-calculate often used factors
