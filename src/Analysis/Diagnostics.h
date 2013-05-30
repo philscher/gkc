@@ -25,6 +25,7 @@
 #include "Timing.h"
 #include "Plasma.h"
 #include "Analysis/Moments.h"
+#include "Analysis/Auxiliary.h"
 
 /**
 *    @brief Data diagnostics and output
@@ -41,7 +42,8 @@ class Diagnostics : public IfaceGKC {
 
   hid_t analysisGroup; ///< HDF-5 id for group label
 
-  Moments *moments;    ///< Calculated moments of phase-space function
+  Moments   *moments;    ///< Calculated moments of phase-space function
+  Auxiliary *auxiliary;  ///< Some further less used analysis
 
   /**
   *    @brief Structure for storing scalar values diagnostics
@@ -58,6 +60,7 @@ class Diagnostics : public IfaceGKC {
     double walltime;                       ///< Wall clock time
     int    timestep;                       ///< Current time step 
     double time;                           ///< Current time
+    double dt  ;                           ///< Time step size
     double phiEnergy;                      ///< Electric field energy
     double ApEnergy;                       ///< Magnetic field energy (from \f$ A_\parallel \f$)
     double BpEnergy;                       ///< Magnetic field energy (from \f$ B_\parallel \f$)

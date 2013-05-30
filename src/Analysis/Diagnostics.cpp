@@ -22,13 +22,15 @@ parallel(_parallel),setup(_setup), vlasov(_vlasov), grid(_grid), fields(_fields)
 
   initData(setup, fileIO);
 
-  moments = new Moments(setup, vlasov, fields, grid, parallel);
+  moments   = new Moments(setup, vlasov, fields, grid, parallel);
+  auxiliary = new Auxiliary(setup, fileIO, parallel, fields, vlasov, grid, fft);
 }
 
 
 
 Diagnostics::~Diagnostics() 
 {
+  delete auxiliary;
   delete moments;
   closeData();
 }
@@ -88,8 +90,6 @@ void Diagnostics::getPowerSpectrum(CComplex  kXOut  [Nq][NzLD][Nky][FFTSolver::X
     pSpecX [:][0:Nx/2+1] =      pSpec[:][0:Nx/2+1];
          
   } // if DIR_XYZ
-
-  return;
 }
 
 //////////////////////// Calculate scalar values ///////////////////////////
@@ -179,10 +179,7 @@ void Diagnostics::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky]
     }  
 
     } // s
-
-    return;
 }
-
 
 void Diagnostics::getParticleHeatFlux( 
                                    double    ParticleFlux[Nq]   [NsLD][Nky][NxLD], 
@@ -232,8 +229,6 @@ void Diagnostics::getParticleHeatFlux(
   parallel->reduce(&    HeatFlux[0][0][0][0], Op::sum, DIR_Z, Nq * NsLD * Nky * NxLD);
 
   // BUG (mean not implemented) parallel->reduce(&CrossPhase[0][0][0][0][0], Op::mean, DIR_Z, Nq * 3 * NsLD * Nky * NxLD);
-
-  return;
 }
 
         
@@ -360,29 +355,28 @@ void Diagnostics::initData(Setup *setup, FileIO *fileIO)
   ScalarValues_t scalarValues;
      
   size_t SV_cdoff[] = { HOFFSET( ScalarValues_t, walltime       ),
-                        HOFFSET( ScalarValues_t, timestep       ), HOFFSET( ScalarValues_t, time     ), HOFFSET( ScalarValues_t, phiEnergy       ),
+                        HOFFSET( ScalarValues_t, timestep       ), HOFFSET( ScalarValues_t, time     ), HOFFSET( ScalarValues_t, dt),
+                        HOFFSET( ScalarValues_t, phiEnergy       ),
                         HOFFSET( ScalarValues_t, ApEnergy       ), HOFFSET( ScalarValues_t, BpEnergy ), HOFFSET( ScalarValues_t, particle_number ),
                         HOFFSET( ScalarValues_t, kinetic_energy ), HOFFSET( ScalarValues_t, entropy  ), HOFFSET( ScalarValues_t, heat_flux       ),
                         HOFFSET( ScalarValues_t, particle_flux  ) };
 
   size_t SV_sizes[] = { sizeof(scalarValues.walltime),
-                        sizeof(scalarValues.timestep), sizeof(scalarValues.time    ), sizeof(scalarValues.phiEnergy), 
+                        sizeof(scalarValues.timestep), sizeof(scalarValues.time    ), sizeof(scalarValues.dt),
+                        sizeof(scalarValues.phiEnergy), 
                         sizeof(scalarValues.ApEnergy), sizeof(scalarValues.BpEnergy), Ns * sizeof(scalarValues.particle_number[0]), 
                         Ns * sizeof(scalarValues.kinetic_energy[0]), Ns * sizeof(scalarValues.entropy[0]), 
                         Ns * Nq * sizeof(scalarValues.heat_flux[0]), Ns * Nq * sizeof(scalarValues.particle_flux[0])};
 
-  hid_t SV_types[] = { H5T_NATIVE_DOUBLE, H5T_NATIVE_INT, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, 
+  hid_t SV_types[] = { H5T_NATIVE_DOUBLE, H5T_NATIVE_INT, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, 
                        fileIO->species_tid, fileIO->species_tid, fileIO->species_tid, fileIO->specfield_tid, fileIO->specfield_tid } ;
   
-  const char *SV_names[] = { "WallTime", "Timestep", "Time", "phiEnergy", "ApEnergy", "BpEnergy", "ParticleNumber", 
+  const char *SV_names[] = { "WallTime", "Timestep", "Time", "dt", "phiEnergy", "ApEnergy", "BpEnergy", "ParticleNumber", 
                              "KineticEnergy", "Entropy", "HeatFlux", "ParticleFlux" };
 
-  SVTable = new TableAttr(analysisGroup, "scalarValues", 11, SV_names, SV_cdoff, SV_types, SV_sizes, &scalarValues); 
+  SVTable = new TableAttr(analysisGroup, "scalarValues", 12, SV_names, SV_cdoff, SV_types, SV_sizes, &scalarValues); 
 
   dataOutputStatistics  = Timing(setup->get("DataOutput.Statistics.Step", -1), setup->get("DataOutput.Statistics.Time", -1.));
-
-  return;
-
 }
 
 void Diagnostics::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& BpEnergy)
@@ -390,7 +384,6 @@ void Diagnostics::getFieldEnergy(double& phiEnergy, double& ApEnergy, double& Bp
 
   fields->getFieldEnergy(phiEnergy, ApEnergy, BpEnergy);
 
-  return;
 }
   
 void Diagnostics::writeData(const Timing &timing, const double dt)
@@ -403,8 +396,8 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
 
     CComplex  Mom[8][NsLD][NzLD][Nky][NxLD];
         
-    double  HeatFlux[Nq]   [NsLD][Nky][NxLD],     // Heat     flux   
-            PartFlux[Nq]   [NsLD][Nky][NxLD],     // Particle flux
+    double  HeatFlux[Nq]   [NsLD][Nky][NxLD],  // Heat     flux   
+            PartFlux[Nq]   [NsLD][Nky][NxLD],  // Particle flux
           CrossPhase[Nq][3][NsLD][Nky][NxLD];  // Cross phases of fluxes
 
     // Get Moments of Vlasov equation
@@ -480,6 +473,7 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
     scalarValues.walltime = parallel->bcast(System::getTimeDifference(walltime), parallel->myRank == 0) ;
     scalarValues.timestep = timing.step;
     scalarValues.time     = timing.time;
+    scalarValues.dt       = dt;
     
     fields->getFieldEnergy(scalarValues.phiEnergy, scalarValues.ApEnergy, scalarValues.BpEnergy);
     
@@ -538,8 +532,8 @@ void Diagnostics::writeData(const Timing &timing, const double dt)
   
   }
 
-  return;
-  
+  auxiliary->writeData(timing, dt);
+
 }
 
 // separately we set MPI struct
@@ -590,10 +584,9 @@ void Diagnostics::closeData()
 
   H5Gclose(analysisGroup);
 
-  return;
 }
     
 void Diagnostics::printOn(std::ostream &output) const
 { 
-  return;
+  // Something useful ? e.g. Output
 }
