@@ -64,7 +64,8 @@ class Grid : public IfaceGKC {
   int NxGC, ///< Number of ghost cells in x-directions
       NyGC, ///< Number of ghost cells in y-direction
       NzGC, ///< Number of ghost cells in z-direction
-      NvGC; ///< Number of ghost cells in v-direction
+      NvGC, ///< Number of ghost cells in v-direction
+      NmGC; ///< Number of ghost cells in m-direction
   ///@}
 
   double *dm; ///< Weights for \f$ \mu(m) \f$

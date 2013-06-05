@@ -40,8 +40,8 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov 
     else check(-1, DMESG("No such Perturbation Method"));  
    
    // Field is first index, is last index not better ? e.g. write as vector ?
-   [=] (CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB], CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
-        CComplex Field0[Nq][NzLD][Nky][NxLD]          , CComplex Field[Nq][NsLD][NmLD][NzLB][Nky][NxLB+4],
+   [=] (CComplex f0[NsLD][NmLB][NzLB][Nky][NxLB][NvLB], CComplex f [NsLD][NmLB][NzLB][Nky][NxLB][NvLB],
+        CComplex Field0[Nq][NzLD][Nky][NxLD]          , CComplex Field[Nq][NsLD][NmLB][NzLB][Nky][NxLB+4],
         CComplex      Q[Nq][NzLD][Nky][NxLD])
    {
 
@@ -108,8 +108,8 @@ Init::Init(Parallel *parallel, Grid *grid, Setup *setup, FileIO *fileIO, Vlasov 
 }
 
 void Init::initBackground(Setup *setup, Grid *grid, 
-                          CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
-                          CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB])
+                          CComplex f0[NsLD][NmLB][NzLB][Nky][NxLB][NvLB],
+                          CComplex f [NsLD][NmLB][NzLB][Nky][NxLB][NvLB])
 {
   ////////////////////////////////////////////////////  Initial Condition Maxwellian f0 = (...) ///////////////
   
@@ -141,15 +141,15 @@ void Init::initBackground(Setup *setup, Grid *grid,
 
       } } } } }
 
-   if(plasma->global == false)  f [NsLlD:NsLD][NmLlD:NmLD][NzLlB:NzLB][:][NxLlB:NxLB][NvLlB:NvLB] = ((CComplex) 0.e0);
-   else                         f [NsLlD:NsLD][NmLlD:NmLD][NzLlB:NzLB][:][NxLlB:NxLB][NvLlB:NvLB] =
-                                f0[NsLlD:NsLD][NmLlD:NmLD][NzLlB:NzLB][:][NxLlB:NxLB][NvLlB:NvLB];
+   if(plasma->global == false)  f [NsLlD:NsLD][NmLlB:NmLB][NzLlB:NzLB][:][NxLlB:NxLB][NvLlB:NvLB] = ((CComplex) 0.e0);
+   else                         f [NsLlD:NsLD][NmLlB:NmLB][NzLlB:NzLB][:][NxLlB:NxLB][NvLlB:NvLB] =
+                                f0[NsLlD:NsLD][NmLlB:NmLB][NzLlB:NzLB][:][NxLlB:NxLB][NvLlB:NvLB];
   }
 }
 
 ///////////////////// functions for initial perturbation //////////////////////
-void Init::PerturbationPSFNoise(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
-                                      CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB])
+void Init::PerturbationPSFNoise(const CComplex f0[NsLD][NmLB][NzLB][Nky][NxLB][NvLB],
+                                      CComplex f [NsLD][NmLB][NzLB][Nky][NxLB][NvLB])
 { 
   // add s to initialization of RNG due to fast iteration over s (which time is not resolved)
   for(int s = NsLlD; s <= NsLuD; s++) { 
@@ -167,8 +167,8 @@ void Init::PerturbationPSFNoise(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][N
   }
 }   
 
-void Init::PerturbationPSFExp(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
-                                    CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB])
+void Init::PerturbationPSFExp(const CComplex f0[NsLD][NmLB][NzLB][Nky][NxLB][NvLB],
+                                    CComplex f [NsLD][NmLB][NzLB][Nky][NxLB][NvLB])
 { 
   const double isGlobal = plasma->global ? 1. : 0.; 
   
@@ -194,8 +194,8 @@ void Init::PerturbationPSFExp(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvL
   } } } } } }
 }
 
-void Init::PerturbationPSFMode(const CComplex f0[NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
-                                     CComplex f [NsLD][NmLD][NzLB][Nky][NxLB][NvLB])
+void Init::PerturbationPSFMode(const CComplex f0[NsLD][NmLB][NzLB][Nky][NxLB][NvLB],
+                                     CComplex f [NsLD][NmLB][NzLB][Nky][NxLB][NvLB])
 {
    // Calculates the phase (of what ??!)
    auto Phase = [=] (const int q, const int N)  -> double { return 2.*M_PI*((double) (q-1)/N); };

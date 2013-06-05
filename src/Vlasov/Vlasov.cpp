@@ -26,7 +26,7 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
 , _kw_16_dx4  ( 1./(16.*pow4(dx)))
 
 {
-  ArrayPhase = nct::allocate(grid->RsLD, grid->RmLD, grid->RzLB, grid->RkyLD, grid->RxLB, grid->RvLB);
+  ArrayPhase = nct::allocate(grid->RsLD, grid->RmLB, grid->RzLB, grid->RkyLD, grid->RxLB, grid->RvLB);
   ArrayPhase(&f0, &f, &fss, &fs, &f1, &ft, &Coll);
    
   ArrayXi = nct::allocate(grid->RzLB , grid->RkyLD, grid->RxLB4, grid->RvLB)(&Xi);
@@ -37,14 +37,18 @@ Vlasov::Vlasov(Grid *_grid, Parallel *_parallel, Setup *_setup, FileIO *fileIO, 
   int BoundX_num =    2 * Nky * NzLD * NvLD * NmLD * NsLD;
   int BoundZ_num = NxLD * Nky *    2 * NvLD * NmLD * NsLD;
   int BoundV_num = NxLD * Nky * NzLD *    2 * NmLD * NsLD;
+  // do not allocate for M if not used
+  int BoundM_num = (NmLlD == NmLlB) ? 0 : NxLD * Nky * NzLD * NvLD *    2 * NsLD;
 
   ArrayBoundX = nct::allocate(nct::Range(0 , BoundX_num ))(&SendXu, &SendXl, &RecvXl, &RecvXu);
   ArrayBoundZ = nct::allocate(nct::Range(0 , BoundZ_num ))(&SendZu, &SendZl, &RecvZl, &RecvZu);
   ArrayBoundV = nct::allocate(nct::Range(0 , BoundV_num ))(&SendVu, &SendVl, &RecvVl, &RecvVu);
+  ArrayBoundM = nct::allocate(nct::Range(0 , BoundM_num ))(&SendMu, &SendMl, &RecvMl, &RecvMu);
   
   equation_type       = setup->get("Vlasov.Equation"   , "ES");        
   doNonLinear         = setup->get("Vlasov.doNonLinear", 0      );
   doNonLinearParallel = setup->get("Vlasov.doNonLinearParallel", 0);
+  removeZF            = setup->get("Vlasov.removeZF", 0);
 
   const std::string dir_string[] = { "X", "Y", "Z", "V", "M", "S" };
   for(int dir = DIR_X; dir <= DIR_S; dir++) hyp_visc[dir] = setup->get("Vlasov.HyperViscosity." + dir_string[dir], 0.0);
@@ -118,7 +122,9 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
          CComplex SendZl[NsLD][NmLD][GC2 ][Nky][NxLD][NvLD], CComplex SendZu[NsLD][NmLD][GC2 ][Nky][NxLD][NvLD],
          CComplex RecvZl[NsLD][NmLD][GC2 ][Nky][NxLD][NvLD], CComplex RecvZu[NsLD][NmLD][GC2 ][Nky][NxLD][NvLD],
          CComplex SendVl[NsLD][NmLD][NzLD][Nky][NxLD][GC2 ], CComplex SendVu[NsLD][NmLD][NzLD][Nky][NxLD][GC2 ],
-         CComplex RecvVl[NsLD][NmLD][NzLD][Nky][NxLD][GC2 ], CComplex RecvVu[NsLD][NmLD][NzLD][Nky][NxLD][GC2 ])
+         CComplex RecvVl[NsLD][NmLD][NzLD][Nky][NxLD][GC2 ], CComplex RecvVu[NsLD][NmLD][NzLD][Nky][NxLD][GC2 ],
+         CComplex SendMl[NsLD][GC2 ][NzLD][Nky][NxLD][NvLD], CComplex SendMu[NsLD][GC2 ][NzLD][Nky][NxLD][NvLD],
+         CComplex RecvMl[NsLD][GC2 ][NzLD][Nky][NxLD][NvLD], CComplex RecvMu[NsLD][GC2 ][NzLD][Nky][NxLD][NvLD])
   {
 
   /////////////////////////// Send Boundaries //////////////////////////////
@@ -146,7 +152,6 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
     parallel->updateBoundaryVlasov(Vlasov::SendZu, Vlasov::SendZl, Vlasov::RecvZu, Vlasov::RecvZl, ArrayBoundZ.getNum(), DIR_Z);
     } // (Nz > 1)
 
-    // We do not need to communicate for M and S as we do not have boundary cells (yet)
   
     // Decomposition in velocity is rather unlikely, thus give non-decomposed version too
     // We set points at cut-off in velocity space to zero
@@ -159,7 +164,18 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
       g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLlB  :2] = 0.;
       g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLuD+1:2] = 0.;
     }
+    
+    if(parallel->decomposition[DIR_M] > 1 && (NmLlD != NmLlB)) { // take care with lower/upper global boundary
+     
+      check(-1, DMESG("Should not come here"));
 
+      SendMl[:][:][:][:][:][:] = g[NsLlD:NsLD][NmLlD  :2][NzLlD:NzLD][:][NxLlD:NxLD][NvLlD:NvLD]; 
+      SendMu[:][:][:][:][:][:] = g[NsLlD:NsLD][NmLuD-1:2][NzLlD:NzLD][:][NxLlD:NxLD][NvLlD:NvLD]; 
+      parallel->updateBoundaryVlasov(Vlasov::SendMu, Vlasov::SendMl, Vlasov::RecvMu, Vlasov::RecvMl, ArrayBoundM.getNum(), DIR_M);
+    }
+    
+    // We do not need to communicate for S as we do not have boundary cells (yet)
+  
   }
 
   /////////////////////////// Receive Boundaries //////////////////////////////
@@ -184,12 +200,21 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
       g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLlB  :2] = RecvVl[:][:][:][:][:][:]; 
       g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLuD+1:2] = RecvVu[:][:][:][:][:][:]; 
     }
+  
+    if(parallel->decomposition[DIR_M] > 1 && (NmLlD != NmLlB)) { // take care with lower/upper global boundary
+      
+      g[NsLlD:NsLD][NmLlB  :2][NzLlD:NzLD][:][NxLlD:NxLD][NvLlD:NvLD] = RecvMl[:][:][:][:][:][:]; 
+      g[NsLlD:NsLD][NmLuD+1:2][NzLlD:NzLD][:][NxLlD:NxLD][NvLlD:NvLD] = RecvMu[:][:][:][:][:][:]; 
+    }
+  
+  
   }
   
   }  ((A6zz) f, 
       (A6zz) SendXl,  (A6zz) SendXu,  (A6zz) RecvXl,  (A6zz) RecvXu,
       (A6zz) SendZl,  (A6zz) SendZu,  (A6zz) RecvZl,  (A6zz) RecvZu,
-      (A6zz) SendVl,  (A6zz) SendVu,  (A6zz) RecvVl,  (A6zz) RecvVu);
+      (A6zz) SendVl,  (A6zz) SendVu,  (A6zz) RecvVl,  (A6zz) RecvVu,
+      (A6zz) SendMl,  (A6zz) SendMu,  (A6zz) RecvMl,  (A6zz) RecvMu);
 }
 
 double Vlasov::getMaxNLTimeStep(const double maxCFL) 

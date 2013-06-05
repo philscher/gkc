@@ -72,18 +72,23 @@ class Vlasov : public IfaceGKC {
            *SendZu,  ///< Send buffer in Z-direction (send to up) 
            *SendVl,  ///< Send buffer in V-direction (send to down)
            *SendVu,  ///< Send buffer in V-direction (send to up) 
+           *SendMl,  ///< Send buffer in M-direction (send to down)
+           *SendMu,  ///< Send buffer in M-direction (send to up) 
            *RecvXl,  ///< Recv buffer in X-direction (receive from down)
            *RecvXu,  ///< Recv buffer in X-direction (receive from up)
            *RecvZl,  ///< Recv buffer in Z-direction (receive from down) 
            *RecvZu,  ///< Recv buffer in Z-direction (receive from up)
            *RecvVl,  ///< Recv buffer in V-direction (receive from down) 
-           *RecvVu;  ///< Recv buffer in V-direction (receive from up)
+           *RecvVu,  ///< Recv buffer in V-direction (receive from up)
+           *RecvMl,  ///< Recv buffer in M-direction (receive from down) 
+           *RecvMu;  ///< Recv buffer in M-direction (receive from up)
    
   
   
   nct::allocate ArrayBoundX, ///< Allocator for message buffers in X
                 ArrayBoundZ, ///< Allocator for message buffers in Z
-                ArrayBoundV; ///< Allocator for message buffers in V
+                ArrayBoundV, ///< Allocator for message buffers in V
+                ArrayBoundM; ///< Allocator for message buffers in M
     
 
  protected:

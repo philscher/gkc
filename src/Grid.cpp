@@ -68,6 +68,8 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
   Lv  = setup->get("Grid.Lv", 4.  );
   Lm  = setup->get("Grid.Lm", 7.  );
   
+  int NmBoundary  = setup->get("Grid.NmBoundary", 0 );
+  
   const double x0  = setup->get("Grid.x0", Lx/2.);
   //const double z0  = setup->get("Grid.z0", 0.   );
     
@@ -94,7 +96,7 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
   NkyLD  = Nky; NkyGD = Nky; 
   
   // Number of Ghost/Halo cells
-  NxGC = 2; NyGC = 2; NzGC = 2; NvGC = 2; 
+  NxGC = 2; NyGC = 2; NzGC = 2; NvGC = 2; NmGC = NmBoundary == 1 ? 2 : 0; 
 
   //////////////////   Grid decomposition  ////////////////////////
   // Set local (L) lower (l) and upper (u) bounds
@@ -123,7 +125,7 @@ Grid:: Grid (Setup *setup, Parallel *parallel, FileIO *fileIO)
   // Set local decomposition indices for M (no boundary)
   NmLlD = (NmGuD - NmGlD + 1)/parallel->decomposition[DIR_M] *  parallel->Coord[DIR_M] + 1;
   NmLuD = (NmGuD - NmGlD + 1)/parallel->decomposition[DIR_M] * (parallel->Coord[DIR_M] + 1) ;
-  NmLlB = NmLlD; NmLuB = NmLuD; 
+  NmLlB = NmLlD - NmGC; NmLuB = NmLuD + NmGC; 
 
   // Set local decomposition indices for S (no boundary)
   NsLlD = (NsGuD - NsGlD + 1)/parallel->decomposition[DIR_S] *  parallel->Coord[DIR_S] + 1;

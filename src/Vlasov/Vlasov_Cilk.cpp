@@ -34,8 +34,6 @@ void VlasovCilk::solve(std::string equation_type, Fields *fields, CComplex *f_in
                                            dt, rk_step, rk);
   else   check(-1, DMESG("No Such Equation"));
 
-  return;
-
 }
 
 
@@ -61,7 +59,7 @@ void VlasovCilk::solve(std::string equation_type, Fields *fields, CComplex *f_in
 //
 void VlasovCilk::calculateExBNonLinearity(const CComplex  G              [NzLB][Nky][NxLB  ][NvLB],  // in case of em
                                          const CComplex Xi              [NzLB][Nky][NxLB+4][NvLB],  // in case of em
-                                         const CComplex  f [NsLD][NmLD ][NzLB][Nky][NxLB  ][NvLB],  // in case of es
+                                         const CComplex  f [NsLD][NmLB][NzLB][Nky][NxLB  ][NvLB],  // in case of es
                                          const CComplex Fields[Nq][NsLD][NmLD ][NzLB][Nky][NxLB+4], // in case of es
                                          const int z, const int m, const int s,
                                          CComplex ExB[Nky][NxLD][NvLD], double Xi_max[3], const bool electroMagnetic)
@@ -117,7 +115,8 @@ void VlasovCilk::calculateExBNonLinearity(const CComplex  G              [NzLB][
       {
         const double max_dXi_dx =  __sec_reduce_max(cabs(xy_dXi_dx[:][:]));
         const double max_dXi_dy =  __sec_reduce_max(cabs(xy_dXi_dy[:][:]));
-       
+
+        // possible to replace with atomic capture in OpenMP 4.0
         #pragma omp critical
         Xi_max[DIR_X] = std::max(Xi_max[DIR_X], max_dXi_dx);
         #pragma omp critical
@@ -163,8 +162,6 @@ void VlasovCilk::calculateExBNonLinearity(const CComplex  G              [NzLB][
     // Done - store the non-linear term in ExB
     ExB[0:Nky][NxLlD:NxLD][v] = xky_ExB[:][:];
   }
-    
-  return;
 }
                            
 void VlasovCilk::setupXiAndG(
@@ -221,12 +218,12 @@ void VlasovCilk::setupXiAndG(
 
 
 void VlasovCilk::Vlasov_EM(
-    const CComplex g   [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],  // Current step phase-space function
-    CComplex       h   [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],  // Phase-space function for next step
-    const CComplex f0  [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],  // Background Maxwellian
-    const CComplex f1  [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],  // previous RK-Step
-    CComplex       ft  [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],  // previous RK-Step
-    CComplex       Coll[NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],  // Collisional corrections
+    const CComplex g   [NsLD][NmLB][NzLB][Nky][NxLB  ][NvLB],  // Current step phase-space function
+    CComplex       h   [NsLD][NmLB][NzLB][Nky][NxLB  ][NvLB],  // Phase-space function for next step
+    const CComplex f0  [NsLD][NmLB][NzLB][Nky][NxLB  ][NvLB],  // Background Maxwellian
+    const CComplex f1  [NsLD][NmLB][NzLB][Nky][NxLB  ][NvLB],  // previous RK-Step
+    CComplex       ft  [NsLD][NmLB][NzLB][Nky][NxLB  ][NvLB],  // previous RK-Step
+    CComplex       Coll[NsLD][NmLB][NzLB][Nky][NxLB  ][NvLB],  // Collisional corrections
     const CComplex Fields[Nq][NsLD][NmLD][NzLB][Nky][NxLB+4],
     CComplex Xi             [NzLB][Nky][NxLB+4][NvLB],
     CComplex G              [NzLB][Nky][NxLB  ][NvLB],
@@ -274,7 +271,8 @@ void VlasovCilk::Vlasov_EM(
     const CComplex ky      = _imag * fft->ky(y_k);
 
     const double CoJB      = 1.;///geo->get_J(x,z);
-    
+   
+  #pragma ivdep
   simd_for(int v = NvLlD; v <= NvLuD; v++) {
 
     const CComplex g_   =  g[s][m][z][y_k][x][v];
@@ -305,13 +303,13 @@ void VlasovCilk::Vlasov_EM(
         
     const CComplex dg_dt = 
             
-      NonLinearTerm[y_k][x][v]                                                              // Non-linear ( array is zero for linear simulations) 
+     NonLinearTerm[y_k][x][v]                                                       // Non-linear ( array is zero for linear simulations) 
     - Bpre * (w_n + w_T * ((pow2(V[v])+ M[m] * B0)/Temp - 3./2.)) * f0_ * Xi_ * ky          // Source Term
-    - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0) *                                   
-      (Kx[z][x] * dG_dx - Ky[z][x] * ky * G_)                                               // Magnetic curvature term
-    + alpha * pow2(V[v]) * plasma->beta * plasma->w_p * G_ * ky                             // Plasma pressure gradient
+ //   - Bpre * sigma * ((M[m] * B0 + 2.*pow2(V[v]))/B0) *                                   
+ //     (Kx[z][x] * dG_dx - Ky[z][x] * ky * G_)                                               // Magnetic curvature term
+ //   + alpha * pow2(V[v]) * plasma->beta * plasma->w_p * G_ * ky                             // Plasma pressure gradient
     - CoJB * alpha * V[v]* dG_dz                                                            // Linear Landau damping term
-    + alpha  / 2. * M[m] * dB_dz[z][x] * dg_dv                                              // Magnetic mirror term    
+ //   + alpha  / 2. * M[m] * dB_dz[z][x] * dg_dv                                              // Magnetic mirror term    
 //    + Bpre *  sigma * (M[m] * B0 + 2. * pow2(V[v]))/B0 * Kx[z][x] * 
 //    + ((w_n + w_T * (pow2(V[v]) + M[m] * B0)/Temp - 3./2.) * dG_dx + sigma * dphi_dx * f0_) // ??
     + Coll[s][m][z][y_k][x][v];                                                             // Collision term
@@ -334,7 +332,6 @@ void VlasovCilk::printOn(std::ostream &output) const
 {
   Vlasov::printOn(output);
 
-  return;
 }
 
 
@@ -342,7 +339,6 @@ void VlasovCilk::initData(Setup *setup, FileIO *fileIO)
 {
   Vlasov::initData(setup, fileIO);
 
-  return;
 }
 
    
@@ -353,15 +349,17 @@ void VlasovCilk::calculateParallelNonLinearity(
                                 CComplex NonLinearTerm[Nky][NxLD][NvLD])
 {
 
-  const double _kw_fft_Norm = 1./(fft->Norm_Y_Backward * fft->Norm_Y_Backward * fft->Norm_Y_Forward);
-   
+  const double _kw_fft = 1./(fft->Norm_Y_Backward * fft->Norm_Y_Backward * fft->Norm_Y_Forward);
+  
+  const double _kw_fft_mass  = 1./species[s].m * _kw_fft;
+
   CComplexAA  xky_dg_dv  [Nky][NxLB];
   CComplexAA  xky_dphi_dz[Nky][NxLB];
   CComplexAA  xky_v_NL   [Nky][NxLD];
   
-  doubleAA    xy_dg_dv  [NyLD+4][NxLB  ];
-  doubleAA    xy_dphi_dz[NyLD+4][NxLB  ];
-  doubleAA    xy_v_NL   [NyLD  ][NxLD  ];
+  doubleAA    xy_dg_dv  [NyLD+4][NxLB];
+  doubleAA    xy_dphi_dz[NyLD+4][NxLB];
+  doubleAA    xy_v_NL   [NyLD  ][NxLD];
  
   // phi
   xky_dphi_dz[:][0:NxLB] = (8.*(Fields[Field::phi][s][m][z+1][:][NxLlB:NxLB] - Fields[Field::phi][s][m][z-1][:][NxLlB:NxLB]) 
@@ -378,12 +376,12 @@ void VlasovCilk::calculateParallelNonLinearity(
    fft->solve(FFT_Type::Y_PSF, FFT_Sign::Backward, xky_dg_dv, &xy_dg_dv[2][0]);
   
    // Multiply in real space
-   xy_v_NL[:][:] = xy_dphi_dz[2:NyLD][2:NxLD] * xy_dg_dv[2:NyLD][2:NxLD] * _kw_fft_Norm;
+   xy_v_NL[:][:] = xy_dphi_dz[2:NyLD][2:NxLD] * xy_dg_dv[2:NyLD][2:NxLD] * _kw_fft_mass;
 
    fft->solve(FFT_Type::Y_NL, FFT_Sign::Forward, xy_v_NL, (CComplex *) xky_v_NL);
 
-   if(doNonLinear) NonLinearTerm[0:Nky][NxLlD:NxLD][v] += xky_v_NL[:][:];
-   else            NonLinearTerm[0:Nky][NxLlD:NxLD][v]  = xky_v_NL[:][:];
+   if(doNonLinear) NonLinearTerm[0:Nky][NxLlD:NxLD][v] += xky_v_NL[:][:] * _kw_fft_mass; 
+   else            NonLinearTerm[0:Nky][NxLlD:NxLD][v]  = xky_v_NL[:][:] * _kw_fft_mass;
   }
 }
 

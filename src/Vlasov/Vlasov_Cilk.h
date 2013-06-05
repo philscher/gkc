@@ -3,7 +3,7 @@
  *
  *       Filename: Vlasov_Cilk.h
  *
- *    Description: Implementation of GK Vlasov's equation using 
+ *    Description: Implementation of GK Vlasov equation using 
  *                 Intel Cilk (Array Notation)
  *
  *         Author: Paul P. Hilscher (2011-), 
@@ -20,9 +20,45 @@
 class Event;
 
 /**
-*  @brief Implementation of Vlasov's equation using Cilk Array Notation
+*  @brief Implementation of the Vlasov equation 
 *
-*  @todo document me 
+*  @section Calculating the non-linearity (Non-Linearity)
+*
+*  The Poisson brackets are calculated using the Mornishi scheme 
+*  (see e.g. \cite{Morinishi_1998:FDScheme}, \cite{Arakawa_1966:DesignLong},
+*  \cite{Idomura_2007:NewConservative}).
+*
+*  In the discretized equation system using CD-4 discretization, e.g. $\chi_{x;x,y}$ is given by
+*  
+*  \f[
+*      \left[\frac{\partial \chi}{\partial x}\right]_{x,y} = \chi_{y;x,y} 
+*     = \frac{8\left(\chi_{x+1,y} - \chi_{x-1,y}\right) - \left(\chi_{x+2,y} - \chi_{x-2,y} \right)}{12 \Delta x} \quad,
+*  \f]
+*   
+*  with the usual definition of an equidistant grid discretization, e.g. $\Delta x = L_x / N_x$.
+*  The Poisson bracket for \f$\mathcal{N}_{\chi \times g} \f$ is calculated by 
+*   
+*   \f{align}{
+*    \Xi_{yx} =8
+*    &\left( \left( \chi_{y;x,y} + \chi_{y;x+1,y} \right) g_{y,x+1} - 
+*          \left( \chi_{y;x,y} + \chi_{y;x-1,y} \right) g_{y,x-1} \right) \\
+*    - &
+*          \left( \left( \chi_{y;x,y} + \chi_{y;x+2,y} \right) g_{y,x+2} - 
+*          \left( \chi_{y;x,y}        + \chi_{y;x-2,y} \right) g_{y,x-2} \right) 
+*    \f}
+*
+*   \f{align}{
+*    \Xi_{xy} =8
+*      &\left( \left( \chi_{y;x,y} + \chi_{y+1;x,y} \right) g_{y+1,x} - 
+*       \left( \chi_{y;x,y} + \chi_{y-1;x,y} \right) g_{y-1,x} \right) \\
+*     - &
+*       \left( \left( \chi_{y;x,y} + \chi_{y+2;x,y} \right) g_{y+2,x} - 
+*       \left( \chi_{y;x,y}        + \chi_{y-2;x,y} \right) g_{y-2,x} \right) 
+*  \f}
+*  This results
+*  \f[
+*    \mathcal{N}_{\chi \times g} = \frac{\Xi_{xy}}{24 \Delta x} + \frac{\Xi_{yz}}{24 \Delta y} \quad.
+*  \f]
 *
 **/
 class VlasovCilk : public Vlasov 
@@ -34,41 +70,19 @@ class VlasovCilk : public Vlasov
    
   
   /**
-  *    @brief Calculates the non-linear term using Arakawa type scheme
+  *  @brief Calculates the \f$ \left[\chi, \g \right] \f$ non-linear term using Arakawa type scheme
   *
-  *    The non-linear term correspond to the E x B drift.
-  *    It is calculated as
+  *  The non-linear term correspond to the E x B drift. It is calculated as
   *    
-  *    \f[
-  *      \mathcal{N}{}_{\left< \chi \right> \times g_{1\sigma}} = 
-  *        \frac{\partial \left< \chi \right>}{\partial x} \frac{\partial f_{1\sigma}}{\partial y}
-  *      - \frac{\partial \left< \chi \right>}{\partial y} \frac{\partial f_{1\sigma}}{\partial x}
-  *    \f]
+  *  \f[
+  *     \mathcal{N}{}_{\left< \chi \right> \times g_{1\sigma}} = 
+  *     \frac{\partial \left< \chi \right>}{\partial x} \frac{\partial f_{1\sigma}}{\partial y}
+  *   - \frac{\partial \left< \chi \right>}{\partial y} \frac{\partial f_{1\sigma}}{\partial x}
+  *  \f]
   *
-  *    Currently implemented using Arakawa (Morinishi) type scheme.
+  *  Currently implemented using Arakawa (Morinishi) type scheme.
   *    
-  *    @todo Describe and add reference
-  *
-  *
-  *   Updated the CFL (Courant-Friedrich-Levy number). For explicit time-stepping
-  *   the CFL value has to be always < 1 to ensure stability of the system
-  *   (practically < 0.4).
-  *   
-  *   Note : Stability is still not guaranteed. As the system is unstable. Thus the
-  *          time-stepping scheme needs to allows imaginary values e.g.
-  *          (RK-3, RK-4, Heun method).
-  *
-  *   Calculated using ....
-  *
-  *   This needs only to be calculated in the non-linear terms
-  *
-  *  @note get linking error if defined inline. Check Performance !
-  *
-  *  @depreciated This is not done directly in the non-linear term
-  *
-  *  Conserved the L2 norm (L1 ? ), thus guarantees energy conservation.
-  *  [ Probably particle conservation too .... !]
-  *
+  *  @note Updates \f$ max(chi)_{x,yz} \f$ the for calculating the CFL for non-linear variable time stepping
   *
   **/
   void calculateExBNonLinearity(const CComplex  G              [NzLB][Nky][NxLB  ][NvLB],   // in case of e-m
