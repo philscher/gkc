@@ -11,6 +11,9 @@ code. Currently features are :
   * multiple species support 
   * fully electromagnetic code 
   * Interfaces for various field and Vlasov solvers
+  * Eigensolver interface using 
+    [SLEPc](http://www.grycap.upv.es/slepc/)/[PETSc](http://www.mcs.anl.gov/petsc/)
+  * Decomposition into eigenvectors using  [elemental](https://code.google.com/p/elemental/)
   * Preliminary support for global simulations
   * 3-stage parallelization (Vectorization, OpenMP and MPI) 
   * Data output using [HDF-5](www.hdfgroup.org/HDF5). 
