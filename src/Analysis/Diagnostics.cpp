@@ -26,8 +26,6 @@ parallel(_parallel),setup(_setup), vlasov(_vlasov), grid(_grid), fields(_fields)
   auxiliary = new Auxiliary(setup, fileIO, parallel, fields, vlasov, grid, fft);
 }
 
-
-
 Diagnostics::~Diagnostics() 
 {
   delete auxiliary;
@@ -111,53 +109,48 @@ void Diagnostics::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky]
     double entropy       = 0.;
     double particle[Nq]; particle[:] = 0.;
     double heat[Nq];         heat[:] = 0.;
-
+    
+    if((s >= NsLlD && s <= NsLuD)) {
+      
     ////////////////////////////// Calculate Entropy /////////////////////////////////////
 
     // Kinetic energy is calculated in gyro-center coordinates
     // Y.Idomura et al., J.Comp.Phys 2007, New conservative gk ..., Eq.(11)  [ but we use different normalization]
     // Only y_k==0 has contributions, as other one cancel with integration over y
-    for(int m = NmLlD; m <= NmLuD; m++) { 
+    for(int m = NmLlD; m <= NmLuD; m++) {
+
     const double d6Z = grid->dXYZ * dv * grid->dm[m] * pow2(species[s].m) * plasma->B0;
-    for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {
-    for(int x = NxLlD; x <= NxLuD; x++) { for(int   v = NvLlD ;   v <= NvLuD ;   v++) {
+    for(int z = NzLlD; z <= NzLuD; z++) { for(int x = NxLlD; x <= NxLuD; x++) { 
       
-      kineticEnergy += (species[s].m * pow2(V[v]) + M[m] * plasma->B0) * f[s][m][z][0][x][v] * d6Z;
+      kineticEnergy += creal(__sec_reduce_add((species[s].m * pow2(V[NvLlD:NvLD]) + M[m] * plasma->B0) * f[s][m][z][0][x][NvLlD:NvLD] * d6Z));
     
-    } } } } } // m, z, y_k, x, v 
-     
-    if((s >= NsLlD && s <= NsLuD) && (parallel->Coord[DIR_VM] == 0))  {
+    } } // z, y_k, x
     
-      
-    ////////////////////////////// Calculate Particle Number /////////////////////////////
-    // Only y_k=0 contributes as non-zero ky average out over <A>_y direction
-    
-    number =  creal(__sec_reduce_add(Mom[0][s-NsLlD][0:NzLD][0][0:NxLD]));
-    
-    //////////// Calculate Kinetic Energy  //////////////////////////
-   
+    // calculation through moments, (which one is correct ?)
     //    kineticEnergy = (species[s].m * __sec_reduce_add(creal(Mom[1][s-NsLlD][0:NzLD][0][0:NxLD])) +
-     //                                    __sec_reduce_add(creal(Mom[2][s-NsLlD][0:NzLD][0][0:NxLD])) ) * grid->dXYZ;
+    //                                    __sec_reduce_add(creal(Mom[2][s-NsLlD][0:NzLD][0][0:NxLD])) ) * grid->dXYZ;
     //kineticEnergy = (0.5 * species[s].m * __sec_reduce_add(creal(Mom[1][s-NsLlD][0:NzLD][0][0:NxLD])) +
     //                                      __sec_reduce_add(creal(Mom[2][s-NsLlD][0:NzLD][0][0:NxLD])) ) * grid->dXYZ;
-    
-
+     
     //#pragma omp parallel for reduction(+:entropy) collapse (2)
-    for(int m = NmLlD; m <= NmLuD; m++) {
-    for(int z = NzLlD; z <= NzLuD; z++) {  for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) {
-    for(int x = NxLlD; x <= NxLuD; x++) { 
+    for(int z = NzLlD; z <= NzLuD; z++) { for(int x = NxLlD; x <= NxLuD; x++) { 
 
       entropy += creal(pow2(__sec_reduce_add(f [s][m][z][0][x][NvLlD:NvLD])))/
                             __sec_reduce_add(f0[s][m][z][0][x][NvLlD:NvLD]);
-    } } }
+    } } // z, y_k, x
 
     } // m 
     
-    /////////////////////////// Calculate Total Heat & Particle Flux ////////////////////////
+    //// Calculate Total Heat & Particle Flux (reduction over moments variables (no v_par, no mu))
+    if (parallel->Coord[DIR_VM] == 0) { 
+   
+      ////////////////////////////// Calculate Particle Number /////////////////////////////
+      number =  creal(__sec_reduce_add(Mom[0][s-NsLlD][0:NzLD][0][0:NxLD]));
       
-    for(int q = 0; q < Nq; q++) {
-       particle[q] = __sec_reduce_add(ParticleFlux[q][s-NsLlD][:][:]);
-       heat    [q] = __sec_reduce_add(    HeatFlux[q][s-NsLlD][:][:]);
+      for(int q = 0; q < Nq; q++) {
+        particle[q] = __sec_reduce_add(ParticleFlux[q][s-NsLlD][:][:]);
+        heat    [q] = __sec_reduce_add(    HeatFlux[q][s-NsLlD][:][:]);
+      } 
     }
     
     } // if(local s) 
@@ -167,8 +160,6 @@ void Diagnostics::calculateScalarValues(const CComplex f [NsLD][NmLD][NzLB][Nky]
     parallel->reduce(heat         , Op::sum, DIR_ALL, Nq);
     kineticEnergy = parallel->reduce(kineticEnergy, Op::sum);
     number        = parallel->reduce(number       , Op::sum);
-
-    //parallel->reduce(&Mom[idx][s-NsLlD][0][0][0], Op::sum, DIR_M, NzLD * Nky * NxLD); 
 
     {
        scalarValues.particle_number[s-1]  = number        ;
@@ -200,7 +191,7 @@ void Diagnostics::getParticleHeatFlux(
   
   // Note heat/particle fluxes are summed over z, cross-phases are averaged
   
-  for(int s = NsLlD; s <= NsLuD; s++) { 
+  if(parallel->Coord[DIR_V] == 0) { for(int s = NsLlD; s <= NsLuD; s++) {  
   
   double norm[3] = { 1., -species[s].v_th, species[s].T0 / (species[s].q * plasma->B0) };
 
@@ -225,11 +216,11 @@ void Diagnostics::getParticleHeatFlux(
     CrossPhase[q][1][s-NsLlD][y_k][x-NxLlD] += carg( iky_field * conj(Mom[1][s-NsLlD][z-NzLlD][y_k][x-NxLlD])) / Nz;
     CrossPhase[q][2][s-NsLlD][y_k][x-NxLlD] += carg( iky_field * conj(Mom[2][s-NsLlD][z-NzLlD][y_k][x-NxLlD])) / Nz;
     
-  }   // x 
-  } } // y_k, z
-  }   // q
+  }    // x 
+  } }  // y_k, z
+  }    // q
 
-  }   // s
+  } }  // s,v
 
   parallel->reduce(&ParticleFlux[0][0][0][0] , Op::sum, DIR_Z, Nq * NsLD * Nky * NxLD);
   parallel->reduce(&    HeatFlux[0][0][0][0] , Op::sum, DIR_Z, Nq * NsLD * Nky * NxLD);
