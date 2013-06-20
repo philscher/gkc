@@ -22,8 +22,6 @@ Moments::Moments(Setup *setup, Vlasov *_vlasov, Fields *_fields, Grid *_grid, Pa
 
 }
 
-
-
 void Moments::getMoments(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB  ][NvLB],
                          const CComplex Field0[Nq][NzLD][Nky][NxLD],
                                CComplex Mom[8][NsLD][NzLD][Nky][NxLD]) 
@@ -41,8 +39,6 @@ void Moments::getMoments(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB  ]
   getMoment(f, Field0, Mom, 0, 4, 7); 
 
 }
-
-
 
 void Moments::getMoment(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB][NvLB],
                         const CComplex  Field0[Nq][NzLD][Nky][NxLD],
@@ -64,22 +60,19 @@ void Moments::getMoment(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB][Nv
   const double rho_L_ref = plasma->rho_ref / plasma->L_ref; 
   const double d_pre     = rho_L_ref * plasma->n_ref * species[s].n0 * pow(plasma->c_ref * species[s].v_th, a+b);
   
-  // integrate over the first adiabat \mu
+  // integrate over the first adiabatic invariant \mu
   for(int m = NmLlD; m <= NmLuD; m++) {
   
   const double d_DK = d_pre * M_PI * dv * grid->dm[m] * pow(plasma->B0, b/2);
   
   // calculate drift-kinetic moments (in gyro-coordinates) 
-  for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = NkyLlD; y_k <= NkyLuD; y_k++) { 
+  for(int z = NzLlD; z <= NzLuD; z++) { for(int y_k = 0; y_k < Nky-1; y_k++) { 
   for(int x = NxLlD; x <= NxLuD; x++) { 
      
     Mom_m[0][z-NzLlD][y_k][x-NxLlD] = __sec_reduce_add(pow(M[m], b/2.) * pow(V[NvLlD:NvLD],a) 
                                                        * f[s][m][z][y_k][x][NvLlD:NvLD]);
-      
   } } } // z, y_k, x
   
-    // BUG : we may have decomposition in V
-
     // gyro-average moments (push back to drift-coordinates)
     #pragma omp parallel
     fields->gyroAverage(Mom_m, Mom_m, m, s, false, true);
@@ -88,7 +81,8 @@ void Moments::getMoment(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB][Nv
 
   } // m
 
-  parallel->reduce(&Mom[idx][s-NsLlD][0][0][0], Op::sum, DIR_M, NzLD * Nky * NxLD); 
+  // all operators are linear in v,m thus we sum here 
+  parallel->reduce(&Mom[idx][s-NsLlD][0][0][0], Op::sum, DIR_VM, NzLD * Nky * NxLD); 
 
 
   //////////////////////////////////////////////////////////////////////////
@@ -119,8 +113,6 @@ void Moments::getMoment(const CComplex     f    [NsLD][NmLD][NzLB][Nky][NxLB][Nv
                           (species[s].q * (phi0[0][:][:][:] -  AAphi[0][:][:][:]));
 
   } // doFieldCorrections
-
-
   } // s
 }
 

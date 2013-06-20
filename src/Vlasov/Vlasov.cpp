@@ -160,10 +160,9 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
       SendVl[:][:][:][:][:][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLlD  :2]; 
       SendVu[:][:][:][:][:][:] = g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLuD-1:2]; 
       parallel->updateBoundaryVlasov(Vlasov::SendVu, Vlasov::SendVl, Vlasov::RecvVu, Vlasov::RecvVl, ArrayBoundV.getNum(), DIR_V);
-    } else {
-      g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLlB  :2] = 0.;
-      g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLuD+1:2] = 0.;
     }
+    
+    
     
     if(parallel->decomposition[DIR_M] > 1 && (NmLlD != NmLlB)) { // take care with lower/upper global boundary
      
@@ -173,16 +172,13 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
       SendMu[:][:][:][:][:][:] = g[NsLlD:NsLD][NmLuD-1:2][NzLlD:NzLD][:][NxLlD:NxLD][NvLlD:NvLD]; 
       parallel->updateBoundaryVlasov(Vlasov::SendMu, Vlasov::SendMl, Vlasov::RecvMu, Vlasov::RecvMl, ArrayBoundM.getNum(), DIR_M);
     }
-    
     // We do not need to communicate for S as we do not have boundary cells (yet)
-  
   }
 
   /////////////////////////// Receive Boundaries //////////////////////////////
   if(boundary_type & Boundary::RECV) {
      
-    // Wait until boundaries are communicated
-    parallel->updateBoundaryVlasovBarrier();
+    parallel->updateBoundaryVlasovBarrier();  // Wait until boundaries are communicated
    
     // Set boundary in X (take care of Neumann boundary ?!) 
     g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlB  :2][NvLlD:NvLD] = RecvXl[:][:][:][:][:][:]; 
@@ -200,7 +196,12 @@ void Vlasov::setBoundary(CComplex *f, Boundary boundary_type)
       g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLlB  :2] = RecvVl[:][:][:][:][:][:]; 
       g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLuD+1:2] = RecvVu[:][:][:][:][:][:]; 
     }
-  
+   
+    // Set velocity tails to zero
+    if(NvLlD == NvGlD) g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLlB  :2] = 0.;
+    if(NvLuD == NvGuD) g[NsLlD:NsLD][NmLlD:NmLD][NzLlD:NzLD][:][NxLlD:NxLD][NvLuD+1:2] = 0.;
+ 
+    // Set boundary in M
     if(parallel->decomposition[DIR_M] > 1 && (NmLlD != NmLlB)) { // take care with lower/upper global boundary
       
       g[NsLlD:NsLD][NmLlB  :2][NzLlD:NzLD][:][NxLlD:NxLD][NvLlD:NvLD] = RecvMl[:][:][:][:][:][:]; 
@@ -223,20 +224,14 @@ double Vlasov::getMaxNLTimeStep(const double maxCFL)
  
   #pragma omp single copyprivate(dt_NL)
   {
-    // from non-linear ExB Term
-    const double NL_ExB_v    = std::max(Xi_max[DIR_X]/dy , Xi_max[DIR_Y]/dx);
+    const double NL_ExB_v    = std::max(Xi_max[DIR_X]/dy , Xi_max[DIR_Y]/dx);  // from non-linear ExB Term
+    const double NL_Landau_v = 0.;                                             // from non-linear Landau damping 
 
-    // from non-linear Landau damping (particle trapping)
-    const double NL_Landau_v = 0.; // Not included yet
-
-    // if non-linear terms are very small, there is no restriction on
-    // time step ( we add 1.e-10 to avoid division by 0)
-    double NL = std::max(NL_ExB_v, NL_Landau_v) + 1.e-10; 
-
-    // get global maximum time step 
-    dt_NL = maxCFL / parallel->reduce(NL, Op::max);
+    double NL = std::max(NL_ExB_v, NL_Landau_v) + 1.e-10;                      // add 10^-10 to avoid overflow in later
+                                                                               // division for small values of NL_ExB_v
+                                                                               //
+    dt_NL = maxCFL / parallel->reduce(NL, Op::max);                            // get global maximum time step 
   }
-
   return dt_NL;
 }
 
@@ -252,12 +247,12 @@ void Vlasov::initData(Setup *setup, FileIO *fileIO)
   check(H5LTset_attribute_double(psfGroup, ".", "Krook"         , &krook[NxGlD], Nx), DMESG("Attribute"));
   
   // Phase space dimensions
-  hsize_t dim[]       = { Ns , Nm, Nz, Nky, Nx, Nv,             1 };
-  hsize_t maxdim[]    = { Ns , Nm, Nz, Nky, Nx, Nv, H5S_UNLIMITED };
-  hsize_t chunkBdim[] = { NsLB      , NmLB      , NzLB      , Nky , NxLB      , NvLB      ,             1 };
-  hsize_t chunkdim[]  = { NsLD      , NmLD      , NzLD      , Nky , NxLD      , NvLD      ,             1 };
-  hsize_t offset[]    = { NsLlB-1   , NmLlB-1   , NzLlB-1   , NkyLlB, NxLlB-1   , NvLlB-1   ,             0 };
-  hsize_t moffset[]   = { 0         , 0         , 2         , 0     , 2         , 2         , 0             };
+  hsize_t dim[]       = { Ns     ,      Nm, Nz     , Nky   , Nx     , Nv     ,             1 };
+  hsize_t maxdim[]    = { Ns     ,      Nm, Nz     , Nky   , Nx     , Nv     , H5S_UNLIMITED };
+  hsize_t chunkBdim[] = { NsLB   ,    NmLB, NzLB   , Nky   , NxLB   , NvLB   , 1             };
+  hsize_t chunkdim[]  = { NsLD   ,    NmLD, NzLD   , Nky   , NxLD   , NvLD   , 1             };
+  hsize_t offset[]    = { NsLlB-1, NmLlB-1, NzLlB-1, NkyLlB, NxLlB-1, NvLlB-1, 0             };
+  hsize_t moffset[]   = { 0      , 0      , 2      , 0     , 2      , 2      , 0             };
      
   // ignore, as HDF-5 automatically (?) allocated data for it
   FA_f0       = new FileAttr("f0", psfGroup, fileIO->file, 7, dim, maxdim, chunkdim, moffset,  chunkBdim, offset, true, fileIO->complex_tid);

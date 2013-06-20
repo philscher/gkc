@@ -3,8 +3,7 @@
  *
  *       Filename: Parallel.cpp
  *
- *    Description: Implementation of Parallelization options. Now mainly uses
- *                 OpenMPI
+ *    Description: Implementation of MPI communication functions. 
  *
  *         Author: Paul P. Hilscher (2010), 
  *
@@ -204,8 +203,8 @@ void Parallel::updateBoundaryVlasov(CComplex *Sendu, CComplex *Sendl, CComplex *
     MPI_Isend(Sendl, num, mpi_type, Talk[dir].rank_l, Talk[dir].psf_msg_tag[1], Comm[DIR_ALL], &Talk[dir].psf_msg_req[3]);
      
     // V domain cutoff is reaches we set to zero
-    if(Talk[dir].rank_u == MPI_PROC_NULL)   Recvl[0:num] = 0.e0;
-    if(Talk[dir].rank_l == MPI_PROC_NULL)   Recvu[0:num] = 0.e0;
+    // if(Talk[dir].rank_u == MPI_PROC_NULL)   Recvl[0:num] = 0.e0;
+    // if(Talk[dir].rank_l == MPI_PROC_NULL)   Recvu[0:num] = 0.e0;
 
   } else {
 
